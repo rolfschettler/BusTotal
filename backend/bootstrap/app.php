@@ -18,6 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Mandant bestimmen, bevor irgendetwas anderes (Anmeldung, Datenbankzugriff) läuft.
+        $middleware->api(prepend: [\App\Http\Middleware\ResolveTenant::class]);
+
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
             'account.ok' => \App\Http\Middleware\EnsureAccountUsable::class,

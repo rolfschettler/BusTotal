@@ -185,6 +185,12 @@ Getroffene Entscheidungen:
 - **Benutzerliste ebenfalls nach dem Muster** (clientseitige Variante): Suche in Name/E-Mail/Rolle mit Markierung, Filter Rolle und Status, Sortierung (leere Werte immer am Ende), Aktionssymbole (Stift, Schlüssel, Schloss) statt Menü, Formular und vorläufiges Passwort oberhalb der Liste. Logik in `users-view.ts` mit 14 Testfällen (zusammen mit der Markierung 32 Fälle, lauffähig mit `ng test` bzw. hier per Hilfsskript). Im Browser durchgespielt (Anlegen, doppelte E-Mail, Zurücksetzen, Sperren, Entsperren, Bearbeiten, schmales Fenster).
 - Offen: `EditFormTemplate` aus DATACUR26 als nächstes Muster (Bearbeitungsformulare) prüfen.
 
+**Erledigt (2026-11-20, Phase 3 Mandantenfähigkeit – Backend):**
+- Zentrale Datenbank mit Tabelle `tenants` (Passwort verschlüsselt); die Verbindung zur Firmen-Datenbank wird je Anfrage aus dem Host (Unterdomäne) eingestellt (`ResolveTenant`, `TenantManager`). Details: `docs/MANDANTEN.md`.
+- Befehle `tenant:create`, `tenant:list`, `tenant:migrate`; `bustotal:admin-anlegen` und `bustotal:demo-daten` mit `--tenant=`. Dateien (Logo) je Firma getrennt.
+- 11 Tests zur Mandantentrennung (Daten, Token, Anmeldung, Sperre, Passwortverschlüsselung, unsichere Angaben); gesamt 166 grün. Dev-Mandant `dev` mit eigener Datenbank `bustotal_dev` angelegt (die alten Daten in `bustotal_central` werden nicht mehr benutzt).
+- **Offen:** Superadmin-Oberfläche; Queue/Cron je Firma (Phase 8); Mittwald-Klärungen; Angular-Dev-Server muss `*.localhost` zulassen, falls mit Unterdomäne gearbeitet wird.
+
 **Nächster Schritt:** Hilfetexte fachlich prüfen lassen, dann Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen) und Phase 3 Mandantenfähigkeit (Subdomain → eigene DB je Mandant) oder Phase 4 Fuhrpark.
 
 

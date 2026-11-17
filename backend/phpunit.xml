@@ -25,6 +25,9 @@
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="mysql"/>
         <env name="DB_DATABASE" value="bustotal_test"/>
+        <!-- Die bestehenden Tests laufen mit einer einzigen Datenbank. Die Mandanten-Tests schalten es selbst ein. -->
+        <env name="TENANCY_ENABLED" value="false"/>
+        <env name="DB_CENTRAL_DATABASE" value="bustotal_test_central"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>

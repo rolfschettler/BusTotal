@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Concerns\SelectsTenant;
 use App\Enums\Role;
 use App\Models\User;
 use App\Support\TemporaryPassword;
@@ -14,12 +15,18 @@ use Illuminate\Support\Facades\Validator;
  */
 class CreateAdmin extends Command
 {
-    protected $signature = 'bustotal:admin-anlegen {email : E-Mail-Adresse des Administrators} {name=Administrator : Anzeigename}';
+    use SelectsTenant;
+
+    protected $signature = 'bustotal:admin-anlegen {email : E-Mail-Adresse des Administrators} {name=Administrator : Anzeigename} {--tenant= : Unterdomäne der Firma}';
 
     protected $description = 'Legt einen Administrator mit vorläufigem Passwort an (muss beim ersten Login geändert werden)';
 
     public function handle(): int
     {
+        if ($code = $this->selectTenant()) {
+            return $code;
+        }
+
         $email = mb_strtolower((string) $this->argument('email'));
 
         $validator = Validator::make(['email' => $email], ['email' => ['required', 'email', 'unique:users,email']]);

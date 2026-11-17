@@ -64,6 +64,41 @@ return [
             ]) : [],
         ],
 
+        // Zentrale Datenbank: nur Mandanten und ihre Zugangsdaten (siehe config/tenancy.php).
+        'central' => [
+            'driver' => 'mysql',
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => env('DB_CENTRAL_DATABASE', env('DB_DATABASE', 'laravel')),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+        ],
+
+        // Datenbank der aktuellen Firma. Host, Name und Zugangsdaten setzt der TenantManager je Anfrage
+        // aus der zentralen Tabelle "tenants"; hier stehen nur die gemeinsamen Einstellungen.
+        'tenant' => [
+            'driver' => 'mysql',
+            'host' => '127.0.0.1',
+            'port' => '3306',
+            'database' => null,
+            'username' => null,
+            'password' => null,
+            'unix_socket' => '',
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),

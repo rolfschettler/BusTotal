@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Concerns\SelectsTenant;
 use App\Services\DemoDataService;
 use Illuminate\Console\Command;
 
@@ -17,12 +18,19 @@ class DemoData extends Command
     protected $signature = 'bustotal:demo-daten
         {--anzahl=200 : Wie viele Demo-Kunden es insgesamt geben soll (1 bis 5000)}
         {--entfernen : Alle Demo-Kunden entfernen statt anzulegen}
-        {--force : Auch in einer produktiven Umgebung ausführen}';
+        {--force : Auch in einer produktiven Umgebung ausführen}
+        {--tenant= : Unterdomäne der Firma}';
 
     protected $description = 'Legt realistische Demo-Kunden an (oder entfernt sie wieder)';
 
+    use SelectsTenant;
+
     public function handle(DemoDataService $demo): int
     {
+        if ($code = $this->selectTenant()) {
+            return $code;
+        }
+
         // Schutz: Auf dem echten Server sollen Demo-Kunden nicht versehentlich die Nummernkreise verbrauchen.
         if (app()->environment('production') && ! $this->option('force')) {
             $this->error('Das ist eine produktive Umgebung. Demo-Daten verbrauchen echte Kunden- und Debitorennummern.');
