@@ -243,6 +243,8 @@ return [
 
         // Suche und Listen
         'q' => 'Suchbegriff',
+        'sort' => 'Sortierung',
+        'dir' => 'Sortierrichtung',
         'archived' => 'Archivierte',
         'page' => 'Seite',
     ],

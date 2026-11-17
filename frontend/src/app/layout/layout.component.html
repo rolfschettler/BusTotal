@@ -47,8 +47,8 @@
     </aside>
   }
 
-  <main class="scroll">
-    <div class="content">
+  <main class="scroll" [class.full]="fullPage()">
+    <div class="content" [class.full]="fullPage()">
       <router-outlet />
     </div>
   </main>

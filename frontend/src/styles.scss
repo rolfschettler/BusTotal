@@ -15,6 +15,16 @@ $table-cell-padding-y: 0.55rem;
   --brand: #1d4e89;
   --brand-dark: #163b69;
   --brand-rgb: 29, 78, 137;
+  // Töne der Markenfarbe (Startwerte für #1d4e89; der BrandService überschreibt sie je Firma)
+  --brand-subtle: #d2dce7;
+  --brand-border-subtle: #a5b8d0;
+  --brand-text-emphasis: #0c1f37;
+
+  // Bootstraps eigene "subtle"-Variablen folgen der Markenfarbe, damit Tabellenköpfe, Auswahl und
+  // Hinweisfelder zu jeder Firmenfarbe passen und nicht im festen Standardblau bleiben.
+  --bs-primary-bg-subtle: var(--brand-subtle);
+  --bs-primary-border-subtle: var(--brand-border-subtle);
+  --bs-primary-text-emphasis: var(--brand-text-emphasis);
 
   --bs-primary: var(--brand);
   --bs-primary-rgb: var(--brand-rgb);
@@ -127,3 +137,6 @@ code { background: #e9edf2; padding: 1px 6px; border-radius: 3px; color: #343a40
 mark {
   border-radius: 2px;
 }
+
+// Listenseiten (Tabellen-Muster, siehe docs/patterns/TableViewPattern.md)
+@import 'styles/list-page';

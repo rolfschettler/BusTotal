@@ -11,6 +11,11 @@ Die Liste zeigt 20 Kunden pro Seite, sortiert nach Name.
 - **Art:** Der Filter zeigt nur eine Kundenart, zum Beispiel nur Schulen.
 - **Archivierte:** Mit diesem Häkchen sehen Sie statt der aktiven die [archivierten](#archivieren) Kunden.
 
+- **Sortieren:** Ein Klick auf eine Spaltenüberschrift sortiert die ganze Liste danach, ein zweiter Klick dreht die Richtung um. Die Sortierung gilt für alle Seiten. Die sortierte Spalte ist farbig hervorgehoben und trägt einen Pfeil. Leere Felder stehen immer am Ende.
+- **Aktionsspalte:** Links in jeder Zeile öffnet der **Stift** den Kunden, das **Archiv-Symbol** [archiviert](#archivieren) ihn nach einer Rückfrage. In der Ansicht „Archivierte“ steht für den Administrator stattdessen ein Pfeil zum **Wiederherstellen**.
+- **Zeile markieren:** Ein Klick auf eine Zeile hebt sie hervor, damit Sie sie beim Blättern im Blick behalten.
+- **Kopfzeile fest:** Beim Scrollen bleiben Titel, Suchleiste und Spaltenüberschriften sichtbar.
+
 Ein Klick auf den Namen öffnet den Kunden.
 
 ## Kunde anlegen {#kunde-anlegen}

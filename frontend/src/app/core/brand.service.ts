@@ -45,6 +45,23 @@ export class BrandService {
     root.setProperty('--brand', color);
     root.setProperty('--brand-dark', `#${dark}`);
     root.setProperty('--brand-rgb', `${r}, ${g}, ${b}`);
+
+    // Töne für Tabellenköpfe, Auswahl und Hinweise. Bootstrap rechnet sie beim Bauen fest aus EINER Farbe aus
+    // ("subtle" = 80 % Weiß, "border-subtle" = 60 % Weiß, "text-emphasis" = 60 % Schwarz). Da jede Firma ihre
+    // eigene Farbe hat, rechnen wir dieselbe Formel zur Laufzeit. styles.scss hängt --bs-primary-*-subtle daran.
+    root.setProperty('--brand-subtle', mix([r, g, b], 255, 0.8));
+    root.setProperty('--brand-border-subtle', mix([r, g, b], 255, 0.6));
+    root.setProperty('--brand-text-emphasis', mix([r, g, b], 0, 0.6));
     this.color.set(color);
   }
+}
+
+/** Mischt eine Farbe mit Weiß (255) oder Schwarz (0). `weight` ist der Anteil von Weiß bzw. Schwarz. */
+function mix(rgb: number[], target: 0 | 255, weight: number): string {
+  return (
+    '#' +
+    rgb
+      .map((c) => Math.round(c * (1 - weight) + target * weight).toString(16).padStart(2, '0'))
+      .join('')
+  );
 }

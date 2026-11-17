@@ -78,8 +78,8 @@ export class CustomerService {
   private http = inject(HttpClient);
   private base = '/api/customers';
 
-  list(opts: { q: string; type: string; archived: boolean; page: number }) {
-    let params = new HttpParams().set('page', opts.page);
+  list(opts: { q: string; type: string; archived: boolean; page: number; sort: string; dir: 'asc' | 'desc' }) {
+    let params = new HttpParams().set('page', opts.page).set('sort', opts.sort).set('dir', opts.dir);
     if (opts.q) params = params.set('q', opts.q);
     if (opts.type) params = params.set('type', opts.type);
     if (opts.archived) params = params.set('archived', 1);

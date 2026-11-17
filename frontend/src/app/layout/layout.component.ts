@@ -1,5 +1,7 @@
 import { Component, HostListener, computed, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { AuthService } from '../core/auth.service';
 import { BrandService } from '../core/brand.service';
@@ -17,6 +19,30 @@ export class LayoutComponent {
   auth = inject(AuthService);
   brand = inject(BrandService);
   helpPanel = inject(HelpPanelService);
+
+  private router = inject(Router);
+
+  /**
+   * Listenseiten (Route mit data: { fullPage: true }) nutzen die ganze Inhaltsfläche: kein Außenabstand, kein
+   * eigener Scrollbalken des Rahmens. Sie scrollen selbst, damit ihr Tabellenkopf kleben kann.
+   */
+  fullPage = toSignal(
+    this.router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      map(() => this.readFullPage()),
+    ),
+    { initialValue: this.readFullPage() },
+  );
+
+  private readFullPage(): boolean {
+    let r = this.router.routerState.snapshot.root;
+    let full = r.data['fullPage'] === true;
+    while (r.firstChild) {
+      r = r.firstChild;
+      if (r.data['fullPage'] !== undefined) full = r.data['fullPage'] === true;
+    }
+    return full;
+  }
 
   /** Solange das vorläufige Passwort gilt, gibt es kein Menü, nur die Passwortänderung. */
   forced = computed(() => this.auth.user()?.must_change_password === true);

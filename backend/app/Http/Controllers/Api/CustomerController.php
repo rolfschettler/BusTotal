@@ -11,16 +11,33 @@ use App\Services\CustomerService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class CustomerController extends Controller
 {
-    /** Liste mit Suche, Filter und Seiten (je 20 Kunden). */
+    /**
+     * Erlaubte Sortierungen: Name der Spalte in der Oberfläche => Datenbankausdrücke.
+     * NUR was hier steht, wird je sortiert. Der Wert aus der Anfrage wählt nur einen Eintrag aus (feste Liste),
+     * er gelangt nie selbst in die Abfrage. So kann niemand über die Adresse eigenes SQL einschleusen.
+     */
+    private const SORTS = [
+        'name' => ["COALESCE(NULLIF(company_name, ''), last_name, customer_number)"],
+        'number' => ['customer_number'],
+        'type' => ['type'],
+        'city' => ['city', 'postal_code'],
+        'email' => ['email'],
+        'phone' => ['phone'],
+    ];
+
+    /** Liste mit Suche, Filter, Sortierung und Seiten (je 20 Kunden). */
     public function index(Request $request): JsonResponse
     {
         $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
             'type' => ['nullable', 'string'],
             'archived' => ['nullable', 'boolean'],
+            'sort' => ['nullable', Rule::in(array_keys(self::SORTS))],
+            'dir' => ['nullable', Rule::in(['asc', 'desc'])],
         ]);
 
         $query = Customer::query();
@@ -44,8 +61,17 @@ class CustomerController extends Controller
             });
         }
 
+        // Standard: nach Name aufsteigend. Leere Werte stehen immer am Ende (in beiden Richtungen), und die
+        // Kundennummer entscheidet bei Gleichstand: Ohne eindeutige Reihenfolge könnte ein Kunde beim Blättern
+        // auf zwei Seiten erscheinen oder fehlen.
+        $sort = $request->query('sort') ?: 'name';
+        $dir = $request->query('dir') === 'desc' ? 'desc' : 'asc';
+        foreach (self::SORTS[$sort] as $expression) {
+            $query->orderByRaw("({$expression}) IS NULL")->orderByRaw("{$expression} {$dir}");
+        }
+
         $page = $query
-            ->orderByRaw("COALESCE(NULLIF(company_name, ''), last_name, customer_number)")
+            ->orderBy('customer_number')
             ->paginate(20)
             ->withQueryString();
 

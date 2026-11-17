@@ -29,7 +29,8 @@ export const routes: Routes = [
           {
             path: '',
             pathMatch: 'full',
-            data: { help: 'kunden#kundenliste' },
+            // fullPage: Listenseite nach dem Tabellen-Muster (docs/patterns/TableViewPattern.md)
+            data: { help: 'kunden#kundenliste', fullPage: true },
             loadComponent: () => import('./pages/customers/customer-list.component').then((m) => m.CustomerListComponent),
           },
           {
