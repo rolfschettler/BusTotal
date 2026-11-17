@@ -5,6 +5,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { debounceTime } from 'rxjs';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
+import { HelpLinkComponent } from '../../help/help-link.component';
+import { HelpService } from '../../help/help.service';
 import {
   Address,
   Contact,
@@ -27,7 +29,7 @@ const emptyAddress = (): Address => ({
 
 @Component({
   selector: 'app-customer-form',
-  imports: [ReactiveFormsModule, FormsModule, RouterLink],
+  imports: [ReactiveFormsModule, FormsModule, RouterLink, HelpLinkComponent],
   templateUrl: './customer-form.component.html',
 })
 export class CustomerFormComponent implements OnInit {
@@ -37,6 +39,7 @@ export class CustomerFormComponent implements OnInit {
   private router = inject(Router);
   private auth = inject(AuthService);
   private confirm = inject(ConfirmService);
+  private help = inject(HelpService);
 
   isAdmin = computed(() => this.auth.user()?.role === 'admin');
 
@@ -132,6 +135,8 @@ export class CustomerFormComponent implements OnInit {
 
   show(tab: Tab) {
     this.tab.set(tab);
+    // Das Hilfefenster folgt dem Reiter; "stamm" nutzt das Thema der Seite.
+    this.help.setAnchor({ stamm: null, kontakte: 'ansprechpartner', adressen: 'adressen' }[tab]);
     this.message.set(null);
     this.fieldErrors.set({});
   }

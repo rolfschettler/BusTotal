@@ -3,6 +3,8 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../core/auth.service';
 import { BrandService } from '../../core/brand.service';
+import { HelpLinkComponent } from '../../help/help-link.component';
+import { HelpService } from '../../help/help.service';
 import { NumberRange, SettingsService, TaxRate } from '../../core/settings.service';
 
 type Tab = 'firma' | 'steuern' | 'nummern';
@@ -12,7 +14,7 @@ const LOGO_MAX_BYTES = 1024 * 1024;
 
 @Component({
   selector: 'app-settings',
-  imports: [ReactiveFormsModule, FormsModule],
+  imports: [ReactiveFormsModule, FormsModule, HelpLinkComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
@@ -21,6 +23,7 @@ export class SettingsComponent implements OnInit {
   private fb = inject(FormBuilder);
   private auth = inject(AuthService);
   brand = inject(BrandService);
+  private help = inject(HelpService);
 
   canEdit = computed(() => this.auth.user()?.role === 'admin');
   tab = signal<Tab>('firma');
@@ -72,6 +75,8 @@ export class SettingsComponent implements OnInit {
 
   show(tab: Tab) {
     this.tab.set(tab);
+    // Das Hilfefenster folgt dem Reiter.
+    this.help.setAnchor({ firma: 'firmendaten', steuern: 'steuersaetze', nummern: 'nummernkreise' }[tab]);
     this.message.set(null);
     this.fieldErrors.set({});
   }

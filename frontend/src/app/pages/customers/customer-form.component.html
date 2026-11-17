@@ -5,6 +5,7 @@
     <h1 class="h3 mb-1">{{ c.display_name }}</h1>
     <p class="mb-0 small text-body-secondary">
       Kundennr. <code>{{ c.customer_number }}</code> · Debitorennr. <code>{{ c.debitor_number }}</code>
+      <app-help-link topic="kunden" anchor="nummern" label="Kunden- und Debitorennummer" />
       @if (archived()) { <span class="badge text-bg-danger ms-2">Archiviert</span> }
     </p>
   } @else {
@@ -28,7 +29,7 @@
   @case ('stamm') {
     @if (duplicates().length) {
       <div class="alert alert-warning" role="alert">
-        <strong>Mögliche Dublette:</strong>
+        <strong>Mögliche Dublette:</strong> <app-help-link topic="kunden" anchor="dubletten" label="Mögliche Dubletten" />
         <ul class="mb-0 mt-1">
           @for (d of duplicates(); track d.customer.id) {
             <li>
@@ -137,7 +138,7 @@
 
     @if (id && customer()) {
       <section class="mt-4 pt-3 border-top">
-        <h2 class="h6">Weitere Aktionen</h2>
+        <h2 class="h6">Weitere Aktionen <app-help-link topic="datenschutz" anchor="anonymisieren" label="Auskunft und Löschung (DSGVO)" /></h2>
         <div class="d-flex flex-wrap gap-2">
           <button class="btn btn-outline-secondary btn-sm" (click)="export()">Daten exportieren (DSGVO Auskunft)</button>
           @if (archived()) {

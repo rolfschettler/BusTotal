@@ -6,7 +6,10 @@
     <span>{{ brand.name() }}</span>
   </a>
 
-  <div class="ms-auto" ngbDropdown placement="bottom-end">
+  <button type="button" class="btn btn-sm help-btn ms-auto" (click)="helpPanel.toggle()"
+          aria-label="Hilfe zu dieser Seite (F1)" title="Hilfe zu dieser Seite (F1)">?</button>
+
+  <div ngbDropdown placement="bottom-end">
     @if (auth.user(); as u) {
       <button type="button" class="btn btn-sm user-btn" ngbDropdownToggle id="userMenu">
         {{ u.name }} <span class="role">· {{ rolle(u.role) }}</span>
@@ -32,6 +35,7 @@
 
       <div class="group">System</div>
       <a class="nav-link" routerLink="/einstellungen" routerLinkActive="active">Einstellungen</a>
+      <a class="nav-link" routerLink="/hilfe" routerLinkActive="active">Hilfe</a>
     </nav>
   </aside>
 

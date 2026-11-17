@@ -119,6 +119,13 @@ Getroffene Entscheidungen:
 - Entscheidungen: PC-first, nüchtern; Mobil nur auf Zuruf; Hilfesystem mit Sprungmarken wird separat besprochen (noch nicht gebaut).
 - Technik-Hinweis: Das Logo liegt auf dem privaten Speicher und wird über die API ausgeliefert (kein `storage:link` nötig, passt zu Mittwald). Bei der Mandantenfähigkeit (Phase 3) muss `/api/branding` den Mandanten aus der Subdomain bestimmen.
 
-**Nächster Schritt:** Hilfesystem besprechen, dann Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen) und Phase 3 Mandantenfähigkeit (Subdomain → eigene DB je Mandant) oder Phase 4 Fuhrpark.
+**Erledigt (2026-11-18, Hilfesystem):**
+- Hilfetexte als Markdown-Dateien in `frontend/public/help/` (`index.json` listet die Themen). Überschriften tragen feste Sprungmarken: `## Titel {#anker}`.
+- Aufruf: Fragezeichen in der Kopfleiste oder F1 öffnet ein Seitenfenster mit dem Thema der aktuellen Seite (Seite bleibt bedienbar, Fenster folgt Seitenwechsel und Reitern); kleine Fragezeichen bei schwierigen Feldern (`<app-help-link>`); Hilfeseite `/hilfe/<thema>#<anker>` mit Themenliste und Suche.
+- Zuordnung Seite → Hilfethema: `data: { help: 'thema#anker' }` in `app.routes.ts`; Seiten mit Reitern rufen `HelpService.setAnchor()` auf.
+- 5 Themen geschrieben (Erste Schritte, Anmeldung und Rollen, Kundenverwaltung, Einstellungen, Datenschutz); Texte sind ein Entwurf zur fachlichen Prüfung durch den Auftraggeber.
+- **Regel für alle künftigen Seiten:** Jede neue Seite bekommt ein Hilfethema (oder einen Abschnitt) und einen `data.help`-Eintrag; Hilfetexte nur zu Funktionen schreiben, die es wirklich gibt.
+
+**Nächster Schritt:** Hilfetexte fachlich prüfen lassen, dann Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen) und Phase 3 Mandantenfähigkeit (Subdomain → eigene DB je Mandant) oder Phase 4 Fuhrpark.
 
 

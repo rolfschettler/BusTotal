@@ -1,0 +1,35 @@
+<h1 class="h3 mb-3">Hilfe</h1>
+
+<div class="row g-4">
+  <div class="col-lg-3">
+    <input type="search" class="form-control mb-3" placeholder="In der Hilfe suchen …" aria-label="Hilfe durchsuchen"
+           [ngModel]="q()" (ngModelChange)="onSearch($event)" />
+    <nav class="list-group" aria-label="Hilfethemen">
+      @for (t of help.topics(); track t.id) {
+        <a class="list-group-item list-group-item-action" [routerLink]="['/hilfe', t.id]" (click)="clearSearch()"
+           [class.active]="t.id === topic() && !searching()">{{ t.title }}</a>
+      }
+    </nav>
+  </div>
+
+  <div class="col-lg-9">
+    <div class="card">
+      <div class="card-body">
+        @if (searching()) {
+          <h2 class="h5 mb-3">Suchergebnisse für „{{ q().trim() }}“</h2>
+          @for (h of hits(); track h.topic + h.anchor) {
+            <a class="d-block text-decoration-none mb-3 text-body" [routerLink]="['/hilfe', h.topic]" [fragment]="h.anchor" (click)="clearSearch()">
+              <span class="fw-semibold text-brand">{{ h.title }}</span>
+              <span class="small text-body-secondary"> · {{ h.topicTitle }}</span>
+              <span class="d-block small text-body-secondary">{{ h.snippet }}</span>
+            </a>
+          } @empty {
+            <p class="text-body-secondary mb-0">Nichts gefunden. Versuche es mit einem anderen oder kürzeren Suchbegriff.</p>
+          }
+        } @else {
+          <app-help-viewer [topic]="topic()" [anchor]="anchor()" (go)="go($event)" />
+        }
+      </div>
+    </div>
+  </div>
+</div>

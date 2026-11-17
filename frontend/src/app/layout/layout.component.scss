@@ -29,6 +29,17 @@
 }
 .logo { height: 32px; max-width: 160px; object-fit: contain; background: #fff; border-radius: 4px; padding: 2px 4px; }
 
+.help-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 55%);
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 700;
+  &:hover, &:focus-visible { color: #fff; background: rgb(255 255 255 / 15%); border-color: #fff; }
+}
+
 .user-btn {
   color: #fff;
   border: 1px solid rgb(255 255 255 / 55%);
