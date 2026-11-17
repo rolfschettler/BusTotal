@@ -59,6 +59,7 @@ class AuthController extends Controller
             'name' => $user->name,
             'email' => $user->email,
             'role' => $user->role->value,
+            'must_change_password' => $user->must_change_password,
         ];
     }
 }

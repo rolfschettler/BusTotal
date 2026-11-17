@@ -6,6 +6,8 @@ Geben Sie auf der Anmeldeseite Ihre E-Mail-Adresse und Ihr Passwort ein.
 
 - Stimmen die Angaben nicht, erscheint **„Die Anmeldedaten sind ungültig.“** Aus Sicherheitsgründen steht dort nicht, ob die E-Mail-Adresse oder das Passwort falsch war. Dieselbe Meldung erhält auch ein gesperrter Benutzer.
 - Nach **fünf Versuchen innerhalb einer Minute** sperrt die Anmeldung kurz. Warten Sie dann eine Minute und versuchen Sie es erneut.
+- Haben Sie von Ihrem Administrator ein **vorläufiges Passwort** erhalten, werden Sie nach dem Anmelden zuerst aufgefordert, ein eigenes zu vergeben. Siehe [Das eigene Passwort ändern](/hilfe/benutzer#passwort-aendern).
+- Ein **gesperrter** Benutzer kann sich nicht anmelden. Auch er sieht nur „Die Anmeldedaten sind ungültig.“ Wenden Sie sich an Ihren Administrator.
 - Sie bleiben angemeldet, auch wenn Sie die Seite neu laden.
 - Zum Abmelden öffnen Sie oben rechts Ihr Benutzermenü und wählen **Abmelden**.
 
@@ -17,6 +19,8 @@ Jeder Benutzer hat eine Rolle. Sie bestimmt, was er sehen und ändern darf.
 
 | Bereich | Administrator | Disponent | Buchhaltung | Fahrer |
 |---|---|---|---|---|
+| Benutzer verwalten (anlegen, sperren, Passwort zurücksetzen) | ja | nein | nein | nein |
+| Eigenes Passwort ändern | ja | ja | ja | ja |
 | Kunden ansehen, anlegen, ändern, archivieren | ja | ja | ja | nein |
 | Kundendaten exportieren (Auskunft) | ja | ja | ja | nein |
 | Kunden anonymisieren (DSGVO-Löschung) | ja | nein | ja | nein |

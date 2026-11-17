@@ -136,6 +136,17 @@ Getroffene Entscheidungen:
 - Heute: Schnellzugriff (Suche → Kundenliste mit `?q=`, Neuer Kunde), Einrichtungs-Checkliste (nur Admin, erkennt Erledigtes selbst, verschwindet bei 5/5), zuletzt bearbeitete Kunden, Platzhalter „Ihre Einsätze“ für Fahrer. 66 Backend-Tests grün, im Browser mit allen Rollen geprüft.
 - **Regel für künftige Module:** Jedes Modul trägt seine Kacheln im Kachel-Verzeichnis ein (z. B. „Anstehende Fahrten“ für Disponenten, „Fällige Fristen“ für den Fuhrpark) und ergänzt den Hilfetext „Die Startseite“ in `help/start.md`.
 
+**Erledigt (2026-11-19, Benutzerverwaltung – Lücke aus Phase 1.2 geschlossen):**
+- Vorher gab es keine Oberfläche für Benutzer; die vier Testbenutzer kamen nur aus dem Seeder.
+- Seite `/benutzer` (nur Admin): Liste mit Rolle, Status, letzter Anmeldung; anlegen, bearbeiten, sperren/entsperren, Passwort zurücksetzen. **Kein Löschen** (Protokoll verweist auf Benutzer, GoBD).
+- Passwort-Konzept (Nutzer entschieden): Der Admin vergibt kein Passwort, das System erzeugt ein **vorläufiges** (12 Zeichen), das **einmalig** angezeigt und nirgends gespeichert wird. Der Benutzer **muss** es beim ersten Login ändern (`must_change_password`); bis dahin ist serverseitig nur `/me`, `/me/password` und `/logout` erlaubt (Middleware `account.ok`).
+- Eigenes Passwort: `/konto` (Benutzermenü → Passwort ändern), mind. 10 Zeichen mit Buchstabe und Ziffer, beendet alle anderen Anmeldungen. Nach Sperren und Zurücksetzen sind alle Anmeldungen des Benutzers sofort ungültig.
+- Schutz: Admin kann sich nicht selbst sperren oder herabstufen oder sein Passwort zurücksetzen; letzter aktiver Admin bleibt erhalten (mit Zeilensperre gegen gleichzeitige Anfragen).
+- Sicherheit: Der Seeder legt Testbenutzer mit bekanntem Passwort **nur noch lokal** an. Auf einem echten Server legt man den ersten Admin mit `php artisan bustotal:admin-anlegen <email> [name]` an (druckt vorläufiges Passwort einmalig).
+- Das Modell `User` hat jetzt dieselben Standardwerte wie die Datenbank (`active`, `role`, `must_change_password`); Fehler dabei hatte anfangs 59 Tests gebrochen.
+- Hilfe: neues Thema „Benutzer und Passwörter“. 88 Backend-Tests grün, im Browser durchgespielt (anlegen, doppelte E-Mail, zurücksetzen, Zwangswechsel, falsche/schwache Passwörter, sperren, Selbstsperre).
+- **Offen:** Serverseitige Fehlermeldungen von Laravel sind teils noch englisch (z. B. bei Kunden-Ansprechpartnern); deutsche Meldungen müssen zentral ergänzt werden. Kein E-Mail-Versand (deshalb vorläufiges Passwort statt Einladung); kein „Passwort vergessen“ für nicht angemeldete Benutzer (der Admin setzt zurück).
+
 **Nächster Schritt:** Hilfetexte fachlich prüfen lassen, dann Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen) und Phase 3 Mandantenfähigkeit (Subdomain → eigene DB je Mandant) oder Phase 4 Fuhrpark.
 
 

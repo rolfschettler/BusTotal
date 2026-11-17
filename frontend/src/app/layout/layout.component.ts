@@ -1,16 +1,10 @@
-import { Component, HostListener, inject } from '@angular/core';
+import { Component, HostListener, computed, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { AuthService } from '../core/auth.service';
 import { BrandService } from '../core/brand.service';
+import { roleLabel } from '../core/roles';
 import { HelpPanelService } from '../help/help-panel.component';
-
-export const ROLLEN: Record<string, string> = {
-  admin: 'Administrator',
-  disponent: 'Disponent',
-  buchhaltung: 'Buchhaltung',
-  fahrer: 'Fahrer',
-};
 
 /** Rahmen für alle angemeldeten Seiten: feste Kopfleiste, Seitenleiste links, scrollender Inhalt. */
 @Component({
@@ -24,6 +18,9 @@ export class LayoutComponent {
   brand = inject(BrandService);
   helpPanel = inject(HelpPanelService);
 
+  /** Solange das vorläufige Passwort gilt, gibt es kein Menü, nur die Passwortänderung. */
+  forced = computed(() => this.auth.user()?.must_change_password === true);
+
   /** F1 öffnet die Hilfe zur aktuellen Seite statt der Browser-Hilfe. */
   @HostListener('document:keydown.f1', ['$event'])
   onF1(event: Event) {
@@ -31,5 +28,5 @@ export class LayoutComponent {
     this.helpPanel.toggle();
   }
 
-  rolle = (r?: string) => (r ? (ROLLEN[r] ?? r) : '');
+  rolle = roleLabel;
 }

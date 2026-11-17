@@ -10,6 +10,8 @@ export interface User {
   name: string;
   email: string;
   role: Role;
+  /** true, solange der Benutzer noch das vorläufige Passwort des Administrators hat */
+  must_change_password: boolean;
 }
 
 interface LoginResponse {
@@ -40,6 +42,13 @@ export class AuthService {
         this._user.set(res.user);
       }),
     );
+  }
+
+  /** Eigenes Passwort ändern. Danach entfällt die Pflicht zum Wechsel. */
+  changePassword(current_password: string, password: string, password_confirmation: string) {
+    return this.http
+      .post<{ message: string }>('/api/me/password', { current_password, password, password_confirmation })
+      .pipe(tap(() => this._user.update((u) => (u ? { ...u, must_change_password: false } : u))));
   }
 
   /** Beim Seitenstart: Token vorhanden, aber Benutzer noch nicht geladen. */

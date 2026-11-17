@@ -1,5 +1,5 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import { CanActivateChildFn, CanActivateFn, Router } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 import { AuthService, Role } from './auth.service';
 
@@ -18,6 +18,15 @@ export const authGuard: CanActivateFn = () => {
     map(() => true),
     catchError(() => of(router.createUrlTree(['/login']))),
   );
+};
+
+/**
+ * Wer noch das vorläufige Passwort hat, darf nur auf die Seite "Mein Konto" (Passwort ändern).
+ * Läuft bei jedem Seitenwechsel im angemeldeten Bereich (canActivateChild).
+ */
+export const passwordChangeGuard: CanActivateChildFn = (_route, state) => {
+  const mustChange = inject(AuthService).user()?.must_change_password;
+  return mustChange && !state.url.startsWith('/konto') ? inject(Router).createUrlTree(['/konto']) : true;
 };
 
 /** Nur bestimmte Rollen dürfen auf die Seite (der Server prüft zusätzlich!). */

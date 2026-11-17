@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BrandingController;
 use App\Http\Controllers\Api\CustomerChildController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\SettingsController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
@@ -14,9 +16,12 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,
 Route::get('/branding', [BrandingController::class, 'show']);
 Route::get('/branding/logo', [BrandingController::class, 'logo']);
 
-Route::middleware('auth:sanctum')->group(function () {
+// account.ok: gesperrte Benutzer fliegen sofort raus; wer noch das vorläufige Passwort hat,
+// darf nur sein Passwort ändern.
+Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+    Route::post('/me/password', [AccountController::class, 'changePassword'])->middleware('throttle:5,1');
 
     // Kacheln der Startseite: jede mit eigener Rollenprüfung.
     Route::get('/dashboard/setup', [DashboardController::class, 'setup'])->middleware('role:admin');
@@ -57,6 +62,12 @@ Route::middleware('auth:sanctum')->group(function () {
         ->middleware('role:admin,buchhaltung');
 
     Route::middleware('role:admin')->group(function () {
+        // Benutzerverwaltung. Benutzer werden gesperrt, nie gelöscht.
+        Route::get('/users', [UserController::class, 'index']);
+        Route::post('/users', [UserController::class, 'store']);
+        Route::put('/users/{user}', [UserController::class, 'update']);
+        Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword']);
+
         Route::post('/customers/{id}/restore', [CustomerController::class, 'restore']);
 
         Route::put('/settings/company', [SettingsController::class, 'updateCompany']);

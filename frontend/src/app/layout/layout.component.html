@@ -17,6 +17,7 @@
       <div ngbDropdownMenu aria-labelledby="userMenu">
         <div class="dropdown-item-text small text-body-secondary">{{ u.email }}</div>
         <div class="dropdown-divider"></div>
+        <a ngbDropdownItem routerLink="/konto">Passwort ändern</a>
         <button ngbDropdownItem type="button" (click)="auth.logout()">Abmelden</button>
       </div>
     }
@@ -24,22 +25,27 @@
 </header>
 
 <div class="body">
-  <aside class="sidebar">
-    <nav class="nav flex-column" aria-label="Hauptmenü">
-      <a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Start</a>
+  @if (!forced()) {
+    <aside class="sidebar">
+      <nav class="nav flex-column" aria-label="Hauptmenü">
+        <a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Start</a>
 
-      @if (auth.user()?.role !== 'fahrer') {
-        <div class="group">Stammdaten</div>
-        <a class="nav-link" routerLink="/kunden" routerLinkActive="active">Kunden</a>
-      }
+        @if (auth.user()?.role !== 'fahrer') {
+          <div class="group">Stammdaten</div>
+          <a class="nav-link" routerLink="/kunden" routerLinkActive="active">Kunden</a>
+        }
 
-      <div class="group">System</div>
-      @if (auth.user()?.role !== 'fahrer') {
-        <a class="nav-link" routerLink="/einstellungen" routerLinkActive="active">Einstellungen</a>
-      }
-      <a class="nav-link" routerLink="/hilfe" routerLinkActive="active">Hilfe</a>
-    </nav>
-  </aside>
+        <div class="group">System</div>
+        @if (auth.user()?.role === 'admin') {
+          <a class="nav-link" routerLink="/benutzer" routerLinkActive="active">Benutzer</a>
+        }
+        @if (auth.user()?.role !== 'fahrer') {
+          <a class="nav-link" routerLink="/einstellungen" routerLinkActive="active">Einstellungen</a>
+        }
+        <a class="nav-link" routerLink="/hilfe" routerLinkActive="active">Hilfe</a>
+      </nav>
+    </aside>
+  }
 
   <main class="scroll">
     <div class="content">

@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard, roleGuard } from './core/auth.guard';
+import { authGuard, guestGuard, passwordChangeGuard, roleGuard } from './core/auth.guard';
 
 // data.help = "thema#sprungmarke": Das Hilfethema der Seite. Es steuert das Fragezeichen in der
 // Kopfleiste. Die Hilfetexte liegen unter public/help/<thema>.md.
@@ -12,6 +12,8 @@ export const routes: Routes = [
   {
     path: '',
     canActivate: [authGuard],
+    // Solange das vorläufige Passwort gilt, ist nur "Mein Konto" erreichbar.
+    canActivateChild: [passwordChangeGuard],
     loadComponent: () => import('./layout/layout.component').then((m) => m.LayoutComponent),
     children: [
       {
@@ -47,6 +49,17 @@ export const routes: Routes = [
         canActivate: [roleGuard('admin', 'disponent', 'buchhaltung')],
         data: { help: 'einstellungen#firmendaten' },
         loadComponent: () => import('./pages/settings/settings.component').then((m) => m.SettingsComponent),
+      },
+      {
+        path: 'konto',
+        data: { help: 'benutzer#passwort-aendern' },
+        loadComponent: () => import('./pages/account/account.component').then((m) => m.AccountComponent),
+      },
+      {
+        path: 'benutzer',
+        canActivate: [roleGuard('admin')],
+        data: { help: 'benutzer#benutzerliste' },
+        loadComponent: () => import('./pages/users/users.component').then((m) => m.UsersComponent),
       },
       {
         path: 'hilfe',
