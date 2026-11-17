@@ -11,6 +11,8 @@ class DatabaseSeeder extends Seeder
     /** Entwicklungs-Benutzer: je Rolle einer. Passwort für alle: "passwort" (nur lokal!). */
     public function run(): void
     {
+        $this->call(SettingsSeeder::class);
+
         foreach (Role::cases() as $role) {
             User::updateOrCreate(
                 ['email' => $role->value.'@bustotal.test'],

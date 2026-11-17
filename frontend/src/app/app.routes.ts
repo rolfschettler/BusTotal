@@ -10,7 +10,18 @@ export const routes: Routes = [
   {
     path: '',
     canActivate: [authGuard],
-    loadComponent: () => import('./pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+    loadComponent: () => import('./layout/layout.component').then((m) => m.LayoutComponent),
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        loadComponent: () => import('./pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+      },
+      {
+        path: 'einstellungen',
+        loadComponent: () => import('./pages/settings/settings.component').then((m) => m.SettingsComponent),
+      },
+    ],
   },
   { path: '**', redirectTo: '' },
 ];

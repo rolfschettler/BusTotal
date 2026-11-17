@@ -1,0 +1,122 @@
+<h1>Einstellungen</h1>
+
+@if (!canEdit()) {
+  <p class="info">Nur Administratoren können Einstellungen ändern.</p>
+}
+
+<div class="tabs" role="tablist">
+  <button role="tab" [class.on]="tab() === 'firma'" (click)="show('firma')">Firmendaten</button>
+  <button role="tab" [class.on]="tab() === 'steuern'" (click)="show('steuern')">Steuersätze</button>
+  <button role="tab" [class.on]="tab() === 'nummern'" (click)="show('nummern')">Nummernkreise</button>
+</div>
+
+@if (message(); as m) {
+  <div class="msg" [class.err]="!m.ok" role="status">{{ m.text }}</div>
+}
+
+@switch (tab()) {
+  @case ('firma') {
+    <form [formGroup]="company" (ngSubmit)="saveCompany()" class="grid">
+      <fieldset>
+        <legend>Firma</legend>
+        <label>Firmenname *<input formControlName="name" /></label>
+        <label>Rechtsform<input formControlName="legal_form" placeholder="z. B. GmbH" /></label>
+        <label>Geschäftsführer<input formControlName="managing_director" /></label>
+        <label>Handelsregister<input formControlName="commercial_register" placeholder="HRB 12345, Amtsgericht …" /></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Adresse &amp; Kontakt</legend>
+        <label>Straße, Nr.<input formControlName="street" /></label>
+        <div class="row">
+          <label class="s">PLZ<input formControlName="postal_code" /></label>
+          <label>Ort<input formControlName="city" /></label>
+          <label class="s">Land<input formControlName="country" maxlength="2" /></label>
+        </div>
+        <label>Telefon<input formControlName="phone" /></label>
+        <label>E-Mail<input type="email" formControlName="email" /></label>
+        <label>Webseite<input formControlName="website" /></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Steuer</legend>
+        <label>Steuernummer<input formControlName="tax_number" /></label>
+        <label>USt-IdNr.<input formControlName="vat_id" placeholder="DE123456789" />
+          @if (fieldErrors()['vat_id']) { <small class="e">Format: z. B. DE123456789</small> }
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Bank</legend>
+        <label>Bank<input formControlName="bank_name" /></label>
+        <label>IBAN<input formControlName="iban" />
+          @if (fieldErrors()['iban']) { <small class="e">{{ fieldErrors()['iban'] }}</small> }
+        </label>
+        <label>BIC<input formControlName="bic" />
+          @if (fieldErrors()['bic']) { <small class="e">Ungültige BIC.</small> }
+        </label>
+        <label>Zahlungsziel (Tage)<input type="number" formControlName="payment_term_days" min="0" /></label>
+      </fieldset>
+
+      <fieldset class="wide">
+        <legend>Briefkopf &amp; Fußzeile auf Belegen</legend>
+        <label>Zusatz im Briefkopf<textarea rows="2" formControlName="letterhead_note"></textarea></label>
+        <label>Fußzeile<textarea rows="3" formControlName="footer_text"></textarea></label>
+      </fieldset>
+
+      @if (canEdit()) {
+        <div class="wide"><button type="submit" class="primary">Speichern</button></div>
+      }
+    </form>
+  }
+
+  @case ('steuern') {
+    <table>
+      <thead><tr><th>Bezeichnung</th><th>Satz (%)</th><th>Aktiv</th><th></th></tr></thead>
+      <tbody>
+        @for (t of taxRates(); track t.id) {
+          <tr>
+            <td><input [(ngModel)]="t.name" [disabled]="!canEdit()" /></td>
+            <td><input type="number" step="0.01" [(ngModel)]="t.rate" [disabled]="!canEdit()" class="num" /></td>
+            <td><input type="checkbox" [(ngModel)]="t.active" [disabled]="!canEdit()" /></td>
+            <td>@if (canEdit()) { <button (click)="saveTax(t)">Speichern</button> }</td>
+          </tr>
+        }
+        @if (canEdit()) {
+          <tr class="new">
+            <td><input [(ngModel)]="newTax.name" placeholder="Neue Bezeichnung" /></td>
+            <td><input type="number" step="0.01" [(ngModel)]="newTax.rate" class="num" /></td>
+            <td></td>
+            <td><button (click)="addTax()" [disabled]="!newTax.name">Anlegen</button></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    @if (fieldErrors()['name']) { <p class="e">{{ fieldErrors()['name'] }}</p> }
+    <p class="info">Der Steuersatz einer bereits geschriebenen Rechnung ändert sich dadurch nie – Rechnungen speichern ihren Satz selbst (GoBD).</p>
+  }
+
+  @case ('nummern') {
+    <table>
+      <thead>
+        <tr><th>Beleg</th><th>Präfix</th><th>Jahr</th><th>Stellen</th><th>Neu im Jahr</th><th>Nächste Nr.</th><th>Vorschau</th><th></th></tr>
+      </thead>
+      <tbody>
+        @for (r of ranges(); track r.id) {
+          <tr>
+            <td>{{ r.label }}</td>
+            <td><input [(ngModel)]="r.prefix" [disabled]="!canEdit()" class="s" /></td>
+            <td><input type="checkbox" [(ngModel)]="r.include_year" [disabled]="!canEdit()" /></td>
+            <td><input type="number" min="1" max="10" [(ngModel)]="r.padding" [disabled]="!canEdit()" class="num" /></td>
+            <td><input type="checkbox" [(ngModel)]="r.reset_yearly" [disabled]="!canEdit()" /></td>
+            <td><input type="number" min="1" [(ngModel)]="r.next_number" [disabled]="!canEdit()" class="num" /></td>
+            <td><code>{{ r.preview }}</code></td>
+            <td>@if (canEdit()) { <button (click)="saveRange(r)">Speichern</button> }</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    @if (fieldErrors()['next_number']) { <p class="e">{{ fieldErrors()['next_number'] }}</p> }
+    <p class="info">Lückenlose Nummern (GoBD): Die nächste Nummer kann nur erhöht werden, nie verkleinert.</p>
+  }
+}

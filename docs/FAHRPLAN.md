@@ -107,6 +107,8 @@ Getroffene Entscheidungen:
 
 - Phase 1.4 teilweise: Angular-Login (`/login`), Token-Interceptor, Auth-Guard, Startseite mit Abmelden; Proxy `/api` → Laravel (`frontend/proxy.conf.json`). Im Browser geprüft.
 
-**Nächster Schritt:** 1.3 Mandanten-Einstellungen und die Kundenverwaltung als Lernmodul.
+- Phase 1.3: Mandanten-Einstellungen – Firmendaten (inkl. IBAN-Prüfung), Steuersätze, lückenlose Nummernkreise (`NumberRangeService`, nächste Nummer nur erhöhbar); nur Admin darf ändern (`role:admin`-Middleware). Angular-Seite `/einstellungen` mit Layout/Navigation. 21 Backend-Tests grün, im Browser geprüft.
+
+**Nächster Schritt (alt, erledigt):** 1.3 Mandanten-Einstellungen und die Kundenverwaltung als Lernmodul.
 
 
