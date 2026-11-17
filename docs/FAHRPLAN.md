@@ -1,104 +1,108 @@
-﻿> Stand: 2026-11-16 â€“ Planung abgeschlossen. Erledigte Schritte mit [x] abhaken.
+> Stand: 2026-11-17 – Phase 1.1 erledigt, 1.2 teilweise. Planung vom 2026-11-16. Erledigte Schritte mit [x] abhaken.
 
-# BusTotal â€“ Grober Entwicklungsfahrplan (Bustouristik)
+# BusTotal – Grober Entwicklungsfahrplan (Bustouristik)
 
 ## Kontext
-Neues, leeres Projekt (`D:\angular\BusTotal`). Ziel: mandantenfÃ¤hige Branchensoftware fÃ¼r Busunternehmen mit
-Kunden-, Fuhrpark-, Dispositions-, Beleg- (Angebot â†’ Auftrag â†’ AB â†’ Rechnung, DATEV) und Streckenplanungsmodul (OSM).
+Neues, leeres Projekt (`D:\angular\BusTotal`). Ziel: mandantenfähige Branchensoftware für Busunternehmen mit
+Kunden-, Fuhrpark-, Dispositions-, Beleg- (Angebot → Auftrag → AB → Rechnung, DATEV) und Streckenplanungsmodul (OSM).
 Eine Codebase, beliebig viele Mandanten, **je Mandant eigene Datenbank**, Backend PHP, Frontend Angular.
-Entwickler hat noch keine Erfahrung mit Laravel und Docker â†’ Claude begleitet Schritt fÃ¼r Schritt mit ErklÃ¤rungen.
+Entwickler hat noch keine Erfahrung mit Laravel und Docker → Claude begleitet Schritt für Schritt mit Erklärungen.
 
 Getroffene Entscheidungen:
-- Mandantenzugriff Ã¼ber **Subdomain** (`firma.bustotal.de`) â†’ Mandant wird aus dem Host-Header ermittelt
-- Hosting: vorhandener **Mittwald Agentur-Server (altes Kundencenter)** â†’ klassisches PHP/MySQL-Hosting, **kein Docker**
+- Mandantenzugriff über **Subdomain** (`firma.bustotal.de`) → Mandant wird aus dem Host-Header ermittelt
+- Hosting: vorhandener **Mittwald Agentur-Server (altes Kundencenter)** → klassisches PHP/MySQL-Hosting, **kein Docker**
 - DATEV: **Buchungsstapel-Export (EXTF-CSV)** + GoBD-konforme Rechnungen
-- PHP-Framework: **Laravel (Empfehlung)** â€“ bitte bestÃ¤tigen
+- PHP-Framework: **Laravel (Empfehlung)** – bitte bestätigen
 
 ### Folgen aus dem Mittwald-Hosting (wichtig)
 | Thema | Konsequenz |
 |---|---|
-| Datenbank | Produktiv **MySQL**. Code bleibt trotzdem DB-neutral (Eloquent), Postgres bleibt spÃ¤ter mÃ¶glich. |
-| DB je Mandant | Datenbanken werden im Kundencenter **manuell angelegt**; Zugangsdaten trÃ¤gt der Superadmin in BusTotal ein, danach migriert BusTotal die DB automatisch. (Automatisches `CREATE DATABASE` ist auf Shared-Hosting i. d. R. nicht erlaubt.) |
-| Routing / OSM | Kein eigener Routing-Server mÃ¶glich â†’ **externer Routing-Dienst** Ã¼ber eine Schnittstelle im Code (z. B. openrouteservice, GraphHopper; Bus-/LKW-Profil, Kosten/Kontingente prÃ¼fen). Austauschbar, damit spÃ¤ter eigener Server mÃ¶glich ist. |
-| Hintergrundjobs | Keine dauerhaft laufenden Worker â†’ Laravel-Queue mit Datenbank-Treiber, abgearbeitet per **Cronjob** (`schedule:run` minÃ¼tlich). |
-| Wildcard-Subdomain | **Bei Mittwald klÃ¤ren**: `*.bustotal.de` auf das Laravel-Verzeichnis + SSL-Zertifikat. Fallback: Subdomains je Kunde einzeln anlegen. |
-| Deployment | Per SSH/Git + `composer install` + `php artisan migrate` (fÃ¼r alle Mandanten); Angular als statische Dateien hochladen. Bei Mittwald klÃ¤ren: SSH, Composer, PHP-Version â‰¥ 8.3, Cron. |
+| Datenbank | Produktiv **MySQL**. Code bleibt trotzdem DB-neutral (Eloquent), Postgres bleibt später möglich. |
+| DB je Mandant | Datenbanken werden im Kundencenter **manuell angelegt**; Zugangsdaten trägt der Superadmin in BusTotal ein, danach migriert BusTotal die DB automatisch. (Automatisches `CREATE DATABASE` ist auf Shared-Hosting i. d. R. nicht erlaubt.) |
+| Routing / OSM | Kein eigener Routing-Server möglich → **externer Routing-Dienst** über eine Schnittstelle im Code (z. B. openrouteservice, GraphHopper; Bus-/LKW-Profil, Kosten/Kontingente prüfen). Austauschbar, damit später eigener Server möglich ist. |
+| Hintergrundjobs | Keine dauerhaft laufenden Worker → Laravel-Queue mit Datenbank-Treiber, abgearbeitet per **Cronjob** (`schedule:run` minütlich). |
+| Wildcard-Subdomain | **Bei Mittwald klären**: `*.bustotal.de` auf das Laravel-Verzeichnis + SSL-Zertifikat. Fallback: Subdomains je Kunde einzeln anlegen. |
+| Deployment | Per SSH/Git + `composer install` + `php artisan migrate` (für alle Mandanten); Angular als statische Dateien hochladen. Bei Mittwald klären: SSH, Composer, PHP-Version ≥ 8.3, Cron. |
 
 ---
 
-## [ ] Phase 0 â€“ Voraussetzungen schaffen
+## [ ] Phase 0 – Voraussetzungen schaffen
 
 ### Fachlich
-- **Glossar & Prozesse**: Anfrage â†’ Kalkulation â†’ Angebot â†’ Auftrag â†’ AB â†’ Disposition â†’ DurchfÃ¼hrung â†’ Rechnung â†’ DATEV
-- **Kalkulationsschema**: km-Satz, Stundensatz Fahrer, Pauschalen, Maut, Ãœbernachtung, ZuschlÃ¤ge, MwSt
-  (PersonenbefÃ¶rderung 7 %/19 % je nach Strecke bzw. Ausland â€“ Steuerberater einbinden)
-- **Rechtliches**: GoBD (UnverÃ¤nderbarkeit, lÃ¼ckenlose Nummernkreise, Storno statt LÃ¶schen), DSGVO, Lenk-/Ruhezeiten (VO 561/2006)
-- **E-Rechnung** (XRechnung/ZUGFeRD) ab 2027/2028 Pflicht â†’ Architektur jetzt vorsehen
-- **DATEV-Daten** vom Steuerberater: SKR03/04, ErlÃ¶skonten, Berater-/Mandantennummer, Debitorenkreis
+- **Glossar & Prozesse**: Anfrage → Kalkulation → Angebot → Auftrag → AB → Disposition → Durchführung → Rechnung → DATEV
+- **Kalkulationsschema**: km-Satz, Stundensatz Fahrer, Pauschalen, Maut, Übernachtung, Zuschläge, MwSt
+  (Personenbeförderung 7 %/19 % je nach Strecke bzw. Ausland – Steuerberater einbinden)
+- **Rechtliches**: GoBD (Unveränderbarkeit, lückenlose Nummernkreise, Storno statt Löschen), DSGVO, Lenk-/Ruhezeiten (VO 561/2006)
+- **E-Rechnung** (XRechnung/ZUGFeRD) ab 2027/2028 Pflicht → Architektur jetzt vorsehen
+- **DATEV-Daten** vom Steuerberater: SKR03/04, Erlöskonten, Berater-/Mandantennummer, Debitorenkreis
 
 ### Technisch
 - **Lokale Entwicklungsumgebung ohne Docker** (passt zum Mittwald-Ziel, weniger Lernaufwand):
   vorhandenes PHP 8.4 + Node 24, dazu Composer, MySQL (lokal), Git, VS Code/PhpStorm, Angular CLI.
-  Alternativ Laravel Herd fÃ¼r Windows. Docker kann spÃ¤ter fÃ¼r den Routing-Test ergÃ¤nzt werden.
+  Alternativ Laravel Herd für Windows. Docker kann später für den Routing-Test ergänzt werden.
 - Monorepo: `/backend` (Laravel), `/frontend` (Angular), `/docs`
-- REST-API mit OpenAPI-Beschreibung â†’ Angular-Client generieren
+- REST-API mit OpenAPI-Beschreibung → Angular-Client generieren
 - Auth: Laravel Sanctum, Rollen je Mandant (Admin, Disponent, Buchhaltung, Fahrer)
-- Frontend: Angular, Angular Material oder PrimeNG, Leaflet fÃ¼r Karten
-- Kartenkacheln: nicht die openstreetmap.org-Tiles produktiv nutzen â†’ Tile-Anbieter wÃ¤hlen
-- PDF: serverseitig mit dompdf (lÃ¤uft auf Shared-Hosting)
+- Frontend: Angular, Angular Material oder PrimeNG, Leaflet für Karten
+- Kartenkacheln: nicht die openstreetmap.org-Tiles produktiv nutzen → Tile-Anbieter wählen
+- PDF: serverseitig mit dompdf (läuft auf Shared-Hosting)
 - Git-Hosting (GitHub/GitLab) + CI (Tests bei jedem Push), Backup-Konzept je Mandanten-DB
 
 ---
 
-## [ ] Phase 1 â€“ Fundament
-1. Repo, lokale Umgebung, Laravel- und Angular-GrundgerÃ¼st
+## [ ] Phase 1 – Fundament
+1. Repo, lokale Umgebung, Laravel- und Angular-Grundgerüst
 2. Auth, Benutzer, Rollen/Rechte, Audit-Log (GoBD)
-3. Mandanten-Einstellungen (Firmendaten, Briefkopf, Bank, SteuersÃ¤tze, Nummernkreise)
+3. Mandanten-Einstellungen (Firmendaten, Briefkopf, Bank, Steuersätze, Nummernkreise)
 4. Angular-Shell: Login, Layout, Navigation, Guards, API-Client
 
-## [ ] Phase 2 â€“ Kundenverwaltung (gleichzeitig Laravel-Lernmodul)
-- Kunden (Firma/Privat/Schule/Verein/ReisebÃ¼ro), Ansprechpartner, Adressen, Zahlungsbedingungen, Debitorennummer
-- Suche, DublettenprÃ¼fung, Notizen, DSGVO-Export/LÃ¶schung
+## [ ] Phase 2 – Kundenverwaltung (gleichzeitig Laravel-Lernmodul)
+- Kunden (Firma/Privat/Schule/Verein/Reisebüro), Ansprechpartner, Adressen, Zahlungsbedingungen, Debitorennummer
+- Suche, Dublettenprüfung, Notizen, DSGVO-Export/Löschung
 
-## [ ] Phase 3 â€“ MandantenfÃ¤higkeit
-- Zentrale DB (Mandanten, Domains, DB-Zugangsdaten verschlÃ¼sselt) + DB je Mandant
-- Middleware: Subdomain â†’ Mandant â†’ DB-Verbindung; Migrationen fÃ¼r alle Mandanten-DBs
-- Superadmin-OberflÃ¤che: Mandant anlegen (DB-Zugangsdaten eintragen â†’ migrieren â†’ Admin-User)
+## [ ] Phase 3 – Mandantenfähigkeit
+- Zentrale DB (Mandanten, Domains, DB-Zugangsdaten verschlüsselt) + DB je Mandant
+- Middleware: Subdomain → Mandant → DB-Verbindung; Migrationen für alle Mandanten-DBs
+- Superadmin-Oberfläche: Mandant anlegen (DB-Zugangsdaten eintragen → migrieren → Admin-User)
 
-## [ ] Phase 4 â€“ Fuhrparkverwaltung
-- Fahrzeuge (Typ, SitzplÃ¤tze, Ausstattung, MaÃŸe/Gewicht, km-Kostensatz), Fristen (HU, SP, Tacho, Wartung)
-- Fahrer/Personal (FÃ¼hrerschein, Fahrerkarte, Code 95, VerfÃ¼gbarkeit, Urlaub)
+## [ ] Phase 4 – Fuhrparkverwaltung
+- Fahrzeuge (Typ, Sitzplätze, Ausstattung, Maße/Gewicht, km-Kostensatz), Fristen (HU, SP, Tacho, Wartung)
+- Fahrer/Personal (Führerschein, Fahrerkarte, Code 95, Verfügbarkeit, Urlaub)
 
-## [ ] Phase 5 â€“ Streckenplanung (OSM)
-- Routing-Schnittstelle + Adapter fÃ¼r externen Dienst, Geocoding, Karte
-- Route mit Zwischenstopps, Leerfahrten Depotâ†”Start/Ziel, Fahrzeit inkl. Pflichtpausen und LenkzeitprÃ¼fung
+## [ ] Phase 5 – Streckenplanung (OSM)
+- Routing-Schnittstelle + Adapter für externen Dienst, Geocoding, Karte
+- Route mit Zwischenstopps, Leerfahrten Depot↔Start/Ziel, Fahrzeit inkl. Pflichtpausen und Lenkzeitprüfung
 - Ergebnis als Kalkulationsbasis speichern
 
-## [ ] Phase 6 â€“ Belegwesen
-- Kalkulationsengine; Belegkette Angebot â†’ Auftrag â†’ AB â†’ Rechnung
-- GoBD: festgeschriebene Rechnungen, Storno/Gutschrift, lÃ¼ckenlose Nummern, Â§14 UStG
-- PDF, E-Mail-Versand, **DATEV-EXTF-Export** + Debitoren; spÃ¤ter E-Rechnung
+## [ ] Phase 6 – Belegwesen
+- Kalkulationsengine; Belegkette Angebot → Auftrag → AB → Rechnung
+- GoBD: festgeschriebene Rechnungen, Storno/Gutschrift, lückenlose Nummern, §14 UStG
+- PDF, E-Mail-Versand, **DATEV-EXTF-Export** + Debitoren; später E-Rechnung
 
-## [ ] Phase 7 â€“ Disposition
-- Plantafel Fahrzeuge Ã— Fahrer, Drag & Drop, KonfliktprÃ¼fung (Doppelbelegung, Fristen, Lenkzeiten, SitzplÃ¤tze)
+## [ ] Phase 7 – Disposition
+- Plantafel Fahrzeuge × Fahrer, Drag & Drop, Konfliktprüfung (Doppelbelegung, Fristen, Lenkzeiten, Sitzplätze)
 - Fahrauftrag als PDF
 
-## [ ] Phase 8 â€“ Betrieb auf Mittwald
-- Deployment-Ablauf, Cronjobs, Backups, Monitoring; SicherheitsprÃ¼fung
+## [ ] Phase 8 – Betrieb auf Mittwald
+- Deployment-Ablauf, Cronjobs, Backups, Monitoring; Sicherheitsprüfung
 
 ## Verifikation
-- Automatisierte Tests je Modul (PHPUnit/Pest, Angular-Tests, Playwright fÃ¼r Belegkette)
+- Automatisierte Tests je Modul (PHPUnit/Pest, Angular-Tests, Playwright für Belegkette)
 - Mandantentrennung explizit testen
 - DATEV-Export vom Steuerberater testweise importieren lassen
 - Routing-Ergebnisse mit realen Fahrten vergleichen
-- FrÃ¼h einen Test-Deploy auf Mittwald (nach Phase 1), um Hosting-Grenzen rechtzeitig zu erkennen
+- Früh einen Test-Deploy auf Mittwald (nach Phase 1), um Hosting-Grenzen rechtzeitig zu erkennen
 
-## Offene KlÃ¤rungen mit Mittwald
-- [ ] Wildcard-Subdomain `*.bustotal.de` + SSL mÃ¶glich?
-- [ ] SSH, Composer, PHP â‰¥ 8.3, Cronjobs verfÃ¼gbar?
+## Offene Klärungen mit Mittwald
+- [ ] Wildcard-Subdomain `*.bustotal.de` + SSL möglich?
+- [ ] SSH, Composer, PHP ≥ 8.3, Cronjobs verfügbar?
 - [ ] Anzahl MySQL-Datenbanken im Tarif (begrenzt die Mandantenzahl)?
 
-## NÃ¤chster konkreter Schritt
-**Erledigt (2026-11-17):** Lokale Umgebung, Git-Repo, Laravel (/backend, MySQL `bustotal_central`), Angular (/frontend).`n**Nächster Schritt:** Phase 1 Punkt 2 – Auth (Sanctum), Benutzer, Rollen, Audit-Log; dann Kundenverwaltung als Lernmodul.
+## Nächster konkreter Schritt
+**Erledigt (2026-11-17):**
+- Phase 1.1: Lokale Umgebung, Git-Repo, Laravel (`/backend`, MySQL `bustotal_central`), Angular (`/frontend`).
+- Phase 1.2 teilweise: Sanctum-Login (`/api/login`, `/api/logout`, `/api/me`), Rollen (admin/disponent/buchhaltung/fahrer), Tests laufen gegen MySQL `bustotal_test`.
+
+**Nächster Schritt:** Audit-Log (GoBD), dann Phase 1.4 Angular-Shell mit Login, danach 1.3 Mandanten-Einstellungen und die Kundenverwaltung als Lernmodul.
 
 
