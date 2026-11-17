@@ -1,4 +1,5 @@
 import { HttpClient } from '@angular/common/http';
+import { APP_NAME } from '../core/app-info';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { NavigationEnd, NavigationStart, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -90,7 +91,8 @@ export class HelpService {
       p = (async () => {
         await this.loadIndex();
         const md = await firstValueFrom(this.http.get(`/help/${encodeURIComponent(id)}.md`, { responseType: 'text' }));
-        const parsed = parseHelp(md);
+        // {{app}} im Hilfetext wird durch den Produktnamen ersetzt (core/app-info.ts)
+        const parsed = parseHelp(md.replaceAll('{{app}}', APP_NAME));
         const title = this.topics().find((t) => t.id === id)?.title ?? id;
         return { id, title, ...parsed };
       })();

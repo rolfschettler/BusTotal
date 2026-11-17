@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
+import { APP_NAME } from './app-info';
 
 export interface Branding {
   name: string;
@@ -15,7 +16,7 @@ const DEFAULT_COLOR = '#1d4e89';
 export class BrandService {
   private http = inject(HttpClient);
 
-  readonly name = signal('BusTotal');
+  readonly name = signal(APP_NAME);
   readonly color = signal(DEFAULT_COLOR);
   readonly logoUrl = signal<string | null>(null);
 
@@ -27,7 +28,7 @@ export class BrandService {
   }
 
   apply(b: Branding) {
-    this.name.set(b.name || 'BusTotal');
+    this.name.set(b.name || APP_NAME);
     this.logoUrl.set(b.has_logo ? `/api/branding/logo?v=${b.logo_version ?? 0}` : null);
     this.applyColor(b.brand_color);
     document.title = this.name();

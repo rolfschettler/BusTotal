@@ -1,6 +1,6 @@
 # Erste Schritte {#erste-schritte}
 
-Willkommen bei BusTotal, der Verwaltung für Ihr Busunternehmen. Diese Hilfe erklärt, was die Software heute kann. Neue Funktionen werden hier ergänzt, sobald es sie gibt.
+Willkommen bei {{app}}, der Verwaltung für Ihr Busunternehmen. Diese Hilfe erklärt, was die Software heute kann. Neue Funktionen werden hier ergänzt, sobald es sie gibt.
 
 ## Die Startseite {#startseite}
 
