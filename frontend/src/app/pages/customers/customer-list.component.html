@@ -36,11 +36,17 @@
     <tbody>
       @for (c of rows(); track c.id) {
         <tr>
-          <td class="text-nowrap"><code>{{ c.customer_number }}</code></td>
-          <td><a [routerLink]="['/kunden', c.id]" class="fw-semibold text-decoration-none">{{ c.display_name }}</a></td>
+          <td class="text-nowrap"><code><app-highlight [text]="c.customer_number" [query]="shownQuery()" /></code></td>
+          <td>
+            <a [routerLink]="['/kunden', c.id]" class="fw-semibold text-decoration-none"><app-highlight [text]="c.display_name" [query]="shownQuery()" /></a>
+            @for (h of hiddenHits(c); track h.label) {
+              <div class="small text-body-secondary">Treffer in {{ h.label }}: <app-highlight [text]="h.value" [query]="shownQuery()" /></div>
+            }
+          </td>
           <td>{{ typeLabel(c.type) }}</td>
-          <td>{{ c.postal_code }} {{ c.city }}</td>
-          <td>{{ c.email }}</td>
+          <!-- {{ ' ' }}: Angular entfernt reinen Leerraum zwischen Bausteinen, der Abstand muss ausdrücklich da sein. -->
+          <td><app-highlight [text]="c.postal_code" [query]="shownQuery()" />{{ ' ' }}<app-highlight [text]="c.city" [query]="shownQuery()" /></td>
+          <td><app-highlight [text]="c.email" [query]="shownQuery()" /></td>
           <td>{{ c.phone || c.mobile }}</td>
         </tr>
       } @empty {

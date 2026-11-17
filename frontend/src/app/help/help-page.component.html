@@ -19,9 +19,9 @@
           <h2 class="h5 mb-3">Suchergebnisse für „{{ q().trim() }}“</h2>
           @for (h of hits(); track h.topic + h.anchor) {
             <a class="d-block text-decoration-none mb-3 text-body" [routerLink]="['/hilfe', h.topic]" [fragment]="h.anchor" (click)="clearSearch()">
-              <span class="fw-semibold text-brand">{{ h.title }}</span>
-              <span class="small text-body-secondary"> · {{ h.topicTitle }}</span>
-              <span class="d-block small text-body-secondary">{{ h.snippet }}</span>
+              <span class="fw-semibold text-brand"><app-highlight [text]="h.title" [query]="hitsQuery()" mode="words" /></span>
+              <span class="small text-body-secondary"> · <app-highlight [text]="h.topicTitle" [query]="hitsQuery()" mode="words" /></span>
+              <span class="d-block small text-body-secondary"><app-highlight [text]="h.snippet" [query]="hitsQuery()" mode="words" /></span>
             </a>
           } @empty {
             <p class="text-body-secondary mb-0">Nichts gefunden. Versuche es mit einem anderen oder kürzeren Suchbegriff.</p>

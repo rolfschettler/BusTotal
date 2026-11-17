@@ -117,3 +117,13 @@ code { background: #e9edf2; padding: 1px 6px; border-radius: 3px; color: #343a40
 
 // Fortschrittsbalken in der Markenfarbe
 .progress { --bs-progress-bar-bg: var(--brand); }
+
+// Suchtreffer (siehe app-highlight): kräftiger als das blasse Bootstrap-Gelb, damit sie auch auf einem
+// Beamer oder Messe-Bildschirm auffallen. Die Schrift bleibt dunkel und gut lesbar (Kontrast > 12:1).
+:root {
+  --bs-highlight-bg: #ffe08a;
+  --bs-highlight-color: #212529;
+}
+mark {
+  border-radius: 2px;
+}

@@ -3,13 +3,14 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
+import { HighlightComponent } from '../shared/highlight.component';
 import { HelpTarget, HelpViewerComponent } from './help-viewer.component';
 import { HelpHit, HelpService } from './help.service';
 
 /** Vollständige Hilfeseite: Themenliste, Suche und der gewählte Text. */
 @Component({
   selector: 'app-help-page',
-  imports: [FormsModule, RouterLink, HelpViewerComponent],
+  imports: [FormsModule, RouterLink, HelpViewerComponent, HighlightComponent],
   templateUrl: './help-page.component.html',
 })
 export class HelpPageComponent implements OnInit {
@@ -22,9 +23,12 @@ export class HelpPageComponent implements OnInit {
 
   q = signal('');
   hits = signal<HelpHit[]>([]);
+  /** Der Suchbegriff, zu dem die angezeigten Treffer gehören (Grundlage der Markierung) */
+  hitsQuery = signal('');
   searching = computed(() => this.q().trim().length >= 2);
 
   private timer?: ReturnType<typeof setTimeout>;
+  private requestNo = 0;
 
   ngOnInit() {
     this.help.loadIndex();
@@ -34,7 +38,11 @@ export class HelpPageComponent implements OnInit {
     this.q.set(value);
     clearTimeout(this.timer);
     this.timer = setTimeout(async () => {
-      this.hits.set(this.searching() ? await this.help.search(value) : []);
+      const request = ++this.requestNo;
+      const found = this.searching() ? await this.help.search(value) : [];
+      if (request !== this.requestNo) return; // inzwischen wurde weiter getippt
+      this.hits.set(found);
+      this.hitsQuery.set(value);
     }, 250);
   }
 

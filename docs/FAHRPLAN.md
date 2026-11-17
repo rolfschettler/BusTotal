@@ -171,6 +171,12 @@ Getroffene Entscheidungen:
 - **Hinweis:** Jede Kundenanlage schreibt auch zwei Protokollzeilen für die Nummernzähler (Technik-Rauschen im Änderungsprotokoll); bei Gelegenheit prüfen, ob das gewollt ist.
 - **Regel:** Neue Kundenfelder oder -arten müssen im Generator ergänzt werden (ein Test prüft, dass alle Demo-Kunden die Eingaberegeln bestehen).
 
+**Erledigt (2026-11-19, Suchtreffer hervorheben):**
+- **Regel des Nutzers für ALLE Suchen:** Treffer in Trefferlisten sind immer hervorgehoben. Baustein `<app-highlight [text] [query] [mode]>` (`frontend/src/app/shared/`), Logik in `highlight.ts` (Groß-/Kleinschreibung und Umlaute egal, wie die Datenbanksuche; `phrase` für Kundensuche, `words` für die Hilfe). Der Text wird nie als HTML eingefügt (sicher gegen Schadcode).
+- Eingebaut in Kundenliste (Nummer, Name, PLZ, Ort, E-Mail) und Hilfe-Suche (Titel, Thema, Auszug). Bei Treffern in Feldern, die die Liste nicht zeigt (Debitorennr., Vor-/Nachname bei Firmen), erscheint der Hinweis „Treffer in …“. Die Markierung gehört immer zur angezeigten Liste; veraltete Antworten schneller Eingaben werden verworfen. Hilfe-Auszüge zeigen jedes Suchwort.
+- Kräftigeres Gelb für Beamer/Messe (`--bs-highlight-bg` in `styles.scss`). 18 Testfälle der Markierungslogik (`highlight.spec.ts`, lauffähig mit `ng test`; hier mit einem Hilfsskript geprüft, weil für Karma kein Chrome eingerichtet ist).
+- **Regel für neue Suchen:** Baustein verwenden; neue durchsuchte Backend-Felder in der Liste anzeigen oder in den Hinweis „Treffer in …“ aufnehmen.
+
 **Nächster Schritt:** Hilfetexte fachlich prüfen lassen, dann Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen) und Phase 3 Mandantenfähigkeit (Subdomain → eigene DB je Mandant) oder Phase 4 Fuhrpark.
 
 

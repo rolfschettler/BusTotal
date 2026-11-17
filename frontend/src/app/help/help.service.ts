@@ -126,17 +126,39 @@ export class HelpService {
         if (!all) continue;
         hits.push({
           topic: d.id, topicTitle: d.title, anchor: s.anchor, title: s.title,
-          snippet: this.snippet(s.text, terms[0]), score,
+          snippet: this.snippet(s.text, terms), score,
         });
       }
     }
     return hits.sort((a, b) => b.score - a.score).slice(0, 20);
   }
 
-  private snippet(text: string, term: string): string {
-    const i = text.toLowerCase().indexOf(term);
-    if (i < 0) return text.slice(0, 140);
-    const start = Math.max(0, i - 50);
-    return (start > 0 ? '…' : '') + text.slice(start, start + 150) + (start + 150 < text.length ? '…' : '');
+  /**
+   * Textauszug mit allen Suchwörtern: Für jedes Wort ein Stück Text um die Fundstelle, überlappende
+   * Stücke verschmolzen. So ist in der Trefferliste jedes Suchwort sichtbar (und damit hervorgehoben),
+   * auch wenn die Wörter im Abschnitt weit auseinander stehen.
+   */
+  private snippet(text: string, terms: string[]): string {
+    const lower = text.toLowerCase();
+    const windows: [number, number][] = [];
+
+    for (const term of terms) {
+      const i = lower.indexOf(term);
+      if (i < 0) continue; // Treffer nur in der Überschrift
+      if (windows.some(([a, b]) => i >= a && i + term.length <= b)) continue; // schon im Auszug
+      windows.push([Math.max(0, i - 50), Math.min(text.length, i + term.length + 70)]);
+    }
+    if (!windows.length) return text.slice(0, 140) + (text.length > 140 ? '…' : '');
+
+    windows.sort((x, y) => x[0] - y[0]);
+    const merged: [number, number][] = [];
+    for (const w of windows) {
+      const last = merged[merged.length - 1];
+      if (last && w[0] <= last[1]) last[1] = Math.max(last[1], w[1]);
+      else merged.push([...w]);
+    }
+    return merged
+      .map(([a, b]) => (a > 0 ? '…' : '') + text.slice(a, b).trim() + (b < text.length ? '…' : ''))
+      .join(' ');
   }
 }

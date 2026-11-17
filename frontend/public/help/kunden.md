@@ -6,7 +6,8 @@ Hier verwalten Sie Firmen, Schulen, Vereine, Reisebüros und Privatpersonen, fü
 
 Die Liste zeigt 20 Kunden pro Seite, sortiert nach Name.
 
-- **Suche:** Das Suchfeld durchsucht Firmenname, Vor- und Nachname, Kundennummer, Debitorennummer, E-Mail, Ort und Postleitzahl. Die Suche startet kurz nach der letzten Eingabe.
+- **Suche:** Das Suchfeld durchsucht Firmenname, Vor- und Nachname, Kundennummer, Debitorennummer, E-Mail, Ort und Postleitzahl. Die Suche startet kurz nach der letzten Eingabe. Groß- und Kleinschreibung sowie Umlaute spielen keine Rolle: „muller“ findet auch „Müller“.
+- **Treffer sind gelb markiert**, direkt in der Liste. Steckt der Treffer in einem Feld, das die Liste nicht zeigt (zum Beispiel die Debitorennummer), erscheint unter dem Namen der Hinweis „Treffer in Debitorennr.“, ebenfalls markiert.
 - **Art:** Der Filter zeigt nur eine Kundenart, zum Beispiel nur Schulen.
 - **Archivierte:** Mit diesem Häkchen sehen Sie statt der aktiven die [archivierten](#archivieren) Kunden.
 
