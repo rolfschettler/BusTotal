@@ -1,4 +1,14 @@
+// Die Seite selbst scrollt nie: Kopfleiste fest, nur der Inhaltsbereich scrollt.
+// So beginnt der Scrollbalken unter der Leiste und die Leiste bleibt immer sichtbar.
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+}
+
 .top {
+  flex: none;
   display: flex;
   align-items: center;
   gap: 24px;
@@ -27,4 +37,5 @@ button {
   color: #fff;
   cursor: pointer;
 }
+.scroll { flex: 1; min-height: 0; overflow-y: auto; }
 .content { padding: 24px; max-width: 1000px; margin: 0 auto; }
