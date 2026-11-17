@@ -153,6 +153,8 @@ Getroffene Entscheidungen:
 - Ein Test (`LocalizationTest`) vergleicht die deutschen Dateien mit Laravels Vorlage und schlägt bei neuen, unübersetzten Schlüsseln nach einem Laravel-Update an. 104 Backend-Tests grün.
 - **Regel für neue Felder:** Neue Eingabefelder bekommen einen Namen unter `attributes` in `lang/de/validation.php`, sonst erscheint der interne Feldname in der Meldung.
 
+**Erledigt (2026-11-19, Anmeldung komfortabler):** Login merkt sich die E-Mail-Adresse der letzten erfolgreichen Anmeldung im Browser (`localStorage`, nur die Adresse, nie das Passwort); der Cursor springt dann ins Passwortfeld; „Anderer Benutzer“ vergisst die Adresse (für gemeinsam genutzte PCs). Die Felder tragen die Attribute für Passwort-Manager (`username`, `current-password`, `new-password`); die Seite „Mein Konto“ hat dafür ein unsichtbares Benutzernamen-Feld.
+
 **Nächster Schritt:** Hilfetexte fachlich prüfen lassen, dann Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen) und Phase 3 Mandantenfähigkeit (Subdomain → eigene DB je Mandant) oder Phase 4 Fuhrpark.
 
 

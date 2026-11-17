@@ -8,6 +8,7 @@ Geben Sie auf der Anmeldeseite Ihre E-Mail-Adresse und Ihr Passwort ein.
 - Nach **fünf Versuchen innerhalb einer Minute** sperrt die Anmeldung kurz. Warten Sie dann eine Minute und versuchen Sie es erneut.
 - Haben Sie von Ihrem Administrator ein **vorläufiges Passwort** erhalten, werden Sie nach dem Anmelden zuerst aufgefordert, ein eigenes zu vergeben. Siehe [Das eigene Passwort ändern](/hilfe/benutzer#passwort-aendern).
 - Ein **gesperrter** Benutzer kann sich nicht anmelden. Auch er sieht nur „Die Anmeldedaten sind ungültig.“ Wenden Sie sich an Ihren Administrator.
+- Nach einer erfolgreichen Anmeldung **merkt sich der Browser Ihre E-Mail-Adresse** (nie das Passwort). Beim nächsten Mal ist sie schon eingetragen, und Sie tippen nur noch das Passwort. Gehört der PC mehreren Personen, wählen Sie unter dem E-Mail-Feld **Anderer Benutzer**, dann wird die Adresse vergessen.
 - Sie bleiben angemeldet, auch wenn Sie die Seite neu laden.
 - Zum Abmelden öffnen Sie oben rechts Ihr Benutzermenü und wählen **Abmelden**.
 

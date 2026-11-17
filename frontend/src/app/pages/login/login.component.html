@@ -15,14 +15,17 @@
 
       <div class="mb-3">
         <label for="email" class="form-label">E-Mail</label>
-        <input id="email" type="email" class="form-control" formControlName="email" autocomplete="username" autofocus
+        <input #emailInput id="email" type="email" class="form-control" formControlName="email" autocomplete="username"
                [class.is-invalid]="form.controls.email.touched && form.controls.email.invalid" />
         <div class="invalid-feedback">Bitte eine gültige E-Mail-Adresse eingeben.</div>
+        @if (remembered()) {
+          <button type="button" class="btn btn-link btn-sm p-0 mt-1" (click)="otherUser()">Anderer Benutzer</button>
+        }
       </div>
 
       <div class="mb-4">
         <label for="password" class="form-label">Passwort</label>
-        <input id="password" type="password" class="form-control" formControlName="password" autocomplete="current-password"
+        <input #passwordInput id="password" type="password" class="form-control" formControlName="password" autocomplete="current-password"
                [class.is-invalid]="form.controls.password.touched && form.controls.password.invalid" />
         <div class="invalid-feedback">Bitte das Passwort eingeben.</div>
       </div>
