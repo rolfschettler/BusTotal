@@ -1,0 +1,42 @@
+<header class="topbar">
+  <a routerLink="/" class="brand">
+    <span>{{ brand.name() }}</span>
+  </a>
+
+  <button type="button" class="btn btn-sm help-btn ms-auto" (click)="helpPanel.toggle()"
+          aria-label="Hilfe zu dieser Seite (F1)" title="Hilfe zu dieser Seite (F1)">?</button>
+
+  <div ngbDropdown placement="bottom-end">
+    @if (auth.user(); as u) {
+      <button type="button" class="btn btn-sm user-btn" ngbDropdownToggle id="userMenu">
+        {{ u.name }} <span class="role">· Betreiber</span>
+      </button>
+      <div ngbDropdownMenu aria-labelledby="userMenu">
+        <div class="dropdown-item-text small text-body-secondary">{{ u.email }}</div>
+        <div class="dropdown-divider"></div>
+        <a ngbDropdownItem routerLink="/konto">Passwort ändern</a>
+        <button ngbDropdownItem type="button" (click)="auth.logout()">Abmelden</button>
+      </div>
+    }
+  </div>
+</header>
+
+<div class="body">
+  @if (!forced()) {
+    <aside class="sidebar">
+      <nav class="nav flex-column" aria-label="Hauptmenü">
+        <div class="group">Betrieb</div>
+        <a class="nav-link" routerLink="/firmen" routerLinkActive="active">Firmen</a>
+
+        <div class="group">System</div>
+        <a class="nav-link" routerLink="/hilfe" routerLinkActive="active">Hilfe</a>
+      </nav>
+    </aside>
+  }
+
+  <main class="scroll" [class.full]="fullPage()">
+    <div class="content" [class.full]="fullPage()">
+      <router-outlet />
+    </div>
+  </main>
+</div>

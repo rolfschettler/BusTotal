@@ -16,7 +16,13 @@ export const authGuard: CanActivateFn = () => {
   }
   return auth.loadUser().pipe(
     map(() => true),
-    catchError(() => of(router.createUrlTree(['/login']))),
+    // Der Server nimmt das gespeicherte Token nicht an (abgelaufen, Firma gesperrt, nicht erreichbar ...):
+    // Sitzung beenden. Würde das Token bleiben, schickte die Login-Seite (guestGuard) sofort zurück und
+    // es entstünde eine Endlosschleife mit leerer Seite.
+    catchError(() => {
+      auth.clear();
+      return of(false);
+    }),
   );
 };
 

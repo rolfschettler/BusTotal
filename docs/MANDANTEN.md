@@ -37,7 +37,25 @@ php artisan bustotal:demo-daten --tenant=muster
 - Lokal: `http://dev.localhost:4200` (moderne Browser lösen `*.localhost` selbst auf) oder `http://localhost:4200` mit `TENANT_LOCAL_FALLBACK=dev` (gilt nur in `local`).
 - Reservierte Unterdomänen: siehe `config/tenancy.php`.
 
+## Betreiber-Oberfläche (Superadmin)
+
+Unter `admin.<basis-domäne>` (lokal `http://admin.localhost:4200`) läuft eine eigene Oberfläche für den Betreiber: Firmen anlegen,
+bearbeiten, sperren, Datenbank aktualisieren, Administrator nachlegen. Sie sieht **nie** Daten einer Firma.
+
+- **Eigene Welt:** Konten in `superadmins` (zentrale Datenbank), eigener Sanctum-Guard `superadmin`, eigene Token-Tabelle,
+  eigenes Protokoll `superadmin_audit_logs` (nur anfügen). Token der Firmen und der Betreiber gelten gegenseitig nicht.
+- **Strikt getrennte Adressen:** `/api/superadmin/*` gibt es nur an `admin.<basis>`, und dort gibt es nur das (404 sonst). `ResolveTenant` erzwingt das.
+- **Frontend:** Dieselbe Angular-Anwendung. An der Betreiber-Adresse (`isSuperadminHost()` in `core/app-info.ts`) werden die Routen
+  aus `src/app/superadmin/` geladen, sonst die Firmen-Routen. Dunkle Erkennungsfarbe, damit man sie nie mit einer Firma verwechselt.
+- **Betreiber-Konto anlegen** (bewusst nur auf dem Server): `php artisan superadmin:anlegen <e-mail> "<Name>"`. Vorläufiges Passwort
+  wird einmal angezeigt und muss beim ersten Anmelden geändert werden (mind. 12 Zeichen).
+- **Keine Löschfunktion** für Firmen, nur Sperren (GoBD, Aufbewahrung).
+- Gemeinsame Logik für Befehl und Oberfläche: `App\Tenancy\TenantProvisioner`.
+- Zentrale Datenbank aufbauen: `php artisan migrate --database=central --path=database/migrations/central --force`
+  (enthält auch `cache`, weil die Anmeldebremse den Zwischenspeicher braucht). In `.env` muss `DB_CONNECTION=central` stehen.
+- Hilfe: `public/help/betreiber.md`, eigener Index `index-betreiber.json` (Firmen-Benutzer sehen dieses Thema nicht).
+
 ## Noch offen
-- Superadmin-Oberfläche (Firma anlegen per Maske), mit eigener Anmeldung unter einer reservierten Adresse.
+- Weitere Betreiber-Konten in der Oberfläche anlegen (heute nur per Befehl).
 - Warteschlange und `schedule:run` müssen je Firma laufen (`TenantManager::each`) – mit Phase 8 (Cronjobs).
 - Wildcard-Subdomain und SSL bei Mittwald klären (Fahrplan, Phase 0).

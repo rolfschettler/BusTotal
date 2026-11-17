@@ -1,0 +1,32 @@
+<main class="login d-flex align-items-center justify-content-center p-3">
+  <form class="card shadow-sm" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="card-body p-4">
+      <div class="text-center mb-4">
+        <h1 class="h4 mb-1 text-brand">{{ app }}</h1>
+        <p class="text-body-secondary mb-0">Betreiber-Anmeldung</p>
+      </div>
+
+      @if (error()) {
+        <div class="alert alert-danger py-2" role="alert">{{ error() }}</div>
+      }
+
+      <div class="mb-3">
+        <label for="email" class="form-label">E-Mail</label>
+        <input #emailInput id="email" type="email" class="form-control" formControlName="email" autocomplete="username"
+               [class.is-invalid]="form.controls.email.touched && form.controls.email.invalid" />
+        <div class="invalid-feedback">Bitte eine gültige E-Mail-Adresse eingeben.</div>
+      </div>
+
+      <div class="mb-4">
+        <label for="password" class="form-label">Passwort</label>
+        <input #passwordInput id="password" type="password" class="form-control" formControlName="password" autocomplete="current-password"
+               [class.is-invalid]="form.controls.password.touched && form.controls.password.invalid" />
+        <div class="invalid-feedback">Bitte das Passwort eingeben.</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100" [disabled]="busy()">
+        {{ busy() ? 'Anmelden …' : 'Anmelden' }}
+      </button>
+    </div>
+  </form>
+</main>

@@ -7,10 +7,30 @@ use App\Http\Controllers\Api\CustomerChildController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\SettingsController;
+use App\Http\Controllers\Api\Superadmin\AuthController as SuperadminAuthController;
+use App\Http\Controllers\Api\Superadmin\TenantController as SuperadminTenantController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+
+// Betreiber-Oberfläche: gibt es nur an der Betreiber-Adresse (admin.<basis>), siehe ResolveTenant.
+Route::prefix('superadmin')->group(function () {
+    Route::post('/login', [SuperadminAuthController::class, 'login'])->middleware('throttle:5,1');
+
+    Route::middleware(['auth:superadmin', 'superadmin.ok'])->group(function () {
+        Route::post('/logout', [SuperadminAuthController::class, 'logout']);
+        Route::get('/me', [SuperadminAuthController::class, 'me']);
+        Route::post('/me/password', [SuperadminAuthController::class, 'changePassword'])->middleware('throttle:5,1');
+
+        // Firmen werden nie gelöscht, nur gesperrt.
+        Route::get('/tenants', [SuperadminTenantController::class, 'index']);
+        Route::post('/tenants', [SuperadminTenantController::class, 'store']);
+        Route::put('/tenants/{tenant}', [SuperadminTenantController::class, 'update']);
+        Route::post('/tenants/{tenant}/migrate', [SuperadminTenantController::class, 'migrate']);
+        Route::post('/tenants/{tenant}/admin', [SuperadminTenantController::class, 'createAdmin']);
+    });
+});
 
 // Öffentlich: Name, Farbe und Logo für die Login-Seite.
 Route::get('/branding', [BrandingController::class, 'show']);

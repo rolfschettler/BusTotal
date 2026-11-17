@@ -2,14 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Enums\Role;
 use App\Models\Customer;
 use App\Models\Tenant;
-use App\Models\User;
 use App\Services\CustomerService;
 use App\Tenancy\TenantManager;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Tests\Concerns\UsesTenantDatabases;
 use Tests\TestCase;
 
 /**
@@ -18,71 +16,18 @@ use Tests\TestCase;
  */
 class TenancyTest extends TestCase
 {
-    private const DATABASES = ['bustotal_test_central', 'bustotal_test_a', 'bustotal_test_b', 'bustotal_test_c'];
+    use UsesTenantDatabases;
 
     protected function setUp(): void
     {
         parent::setUp();
-
-        config(['tenancy.enabled' => true, 'tenancy.base_domain' => 'localhost', 'tenancy.local_fallback' => null]);
-        $this->resetDatabases();
-
-        Artisan::call('migrate', [
-            '--database' => 'central', '--path' => 'database/migrations/central', '--realpath' => false, '--force' => true,
-        ]);
+        $this->setUpTenancy();
     }
 
     protected function tearDown(): void
     {
-        app(TenantManager::class)->deactivate();
-        $this->resetDatabases(drop: true);
+        $this->tearDownTenancy();
         parent::tearDown();
-    }
-
-    /** Datenbanken über die Standard-Testverbindung (Root) neu anlegen bzw. löschen. */
-    private function resetDatabases(bool $drop = false): void
-    {
-        $pdo = DB::connection('mysql')->getPdo();
-        foreach (self::DATABASES as $name) {
-            $pdo->exec("DROP DATABASE IF EXISTS `{$name}`");
-            if (! $drop && $name !== 'bustotal_test_c') {
-                $pdo->exec("CREATE DATABASE `{$name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-            }
-        }
-        DB::purge('central');
-    }
-
-    /** Legt eine Firma mit eigener Datenbank, Grundausstattung und einem Administrator an. */
-    private function makeTenant(string $subdomain, string $database): Tenant
-    {
-        $this->artisan('tenant:create', [
-            'name' => 'Firma '.strtoupper($subdomain),
-            'subdomain' => $subdomain,
-            '--db-name' => $database,
-            '--db-user' => config('database.connections.mysql.username'),
-            '--db-password' => (string) config('database.connections.mysql.password'),
-            '--db-host' => config('database.connections.mysql.host'),
-            '--db-port' => config('database.connections.mysql.port'),
-        ])->assertSuccessful();
-
-        $tenant = Tenant::where('subdomain', $subdomain)->firstOrFail();
-        $this->inTenant($tenant, fn () => User::create([
-            'name' => 'Admin '.$subdomain, 'email' => "admin@{$subdomain}.test", 'password' => 'geheim-12345',
-            'role' => Role::Admin, 'active' => true, 'must_change_password' => false,
-        ]));
-
-        return $tenant;
-    }
-
-    private function inTenant(Tenant $tenant, callable $callback): mixed
-    {
-        $manager = app(TenantManager::class);
-        $manager->activate($tenant);
-        try {
-            return $callback();
-        } finally {
-            $manager->deactivate();
-        }
     }
 
     public function test_host_wird_zur_unterdomaene(): void

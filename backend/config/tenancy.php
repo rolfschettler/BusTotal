@@ -24,6 +24,9 @@ return [
     // Auf einem echten Server wird dieser Wert bewusst ignoriert.
     'local_fallback' => env('TENANT_LOCAL_FALLBACK'),
 
+    // Unter dieser Unterdomäne (admin.bustotal.de) läuft die Betreiber-Oberfläche. Sie hat keine Firma.
+    'superadmin_subdomain' => env('SUPERADMIN_SUBDOMAIN', 'admin'),
+
     // Diese Unterdomänen sind für BusTotal selbst reserviert (z. B. die spätere Superadmin-Oberfläche).
     'reserved_subdomains' => ['www', 'admin', 'superadmin', 'api', 'app', 'mail', 'ftp', 'status', 'hilfe', 'central'],
 ];

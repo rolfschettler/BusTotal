@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { APP_NAME } from '../core/app-info';
+import { APP_NAME, isSuperadminHost } from '../core/app-info';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { NavigationEnd, NavigationStart, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -81,7 +81,7 @@ export class HelpService {
   // ---------- Laden ----------
 
   loadIndex(): Promise<void> {
-    this.indexLoaded ??= firstValueFrom(this.http.get<HelpTopic[]>('/help/index.json')).then((t) => this.topics.set(t));
+    this.indexLoaded ??= firstValueFrom(this.http.get<HelpTopic[]>(isSuperadminHost() ? '/help/index-betreiber.json' : '/help/index.json')).then((t) => this.topics.set(t));
     return this.indexLoaded;
   }
 

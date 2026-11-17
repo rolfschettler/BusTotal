@@ -1,0 +1,275 @@
+<!-- Tabellen-Muster (clientseitige Variante), siehe docs/ClaudeCodePatterns/TableViewPattern.md -->
+
+<!-- ── Seitenkopf ──────────────────────────────────────────────────── -->
+<div class="page-header">
+  <div class="row g-2 align-items-center">
+    <div class="col-auto">
+      <div class="d-flex align-items-center gap-2">
+        <h5 class="page-title mb-0">Firmen</h5>
+        <app-help-link topic="betreiber" anchor="firmenliste" label="Firmenverwaltung" />
+        @if (!loading()) {
+          <span class="badge rounded-pill record-count d-none d-sm-inline-flex">
+            {{ filtered() ? displayRows().length + ' von ' + tenants().length : tenants().length }} Firmen
+          </span>
+        }
+      </div>
+    </div>
+    <div class="col-12 col-sm-auto ms-sm-auto">
+      <div class="row row-cols-1 row-cols-sm-auto g-1 justify-content-end align-items-center header-ctrl">
+        <div class="col">
+          <button type="button" class="btn btn-sm btn-header w-100" (click)="refresh()" [disabled]="loading()">
+            <i class="bi bi-arrow-clockwise"></i><span class="ms-1">Aktualisieren</span>
+          </button>
+        </div>
+        <div class="col">
+          <button type="button" class="btn btn-sm btn-header-new w-100" (click)="newTenant()" [disabled]="draft() !== null || busy()">
+            <i class="bi bi-plus-lg"></i><span class="ms-1">Neue Firma</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Inhalt: der EINE Scroll-Container ───────────────────────────── -->
+<div class="page-content" #content>
+
+  <!-- Filterleiste (klebt oben) -->
+  <div class="filter-bar" appStickyFilterBar>
+    <div class="row g-2 align-items-center">
+      <div class="col-12 col-sm-6 col-lg-4">
+        <input type="search" class="form-control form-control-sm" [class.filter-active]="q().trim() !== ''"
+               placeholder="Suche: Name, Adresse, Datenbank …" aria-label="Suche"
+               [ngModel]="q()" (ngModelChange)="q.set($event)" />
+      </div>
+      <div class="col-6 col-sm-auto">
+        <select class="form-select form-select-sm" [class.filter-active]="statusFilter() !== ''" aria-label="Status"
+                [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+          <option value="">Alle Status</option>
+          <option value="active">Aktiv</option>
+          <option value="locked">Gesperrt</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  @if (message(); as m) {
+    <div class="alert py-2 mb-3" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
+  }
+
+  @if (busy() && !draft()) {
+    <div class="alert alert-info py-2 mb-3" role="status">
+      <span class="spinner-border spinner-border-sm me-2"></span> Bitte warten, die Datenbank wird bearbeitet …
+    </div>
+  }
+
+  <!-- Zugang des Administrators: wird nur einmal angezeigt -->
+  @if (secret(); as s) {
+    <div class="alert alert-warning mb-3" role="alert">
+      <div class="fw-semibold mb-1">
+        {{ s.title }}
+        <app-help-link topic="betreiber" anchor="vorlaeufiges-passwort" label="Vorläufiges Passwort" />
+      </div>
+      <div class="small mb-1">Anmeldung unter <strong>{{ s.host }}</strong> mit der E-Mail-Adresse <strong>{{ s.email }}</strong>.</div>
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+        <code class="fs-5 user-select-all px-2 py-1 bg-white border rounded">{{ s.password }}</code>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="copy()">{{ copied() ? 'Kopiert ✔' : 'Kopieren' }}</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="closeSecret()">Schließen</button>
+      </div>
+      <div class="small">
+        <strong>Das Passwort wird nur jetzt angezeigt</strong> und ist nirgends gespeichert. Geben Sie es dem Administrator der Firma
+        persönlich weiter (nicht per E-Mail). Beim ersten Anmelden muss er sich ein eigenes Passwort vergeben.
+      </div>
+    </div>
+  }
+
+  <!-- Formular: Anlegen und Bearbeiten. Kurzes Inline-Formular nach dem Formular-Muster
+       (docs/ClaudeCodePatterns/EditFormPattern.md): .form-area, Labels oben, Tastenleiste ohne sticky (.form-bar-static). -->
+  @if (draft(); as d) {
+    <div class="form-page mb-3">
+      <form id="tenantForm" class="form-area" #tf="ngForm" (ngSubmit)="save(tf)" novalidate [class.was-validated]="formSubmitted()">
+        <div class="row g-3">
+          <div class="col-12"><div class="section-title">{{ d.id === null ? 'Neue Firma' : 'Firma bearbeiten' }}</div></div>
+
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="t_name">Name <span class="text-danger">*</span></label>
+            <input class="form-control" id="t_name" name="name" [(ngModel)]="d.name" required maxlength="150" [class.is-invalid]="!!fieldErrors()['name']" />
+            <div class="invalid-feedback">{{ fieldErrors()['name'] || 'Bitte einen Namen angeben.' }}</div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="t_sub">Unterdomäne <span class="text-danger">*</span></label>
+            <input class="form-control" id="t_sub" name="subdomain" [(ngModel)]="d.subdomain" required maxlength="63" autocomplete="off"
+                   pattern="[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?" [disabled]="d.id !== null" [class.is-invalid]="!!fieldErrors()['subdomain']" />
+            <div class="invalid-feedback">{{ fieldErrors()['subdomain'] || 'Nur Buchstaben, Ziffern und Bindestriche, nicht am Anfang oder Ende.' }}</div>
+            <div class="form-text">
+              {{ d.id === null ? 'Adresse der Firma: ' : 'Feste Adresse: ' }}<strong>{{ d.subdomain.toLowerCase() || '…' }}.{{ baseDomain }}</strong>
+            </div>
+          </div>
+
+          <div class="col-12"><div class="section-title">Datenbank <app-help-link topic="betreiber" anchor="datenbank" label="Datenbank der Firma" /></div></div>
+          @if (d.id === null) {
+            <div class="col-12 small text-body-secondary">
+              Die leere Datenbank vorher im Kundencenter des Hosters anlegen. Beim Speichern werden Zugang geprüft, Tabellen aufgebaut und die Grundausstattung eingerichtet.
+            </div>
+          }
+          <div class="col-12 col-lg-8">
+            <label class="form-label" for="t_dbhost">Server <span class="text-danger">*</span></label>
+            <input class="form-control" id="t_dbhost" name="db_host" [(ngModel)]="d.db_host" required [class.is-invalid]="!!fieldErrors()['db_host']" />
+            <div class="invalid-feedback">{{ fieldErrors()['db_host'] || 'Bitte den Datenbank-Server angeben.' }}</div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <label class="form-label" for="t_dbport">Port <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" id="t_dbport" name="db_port" [(ngModel)]="d.db_port" required min="1" max="65535" [class.is-invalid]="!!fieldErrors()['db_port']" />
+            <div class="invalid-feedback">{{ fieldErrors()['db_port'] || 'Bitte einen Port zwischen 1 und 65535 angeben.' }}</div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <label class="form-label" for="t_dbname">Datenbank <span class="text-danger">*</span></label>
+            <input class="form-control" id="t_dbname" name="db_database" [(ngModel)]="d.db_database" required maxlength="64" autocomplete="off"
+                   pattern="[A-Za-z0-9_\-]+" [disabled]="d.id !== null" [class.is-invalid]="!!fieldErrors()['db_database']" />
+            <div class="invalid-feedback">{{ fieldErrors()['db_database'] || 'Nur Buchstaben, Ziffern, Unterstrich und Bindestrich.' }}</div>
+            @if (d.id !== null) { <div class="form-text">Dort liegen die Daten, der Name bleibt fest.</div> }
+          </div>
+          <div class="col-12 col-lg-4">
+            <label class="form-label" for="t_dbuser">Benutzer <span class="text-danger">*</span></label>
+            <input class="form-control" id="t_dbuser" name="db_username" [(ngModel)]="d.db_username" required maxlength="64" autocomplete="off" [class.is-invalid]="!!fieldErrors()['db_username']" />
+            <div class="invalid-feedback">{{ fieldErrors()['db_username'] || 'Bitte den Datenbank-Benutzer angeben.' }}</div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <label class="form-label" for="t_dbpass">Passwort</label>
+            <input type="password" class="form-control" id="t_dbpass" name="db_password" [(ngModel)]="d.db_password" autocomplete="new-password" [class.is-invalid]="!!fieldErrors()['db_password']" />
+            <div class="invalid-feedback">{{ fieldErrors()['db_password'] }}</div>
+            @if (d.id !== null) { <div class="form-text">Leer lassen = unverändert.</div> }
+          </div>
+
+          @if (d.id === null) {
+            <div class="col-12"><div class="section-title">Erster Administrator <app-help-link topic="betreiber" anchor="vorlaeufiges-passwort" label="Erster Administrator" /></div></div>
+            <div class="col-12 col-lg-6">
+              <label class="form-label" for="t_adminname">Name</label>
+              <input class="form-control" id="t_adminname" name="admin_name" [(ngModel)]="d.admin_name" maxlength="150" [class.is-invalid]="!!fieldErrors()['admin_name']" />
+              <div class="invalid-feedback">{{ fieldErrors()['admin_name'] }}</div>
+              <div class="form-text">Leer = „Administrator“.</div>
+            </div>
+            <div class="col-12 col-lg-6">
+              <label class="form-label" for="t_adminmail">E-Mail <span class="text-danger">*</span></label>
+              <input type="email" class="form-control" id="t_adminmail" name="admin_email" [(ngModel)]="d.admin_email" required autocomplete="off" [class.is-invalid]="!!fieldErrors()['admin_email']" />
+              <div class="invalid-feedback">{{ fieldErrors()['admin_email'] || 'Bitte eine gültige E-Mail-Adresse angeben.' }}</div>
+            </div>
+          }
+        </div>
+      </form>
+
+      <div class="form-bar form-bar-static">
+        <button type="submit" form="tenantForm" class="btn btn-primary" [disabled]="busy()">
+          @if (busy()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+          {{ busy() ? (d.id === null ? 'Legt an …' : 'Speichert …') : (d.id === null ? 'Firma anlegen' : 'Speichern') }}
+        </button>
+        <div class="form-bar-right">
+          <button type="button" class="btn btn-outline-secondary" (click)="cancel()" [disabled]="busy()">Abbrechen</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Formular: Administrator einer vorhandenen Firma nachlegen (z. B. wenn der Zugang verloren ist) -->
+  @if (adminDraft(); as a) {
+    <div class="form-page mb-3">
+      <form id="adminForm" class="form-area" #af="ngForm" (ngSubmit)="saveAdmin(af)" novalidate [class.was-validated]="formSubmitted()">
+        <div class="row g-3">
+          <div class="col-12"><div class="section-title">Administrator anlegen für {{ a.tenant.name }}</div></div>
+          <div class="col-12 small text-body-secondary">Das System erzeugt ein vorläufiges Passwort, das Sie nach dem Speichern einmalig sehen.</div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="a_name">Name</label>
+            <input class="form-control" id="a_name" name="name" [(ngModel)]="a.name" maxlength="150" />
+            <div class="form-text">Leer = „Administrator“.</div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="a_mail">E-Mail <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" id="a_mail" name="email" [(ngModel)]="a.email" required autocomplete="off" [class.is-invalid]="!!fieldErrors()['email']" />
+            <div class="invalid-feedback">{{ fieldErrors()['email'] || 'Bitte eine gültige E-Mail-Adresse angeben.' }}</div>
+          </div>
+        </div>
+      </form>
+
+      <div class="form-bar form-bar-static">
+        <button type="submit" form="adminForm" class="btn btn-primary" [disabled]="busy()">
+          @if (busy()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+          {{ busy() ? 'Legt an …' : 'Anlegen' }}
+        </button>
+        <div class="form-bar-right">
+          <button type="button" class="btn btn-outline-secondary" (click)="cancelAdmin()" [disabled]="busy()">Abbrechen</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- KEIN overflow-Wrapper um die Tabelle! .page-content scrollt schon beide Achsen. -->
+  <div class="card table-card rounded-3">
+    <table class="table table-hover table-sm align-middle data-table mb-0">
+
+      <colgroup>
+        <col style="width:144px">  <!-- Aktionen: vier Symbole à 28 px + Abstand -->
+        <col style="width:220px">  <!-- Name -->
+        <col style="width:230px">  <!-- Adresse -->
+        <col style="width:170px">  <!-- Datenbank -->
+        <col style="width:110px">  <!-- Status -->
+        <col style="width:186px">  <!-- Datenbank aktualisiert -->
+      </colgroup>
+
+      <thead>
+        <tr>
+          <th class="col-actions"><span class="visually-hidden">Aktionen</span></th>
+          <th class="sortable" [class.sort-active]="sortCol() === 'name'" [attr.aria-sort]="ariaSort('name')" tabindex="0"
+              (click)="sort('name')" (keydown.enter)="sort('name')">Name <i class="bi {{ sortIcon('name') }}"></i></th>
+          <th class="sortable" [class.sort-active]="sortCol() === 'subdomain'" [attr.aria-sort]="ariaSort('subdomain')" tabindex="0"
+              (click)="sort('subdomain')" (keydown.enter)="sort('subdomain')">Adresse <i class="bi {{ sortIcon('subdomain') }}"></i></th>
+          <th class="sortable" [class.sort-active]="sortCol() === 'database'" [attr.aria-sort]="ariaSort('database')" tabindex="0"
+              (click)="sort('database')" (keydown.enter)="sort('database')">Datenbank <i class="bi {{ sortIcon('database') }}"></i></th>
+          <th class="sortable" [class.sort-active]="sortCol() === 'status'" [attr.aria-sort]="ariaSort('status')" tabindex="0"
+              (click)="sort('status')" (keydown.enter)="sort('status')">Status <i class="bi {{ sortIcon('status') }}"></i></th>
+          <th class="sortable" [class.sort-active]="sortCol() === 'migrated'" [attr.aria-sort]="ariaSort('migrated')" tabindex="0"
+              (click)="sort('migrated')" (keydown.enter)="sort('migrated')">Zuletzt aktualisiert <i class="bi {{ sortIcon('migrated') }}"></i></th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (t of displayRows(); track t.id) {
+          <tr (click)="currentId.set(t.id)" [class.row-current]="t.id === currentId()" [class.text-body-secondary]="!t.is_active">
+            <td class="col-actions" (click)="$event.stopPropagation()">
+              <button type="button" class="btn-action edit" (click)="edit(t)" [disabled]="busy()" title="Bearbeiten" [attr.aria-label]="t.name + ' bearbeiten'">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button type="button" class="btn-action key" (click)="migrate(t)" [disabled]="busy()" title="Datenbank aktualisieren" [attr.aria-label]="t.name + ' Datenbank aktualisieren'">
+                <i class="bi bi-database-up"></i>
+              </button>
+              <button type="button" class="btn-action key" (click)="newAdmin(t)" [disabled]="busy()" title="Administrator anlegen" [attr.aria-label]="t.name + ' Administrator anlegen'">
+                <i class="bi bi-person-plus"></i>
+              </button>
+              @if (t.is_active) {
+                <button type="button" class="btn-action delete" (click)="toggleActive(t)" [disabled]="busy()" title="Sperren" [attr.aria-label]="t.name + ' sperren'">
+                  <i class="bi bi-lock"></i>
+                </button>
+              } @else {
+                <button type="button" class="btn-action restore" (click)="toggleActive(t)" [disabled]="busy()" title="Entsperren" [attr.aria-label]="t.name + ' entsperren'">
+                  <i class="bi bi-unlock"></i>
+                </button>
+              }
+            </td>
+            <td [title]="t.name"><span class="fw-semibold"><app-highlight [text]="t.name" [query]="q()" /></span></td>
+            <td [title]="t.host"><app-highlight [text]="t.host" [query]="q()" /></td>
+            <td [title]="t.db_database"><app-highlight [text]="t.db_database" [query]="q()" /></td>
+            <td>
+              @if (t.is_active) { <span class="badge text-bg-success">Aktiv</span> } @else { <span class="badge text-bg-danger">Gesperrt</span> }
+            </td>
+            <td class="dim">{{ t.migrated_at ? (t.migrated_at | date: 'dd.MM.y, HH:mm') : 'noch nie' }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="text-center text-secondary py-5 small">
+              {{ loading() ? 'Daten werden geladen …' : filtered() ? 'Keine Firmen zu diesem Filter.' : 'Noch keine Firmen angelegt.' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

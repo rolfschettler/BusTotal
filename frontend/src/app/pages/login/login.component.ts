@@ -86,7 +86,9 @@ export class LoginComponent implements AfterViewInit {
         this.error.set(
           err.status === 429
             ? 'Zu viele Versuche. Bitte eine Minute warten.'
-            : (err.error?.errors?.email?.[0] ?? 'Anmeldung fehlgeschlagen.'),
+            : err.status === 404
+              ? 'Diese Adresse ist nicht erreichbar. Die Firma ist unbekannt oder gesperrt.'
+              : (err.error?.errors?.email?.[0] ?? 'Anmeldung fehlgeschlagen.'),
         );
         this.passwordInput().nativeElement.select(); // falsches Passwort: gleich neu tippen
       },

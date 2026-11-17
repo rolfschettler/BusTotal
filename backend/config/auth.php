@@ -42,6 +42,12 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Betreiber-Konten (zentrale Datenbank), siehe docs/MANDANTEN.md
+        'superadmin' => [
+            'driver' => 'sanctum',
+            'provider' => 'superadmins',
+        ],
     ],
 
     /*
@@ -65,6 +71,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        'superadmins' => [
+            'driver' => 'eloquent',
+            'model' => \App\Models\Superadmin::class,
         ],
 
         // 'users' => [

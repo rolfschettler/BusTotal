@@ -189,7 +189,14 @@ Getroffene Entscheidungen:
 - Zentrale Datenbank mit Tabelle `tenants` (Passwort verschlüsselt); die Verbindung zur Firmen-Datenbank wird je Anfrage aus dem Host (Unterdomäne) eingestellt (`ResolveTenant`, `TenantManager`). Details: `docs/MANDANTEN.md`.
 - Befehle `tenant:create`, `tenant:list`, `tenant:migrate`; `bustotal:admin-anlegen` und `bustotal:demo-daten` mit `--tenant=`. Dateien (Logo) je Firma getrennt.
 - 11 Tests zur Mandantentrennung (Daten, Token, Anmeldung, Sperre, Passwortverschlüsselung, unsichere Angaben); gesamt 166 grün. Dev-Mandant `dev` mit eigener Datenbank `bustotal_dev` angelegt (die alten Daten in `bustotal_central` werden nicht mehr benutzt).
-- **Offen:** Superadmin-Oberfläche; Queue/Cron je Firma (Phase 8); Mittwald-Klärungen; Angular-Dev-Server muss `*.localhost` zulassen, falls mit Unterdomäne gearbeitet wird.
+- **Offen:** Queue/Cron je Firma (Phase 8); Mittwald-Klärungen.
+
+**Erledigt (2026-11-20, Phase 3 – Superadmin-Oberfläche):**
+- Betreiber-Oberfläche unter `admin.<basis>` (lokal `http://admin.localhost:4200`): Anmeldung (eigene Konten, eigener Guard und Token, Pflicht-Passwortwechsel, mind. 12 Zeichen), Firmenliste nach Tabellen-Muster (Suche mit Markierung, Status-Filter, Sortierung), Firma anlegen (Zugang prüfen, Datenbank aufbauen, erster Administrator mit einmalig angezeigtem Passwort), bearbeiten, sperren/entsperren, Datenbank aktualisieren, Administrator nachlegen. Keine Löschfunktion. Eigenes unveränderliches Protokoll. Details: `docs/MANDANTEN.md`.
+- Gemeinsamer Dienst `TenantProvisioner` für Befehl und Oberfläche; Befehl `superadmin:anlegen`. 182 Backend-Tests grün (16 neu), Listenlogik mit 7 Testfällen (per Hilfsskript geprüft), `ng build` läuft.
+- **Im Browser durchgespielt** (2026-11-20): Anmelden, Firma anlegen (leere Datenbank, eigener DB-Benutzer), Anmeldung in der neuen Firma mit vorläufigem Passwort und Zwangswechsel, sperren, entsperren, Datenbank aktualisieren. Testdaten wieder entfernt. Hilfetext `betreiber.md` ist ein Entwurf.
+- **Fehler dabei gefunden und behoben:** War jemand bei einer gesperrten Firma noch angemeldet, blieb die Seite leer (Endlosschleife zwischen `authGuard` und `guestGuard`, weil das Token blieb). Jetzt beendet der Guard die Sitzung, wenn der Benutzer nicht geladen werden kann; die Anmeldeseite sagt bei 404 „Firma unbekannt oder gesperrt“.
+- Dev: Betreiber-Konto angelegt; die alten Tabellen `personal_access_tokens`, `cache`, `cache_locks` in `bustotal_central` wurden zu `legacy_*` umbenannt (nicht gelöscht), weil die zentrale Datenbank eigene braucht.
 
 **Nächster Schritt:** Hilfetexte fachlich prüfen lassen, dann Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen) und Phase 3 Mandantenfähigkeit (Subdomain → eigene DB je Mandant) oder Phase 4 Fuhrpark.
 

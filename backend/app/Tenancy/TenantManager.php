@@ -79,6 +79,16 @@ class TenantManager
         $this->current = $tenant;
     }
 
+    /** Betreiber-Anfragen (Superadmin): ausdrücklich die zentrale Datenbank, ohne Firma. */
+    public function useCentral(): void
+    {
+        // Nach einer Firma (activate/deactivate) geht es wieder hierher zurück, nicht zur Ausgangsverbindung.
+        $this->originalDefault = config('tenancy.central_connection');
+        DB::setDefaultConnection($this->originalDefault);
+        $this->resetCachedServices();
+        $this->current = null;
+    }
+
     /** Zurück zur zentralen Datenbank (Befehle, Tests, Schleifen über alle Mandanten). */
     public function deactivate(): void
     {
