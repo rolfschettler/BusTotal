@@ -8,7 +8,6 @@ import { Customer, CustomerService, CustomerType } from '../../core/customer.ser
   selector: 'app-customer-list',
   imports: [FormsModule, RouterLink],
   templateUrl: './customer-list.component.html',
-  styleUrl: './customer-list.component.scss',
 })
 export class CustomerListComponent implements OnInit {
   private api = inject(CustomerService);

@@ -21,6 +21,8 @@ export interface Company {
   letterhead_note: string | null;
   footer_text: string | null;
   payment_term_days: number;
+  brand_color: string;
+  has_logo: boolean;
 }
 
 export interface TaxRate {
@@ -51,6 +53,15 @@ export class SettingsService {
   }
   saveCompany(data: Company) {
     return this.http.put<Company>('/api/settings/company', data);
+  }
+
+  uploadLogo(file: File) {
+    const body = new FormData();
+    body.append('logo', file);
+    return this.http.post<Company>('/api/settings/logo', body);
+  }
+  deleteLogo() {
+    return this.http.delete<Company>('/api/settings/logo');
   }
 
   getTaxRates() {

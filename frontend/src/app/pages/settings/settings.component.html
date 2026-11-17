@@ -1,122 +1,218 @@
-<h1>Einstellungen</h1>
+<h1 class="h3 mb-3">Einstellungen</h1>
 
 @if (!canEdit()) {
-  <p class="info">Nur Administratoren können Einstellungen ändern.</p>
+  <div class="alert alert-secondary py-2">Nur Administratoren können Einstellungen ändern.</div>
 }
 
-<div class="tabs" role="tablist">
-  <button role="tab" [class.on]="tab() === 'firma'" (click)="show('firma')">Firmendaten</button>
-  <button role="tab" [class.on]="tab() === 'steuern'" (click)="show('steuern')">Steuersätze</button>
-  <button role="tab" [class.on]="tab() === 'nummern'" (click)="show('nummern')">Nummernkreise</button>
-</div>
+<ul class="nav nav-tabs mb-3" role="tablist">
+  <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'firma'" (click)="show('firma')">Firmendaten</button></li>
+  <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'steuern'" (click)="show('steuern')">Steuersätze</button></li>
+  <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'nummern'" (click)="show('nummern')">Nummernkreise</button></li>
+</ul>
 
 @if (message(); as m) {
-  <div class="msg" [class.err]="!m.ok" role="status">{{ m.text }}</div>
+  <div class="alert py-2" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
 }
 
 @switch (tab()) {
   @case ('firma') {
-    <form [formGroup]="company" (ngSubmit)="saveCompany()" class="grid">
-      <fieldset>
-        <legend>Firma</legend>
-        <label>Firmenname *<input formControlName="name" /></label>
-        <label>Rechtsform<input formControlName="legal_form" placeholder="z. B. GmbH" /></label>
-        <label>Geschäftsführer<input formControlName="managing_director" /></label>
-        <label>Handelsregister<input formControlName="commercial_register" placeholder="HRB 12345, Amtsgericht …" /></label>
-      </fieldset>
-
-      <fieldset>
-        <legend>Adresse &amp; Kontakt</legend>
-        <label>Straße, Nr.<input formControlName="street" /></label>
-        <div class="row">
-          <label class="s">PLZ<input formControlName="postal_code" /></label>
-          <label>Ort<input formControlName="city" /></label>
-          <label class="s">Land<input formControlName="country" maxlength="2" /></label>
+    <form [formGroup]="company" (ngSubmit)="saveCompany()" novalidate>
+      <div class="row g-3">
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header fw-semibold">Firma</div>
+            <div class="card-body vstack gap-3">
+              <label class="form-label w-100 mb-0">Firmenname *
+                <input class="form-control mt-1" formControlName="name"
+                       [class.is-invalid]="company.controls.name.touched && company.controls.name.invalid" />
+                <span class="invalid-feedback">Bitte einen Firmennamen angeben.</span>
+              </label>
+              <label class="form-label w-100 mb-0">Rechtsform<input class="form-control mt-1" formControlName="legal_form" placeholder="z. B. GmbH" /></label>
+              <label class="form-label w-100 mb-0">Geschäftsführer<input class="form-control mt-1" formControlName="managing_director" /></label>
+              <label class="form-label w-100 mb-0">Handelsregister<input class="form-control mt-1" formControlName="commercial_register" placeholder="HRB 12345, Amtsgericht …" /></label>
+            </div>
+          </div>
         </div>
-        <label>Telefon<input formControlName="phone" /></label>
-        <label>E-Mail<input type="email" formControlName="email" /></label>
-        <label>Webseite<input formControlName="website" /></label>
-      </fieldset>
 
-      <fieldset>
-        <legend>Steuer</legend>
-        <label>Steuernummer<input formControlName="tax_number" /></label>
-        <label>USt-IdNr.<input formControlName="vat_id" placeholder="DE123456789" />
-          @if (fieldErrors()['vat_id']) { <small class="e">Format: z. B. DE123456789</small> }
-        </label>
-      </fieldset>
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header fw-semibold">Adresse &amp; Kontakt</div>
+            <div class="card-body vstack gap-3">
+              <label class="form-label w-100 mb-0">Straße, Nr.<input class="form-control mt-1" formControlName="street" /></label>
+              <div class="row g-2">
+                <div class="col-3"><label class="form-label w-100 mb-0">PLZ<input class="form-control mt-1" formControlName="postal_code" /></label></div>
+                <div class="col-6"><label class="form-label w-100 mb-0">Ort<input class="form-control mt-1" formControlName="city" /></label></div>
+                <div class="col-3"><label class="form-label w-100 mb-0">Land<input class="form-control mt-1" formControlName="country" maxlength="2" /></label></div>
+              </div>
+              <div class="row g-2">
+                <div class="col"><label class="form-label w-100 mb-0">Telefon<input class="form-control mt-1" formControlName="phone" /></label></div>
+                <div class="col"><label class="form-label w-100 mb-0">E-Mail<input type="email" class="form-control mt-1" formControlName="email" [class.is-invalid]="company.controls.email.touched && company.controls.email.invalid" /></label></div>
+              </div>
+              <label class="form-label w-100 mb-0">Webseite<input class="form-control mt-1" formControlName="website" /></label>
+            </div>
+          </div>
+        </div>
 
-      <fieldset>
-        <legend>Bank</legend>
-        <label>Bank<input formControlName="bank_name" /></label>
-        <label>IBAN<input formControlName="iban" />
-          @if (fieldErrors()['iban']) { <small class="e">{{ fieldErrors()['iban'] }}</small> }
-        </label>
-        <label>BIC<input formControlName="bic" />
-          @if (fieldErrors()['bic']) { <small class="e">Ungültige BIC.</small> }
-        </label>
-        <label>Zahlungsziel (Tage)<input type="number" formControlName="payment_term_days" min="0" /></label>
-      </fieldset>
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header fw-semibold">Steuer</div>
+            <div class="card-body vstack gap-3">
+              <label class="form-label w-100 mb-0">Steuernummer<input class="form-control mt-1" formControlName="tax_number" /></label>
+              <label class="form-label w-100 mb-0">USt-IdNr.
+                <input class="form-control mt-1" formControlName="vat_id" placeholder="DE123456789" [class.is-invalid]="!!fieldErrors()['vat_id']" />
+                <span class="invalid-feedback">Format: z. B. DE123456789</span>
+              </label>
+            </div>
+          </div>
+        </div>
 
-      <fieldset class="wide">
-        <legend>Briefkopf &amp; Fußzeile auf Belegen</legend>
-        <label>Zusatz im Briefkopf<textarea rows="2" formControlName="letterhead_note"></textarea></label>
-        <label>Fußzeile<textarea rows="3" formControlName="footer_text"></textarea></label>
-      </fieldset>
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header fw-semibold">Bank</div>
+            <div class="card-body vstack gap-3">
+              <label class="form-label w-100 mb-0">Bank<input class="form-control mt-1" formControlName="bank_name" /></label>
+              <label class="form-label w-100 mb-0">IBAN
+                <input class="form-control mt-1" formControlName="iban" [class.is-invalid]="!!fieldErrors()['iban']" />
+                <span class="invalid-feedback">{{ fieldErrors()['iban'] }}</span>
+              </label>
+              <div class="row g-2">
+                <div class="col">
+                  <label class="form-label w-100 mb-0">BIC
+                    <input class="form-control mt-1" formControlName="bic" [class.is-invalid]="!!fieldErrors()['bic']" />
+                    <span class="invalid-feedback">Ungültige BIC.</span>
+                  </label>
+                </div>
+                <div class="col"><label class="form-label w-100 mb-0">Zahlungsziel (Tage)<input type="number" min="0" class="form-control mt-1" formControlName="payment_term_days" /></label></div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-      @if (canEdit()) {
-        <div class="wide"><button type="submit" class="primary">Speichern</button></div>
-      }
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header fw-semibold">Briefkopf &amp; Fußzeile auf Belegen</div>
+            <div class="card-body vstack gap-3">
+              <label class="form-label w-100 mb-0">Zusatz im Briefkopf<textarea rows="2" class="form-control mt-1" formControlName="letterhead_note"></textarea></label>
+              <label class="form-label w-100 mb-0">Fußzeile<textarea rows="3" class="form-control mt-1" formControlName="footer_text"></textarea></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header fw-semibold">Erscheinungsbild</div>
+            <div class="card-body">
+              <div class="row g-4">
+                <div class="col-lg-6">
+                  <label class="form-label" for="brandHex">Markenfarbe</label>
+                  <div class="d-flex align-items-center gap-2">
+                    <input type="color" class="form-control form-control-color" formControlName="brand_color" aria-label="Farbe wählen" />
+                    <input id="brandHex" class="form-control w-auto font-monospace" formControlName="brand_color" maxlength="7"
+                           [class.is-invalid]="!!fieldErrors()['brand_color'] || company.controls.brand_color.invalid" />
+                  </div>
+                  @if (fieldErrors()['brand_color']) {
+                    <div class="text-danger small mt-1">{{ fieldErrors()['brand_color'] }}</div>
+                  } @else if (company.controls.brand_color.invalid) {
+                    <div class="text-danger small mt-1">Bitte eine Farbe wie #1d4e89 angeben.</div>
+                  }
+                  <div class="form-text">Weiße Schrift muss darauf gut lesbar sein, sehr helle Farben werden abgelehnt.</div>
+
+                  <div class="preview mt-3 p-3 rounded border" [style.--brand]="company.controls.brand_color.valid ? company.controls.brand_color.value : null">
+                    <div class="small text-body-secondary mb-2">Vorschau</div>
+                    <div class="d-flex gap-2 align-items-center">
+                      <span class="btn btn-primary btn-sm pe-none">Speichern</span>
+                      <span class="btn btn-outline-primary btn-sm pe-none">Abbrechen</span>
+                      <span class="text-brand fw-semibold">Link / Überschrift</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-lg-6">
+                  <div class="form-label">Logo</div>
+                  <div class="logo-box border rounded d-flex align-items-center justify-content-center mb-2">
+                    @if (brand.logoUrl(); as logo) {
+                      <img [src]="logo" alt="Aktuelles Logo" />
+                    } @else {
+                      <span class="text-body-secondary small">Kein Logo hochgeladen</span>
+                    }
+                  </div>
+                  @if (canEdit()) {
+                    <div class="d-flex gap-2">
+                      <label class="btn btn-outline-primary btn-sm mb-0">
+                        Logo hochladen …
+                        <input type="file" class="d-none" accept="image/png,image/jpeg,image/webp" (change)="onLogoSelected($event)" />
+                      </label>
+                      @if (brand.logoUrl()) {
+                        <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeLogo()">Entfernen</button>
+                      }
+                    </div>
+                  }
+                  @if (fieldErrors()['logo']) { <div class="text-danger small mt-1">{{ fieldErrors()['logo'] }}</div> }
+                  <div class="form-text">PNG, JPG oder WebP, höchstens 1 MB. Erscheint in der Kopfleiste und beim Login.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        @if (canEdit()) {
+          <div class="col-12"><button type="submit" class="btn btn-primary">Speichern</button></div>
+        }
+      </div>
     </form>
   }
 
   @case ('steuern') {
-    <table>
-      <thead><tr><th>Bezeichnung</th><th>Satz (%)</th><th>Aktiv</th><th></th></tr></thead>
-      <tbody>
-        @for (t of taxRates(); track t.id) {
-          <tr>
-            <td><input [(ngModel)]="t.name" [disabled]="!canEdit()" /></td>
-            <td><input type="number" step="0.01" [(ngModel)]="t.rate" [disabled]="!canEdit()" class="num" /></td>
-            <td><input type="checkbox" [(ngModel)]="t.active" [disabled]="!canEdit()" /></td>
-            <td>@if (canEdit()) { <button (click)="saveTax(t)">Speichern</button> }</td>
-          </tr>
-        }
-        @if (canEdit()) {
-          <tr class="new">
-            <td><input [(ngModel)]="newTax.name" placeholder="Neue Bezeichnung" /></td>
-            <td><input type="number" step="0.01" [(ngModel)]="newTax.rate" class="num" /></td>
-            <td></td>
-            <td><button (click)="addTax()" [disabled]="!newTax.name">Anlegen</button></td>
-          </tr>
-        }
-      </tbody>
-    </table>
-    @if (fieldErrors()['name']) { <p class="e">{{ fieldErrors()['name'] }}</p> }
-    <p class="info">Der Steuersatz einer bereits geschriebenen Rechnung ändert sich dadurch nie – Rechnungen speichern ihren Satz selbst (GoBD).</p>
+    <div class="card">
+      <table class="table align-middle mb-0">
+        <thead class="table-light"><tr><th>Bezeichnung</th><th style="width: 140px">Satz (%)</th><th style="width: 80px">Aktiv</th><th style="width: 130px"></th></tr></thead>
+        <tbody>
+          @for (t of taxRates(); track t.id) {
+            <tr>
+              <td><input class="form-control form-control-sm" [(ngModel)]="t.name" [disabled]="!canEdit()" [attr.aria-label]="'Bezeichnung ' + t.name" /></td>
+              <td><input type="number" step="0.01" class="form-control form-control-sm" [(ngModel)]="t.rate" [disabled]="!canEdit()" aria-label="Satz in Prozent" /></td>
+              <td><input type="checkbox" class="form-check-input" [(ngModel)]="t.active" [disabled]="!canEdit()" aria-label="Aktiv" /></td>
+              <td>@if (canEdit()) { <button class="btn btn-sm btn-outline-primary" (click)="saveTax(t)">Speichern</button> }</td>
+            </tr>
+          }
+          @if (canEdit()) {
+            <tr class="table-light">
+              <td><input class="form-control form-control-sm" [(ngModel)]="newTax.name" placeholder="Neue Bezeichnung" aria-label="Neue Bezeichnung" /></td>
+              <td><input type="number" step="0.01" class="form-control form-control-sm" [(ngModel)]="newTax.rate" aria-label="Neuer Satz" /></td>
+              <td></td>
+              <td><button class="btn btn-sm btn-primary" (click)="addTax()" [disabled]="!newTax.name">Anlegen</button></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (fieldErrors()['name']) { <p class="text-danger small mt-2">{{ fieldErrors()['name'] }}</p> }
+    <p class="text-body-secondary small mt-3">Der Steuersatz einer bereits geschriebenen Rechnung ändert sich dadurch nie – Rechnungen speichern ihren Satz selbst (GoBD).</p>
   }
 
   @case ('nummern') {
-    <table>
-      <thead>
-        <tr><th>Beleg</th><th>Präfix</th><th>Jahr</th><th>Stellen</th><th>Neu im Jahr</th><th>Nächste Nr.</th><th>Vorschau</th><th></th></tr>
-      </thead>
-      <tbody>
-        @for (r of ranges(); track r.id) {
-          <tr>
-            <td>{{ r.label }}</td>
-            <td><input [(ngModel)]="r.prefix" [disabled]="!canEdit()" class="s" /></td>
-            <td><input type="checkbox" [(ngModel)]="r.include_year" [disabled]="!canEdit()" /></td>
-            <td><input type="number" min="1" max="10" [(ngModel)]="r.padding" [disabled]="!canEdit()" class="num" /></td>
-            <td><input type="checkbox" [(ngModel)]="r.reset_yearly" [disabled]="!canEdit()" /></td>
-            <td><input type="number" min="1" [(ngModel)]="r.next_number" [disabled]="!canEdit()" class="num" /></td>
-            <td><code>{{ r.preview }}</code></td>
-            <td>@if (canEdit()) { <button (click)="saveRange(r)">Speichern</button> }</td>
-          </tr>
-        }
-      </tbody>
-    </table>
-    @if (fieldErrors()['next_number']) { <p class="e">{{ fieldErrors()['next_number'] }}</p> }
-    <p class="info">Lückenlose Nummern (GoBD): Die nächste Nummer kann nur erhöht werden, nie verkleinert.</p>
+    <div class="card">
+      <table class="table align-middle mb-0">
+        <thead class="table-light">
+          <tr><th>Beleg</th><th>Präfix</th><th>Jahr</th><th>Stellen</th><th>Neu im Jahr</th><th>Nächste Nr.</th><th>Vorschau</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (r of ranges(); track r.id) {
+            <tr>
+              <td>{{ r.label }}</td>
+              <td><input class="form-control form-control-sm" style="width: 80px" [(ngModel)]="r.prefix" [disabled]="!canEdit()" aria-label="Präfix" /></td>
+              <td><input type="checkbox" class="form-check-input" [(ngModel)]="r.include_year" [disabled]="!canEdit()" aria-label="Jahr in Nummer" /></td>
+              <td><input type="number" min="1" max="10" class="form-control form-control-sm" style="width: 80px" [(ngModel)]="r.padding" [disabled]="!canEdit()" aria-label="Stellen" /></td>
+              <td><input type="checkbox" class="form-check-input" [(ngModel)]="r.reset_yearly" [disabled]="!canEdit()" aria-label="Jährlich neu beginnen" /></td>
+              <td><input type="number" min="1" class="form-control form-control-sm" style="width: 110px" [(ngModel)]="r.next_number" [disabled]="!canEdit()" aria-label="Nächste Nummer" /></td>
+              <td><code>{{ r.preview }}</code></td>
+              <td>@if (canEdit()) { <button class="btn btn-sm btn-outline-primary" (click)="saveRange(r)">Speichern</button> }</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (fieldErrors()['next_number']) { <p class="text-danger small mt-2">{{ fieldErrors()['next_number'] }}</p> }
+    <p class="text-body-secondary small mt-3">Lückenlose Nummern (GoBD): Die nächste Nummer kann nur erhöht werden, nie verkleinert.</p>
   }
 }

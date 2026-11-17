@@ -1,12 +1,17 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BrandingController;
 use App\Http\Controllers\Api\CustomerChildController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\SettingsController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+
+// Öffentlich: Name, Farbe und Logo für die Login-Seite.
+Route::get('/branding', [BrandingController::class, 'show']);
+Route::get('/branding/logo', [BrandingController::class, 'logo']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -42,6 +47,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/customers/{customer}/anonymize', [CustomerController::class, 'anonymize']);
 
         Route::put('/settings/company', [SettingsController::class, 'updateCompany']);
+        Route::post('/settings/logo', [SettingsController::class, 'uploadLogo']);
+        Route::delete('/settings/logo', [SettingsController::class, 'deleteLogo']);
         Route::post('/settings/tax-rates', [SettingsController::class, 'storeTaxRate']);
         Route::put('/settings/tax-rates/{taxRate}', [SettingsController::class, 'updateTaxRate']);
         Route::put('/settings/number-ranges/{numberRange}', [SettingsController::class, 'updateNumberRange']);

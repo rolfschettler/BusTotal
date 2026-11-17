@@ -9,6 +9,7 @@ use App\Models\TaxRate;
 use App\Services\NumberRangeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class SettingsController extends Controller
@@ -42,7 +43,13 @@ class SettingsController extends Controller
             'letterhead_note' => ['nullable', 'string', 'max:2000'],
             'footer_text' => ['nullable', 'string', 'max:2000'],
             'payment_term_days' => ['required', 'integer', 'min:0', 'max:365'],
+            // Weißer Text auf der Markenfarbe muss lesbar bleiben (WCAG AA, Kontrast mindestens 4,5:1).
+            'brand_color' => ['sometimes', 'required', 'regex:/^#[0-9A-Fa-f]{6}$/', fn ($a, $v, $fail) => self::contrastWithWhite($v) >= 4.5 || $fail('Die Farbe ist zu hell: weiße Schrift darauf wäre schlecht lesbar.')],
         ]);
+
+        if (isset($data['brand_color'])) {
+            $data['brand_color'] = strtolower($data['brand_color']);
+        }
 
         if (! empty($data['iban'])) {
             $data['iban'] = strtoupper(str_replace(' ', '', $data['iban']));
@@ -50,6 +57,44 @@ class SettingsController extends Controller
 
         $company = CompanySetting::current();
         $company->update($data);
+
+        return response()->json($company->fresh());
+    }
+
+    // ---------- Logo ----------
+
+    public function uploadLogo(Request $request): JsonResponse
+    {
+        // Nur Pixelbilder, bewusst kein SVG (kann Skripte enthalten). Der Typ wird am Inhalt geprüft,
+        // nicht am Dateinamen.
+        $request->validate([
+            'logo' => ['required', 'file', 'mimes:png,jpg,jpeg,webp', 'max:1024'],
+        ], [
+            'logo.mimes' => 'Erlaubt sind PNG, JPG und WebP.',
+            'logo.max' => 'Das Logo darf höchstens 1 MB groß sein.',
+        ]);
+
+        $company = CompanySetting::current();
+        $old = $company->logo_path;
+
+        $file = $request->file('logo');
+        $path = $file->storeAs('logos', bin2hex(random_bytes(8)).'.'.$file->extension(), 'local');
+
+        $company->forceFill(['logo_path' => $path])->save();
+        if ($old) {
+            Storage::disk('local')->delete($old);
+        }
+
+        return response()->json($company->fresh());
+    }
+
+    public function deleteLogo(): JsonResponse
+    {
+        $company = CompanySetting::current();
+        if ($company->logo_path) {
+            Storage::disk('local')->delete($company->logo_path);
+            $company->forceFill(['logo_path' => null])->save();
+        }
 
         return response()->json($company->fresh());
     }
@@ -117,6 +162,22 @@ class SettingsController extends Controller
         $numberRange->update($data);
 
         return response()->json($numberRange->fresh()->toArray() + ['preview' => $numbers->preview($numberRange->fresh())]);
+    }
+
+    /** Kontrastverhältnis zwischen Weiß und der Farbe (WCAG 2.x). 21 = schwarz, 1 = weiß. */
+    private static function contrastWithWhite(string $hex): float
+    {
+        $channel = function (int $v): float {
+            $c = $v / 255;
+
+            return $c <= 0.03928 ? $c / 12.92 : (($c + 0.055) / 1.055) ** 2.4;
+        };
+        $hex = ltrim($hex, '#');
+        $l = 0.2126 * $channel(hexdec(substr($hex, 0, 2)))
+           + 0.7152 * $channel(hexdec(substr($hex, 2, 2)))
+           + 0.0722 * $channel(hexdec(substr($hex, 4, 2)));
+
+        return 1.05 / ($l + 0.05);
     }
 
     /** IBAN-Prüfung nach ISO 13616 (Modulo 97). */

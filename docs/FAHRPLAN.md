@@ -113,6 +113,12 @@ Getroffene Entscheidungen:
 - Phase 2 Kundenverwaltung: Kunden (Firma/Privat/Schule/Verein/Reisebüro), Ansprechpartner (ein Hauptansprechpartner), Zusatzadressen, Zahlungsziel, automatische Kunden- und Debitorennummer (ab 10000), Suche/Filter/Seiten, Dublettenprüfung, Notizen, Archivieren statt Löschen, DSGVO-Export und Anonymisierung (nur Admin). Rollen: Fahrer ohne Zugriff. 38 Backend-Tests grün, im Browser geprüft (Anlegen, Dublette, Ansprechpartner, Fahrer-Sperre).
 - Offen/Hinweis: Alte Audit-Log-Einträge enthalten weiterhin frühere Feldwerte eines Kunden (Protokoll ist unveränderlich). Mit Steuerberater/Datenschutz klären, ob das für die DSGVO-Löschung ausreicht (Aufbewahrungspflicht).
 
-**Nächster Schritt:** Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen) und Phase 3 Mandantenfähigkeit (Subdomain → eigene DB je Mandant) oder Phase 4 Fuhrpark.
+**Erledigt (2026-11-18, Oberfläche):**
+- Layout: feste Kopfleiste, Seitenleiste links, nur der Inhalt scrollt. Umstellung auf Bootstrap 5.3 + ng-bootstrap (Login, Rahmen, Kunden, Einstellungen), eigene Bestätigungs-Dialoge statt Browser-`confirm`.
+- Branding je Firma: Markenfarbe (mit Kontrastprüfung gegen weiße Schrift) und Logo (PNG/JPG/WebP, max. 1 MB, privat gespeichert), öffentliche Schnittstelle `/api/branding` für die Login-Seite. 50 Backend-Tests grün, im Browser geprüft.
+- Entscheidungen: PC-first, nüchtern; Mobil nur auf Zuruf; Hilfesystem mit Sprungmarken wird separat besprochen (noch nicht gebaut).
+- Technik-Hinweis: Das Logo liegt auf dem privaten Speicher und wird über die API ausgeliefert (kein `storage:link` nötig, passt zu Mittwald). Bei der Mandantenfähigkeit (Phase 3) muss `/api/branding` den Mandanten aus der Subdomain bestimmen.
+
+**Nächster Schritt:** Hilfesystem besprechen, dann Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen) und Phase 3 Mandantenfähigkeit (Subdomain → eigene DB je Mandant) oder Phase 4 Fuhrpark.
 
 

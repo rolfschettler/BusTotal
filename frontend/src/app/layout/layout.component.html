@@ -1,21 +1,43 @@
-<header class="top">
-  <strong class="brand">BusTotal</strong>
-  <nav>
-    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Start</a>
-    @if (auth.user()?.role !== 'fahrer') {
-      <a routerLink="/kunden" routerLinkActive="active">Kunden</a>
+<header class="topbar">
+  <a routerLink="/" class="brand">
+    @if (brand.logoUrl(); as logo) {
+      <img [src]="logo" [alt]="brand.name()" class="logo" />
     }
-    <a routerLink="/einstellungen" routerLinkActive="active">Einstellungen</a>
-  </nav>
-  <span class="spacer"></span>
-  @if (auth.user(); as u) {
-    <span class="who">{{ u.name }} · {{ rolle(u.role) }}</span>
-  }
-  <button type="button" (click)="auth.logout()">Abmelden</button>
+    <span>{{ brand.name() }}</span>
+  </a>
+
+  <div class="ms-auto" ngbDropdown placement="bottom-end">
+    @if (auth.user(); as u) {
+      <button type="button" class="btn btn-sm user-btn" ngbDropdownToggle id="userMenu">
+        {{ u.name }} <span class="role">· {{ rolle(u.role) }}</span>
+      </button>
+      <div ngbDropdownMenu aria-labelledby="userMenu">
+        <div class="dropdown-item-text small text-body-secondary">{{ u.email }}</div>
+        <div class="dropdown-divider"></div>
+        <button ngbDropdownItem type="button" (click)="auth.logout()">Abmelden</button>
+      </div>
+    }
+  </div>
 </header>
 
-<main class="scroll">
-  <div class="content">
-    <router-outlet />
-  </div>
-</main>
+<div class="body">
+  <aside class="sidebar">
+    <nav class="nav flex-column" aria-label="Hauptmenü">
+      <a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Start</a>
+
+      @if (auth.user()?.role !== 'fahrer') {
+        <div class="group">Stammdaten</div>
+        <a class="nav-link" routerLink="/kunden" routerLinkActive="active">Kunden</a>
+      }
+
+      <div class="group">System</div>
+      <a class="nav-link" routerLink="/einstellungen" routerLinkActive="active">Einstellungen</a>
+    </nav>
+  </aside>
+
+  <main class="scroll">
+    <div class="content">
+      <router-outlet />
+    </div>
+  </main>
+</div>

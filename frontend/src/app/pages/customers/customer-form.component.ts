@@ -4,6 +4,7 @@ import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angu
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { debounceTime } from 'rxjs';
 import { AuthService } from '../../core/auth.service';
+import { ConfirmService } from '../../core/confirm.service';
 import {
   Address,
   Contact,
@@ -28,7 +29,6 @@ const emptyAddress = (): Address => ({
   selector: 'app-customer-form',
   imports: [ReactiveFormsModule, FormsModule, RouterLink],
   templateUrl: './customer-form.component.html',
-  styleUrl: './customer-form.component.scss',
 })
 export class CustomerFormComponent implements OnInit {
   private api = inject(CustomerService);
@@ -36,6 +36,7 @@ export class CustomerFormComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private auth = inject(AuthService);
+  private confirm = inject(ConfirmService);
 
   isAdmin = computed(() => this.auth.user()?.role === 'admin');
 
@@ -165,9 +166,14 @@ export class CustomerFormComponent implements OnInit {
 
   // ---------- Archiv, Export, DSGVO ----------
 
-  archive() {
-    if (!this.id || !confirm('Kunde archivieren? Er verschwindet aus der Liste, bleibt aber für Belege erhalten.')) return;
-    this.api.archive(this.id).subscribe(() => this.router.navigate(['/kunden']));
+  async archive() {
+    if (!this.id) return;
+    const ok = await this.confirm.ask({
+      title: 'Kunde archivieren',
+      message: 'Der Kunde verschwindet aus der Liste, bleibt aber für Belege erhalten.',
+      confirmLabel: 'Archivieren',
+    });
+    if (ok) this.api.archive(this.id).subscribe(() => this.router.navigate(['/kunden']));
   }
 
   restore() {
@@ -190,13 +196,17 @@ export class CustomerFormComponent implements OnInit {
     });
   }
 
-  anonymize() {
+  async anonymize() {
     if (!this.id) return;
-    const text =
-      'Alle personenbezogenen Daten dieses Kunden werden UNWIDERRUFLICH entfernt.\n' +
-      'Kunden- und Debitorennummer bleiben für Rechnungen erhalten.\n\nWirklich anonymisieren?';
-    if (!confirm(text)) return;
-    this.api.anonymize(this.id).subscribe(() => this.router.navigate(['/kunden']));
+    const ok = await this.confirm.ask({
+      title: 'Kunde anonymisieren',
+      message:
+        'Alle personenbezogenen Daten dieses Kunden werden UNWIDERRUFLICH entfernt.\n' +
+        'Kunden- und Debitorennummer bleiben für Rechnungen erhalten.',
+      confirmLabel: 'Endgültig anonymisieren',
+      danger: true,
+    });
+    if (ok) this.api.anonymize(this.id).subscribe(() => this.router.navigate(['/kunden']));
   }
 
   // ---------- Ansprechpartner ----------
@@ -218,9 +228,15 @@ export class CustomerFormComponent implements OnInit {
       error: (e) => this.fail(e),
     });
   }
-  deleteContact(c: Contact) {
-    if (!this.id || !c.id || !confirm(`${c.last_name} löschen?`)) return;
-    this.api.deleteContact(this.id, c.id).subscribe(() => this.reload('Ansprechpartner gelöscht.'));
+  async deleteContact(c: Contact) {
+    if (!this.id || !c.id) return;
+    const ok = await this.confirm.ask({
+      title: 'Ansprechpartner löschen',
+      message: `${c.first_name ?? ''} ${c.last_name} wirklich löschen?`.trim(),
+      confirmLabel: 'Löschen',
+      danger: true,
+    });
+    if (ok) this.api.deleteContact(this.id, c.id).subscribe(() => this.reload('Ansprechpartner gelöscht.'));
   }
 
   // ---------- Adressen ----------
@@ -242,9 +258,15 @@ export class CustomerFormComponent implements OnInit {
       error: (e) => this.fail(e),
     });
   }
-  deleteAddress(a: Address) {
-    if (!this.id || !a.id || !confirm('Adresse löschen?')) return;
-    this.api.deleteAddress(this.id, a.id).subscribe(() => this.reload('Adresse gelöscht.'));
+  async deleteAddress(a: Address) {
+    if (!this.id || !a.id) return;
+    const ok = await this.confirm.ask({
+      title: 'Adresse löschen',
+      message: `${a.street}, ${a.postal_code} ${a.city} wirklich löschen?`,
+      confirmLabel: 'Löschen',
+      danger: true,
+    });
+    if (ok) this.api.deleteAddress(this.id, a.id).subscribe(() => this.reload('Adresse gelöscht.'));
   }
 
   private reload(text: string) {
