@@ -1,8 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { BrandService } from '../../core/brand.service';
+import { ConfirmService } from '../../core/confirm.service';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { HelpService } from '../../help/help.service';
 import { NumberRange, SettingsService, TaxRate } from '../../core/settings.service';
@@ -24,11 +26,19 @@ export class SettingsComponent implements OnInit {
   private auth = inject(AuthService);
   brand = inject(BrandService);
   private help = inject(HelpService);
+  private host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private router = inject(Router);
+  private confirm = inject(ConfirmService);
 
   canEdit = computed(() => this.auth.user()?.role === 'admin');
   tab = signal<Tab>('firma');
   message = signal<{ ok: boolean; text: string } | null>(null);
   fieldErrors = signal<Record<string, string>>({});
+  saving = signal(false);
+  /** Nach dem ersten Speichern-Versuch markiert das Formular fehlerhafte Felder (Formular-Muster). */
+  formSubmitted = signal(false);
+  /** Zuletzt gespeicherter Stand, auf den "Abbrechen" zurücksetzt. */
+  private saved: unknown = null;
 
   company = this.fb.group({
     name: ['', Validators.required],
@@ -60,6 +70,8 @@ export class SettingsComponent implements OnInit {
   ngOnInit() {
     this.api.getCompany().subscribe((c) => {
       this.company.patchValue(c);
+      this.saved = this.company.getRawValue();
+      this.company.markAsPristine();
       if (!this.canEdit()) this.company.disable();
     });
     this.loadTaxRates();
@@ -81,21 +93,58 @@ export class SettingsComponent implements OnInit {
     this.fieldErrors.set({});
   }
 
+  /** Feld rot markieren: Eingabe ungültig (nach Speichern-Versuch) oder vom Server abgelehnt. */
+  invalid(name: keyof typeof this.company.controls): boolean {
+    return (this.formSubmitted() && this.company.controls[name].invalid) || !!this.fieldErrors()[name];
+  }
+
+  /** Tastenleiste "Zurück": zur Startseite, bei ungespeicherten Änderungen erst nachfragen. */
+  async back() {
+    if (this.company.dirty) {
+      const ok = await this.confirm.ask({
+        title: 'Änderungen verwerfen',
+        message: 'Es gibt ungespeicherte Änderungen. Trotzdem zurück zur Startseite?',
+        confirmLabel: 'Verwerfen',
+        danger: true,
+      });
+      if (!ok) return;
+    }
+    this.router.navigate(['/']);
+  }
+
+  /** Tastenleiste "Abbrechen": Eingaben verwerfen, auf den gespeicherten Stand zurücksetzen. */
+  cancel() {
+    this.company.reset(this.saved as never);
+    this.company.markAsPristine();
+    this.formSubmitted.set(false);
+    this.fieldErrors.set({});
+    this.message.set(null);
+  }
+
   saveCompany() {
+    this.formSubmitted.set(true);
     if (this.company.invalid) {
-      this.company.markAllAsTouched();
+      this.notify(false, 'Bitte die markierten Felder korrigieren.');
       return;
     }
     // Leere Felder als null senden, damit der Server sie nicht als Text "" speichert.
     const raw = this.company.getRawValue() as Record<string, unknown>;
     const body = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, v === '' ? null : v]));
+    this.saving.set(true);
     this.api.saveCompany(body as never).subscribe({
       next: (c) => {
+        this.saving.set(false);
         this.company.patchValue(c);
+        this.saved = this.company.getRawValue();
+        this.company.markAsPristine();
+        this.formSubmitted.set(false);
         this.brand.load(); // neue Farbe und Name sofort überall anzeigen
         this.ok('Firmendaten gespeichert.');
       },
-      error: (e) => this.fail(e),
+      error: (e) => {
+        this.saving.set(false);
+        this.fail(e);
+      },
     });
   }
 
@@ -173,15 +222,18 @@ export class SettingsComponent implements OnInit {
 
   private ok(text: string) {
     this.fieldErrors.set({});
-    this.message.set({ ok: true, text });
+    this.notify(true, text);
   }
 
   private fail(err: HttpErrorResponse) {
     const errors: Record<string, string[]> = err.error?.errors ?? {};
     this.fieldErrors.set(Object.fromEntries(Object.entries(errors).map(([k, v]) => [k, v[0]])));
-    this.message.set({
-      ok: false,
-      text: err.status === 403 ? 'Keine Berechtigung.' : (err.error?.message ?? 'Speichern fehlgeschlagen.'),
-    });
+    this.notify(false, err.status === 403 ? 'Keine Berechtigung.' : (err.error?.message ?? 'Speichern fehlgeschlagen.'));
+  }
+
+  /** Meldung ganz oben zeigen UND dorthin scrollen: "Speichern" sitzt unten in der Tastenleiste. */
+  private notify(ok: boolean, text: string) {
+    this.message.set({ ok, text });
+    this.host.nativeElement.scrollIntoView({ block: 'start', behavior: 'smooth' });
   }
 }

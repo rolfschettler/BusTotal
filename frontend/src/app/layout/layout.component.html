@@ -1,8 +1,5 @@
 <header class="topbar">
   <a routerLink="/" class="brand">
-    @if (brand.logoUrl(); as logo) {
-      <img [src]="logo" [alt]="brand.name()" class="logo" />
-    }
     <span>{{ brand.name() }}</span>
   </a>
 

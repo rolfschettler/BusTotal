@@ -85,47 +85,48 @@
     </div>
   }
 
-  <!-- Formular: Anlegen und Bearbeiten -->
+  <!-- Formular: Anlegen und Bearbeiten. Kurzes Inline-Formular nach dem Formular-Muster
+       (docs/ClaudeCodePatterns/EditFormPattern.md): .form-area, Labels oben, Tastenleiste ohne sticky (.form-bar-static). -->
   @if (draft(); as d) {
-    <form class="card mb-3" (ngSubmit)="save()">
-      <div class="card-header fw-semibold">{{ d.id === null ? 'Neuer Benutzer' : 'Benutzer bearbeiten' }}</div>
-      <div class="card-body vstack gap-3">
-        @if (d.id === null) {
-          <div class="small text-body-secondary">Das System erzeugt ein vorläufiges Passwort, das Sie nach dem Speichern einmalig sehen.</div>
-        }
+    <div class="form-page mb-3">
+      <form id="userForm" class="form-area" #uf="ngForm" (ngSubmit)="save(uf)" novalidate [class.was-validated]="draftSubmitted()">
         <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label w-100 mb-0">Name *
-              <input class="form-control mt-1" name="name" [(ngModel)]="d.name" required [class.is-invalid]="!!fieldErrors()['name']" />
-              <span class="invalid-feedback">{{ fieldErrors()['name'] }}</span>
-            </label>
+          <div class="col-12"><div class="section-title">{{ d.id === null ? 'Neuer Benutzer' : 'Benutzer bearbeiten' }}</div></div>
+          @if (d.id === null) {
+            <div class="col-12 small text-body-secondary">Das System erzeugt ein vorläufiges Passwort, das Sie nach dem Speichern einmalig sehen.</div>
+          }
+          <div class="col-12 col-lg-4">
+            <label class="form-label" for="u_name">Name <span class="text-danger">*</span></label>
+            <input class="form-control" id="u_name" name="name" [(ngModel)]="d.name" required [class.is-invalid]="!!fieldErrors()['name']" />
+            <div class="invalid-feedback">{{ fieldErrors()['name'] || 'Bitte einen Namen angeben.' }}</div>
           </div>
-          <div class="col-md-4">
-            <label class="form-label w-100 mb-0">E-Mail *
-              <input type="email" class="form-control mt-1" name="email" [(ngModel)]="d.email" required autocomplete="off" [class.is-invalid]="!!fieldErrors()['email']" />
-              <span class="invalid-feedback">{{ fieldErrors()['email'] }}</span>
-            </label>
+          <div class="col-12 col-lg-4">
+            <label class="form-label" for="u_email">E-Mail <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" id="u_email" name="email" [(ngModel)]="d.email" required autocomplete="off" [class.is-invalid]="!!fieldErrors()['email']" />
+            <div class="invalid-feedback">{{ fieldErrors()['email'] || 'Bitte eine gültige E-Mail-Adresse angeben.' }}</div>
           </div>
-          <div class="col-md-4">
-            <label class="form-label w-100 mb-0">Rolle *
-              <select class="form-select mt-1" name="role" [(ngModel)]="d.role" [disabled]="d.id !== null && d.id === me()?.id" [class.is-invalid]="!!fieldErrors()['role']">
-                @for (r of roles; track r.value) {
-                  <option [value]="r.value">{{ r.label }}</option>
-                }
-              </select>
-              <span class="invalid-feedback">{{ fieldErrors()['role'] }}</span>
-            </label>
+          <div class="col-12 col-lg-4">
+            <label class="form-label" for="u_role">Rolle <span class="text-danger">*</span></label>
+            <select class="form-select" id="u_role" name="role" [(ngModel)]="d.role" [disabled]="d.id !== null && d.id === me()?.id" [class.is-invalid]="!!fieldErrors()['role']">
+              @for (r of roles; track r.value) {
+                <option [value]="r.value">{{ r.label }}</option>
+              }
+            </select>
+            <div class="invalid-feedback">{{ fieldErrors()['role'] }}</div>
           </div>
+          @if (fieldErrors()['user']) {
+            <div class="col-12 text-danger small">{{ fieldErrors()['user'] }}</div>
+          }
         </div>
-        @if (fieldErrors()['user']) {
-          <div class="text-danger small">{{ fieldErrors()['user'] }}</div>
-        }
+      </form>
+
+      <div class="form-bar form-bar-static">
+        <button type="submit" form="userForm" class="btn btn-primary">{{ d.id === null ? 'Anlegen' : 'Speichern' }}</button>
+        <div class="form-bar-right">
+          <button type="button" class="btn btn-outline-secondary" (click)="cancel()">Abbrechen</button>
+        </div>
       </div>
-      <div class="card-footer d-flex gap-2">
-        <button type="submit" class="btn btn-primary">{{ d.id === null ? 'Anlegen' : 'Speichern' }}</button>
-        <button type="button" class="btn btn-outline-secondary" (click)="cancel()">Abbrechen</button>
-      </div>
-    </form>
+    </div>
   }
 
   <!-- KEIN overflow-Wrapper um die Tabelle! .page-content scrollt schon beide Achsen. -->

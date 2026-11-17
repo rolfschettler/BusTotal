@@ -47,144 +47,99 @@
       </div>
     }
 
-    <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <form id="stammForm" class="form-area" [formGroup]="form" (ngSubmit)="save()" novalidate>
       <div class="row g-3">
 
         <div class="col-12"><div class="section-title">Kunde</div></div>
 
-        <div class="col-12 col-md-6">
-          <div class="form-floating">
-            <select class="form-select" id="type" formControlName="type">
-              @for (t of types(); track t.value) {
-                <option [value]="t.value">{{ t.label }}</option>
-              }
-            </select>
-            <label for="type">Art</label>
-          </div>
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="type">Art</label>
+          <select class="form-select" id="type" formControlName="type">
+            @for (t of types(); track t.value) {
+              <option [value]="t.value">{{ t.label }}</option>
+            }
+          </select>
         </div>
-        <div class="col-12 col-md-6">
-          <div class="form-floating">
-            <input class="form-control" id="company_name" placeholder="Firma" formControlName="company_name" [class.is-invalid]="invalid('company_name')" />
-            <label for="company_name">{{ isOrganisation() ? 'Firmen- / Organisationsname' : 'Firmenname (optional)' }}@if (isOrganisation()) { <span class="text-danger"> *</span> }</label>
-            <div class="invalid-feedback">Bitte einen Namen angeben.</div>
-          </div>
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="company_name">{{ isOrganisation() ? 'Firmen- / Organisationsname' : 'Firmenname (optional)' }}@if (isOrganisation()) { <span class="text-danger"> *</span> }</label>
+          <input class="form-control" id="company_name" formControlName="company_name" [class.is-invalid]="invalid('company_name')" />
+          <div class="invalid-feedback">Bitte einen Namen angeben.</div>
         </div>
 
-        <div class="col-12 col-md-6">
-          <div class="form-floating">
-            <input class="form-control" id="salutation" placeholder="Anrede" formControlName="salutation" />
-            <label for="salutation">Anrede (z. B. Herr, Frau)</label>
-          </div>
+        <div class="col-12 col-lg-4">
+          <label class="form-label" for="salutation">Anrede</label>
+          <input class="form-control" id="salutation" formControlName="salutation" />
         </div>
-        <div class="col-12 col-md-6">
-          <div class="form-floating">
-            <input class="form-control" id="first_name" placeholder="Vorname" formControlName="first_name" />
-            <label for="first_name">Vorname</label>
-          </div>
+        <div class="col-12 col-lg-4">
+          <label class="form-label" for="first_name">Vorname</label>
+          <input class="form-control" id="first_name" formControlName="first_name" />
         </div>
-        <div class="col-12 col-md-6">
-          <div class="form-floating">
-            <input class="form-control" id="last_name" placeholder="Nachname" formControlName="last_name" [class.is-invalid]="invalid('last_name')" />
-            <label for="last_name">Nachname@if (!isOrganisation()) { <span class="text-danger"> *</span> }</label>
-            <div class="invalid-feedback">Bitte einen Nachnamen angeben.</div>
-          </div>
+        <div class="col-12 col-lg-4">
+          <label class="form-label" for="last_name">Nachname@if (!isOrganisation()) { <span class="text-danger"> *</span> }</label>
+          <input class="form-control" id="last_name" formControlName="last_name" [class.is-invalid]="invalid('last_name')" />
+          <div class="invalid-feedback">Bitte einen Nachnamen angeben.</div>
         </div>
 
         <div class="col-12"><div class="section-title">Kontakt</div></div>
 
-        <div class="col-12 col-md-6">
-          <div class="form-floating">
-            <input type="email" class="form-control" id="email" placeholder="E-Mail" formControlName="email" [class.is-invalid]="invalid('email')" />
-            <label for="email">E-Mail</label>
-            <div class="invalid-feedback">{{ fieldErrors()['email'] || 'Ungültige E-Mail-Adresse.' }}</div>
-          </div>
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="email">E-Mail</label>
+          <input type="email" class="form-control" id="email" formControlName="email" [class.is-invalid]="invalid('email')" />
+          <div class="invalid-feedback">{{ fieldErrors()['email'] || 'Ungültige E-Mail-Adresse.' }}</div>
         </div>
-        <div class="col-12 col-md-6">
-          <div class="form-floating">
-            <input class="form-control" id="website" placeholder="Webseite" formControlName="website" />
-            <label for="website">Webseite</label>
-          </div>
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="website">Webseite</label>
+          <input class="form-control" id="website" formControlName="website" />
         </div>
-        <div class="col-12 col-md-6">
-          <div class="form-floating">
-            <input class="form-control" id="phone" placeholder="Telefon" formControlName="phone" />
-            <label for="phone">Telefon</label>
-          </div>
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="phone">Telefon</label>
+          <input class="form-control" id="phone" formControlName="phone" />
         </div>
-        <div class="col-12 col-md-6">
-          <div class="form-floating">
-            <input class="form-control" id="mobile" placeholder="Mobil" formControlName="mobile" />
-            <label for="mobile">Mobil</label>
-          </div>
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="mobile">Mobil</label>
+          <input class="form-control" id="mobile" formControlName="mobile" />
         </div>
 
         <div class="col-12"><div class="section-title">Rechnungsadresse</div></div>
 
-        <div class="col-12 col-md-6">
-          <div class="form-floating">
-            <input class="form-control" id="street" placeholder="Straße" formControlName="street" />
-            <label for="street">Straße, Nr.</label>
-          </div>
+        <div class="col-12">
+          <label class="form-label" for="street">Straße, Nr.</label>
+          <input class="form-control" id="street" formControlName="street" />
         </div>
-        <div class="col-12 col-md-6">
-          <div class="form-floating">
-            <input class="form-control" id="postal_code" placeholder="PLZ" formControlName="postal_code" />
-            <label for="postal_code">PLZ</label>
-          </div>
+        <div class="col-12 col-lg-3">
+          <label class="form-label" for="postal_code">PLZ</label>
+          <input class="form-control" id="postal_code" formControlName="postal_code" />
         </div>
-        <div class="col-12 col-md-6">
-          <div class="form-floating">
-            <input class="form-control" id="city" placeholder="Ort" formControlName="city" />
-            <label for="city">Ort</label>
-          </div>
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="city">Ort</label>
+          <input class="form-control" id="city" formControlName="city" />
         </div>
-        <div class="col-12 col-md-6">
-          <div class="form-floating">
-            <input class="form-control" id="country" placeholder="Land" maxlength="2" formControlName="country" [class.is-invalid]="invalid('country')" />
-            <label for="country">Land (2 Buchstaben, z. B. DE)</label>
-            <div class="invalid-feedback">Bitte den Ländercode mit zwei Buchstaben angeben.</div>
-          </div>
+        <div class="col-12 col-lg-3">
+          <label class="form-label" for="country">Land</label>
+          <input class="form-control" id="country" maxlength="2" formControlName="country" [class.is-invalid]="invalid('country')" />
+          <div class="invalid-feedback">Bitte den Ländercode mit zwei Buchstaben angeben.</div>
+          <div class="form-text">2 Buchstaben, z. B. DE</div>
         </div>
 
         <div class="col-12"><div class="section-title">Rechnung</div></div>
 
-        <div class="col-12 col-md-6">
-          <div class="form-floating">
-            <input class="form-control" id="vat_id" placeholder="USt-IdNr." formControlName="vat_id" [class.is-invalid]="invalid('vat_id')" />
-            <label for="vat_id">USt-IdNr. (z. B. DE123456789)</label>
-            <div class="invalid-feedback">{{ fieldErrors()['vat_id'] || 'Ungültiges Format, z. B. DE123456789.' }}</div>
-          </div>
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="vat_id">USt-IdNr.</label>
+          <input class="form-control" id="vat_id" formControlName="vat_id" [class.is-invalid]="invalid('vat_id')" />
+          <div class="invalid-feedback">{{ fieldErrors()['vat_id'] || 'Ungültiges Format, z. B. DE123456789.' }}</div>
+          <div class="form-text">z. B. DE123456789</div>
         </div>
-        <div class="col-12 col-md-6">
-          <div class="form-floating">
-            <input type="number" min="0" class="form-control" id="payment_term_days" placeholder="Zahlungsziel" formControlName="payment_term_days" />
-            <label for="payment_term_days">Zahlungsziel in Tagen</label>
-          </div>
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="payment_term_days">Zahlungsziel in Tagen</label>
+          <input type="number" min="0" class="form-control" id="payment_term_days" formControlName="payment_term_days" />
           <div class="form-text">Leer = Standard der Firma.</div>
         </div>
 
         <div class="col-12"><div class="section-title">Notizen (intern)</div></div>
 
         <div class="col-12">
-          <div class="form-floating">
-            <textarea class="form-control" id="notes" placeholder="Notizen" formControlName="notes"></textarea>
-            <label for="notes">Notizen</label>
-          </div>
-        </div>
-
-        <div class="col-12 d-flex flex-wrap gap-2 mt-2">
-          @if (!archived()) {
-            <button type="submit" class="btn btn-primary" [disabled]="saving()">
-              @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
-              {{ id ? 'Speichern' : 'Kunde anlegen' }}
-            </button>
-          }
-          @if (id && customer() && !archived()) {
-            <button type="button" class="btn btn-outline-secondary ms-auto" (click)="archive()"><i class="bi bi-archive me-1"></i>Archivieren</button>
-          }
-          @if (archived() && isAdmin()) {
-            <button type="button" class="btn btn-outline-secondary ms-auto" (click)="restore()"><i class="bi bi-arrow-counterclockwise me-1"></i>Wiederherstellen</button>
-          }
+          <label class="form-label" for="notes">Notizen</label>
+          <textarea class="form-control" id="notes" rows="4" formControlName="notes"></textarea>
         </div>
       </div>
     </form>
@@ -198,6 +153,29 @@
         </div>
       </section>
     }
+
+    <!-- Tastenleiste (Muster): links Speichern, Zurück; rechts seltene Aktion, Abbrechen. Klebt unten. -->
+    <div class="form-bar">
+      @if (!archived()) {
+        <button type="submit" form="stammForm" class="btn btn-primary" [disabled]="saving()">
+          @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+          {{ saving() ? 'Speichert …' : id ? 'Speichern' : 'Kunde anlegen' }}
+        </button>
+      }
+      <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
+      @if (form.dirty && !archived()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
+      <div class="form-bar-right">
+        @if (id && customer() && !archived()) {
+          <button type="button" class="btn btn-outline-secondary" (click)="archive()"><i class="bi bi-archive me-1"></i>Archivieren</button>
+        }
+        @if (archived() && isAdmin()) {
+          <button type="button" class="btn btn-outline-secondary" (click)="restore()"><i class="bi bi-arrow-counterclockwise me-1"></i>Wiederherstellen</button>
+        }
+        @if (!archived()) {
+          <button type="button" class="btn btn-outline-secondary" [disabled]="!form.dirty" [attr.title]="form.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancel()">Abbrechen</button>
+        }
+      </div>
+    </div>
   }
 
   @case ('kontakte') {
@@ -228,67 +206,55 @@
       </div>
     } @else {
       @if (contactEdit(); as c) {
-        <form #cf="ngForm" (ngSubmit)="saveContact(cf)" novalidate [class.was-validated]="contactSubmitted()">
+        <form id="contactForm" class="form-area" #cf="ngForm" (ngSubmit)="saveContact(cf)" novalidate [class.was-validated]="contactSubmitted()">
           <div class="row g-3">
             <div class="col-12"><div class="section-title">{{ c.id ? 'Ansprechpartner bearbeiten' : 'Neuer Ansprechpartner' }}</div></div>
 
-            <div class="col-12 col-md-6">
-              <div class="form-floating">
-                <input class="form-control" id="c_sal" name="sal" placeholder="Anrede" [(ngModel)]="c.salutation" />
-                <label for="c_sal">Anrede</label>
-              </div>
+            <div class="col-12 col-lg-6">
+              <label class="form-label" for="c_sal">Anrede</label>
+              <input class="form-control" id="c_sal" name="sal" [(ngModel)]="c.salutation" />
             </div>
-            <div class="col-12 col-md-6">
-              <div class="form-floating">
-                <input class="form-control" id="c_fn" name="fn" placeholder="Vorname" [(ngModel)]="c.first_name" />
-                <label for="c_fn">Vorname</label>
-              </div>
+            <div class="col-12 col-lg-6">
+              <label class="form-label" for="c_fn">Vorname</label>
+              <input class="form-control" id="c_fn" name="fn" [(ngModel)]="c.first_name" />
             </div>
-            <div class="col-12 col-md-6">
-              <div class="form-floating">
-                <input class="form-control" id="c_ln" name="ln" placeholder="Nachname" required [(ngModel)]="c.last_name" [class.is-invalid]="!!fieldErrors()['last_name']" />
-                <label for="c_ln">Nachname <span class="text-danger">*</span></label>
-                <div class="invalid-feedback">{{ fieldErrors()['last_name'] || 'Bitte einen Nachnamen angeben.' }}</div>
-              </div>
+            <div class="col-12 col-lg-6">
+              <label class="form-label" for="c_ln">Nachname <span class="text-danger">*</span></label>
+              <input class="form-control" id="c_ln" name="ln" required [(ngModel)]="c.last_name" [class.is-invalid]="!!fieldErrors()['last_name']" />
+              <div class="invalid-feedback">{{ fieldErrors()['last_name'] || 'Bitte einen Nachnamen angeben.' }}</div>
             </div>
-            <div class="col-12 col-md-6">
-              <div class="form-floating">
-                <input class="form-control" id="c_pos" name="pos" placeholder="Position" [(ngModel)]="c.position" />
-                <label for="c_pos">Position</label>
-              </div>
+            <div class="col-12 col-lg-6">
+              <label class="form-label" for="c_pos">Position</label>
+              <input class="form-control" id="c_pos" name="pos" [(ngModel)]="c.position" />
             </div>
-            <div class="col-12 col-md-6">
-              <div class="form-floating">
-                <input type="email" class="form-control" id="c_em" name="em" placeholder="E-Mail" [(ngModel)]="c.email" [class.is-invalid]="!!fieldErrors()['email']" />
-                <label for="c_em">E-Mail</label>
-                <div class="invalid-feedback">{{ fieldErrors()['email'] || 'Ungültige E-Mail-Adresse.' }}</div>
-              </div>
+            <div class="col-12 col-lg-6">
+              <label class="form-label" for="c_em">E-Mail</label>
+              <input type="email" class="form-control" id="c_em" name="em" [(ngModel)]="c.email" [class.is-invalid]="!!fieldErrors()['email']" />
+              <div class="invalid-feedback">{{ fieldErrors()['email'] || 'Ungültige E-Mail-Adresse.' }}</div>
             </div>
-            <div class="col-12 col-md-6">
-              <div class="form-floating">
-                <input class="form-control" id="c_ph" name="ph" placeholder="Telefon" [(ngModel)]="c.phone" />
-                <label for="c_ph">Telefon</label>
-              </div>
+            <div class="col-12 col-lg-6">
+              <label class="form-label" for="c_ph">Telefon</label>
+              <input class="form-control" id="c_ph" name="ph" [(ngModel)]="c.phone" />
             </div>
-            <div class="col-12 col-md-6">
-              <div class="form-floating">
-                <input class="form-control" id="c_mo" name="mo" placeholder="Mobil" [(ngModel)]="c.mobile" />
-                <label for="c_mo">Mobil</label>
-              </div>
+            <div class="col-12 col-lg-6">
+              <label class="form-label" for="c_mo">Mobil</label>
+              <input class="form-control" id="c_mo" name="mo" [(ngModel)]="c.mobile" />
             </div>
-            <div class="col-12 col-md-6">
-              <div class="form-check">
+            <div class="col-12 col-lg-6 d-flex align-items-end">
+              <div class="form-check mb-2">
                 <input id="primary" class="form-check-input" name="pri" type="checkbox" [(ngModel)]="c.is_primary" />
                 <label class="form-check-label" for="primary">Hauptansprechpartner</label>
               </div>
             </div>
-
-            <div class="col-12 d-flex gap-2 mt-2">
-              <button type="submit" class="btn btn-primary">Speichern</button>
-              <button type="button" class="btn btn-outline-secondary" (click)="contactEdit.set(null)">Abbrechen</button>
-            </div>
           </div>
         </form>
+
+        <div class="form-bar">
+          <button type="submit" form="contactForm" class="btn btn-primary">Speichern</button>
+          <div class="form-bar-right">
+            <button type="button" class="btn btn-outline-secondary" (click)="contactEdit.set(null)">Abbrechen</button>
+          </div>
+        </div>
       }
     }
   }
@@ -320,60 +286,52 @@
       </div>
     } @else {
       @if (addressEdit(); as a) {
-        <form #af="ngForm" (ngSubmit)="saveAddress(af)" novalidate [class.was-validated]="addressSubmitted()">
+        <form id="addressForm" class="form-area" #af="ngForm" (ngSubmit)="saveAddress(af)" novalidate [class.was-validated]="addressSubmitted()">
           <div class="row g-3">
             <div class="col-12"><div class="section-title">{{ a.id ? 'Adresse bearbeiten' : 'Neue Adresse' }}</div></div>
 
-            <div class="col-12 col-md-6">
-              <div class="form-floating">
-                <select class="form-select" id="a_t" name="t" [(ngModel)]="a.type">
-                  <option value="abholung">Abholung</option>
-                  <option value="lieferung">Lieferung</option>
-                  <option value="sonstige">Sonstige</option>
-                </select>
-                <label for="a_t">Art</label>
-              </div>
+            <div class="col-12 col-lg-6">
+              <label class="form-label" for="a_t">Art</label>
+              <select class="form-select" id="a_t" name="t" [(ngModel)]="a.type">
+                <option value="abholung">Abholung</option>
+                <option value="lieferung">Lieferung</option>
+                <option value="sonstige">Sonstige</option>
+              </select>
             </div>
-            <div class="col-12 col-md-6">
-              <div class="form-floating">
-                <input class="form-control" id="a_lb" name="lb" placeholder="Bezeichnung" [(ngModel)]="a.label" />
-                <label for="a_lb">Bezeichnung (z. B. Schulhof)</label>
-              </div>
+            <div class="col-12 col-lg-6">
+              <label class="form-label" for="a_lb">Bezeichnung</label>
+              <input class="form-control" id="a_lb" name="lb" [(ngModel)]="a.label" />
+              <div class="form-text">z. B. Schulhof</div>
             </div>
-            <div class="col-12 col-md-6">
-              <div class="form-floating">
-                <input class="form-control" id="a_st" name="st" placeholder="Straße" required [(ngModel)]="a.street" [class.is-invalid]="!!fieldErrors()['street']" />
-                <label for="a_st">Straße, Nr. <span class="text-danger">*</span></label>
-                <div class="invalid-feedback">{{ fieldErrors()['street'] || 'Bitte Straße und Hausnummer angeben.' }}</div>
-              </div>
+            <div class="col-12">
+              <label class="form-label" for="a_st">Straße, Nr. <span class="text-danger">*</span></label>
+              <input class="form-control" id="a_st" name="st" required [(ngModel)]="a.street" [class.is-invalid]="!!fieldErrors()['street']" />
+              <div class="invalid-feedback">{{ fieldErrors()['street'] || 'Bitte Straße und Hausnummer angeben.' }}</div>
             </div>
-            <div class="col-12 col-md-6">
-              <div class="form-floating">
-                <input class="form-control" id="a_pz" name="pz" placeholder="PLZ" required [(ngModel)]="a.postal_code" [class.is-invalid]="!!fieldErrors()['postal_code']" />
-                <label for="a_pz">PLZ <span class="text-danger">*</span></label>
-                <div class="invalid-feedback">{{ fieldErrors()['postal_code'] || 'Bitte die PLZ angeben.' }}</div>
-              </div>
+            <div class="col-12 col-lg-3">
+              <label class="form-label" for="a_pz">PLZ <span class="text-danger">*</span></label>
+              <input class="form-control" id="a_pz" name="pz" required [(ngModel)]="a.postal_code" [class.is-invalid]="!!fieldErrors()['postal_code']" />
+              <div class="invalid-feedback">{{ fieldErrors()['postal_code'] || 'Bitte die PLZ angeben.' }}</div>
             </div>
-            <div class="col-12 col-md-6">
-              <div class="form-floating">
-                <input class="form-control" id="a_ci" name="ci" placeholder="Ort" required [(ngModel)]="a.city" [class.is-invalid]="!!fieldErrors()['city']" />
-                <label for="a_ci">Ort <span class="text-danger">*</span></label>
-                <div class="invalid-feedback">{{ fieldErrors()['city'] || 'Bitte den Ort angeben.' }}</div>
-              </div>
+            <div class="col-12 col-lg-6">
+              <label class="form-label" for="a_ci">Ort <span class="text-danger">*</span></label>
+              <input class="form-control" id="a_ci" name="ci" required [(ngModel)]="a.city" [class.is-invalid]="!!fieldErrors()['city']" />
+              <div class="invalid-feedback">{{ fieldErrors()['city'] || 'Bitte den Ort angeben.' }}</div>
             </div>
-            <div class="col-12 col-md-6">
-              <div class="form-floating">
-                <input class="form-control" id="a_co" name="co" placeholder="Land" maxlength="2" [(ngModel)]="a.country" />
-                <label for="a_co">Land (z. B. DE)</label>
-              </div>
-            </div>
-
-            <div class="col-12 d-flex gap-2 mt-2">
-              <button type="submit" class="btn btn-primary">Speichern</button>
-              <button type="button" class="btn btn-outline-secondary" (click)="addressEdit.set(null)">Abbrechen</button>
+            <div class="col-12 col-lg-3">
+              <label class="form-label" for="a_co">Land</label>
+              <input class="form-control" id="a_co" name="co" maxlength="2" [(ngModel)]="a.country" />
+              <div class="form-text">2 Buchstaben, z. B. DE</div>
             </div>
           </div>
         </form>
+
+        <div class="form-bar">
+          <button type="submit" form="addressForm" class="btn btn-primary">Speichern</button>
+          <div class="form-bar-right">
+            <button type="button" class="btn btn-outline-secondary" (click)="addressEdit.set(null)">Abbrechen</button>
+          </div>
+        </div>
       }
     }
   }

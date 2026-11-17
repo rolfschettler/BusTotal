@@ -1,10 +1,17 @@
 // ---- Bootstrap-Grundwerte (vor dem Import setzen) ----
 $primary: #1d4e89;
-$body-bg: #f2f4f7;
+$body-bg: #fbfcfd; // nahezu weiß, damit sich das graue Formular (.form-area) klar abhebt
 $font-family-sans-serif: system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 $enable-shadows: false;
 $border-radius: 0.375rem;
 $table-cell-padding-y: 0.55rem;
+// Formularfelder: hell, mit deutlichem Rand. Bootstrap leitet $input-bg sonst von $body-bg ab (grau).
+$input-bg: #fff;
+$input-disabled-bg: #eef0f3;
+$form-check-input-bg: #fff;
+$input-border-color: #adb5bd;
+$input-group-addon-border-color: #adb5bd;
+$form-check-input-border: 1px solid #adb5bd;
 
 @import 'bootstrap/scss/bootstrap';
 

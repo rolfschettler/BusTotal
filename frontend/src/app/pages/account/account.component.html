@@ -1,72 +1,73 @@
 <h1 class="h3 mb-3">Mein Konto</h1>
 
-@if (forced()) {
-  <div class="alert alert-warning" role="alert">
-    <strong>Bitte vergeben Sie jetzt ein eigenes Passwort.</strong>
-    Sie haben bisher nur ein vorläufiges Passwort von Ihrem Administrator. Solange Sie es nicht ändern, können Sie nichts anderes tun.
-  </div>
-}
+<!-- Formular-Muster (docs/ClaudeCodePatterns/EditFormPattern.md) -->
+<div class="form-page">
+  @if (forced()) {
+    <div class="alert alert-warning" role="alert">
+      <strong>Bitte vergeben Sie jetzt ein eigenes Passwort.</strong>
+      Sie haben bisher nur ein vorläufiges Passwort von Ihrem Administrator. Solange Sie es nicht ändern, können Sie nichts anderes tun.
+    </div>
+  }
 
-<div class="row g-3">
-  <div class="col-lg-5">
-    <div class="card h-100">
-      <div class="card-header fw-semibold">Angemeldet als</div>
-      <div class="card-body">
-        @if (user(); as u) {
-          <dl class="mb-0">
-            <dt class="text-body-secondary fw-normal small">Name</dt>
-            <dd>{{ u.name }}</dd>
-            <dt class="text-body-secondary fw-normal small">E-Mail</dt>
-            <dd>{{ u.email }}</dd>
-            <dt class="text-body-secondary fw-normal small">Rolle</dt>
-            <dd class="mb-0">{{ roleLabel(u.role) }}</dd>
-          </dl>
-        }
+  @if (user(); as u) {
+    <p class="text-body-secondary mb-3">
+      Angemeldet als <strong class="text-body">{{ u.name }}</strong> · {{ u.email }} · {{ roleLabel(u.role) }}
+    </p>
+  }
+
+  @if (done() && !forced()) {
+    <div class="alert alert-success py-2 small" role="status">Passwort geändert. Auf allen anderen Geräten wurden Sie abgemeldet.</div>
+  }
+  @if (error()) {
+    <div class="alert alert-danger py-2 small" role="alert">{{ error() }}</div>
+  }
+
+  <form id="passwordForm" class="form-area" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <!-- Für Passwort-Manager: Sie ordnen das neue Passwort dem richtigen Benutzernamen zu und
+         schlagen "Passwort aktualisieren" vor. Unsichtbar, aber vorhanden (display:none würden sie ignorieren). -->
+    <input type="text" name="username" class="visually-hidden" autocomplete="username" tabindex="-1" aria-hidden="true"
+           readonly [value]="user()?.email ?? ''" />
+
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="section-title">Passwort ändern <app-help-link topic="benutzer" anchor="passwort-aendern" label="Passwort ändern" /></div>
+      </div>
+
+      <div class="col-12 col-lg-6">
+        <label class="form-label" for="current_password">{{ forced() ? 'Vorläufiges Passwort' : 'Aktuelles Passwort' }} <span class="text-danger">*</span></label>
+        <input type="password" class="form-control" id="current_password" formControlName="current_password" autocomplete="current-password"
+               [class.is-invalid]="invalid('current_password')" />
+        <div class="invalid-feedback">{{ errors()['current_password'] || 'Bitte das aktuelle Passwort eingeben.' }}</div>
+      </div>
+      <div class="w-100 mt-0 p-0"></div><!-- Zeilenumbruch (Bootstrap): das neue Passwort beginnt eine neue Zeile -->
+
+      <div class="col-12 col-lg-6">
+        <label class="form-label" for="password">Neues Passwort <span class="text-danger">*</span></label>
+        <input type="password" class="form-control" id="password" formControlName="password" autocomplete="new-password"
+               [class.is-invalid]="invalid('password')" />
+        <div class="invalid-feedback">{{ errors()['password'] || 'Mindestens 10 Zeichen, davon mindestens ein Buchstabe und eine Ziffer.' }}</div>
+        <div class="form-text">Mindestens 10 Zeichen, davon mindestens ein Buchstabe und eine Ziffer.</div>
+      </div>
+      <div class="col-12 col-lg-6">
+        <label class="form-label" for="password_confirmation">Neues Passwort wiederholen <span class="text-danger">*</span></label>
+        <input type="password" class="form-control" id="password_confirmation" formControlName="password_confirmation" autocomplete="new-password"
+               [class.is-invalid]="confirmInvalid()" />
+        <div class="invalid-feedback">Die beiden neuen Passwörter stimmen nicht überein.</div>
       </div>
     </div>
-  </div>
+  </form>
 
-  <div class="col-lg-7">
-    <form class="card" [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <div class="card-header fw-semibold">
-        Passwort ändern
-        <app-help-link topic="benutzer" anchor="passwort-aendern" label="Passwort ändern" />
-      </div>
-      <div class="card-body vstack gap-3">
-        <!-- Für Passwort-Manager: Sie ordnen das neue Passwort dem richtigen Benutzernamen zu und
-             schlagen "Passwort aktualisieren" vor. Unsichtbar, aber vorhanden (display:none würden sie ignorieren). -->
-        <input type="text" name="username" class="visually-hidden" autocomplete="username" tabindex="-1" aria-hidden="true"
-               readonly [value]="user()?.email ?? ''" />
-
-        @if (done() && !forced()) {
-          <div class="alert alert-success py-2 mb-0" role="status">Passwort geändert. Auf allen anderen Geräten wurden Sie abgemeldet.</div>
-        }
-        @if (error()) {
-          <div class="alert alert-danger py-2 mb-0" role="alert">{{ error() }}</div>
-        }
-
-        <label class="form-label w-100 mb-0">{{ forced() ? 'Vorläufiges Passwort' : 'Aktuelles Passwort' }}
-          <input type="password" class="form-control mt-1" formControlName="current_password" autocomplete="current-password"
-                 [class.is-invalid]="(form.controls.current_password.touched && form.controls.current_password.invalid) || !!errors()['current_password']" />
-          <span class="invalid-feedback">{{ errors()['current_password'] || 'Bitte das aktuelle Passwort eingeben.' }}</span>
-        </label>
-
-        <label class="form-label w-100 mb-0">Neues Passwort
-          <input type="password" class="form-control mt-1" formControlName="password" autocomplete="new-password"
-                 [class.is-invalid]="(form.controls.password.touched && form.controls.password.invalid) || !!errors()['password']" />
-          <span class="invalid-feedback">{{ errors()['password'] || 'Mindestens 10 Zeichen, davon mindestens ein Buchstabe und eine Ziffer.' }}</span>
-          <span class="form-text">Mindestens 10 Zeichen, davon mindestens ein Buchstabe und eine Ziffer.</span>
-        </label>
-
-        <label class="form-label w-100 mb-0">Neues Passwort wiederholen
-          <input type="password" class="form-control mt-1" formControlName="password_confirmation" autocomplete="new-password"
-                 [class.is-invalid]="form.controls.password_confirmation.touched && (form.hasError('mismatch') || form.controls.password_confirmation.invalid)" />
-          <span class="invalid-feedback">Die beiden neuen Passwörter stimmen nicht überein.</span>
-        </label>
-      </div>
-      <div class="card-footer">
-        <button type="submit" class="btn btn-primary" [disabled]="busy()">{{ busy() ? 'Speichern …' : 'Passwort ändern' }}</button>
-      </div>
-    </form>
+  <!-- Tastenleiste (Muster): links Speichern, Zurück; rechts Abbrechen. Klebt unten. -->
+  <div class="form-bar">
+    <button type="submit" form="passwordForm" class="btn btn-primary" [disabled]="busy()">
+      @if (busy()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+      {{ busy() ? 'Speichert …' : 'Passwort ändern' }}
+    </button>
+    @if (!forced()) {
+      <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
+    }
+    <div class="form-bar-right">
+      <button type="button" class="btn btn-outline-secondary" [disabled]="!form.dirty" [attr.title]="form.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancel()">Abbrechen</button>
+    </div>
   </div>
 </div>

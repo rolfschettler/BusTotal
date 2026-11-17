@@ -16,156 +16,187 @@
 
 @switch (tab()) {
   @case ('firma') {
-    <form [formGroup]="company" (ngSubmit)="saveCompany()" novalidate>
-      <div class="row g-3">
-        <div class="col-lg-6">
-          <div class="card h-100">
-            <div class="card-header fw-semibold">Firma</div>
-            <div class="card-body vstack gap-3">
-              <label class="form-label w-100 mb-0">Firmenname *
-                <input class="form-control mt-1" formControlName="name"
-                       [class.is-invalid]="company.controls.name.touched && company.controls.name.invalid" />
-                <span class="invalid-feedback">Bitte einen Firmennamen angeben.</span>
-              </label>
-              <label class="form-label w-100 mb-0">Rechtsform<input class="form-control mt-1" formControlName="legal_form" placeholder="z. B. GmbH" /></label>
-              <label class="form-label w-100 mb-0">Geschäftsführer<input class="form-control mt-1" formControlName="managing_director" /></label>
-              <label class="form-label w-100 mb-0">Handelsregister<input class="form-control mt-1" formControlName="commercial_register" placeholder="HRB 12345, Amtsgericht …" /></label>
-            </div>
+    <!-- Formular-Muster (docs/ClaudeCodePatterns/EditFormPattern.md): .form-page begrenzt die Breite und hält die Tastenleiste -->
+    <div class="form-page">
+      <form id="companyForm" class="form-area" [formGroup]="company" (ngSubmit)="saveCompany()" novalidate>
+        <div class="row g-3">
+
+          <div class="col-12"><div class="section-title">Firma</div></div>
+
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="s_name">Firmenname <span class="text-danger">*</span></label>
+            <input class="form-control" id="s_name" formControlName="name" [class.is-invalid]="invalid('name')" />
+            <div class="invalid-feedback">Bitte einen Firmennamen angeben.</div>
           </div>
-        </div>
-
-        <div class="col-lg-6">
-          <div class="card h-100">
-            <div class="card-header fw-semibold">Adresse &amp; Kontakt</div>
-            <div class="card-body vstack gap-3">
-              <label class="form-label w-100 mb-0">Straße, Nr.<input class="form-control mt-1" formControlName="street" /></label>
-              <div class="row g-2">
-                <div class="col-3"><label class="form-label w-100 mb-0">PLZ<input class="form-control mt-1" formControlName="postal_code" /></label></div>
-                <div class="col-6"><label class="form-label w-100 mb-0">Ort<input class="form-control mt-1" formControlName="city" /></label></div>
-                <div class="col-3"><label class="form-label w-100 mb-0">Land<input class="form-control mt-1" formControlName="country" maxlength="2" /></label></div>
-              </div>
-              <div class="row g-2">
-                <div class="col"><label class="form-label w-100 mb-0">Telefon<input class="form-control mt-1" formControlName="phone" /></label></div>
-                <div class="col"><label class="form-label w-100 mb-0">E-Mail<input type="email" class="form-control mt-1" formControlName="email" [class.is-invalid]="company.controls.email.touched && company.controls.email.invalid" /></label></div>
-              </div>
-              <label class="form-label w-100 mb-0">Webseite<input class="form-control mt-1" formControlName="website" /></label>
-            </div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="s_legal">Rechtsform</label>
+            <input class="form-control" id="s_legal" formControlName="legal_form" />
+            <div class="form-text">z. B. GmbH</div>
           </div>
-        </div>
-
-        <div class="col-lg-6">
-          <div class="card h-100">
-            <div class="card-header fw-semibold">Steuer</div>
-            <div class="card-body vstack gap-3">
-              <label class="form-label w-100 mb-0">Steuernummer<input class="form-control mt-1" formControlName="tax_number" /></label>
-              <label class="form-label w-100 mb-0">USt-IdNr.
-                <input class="form-control mt-1" formControlName="vat_id" placeholder="DE123456789" [class.is-invalid]="!!fieldErrors()['vat_id']" />
-                <span class="invalid-feedback">Format: z. B. DE123456789</span>
-              </label>
-            </div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="s_md">Geschäftsführer</label>
+            <input class="form-control" id="s_md" formControlName="managing_director" />
           </div>
-        </div>
-
-        <div class="col-lg-6">
-          <div class="card h-100">
-            <div class="card-header fw-semibold">Bank <app-help-link topic="einstellungen" anchor="iban" label="IBAN und BIC" /></div>
-            <div class="card-body vstack gap-3">
-              <label class="form-label w-100 mb-0">Bank<input class="form-control mt-1" formControlName="bank_name" /></label>
-              <label class="form-label w-100 mb-0">IBAN
-                <input class="form-control mt-1" formControlName="iban" [class.is-invalid]="!!fieldErrors()['iban']" />
-                <span class="invalid-feedback">{{ fieldErrors()['iban'] }}</span>
-              </label>
-              <div class="row g-2">
-                <div class="col">
-                  <label class="form-label w-100 mb-0">BIC
-                    <input class="form-control mt-1" formControlName="bic" [class.is-invalid]="!!fieldErrors()['bic']" />
-                    <span class="invalid-feedback">Ungültige BIC.</span>
-                  </label>
-                </div>
-                <div class="col"><label class="form-label w-100 mb-0">Zahlungsziel (Tage)<input type="number" min="0" class="form-control mt-1" formControlName="payment_term_days" /></label></div>
-              </div>
-            </div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="s_hr">Handelsregister</label>
+            <input class="form-control" id="s_hr" formControlName="commercial_register" />
+            <div class="form-text">z. B. HRB 12345, Amtsgericht …</div>
           </div>
-        </div>
 
-        <div class="col-12">
-          <div class="card">
-            <div class="card-header fw-semibold">Briefkopf &amp; Fußzeile auf Belegen</div>
-            <div class="card-body vstack gap-3">
-              <label class="form-label w-100 mb-0">Zusatz im Briefkopf<textarea rows="2" class="form-control mt-1" formControlName="letterhead_note"></textarea></label>
-              <label class="form-label w-100 mb-0">Fußzeile<textarea rows="3" class="form-control mt-1" formControlName="footer_text"></textarea></label>
-            </div>
+          <div class="col-12"><div class="section-title">Adresse und Kontakt</div></div>
+
+          <div class="col-12">
+            <label class="form-label" for="s_street">Straße, Nr.</label>
+            <input class="form-control" id="s_street" formControlName="street" />
           </div>
-        </div>
+          <div class="col-12 col-lg-3">
+            <label class="form-label" for="s_zip">PLZ</label>
+            <input class="form-control" id="s_zip" formControlName="postal_code" />
+          </div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="s_city">Ort</label>
+            <input class="form-control" id="s_city" formControlName="city" />
+          </div>
+          <div class="col-12 col-lg-3">
+            <label class="form-label" for="s_country">Land</label>
+            <input class="form-control" id="s_country" maxlength="2" formControlName="country" [class.is-invalid]="invalid('country')" />
+            <div class="invalid-feedback">Bitte den Ländercode mit zwei Buchstaben angeben.</div>
+            <div class="form-text">2 Buchstaben, z. B. DE</div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="s_phone">Telefon</label>
+            <input class="form-control" id="s_phone" formControlName="phone" />
+          </div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="s_email">E-Mail</label>
+            <input type="email" class="form-control" id="s_email" formControlName="email" [class.is-invalid]="invalid('email')" />
+            <div class="invalid-feedback">{{ fieldErrors()['email'] || 'Ungültige E-Mail-Adresse.' }}</div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="s_web">Webseite</label>
+            <input class="form-control" id="s_web" formControlName="website" />
+          </div>
 
-        <div class="col-12">
-          <div class="card">
-            <div class="card-header fw-semibold">Erscheinungsbild <app-help-link topic="einstellungen" anchor="erscheinungsbild" label="Erscheinungsbild" /></div>
-            <div class="card-body">
-              <div class="row g-4">
-                <div class="col-lg-6">
-                  <div class="d-flex align-items-center mb-2">
-                    <label class="form-label mb-0" for="brandHex">Markenfarbe</label>
-                    <app-help-link topic="einstellungen" anchor="markenfarbe" label="Markenfarbe" />
-                  </div>
-                  <div class="d-flex align-items-center gap-2">
-                    <input type="color" class="form-control form-control-color" formControlName="brand_color" aria-label="Farbe wählen" />
-                    <input id="brandHex" class="form-control w-auto font-monospace" formControlName="brand_color" maxlength="7"
-                           [class.is-invalid]="!!fieldErrors()['brand_color'] || company.controls.brand_color.invalid" />
-                  </div>
-                  @if (fieldErrors()['brand_color']) {
-                    <div class="text-danger small mt-1">{{ fieldErrors()['brand_color'] }}</div>
-                  } @else if (company.controls.brand_color.invalid) {
-                    <div class="text-danger small mt-1">Bitte eine Farbe wie #1d4e89 angeben.</div>
-                  }
-                  <div class="form-text">Weiße Schrift muss darauf gut lesbar sein, sehr helle Farben werden abgelehnt.</div>
+          <div class="col-12"><div class="section-title">Steuer</div></div>
 
-                  <div class="preview mt-3 p-3 rounded border" [style.--brand]="company.controls.brand_color.valid ? company.controls.brand_color.value : null">
-                    <div class="small text-body-secondary mb-2">Vorschau</div>
-                    <div class="d-flex gap-2 align-items-center">
-                      <span class="btn btn-primary btn-sm pe-none">Speichern</span>
-                      <span class="btn btn-outline-primary btn-sm pe-none">Abbrechen</span>
-                      <span class="text-brand fw-semibold">Link / Überschrift</span>
-                    </div>
-                  </div>
-                </div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="s_tax">Steuernummer</label>
+            <input class="form-control" id="s_tax" formControlName="tax_number" />
+          </div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="s_vat">USt-IdNr.</label>
+            <input class="form-control" id="s_vat" formControlName="vat_id" [class.is-invalid]="invalid('vat_id')" />
+            <div class="invalid-feedback">{{ fieldErrors()['vat_id'] || 'Format: z. B. DE123456789' }}</div>
+            <div class="form-text">z. B. DE123456789</div>
+          </div>
 
-                <div class="col-lg-6">
-                  <div class="d-flex align-items-center mb-2">
-                    <span class="form-label mb-0">Logo</span>
-                    <app-help-link topic="einstellungen" anchor="logo" label="Logo" />
-                  </div>
-                  <div class="logo-box border rounded d-flex align-items-center justify-content-center mb-2">
-                    @if (brand.logoUrl(); as logo) {
-                      <img [src]="logo" alt="Aktuelles Logo" />
-                    } @else {
-                      <span class="text-body-secondary small">Kein Logo hochgeladen</span>
-                    }
-                  </div>
-                  @if (canEdit()) {
-                    <div class="d-flex gap-2">
-                      <label class="btn btn-outline-primary btn-sm mb-0">
-                        Logo hochladen …
-                        <input type="file" class="d-none" accept="image/png,image/jpeg,image/webp" (change)="onLogoSelected($event)" />
-                      </label>
-                      @if (brand.logoUrl()) {
-                        <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeLogo()">Entfernen</button>
-                      }
-                    </div>
-                  }
-                  @if (fieldErrors()['logo']) { <div class="text-danger small mt-1">{{ fieldErrors()['logo'] }}</div> }
-                  <div class="form-text">PNG, JPG oder WebP, höchstens 1 MB. Erscheint in der Kopfleiste und beim Login.</div>
-                </div>
+          <div class="col-12"><div class="section-title">Bank <app-help-link topic="einstellungen" anchor="iban" label="IBAN und BIC" /></div></div>
+
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="s_bank">Bank</label>
+            <input class="form-control" id="s_bank" formControlName="bank_name" />
+          </div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="s_iban">IBAN</label>
+            <input class="form-control" id="s_iban" formControlName="iban" [class.is-invalid]="invalid('iban')" />
+            <div class="invalid-feedback">{{ fieldErrors()['iban'] || 'Ungültige IBAN.' }}</div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="s_bic">BIC</label>
+            <input class="form-control" id="s_bic" formControlName="bic" [class.is-invalid]="invalid('bic')" />
+            <div class="invalid-feedback">{{ fieldErrors()['bic'] || 'Ungültige BIC.' }}</div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="s_days">Zahlungsziel (Tage)</label>
+            <input type="number" min="0" class="form-control" id="s_days" formControlName="payment_term_days" [class.is-invalid]="invalid('payment_term_days')" />
+            <div class="invalid-feedback">Bitte eine Zahl ab 0 angeben.</div>
+          </div>
+
+          <div class="col-12"><div class="section-title">Briefkopf und Fußzeile auf Belegen</div></div>
+
+          <div class="col-12">
+            <label class="form-label" for="s_head">Zusatz im Briefkopf</label>
+            <textarea rows="2" class="form-control" id="s_head" formControlName="letterhead_note"></textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="s_foot">Fußzeile</label>
+            <textarea rows="3" class="form-control" id="s_foot" formControlName="footer_text"></textarea>
+          </div>
+
+          <div class="col-12"><div class="section-title">Erscheinungsbild <app-help-link topic="einstellungen" anchor="erscheinungsbild" label="Erscheinungsbild" /></div></div>
+
+          <div class="col-12 col-lg-6">
+            <div class="d-flex align-items-center mb-1">
+              <label class="form-label mb-0" for="brandHex">Markenfarbe</label>
+              <app-help-link topic="einstellungen" anchor="markenfarbe" label="Markenfarbe" />
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <input type="color" class="form-control form-control-color" formControlName="brand_color" aria-label="Farbe wählen" />
+              <input id="brandHex" class="form-control w-auto font-monospace" formControlName="brand_color" maxlength="7" [class.is-invalid]="invalid('brand_color')" />
+            </div>
+            @if (fieldErrors()['brand_color']) {
+              <div class="text-danger small mt-1">{{ fieldErrors()['brand_color'] }}</div>
+            } @else if (invalid('brand_color')) {
+              <div class="text-danger small mt-1">Bitte eine Farbe wie #1d4e89 angeben.</div>
+            }
+            <div class="form-text">Weiße Schrift muss darauf gut lesbar sein, sehr helle Farben werden abgelehnt.</div>
+
+            <div class="preview mt-3 p-3 rounded border" [style.--brand]="company.controls.brand_color.valid ? company.controls.brand_color.value : null">
+              <div class="small text-body-secondary mb-2">Vorschau</div>
+              <div class="d-flex gap-2 align-items-center">
+                <span class="btn btn-primary btn-sm pe-none">Speichern</span>
+                <span class="btn btn-outline-primary btn-sm pe-none">Abbrechen</span>
+                <span class="text-brand fw-semibold">Link / Überschrift</span>
               </div>
             </div>
           </div>
-        </div>
 
+          <div class="col-12 col-lg-6">
+            <div class="d-flex align-items-center mb-1">
+              <span class="form-label mb-0">Logo</span>
+              <app-help-link topic="einstellungen" anchor="logo" label="Logo" />
+            </div>
+            <div class="logo-box border rounded d-flex align-items-center justify-content-center mb-2">
+              @if (brand.logoUrl(); as logo) {
+                <img [src]="logo" alt="Aktuelles Logo" />
+              } @else {
+                <span class="text-body-secondary small">Kein Logo hochgeladen</span>
+              }
+            </div>
+            @if (canEdit()) {
+              <div class="d-flex gap-2">
+                <label class="btn btn-outline-secondary btn-sm mb-0">
+                  Logo hochladen …
+                  <input type="file" class="d-none" accept="image/png,image/jpeg,image/webp" (change)="onLogoSelected($event)" />
+                </label>
+                @if (brand.logoUrl()) {
+                  <button type="button" class="btn btn-outline-danger btn-sm" (click)="removeLogo()">Entfernen</button>
+                }
+              </div>
+            }
+            @if (fieldErrors()['logo']) { <div class="text-danger small mt-1">{{ fieldErrors()['logo'] }}</div> }
+            <div class="form-text">PNG, JPG oder WebP, höchstens 1 MB. Erscheint auf der Startseite und beim Login.</div>
+          </div>
+        </div>
+      </form>
+
+      <!-- Tastenleiste (Muster): links Speichern, Zurück; rechts Abbrechen. Klebt unten. -->
+      <div class="form-bar">
         @if (canEdit()) {
-          <div class="col-12"><button type="submit" class="btn btn-primary">Speichern</button></div>
+          <button type="submit" form="companyForm" class="btn btn-primary" [disabled]="saving()">
+            @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+            {{ saving() ? 'Speichert …' : 'Speichern' }}
+          </button>
+        }
+        <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
+        @if (company.dirty && canEdit()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
+        @if (canEdit()) {
+          <div class="form-bar-right">
+            <button type="button" class="btn btn-outline-secondary" [disabled]="!company.dirty" [attr.title]="company.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancel()">Abbrechen</button>
+          </div>
         }
       </div>
-    </form>
+    </div>
   }
 
   @case ('steuern') {

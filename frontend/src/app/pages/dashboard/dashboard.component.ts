@@ -1,6 +1,7 @@
 import { DatePipe, NgComponentOutlet } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { AuthService } from '../../core/auth.service';
+import { BrandService } from '../../core/brand.service';
 import { TILES } from './tiles/tile-registry';
 
 /** Startseite: Begrüßung und die Kacheln, die zur Rolle des Benutzers passen. */
@@ -12,6 +13,7 @@ import { TILES } from './tiles/tile-registry';
 })
 export class DashboardComponent {
   private auth = inject(AuthService);
+  brand = inject(BrandService);
 
   today = new Date();
 

@@ -6,3 +6,17 @@
   gap: 16px;
   align-items: start;
 }
+
+// Firmenlogo rechts im Kopf der Startseite: weiße Karte, damit auch Logos mit weißem Hintergrund sauber sitzen
+.company-logo-card {
+  background: #fff;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  padding: 0.5rem 1rem;
+}
+.company-logo {
+  display: block;
+  height: 56px;
+  max-width: 240px;
+  object-fit: contain;
+}

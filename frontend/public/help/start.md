@@ -27,7 +27,7 @@ Offene Punkte sind Verweise: Ein Klick führt Sie an die richtige Stelle, das Fr
 
 ## Aufbau der Oberfläche {#aufbau}
 
-- **Kopfleiste (oben):** Sie bleibt immer sichtbar. Links stehen Logo und Firmenname, rechts das Fragezeichen für die Hilfe und Ihr Benutzermenü mit **Abmelden**.
+- **Kopfleiste (oben):** Sie bleibt immer sichtbar. Links steht der Firmenname, rechts das Fragezeichen für die Hilfe und Ihr Benutzermenü mit **Abmelden**.
 - **Seitenleiste (links):** Von hier erreichen Sie alle Bereiche. Welche Einträge Sie sehen, hängt von Ihrer [Rolle](/hilfe/anmeldung#rollen) ab.
 - **Arbeitsbereich (rechts):** Hier erscheint die gewählte Seite. Nur dieser Bereich scrollt.
 

@@ -29,6 +29,6 @@ Jeder Benutzer hat eine Rolle. Sie bestimmt, was er sehen und ändern darf.
 | Einstellungen ansehen | ja | ja | ja | nein |
 | Einstellungen ändern | ja | nein | nein | nein |
 
-Fahrer sehen den Menüpunkt „Einstellungen“ nicht, weil dort Bank- und Steuerdaten der Firma stehen. Name, Farbe und Logo der Firma sehen sie trotzdem in der Kopfleiste.
+Fahrer sehen den Menüpunkt „Einstellungen“ nicht, weil dort Bank- und Steuerdaten der Firma stehen. Name und Farbe der Firma sehen sie trotzdem in der Kopfleiste, das Logo auf der Startseite.
 
 Wenn Ihnen ein Menüpunkt fehlt oder eine Schaltfläche nicht erscheint, fehlt dafür in der Regel nur das Recht Ihrer Rolle. Wenden Sie sich an Ihren Administrator.

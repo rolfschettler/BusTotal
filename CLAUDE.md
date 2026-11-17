@@ -1,7 +1,9 @@
 # BusTotal – Hinweise für Claude
 
 - Listenseiten folgen dem Tabellen-Muster: `docs/ClaudeCodePatterns/TableViewPattern.md` (Vorlagen `TableViewTemplate.html/.scss` im selben Ordner).
-- Formulare folgen dem Formular-Muster: `docs/ClaudeCodePatterns/EditFormPattern.md` (Vorlagen `EditFormTemplate.html/.scss`).
+- Formulare folgen **verbindlich** dem Formular-Muster: `docs/ClaudeCodePatterns/EditFormPattern.md` (Vorlagen `EditFormTemplate.html/.scss`).
+  Kurz: Label oben (keine Floating Labels, Labels kurz und einzeilig, Hinweise als form-text darunter), weiße Bootstrap-Felder auf grauer `.form-area` (Seite hell), Tastenleiste `.form-bar` sticky unten in Formularbreite,
+  links Speichern und Zurück, rechts seltene Aktion und Abbrechen. Feldbreiten immer über das Bootstrap-Raster (`col-lg-3/4/6/8/12`, Zeile = 12), nie eigene Breiten. Abweichungen nur nach Absprache. Neue Formulare ohne Design-Rückfragen nach dem Ablauf im Muster bauen; Designfehler im Muster beheben, nicht im einzelnen Formular.
 - Suchen markieren Treffer immer mit `<app-highlight>`.
 - Prüfungen im Browser und Start von Servern nur auf ausdrückliche Anweisung des Nutzers.
 - Fahrplan und Stand: `docs/FAHRPLAN.md`.

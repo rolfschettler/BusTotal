@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { AuthService, Role } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { ROLE_OPTIONS, roleLabel } from '../../core/roles';
@@ -55,6 +55,8 @@ export class UsersComponent implements OnInit {
   currentId = signal<string | null>(null);
 
   draft = signal<Draft | null>(null);
+  /** Nach dem ersten Speichern-Versuch markiert das Formular fehlerhafte Felder (Formular-Muster). */
+  draftSubmitted = signal(false);
   /** Vorläufiges Passwort, das einmalig angezeigt wird */
   secret = signal<{ name: string; password: string } | null>(null);
   copied = signal(false);
@@ -130,12 +132,15 @@ export class UsersComponent implements OnInit {
 
   cancel() {
     this.draft.set(null);
+    this.draftSubmitted.set(false);
     this.fieldErrors.set({});
   }
 
-  save() {
+  save(f: NgForm) {
     const d = this.draft();
     if (!d) return;
+    this.draftSubmitted.set(true);
+    if (f.invalid) return;
     const body = { name: d.name.trim(), email: d.email.trim(), role: d.role };
 
     if (d.id === null) {
@@ -230,6 +235,7 @@ export class UsersComponent implements OnInit {
   }
 
   private reset() {
+    this.draftSubmitted.set(false);
     this.message.set(null);
     this.fieldErrors.set({});
     this.secret.set(null);

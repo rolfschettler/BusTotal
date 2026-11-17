@@ -1,9 +1,31 @@
 // Formular-Muster (Bearbeiten/Anlegen), siehe docs/ClaudeCodePatterns/EditFormPattern.md
 // Herkunft: DATACUR26 EditFormTemplate.scss. Einmal global, jede Formularseite nutzt nur die Klassen.
+// Kein eigenes CSS pro Seite. Klassen: .form-page, .form-area, .section-title, .form-bar.
 
 .form-page {
   display: block;
   max-width: 960px;
+
+  --field-border: #adb5bd;
+  --btn-border: #6c757d;
+}
+
+// ---- Formularfläche: dezent grau (gerade erkennbar dunkler als die Seite), darin helle Bootstrap-Felder ----
+// Drei Stufen: Seite nahezu weiß (#fbfcfd), Formular dezent grau, Felder weiß. Felder, Labels und Checkboxen bleiben Bootstrap;
+// Feldfarbe und -rand kommen aus $input-bg und $input-border-color (styles.scss).
+.form-area {
+  background: #f1f3f5;
+  border: 1px solid #dee2e6;
+  border-radius: var(--bs-border-radius);
+  padding: 1.25rem;
+}
+
+// Labels brechen NIE um, sonst rutschen Felder derselben Zeile auseinander. Labels kurz halten, Hinweise gehören in .form-text.
+.form-area .form-label {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 // Abschnittstrenner statt Karten-Rahmen oder <hr>, in der Firmenfarbe.
@@ -21,19 +43,77 @@
 .was-validated {
   .form-control:valid,
   .form-select:valid {
-    border-color: var(--bs-border-color);
+    border-color: var(--field-border);
     background-image: none;
     padding-right: 0.75rem;
   }
   .form-check-input:valid {
-    border-color: var(--bs-border-color);
+    border-color: var(--field-border);
     ~ .form-check-label {
       color: inherit;
     }
   }
 }
 
-// Mehrzeilige Felder in Floating-Label-Rahmen brauchen eine feste Höhe.
-.form-floating > textarea.form-control {
-  height: 7rem;
+// ---- Tastenleiste: klebt unten im Sichtbereich, in Formularbreite ----
+// Reihenfolge überall gleich: links Speichern, Zurück; rechts (.form-bar-right) seltene Aktion, Abbrechen.
+.form-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.65rem 1rem;
+  background: #fff;
+  border: 1px solid var(--field-border);
+  border-radius: var(--bs-border-radius);
+  box-shadow: 0 -4px 10px rgb(0 0 0 / 8%);
+
+  .btn {
+    min-width: 6.5rem;
+    font-weight: 500;
+  }
+
+  // Sekundär: weiß mit dunklem Rand, auch ohne Farbe als Taste erkennbar.
+  .btn-outline-secondary {
+    --bs-btn-color: #212529;
+    --bs-btn-bg: #fff;
+    --bs-btn-border-color: var(--btn-border);
+    --bs-btn-hover-color: #212529;
+    --bs-btn-hover-bg: #e9ecef;
+    --bs-btn-hover-border-color: #495057;
+    --bs-btn-active-color: #212529;
+    --bs-btn-active-bg: #dee2e6;
+    --bs-btn-active-border-color: #495057;
+  }
+
+  // Deaktiviert: graue Fläche, gestrichelter Rand, Mauszeiger "verboten". Der Grund steht im title-Attribut.
+  .btn-outline-secondary:disabled {
+    background: #e9ecef;
+    color: #868e96;
+    border: 1px dashed #adb5bd;
+    opacity: 1;
+    cursor: not-allowed;
+    pointer-events: auto;
+  }
+}
+
+.form-bar-right {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.form-bar-hint {
+  font-size: 0.85rem;
+  color: #8a5a00;
+}
+
+// Kurzes Inline-Formular auf einer Listenseite: Leiste im Fluss statt klebend (die Liste scrollt selbst).
+.form-bar-static {
+  position: static;
+  box-shadow: none;
 }

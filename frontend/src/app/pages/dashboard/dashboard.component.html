@@ -1,6 +1,14 @@
-<div class="d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-4">
-  <h1 class="h3 mb-0">{{ greeting() }}</h1>
-  <span class="text-body-secondary">{{ today | date: 'EEEE, d. MMMM y' }}</span>
+<!-- Kopf der Startseite: Firmenlogo (falls hochgeladen) links in einer weißen Karte wie die Kacheln, Begrüßung und Datum rechts -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+  @if (brand.logoUrl(); as logo) {
+    <div class="company-logo-card">
+      <img [src]="logo" [alt]="brand.name()" class="company-logo" />
+    </div>
+  }
+  <div [class.text-end]="brand.logoUrl()" [class.ms-auto]="brand.logoUrl()">
+    <h1 class="h3 mb-0">{{ greeting() }}</h1>
+    <span class="text-body-secondary">{{ today | date: 'EEEE, d. MMMM y' }}</span>
+  </div>
 </div>
 
 <div class="tiles">

@@ -31,7 +31,7 @@ Auf der Markenfarbe steht weiße Schrift. Damit sie gut lesbar bleibt, **lehnt d
 
 ### Logo {#logo}
 
-Mit **Logo hochladen …** wählen Sie eine Bilddatei. Das Logo erscheint in der Kopfleiste und auf der Anmeldeseite.
+Mit **Logo hochladen …** wählen Sie eine Bilddatei. Das Logo erscheint oben auf der Startseite und auf der Anmeldeseite.
 
 - Erlaubt sind **PNG, JPG und WebP** bis **1 MB**.
 - SVG-Dateien sind aus Sicherheitsgründen nicht erlaubt.

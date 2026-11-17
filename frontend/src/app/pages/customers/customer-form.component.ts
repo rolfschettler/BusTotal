@@ -185,6 +185,7 @@ export class CustomerFormComponent implements OnInit {
           return;
         }
         this.customer.set(c);
+        this.form.markAsPristine();
         this.ok('Gespeichert.');
       },
       error: (e) => {
@@ -192,6 +193,38 @@ export class CustomerFormComponent implements OnInit {
         this.fail(e);
       },
     });
+  }
+
+  /** Tastenleiste "Zurück": zur Liste, bei ungespeicherten Änderungen erst nachfragen. */
+  async back() {
+    if (this.form.dirty) {
+      const ok = await this.confirm.ask({
+        title: 'Änderungen verwerfen',
+        message: 'Es gibt ungespeicherte Änderungen. Trotzdem zurück zur Liste?',
+        confirmLabel: 'Verwerfen',
+        danger: true,
+      });
+      if (!ok) return;
+    }
+    this.router.navigate(['/kunden']);
+  }
+
+  /** Tastenleiste "Abbrechen": Eingaben verwerfen, Formular auf den gespeicherten Stand zurücksetzen. */
+  cancel() {
+    const c = this.customer();
+    if (c) {
+      this.form.reset(undefined, { emitEvent: false });
+      this.form.patchValue(this.toFormValue(c), { emitEvent: false });
+      this.typeValue.set(c.type);
+    } else {
+      this.form.reset(undefined, { emitEvent: false });
+      this.typeValue.set(this.form.controls.type.value);
+    }
+    this.applyTypeValidators();
+    this.form.markAsPristine();
+    this.formSubmitted.set(false);
+    this.fieldErrors.set({});
+    this.message.set(null);
   }
 
   // ---------- Archiv, Export, DSGVO ----------
