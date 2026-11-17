@@ -105,6 +105,8 @@ Getroffene Entscheidungen:
 
 - Phase 1.2 Audit-Log: Tabelle `audit_logs` (nur anfügen, unveränderlich), Trait `Auditable` (am User aktiv, Passwörter ausgeschlossen), Login/Logout/Fehlversuche protokolliert. 12 Tests grün.
 
-**Nächster Schritt:** Phase 1.4 Angular-Shell mit Login, danach 1.3 Mandanten-Einstellungen und die Kundenverwaltung als Lernmodul.
+- Phase 1.4 teilweise: Angular-Login (`/login`), Token-Interceptor, Auth-Guard, Startseite mit Abmelden; Proxy `/api` → Laravel (`frontend/proxy.conf.json`). Im Browser geprüft.
+
+**Nächster Schritt:** 1.3 Mandanten-Einstellungen und die Kundenverwaltung als Lernmodul.
 
 

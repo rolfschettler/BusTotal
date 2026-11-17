@@ -1,0 +1,13 @@
+<header class="top">
+  <strong>BusTotal</strong>
+  <span class="spacer"></span>
+  @if (auth.user(); as u) {
+    <span class="who">{{ u.name }} · {{ rolle(u.role) }}</span>
+  }
+  <button type="button" (click)="auth.logout()">Abmelden</button>
+</header>
+
+<main class="content">
+  <h1>Willkommen{{ auth.user() ? ', ' + auth.user()!.name : '' }}</h1>
+  <p>Die Anmeldung funktioniert. Hier entstehen als Nächstes Kunden, Fuhrpark und Disposition.</p>
+</main>

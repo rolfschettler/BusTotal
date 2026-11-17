@@ -1,0 +1,28 @@
+<main class="login">
+  <form class="card" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <h1>BusTotal</h1>
+    <p class="sub">Bitte anmelden</p>
+
+    @if (error()) {
+      <div class="error" role="alert">{{ error() }}</div>
+    }
+
+    <label>
+      E-Mail
+      <input type="email" formControlName="email" autocomplete="username" autofocus />
+    </label>
+    @if (form.controls.email.touched && form.controls.email.invalid) {
+      <small class="hint">Bitte eine gültige E-Mail-Adresse eingeben.</small>
+    }
+
+    <label>
+      Passwort
+      <input type="password" formControlName="password" autocomplete="current-password" />
+    </label>
+    @if (form.controls.password.touched && form.controls.password.invalid) {
+      <small class="hint">Bitte das Passwort eingeben.</small>
+    }
+
+    <button type="submit" [disabled]="busy()">{{ busy() ? 'Anmelden …' : 'Anmelden' }}</button>
+  </form>
+</main>

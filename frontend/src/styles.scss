@@ -1,1 +1,6 @@
-/* You can add global styles to this file, and also import other style files */
+html, body { margin: 0; }
+body {
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  background: #f2f4f7;
+  color: #222;
+}
