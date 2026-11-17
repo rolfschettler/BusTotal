@@ -101,3 +101,4 @@ Getroffene Entscheidungen:
 ## NÃ¤chster konkreter Schritt
 **Erledigt (2026-11-17):** Lokale Umgebung, Git-Repo, Laravel (/backend, MySQL `bustotal_central`), Angular (/frontend).`n**Nächster Schritt:** Phase 1 Punkt 2 – Auth (Sanctum), Benutzer, Rollen, Audit-Log; dann Kundenverwaltung als Lernmodul.
 
+

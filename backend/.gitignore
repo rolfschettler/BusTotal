@@ -27,3 +27,4 @@ Homestead.yaml
 Thumbs.db
 
 setup-dev-db.sql
+setup-test-db.sql
