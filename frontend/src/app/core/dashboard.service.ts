@@ -18,7 +18,7 @@ export interface SetupStatus {
 }
 
 export interface RecentCustomer {
-  id: number;
+  id: string;
   customer_number: string;
   display_name: string;
   postal_code: string | null;

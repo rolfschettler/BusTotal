@@ -35,7 +35,7 @@ class AuditLog extends Model
         ?Model $subject = null,
         ?array $old = null,
         ?array $new = null,
-        ?int $userId = null,
+        ?string $userId = null,
     ): self {
         $request = request();
 

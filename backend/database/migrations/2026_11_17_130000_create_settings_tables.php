@@ -10,7 +10,7 @@ return new class extends Migration
     {
         // Genau eine Zeile je Mandanten-Datenbank.
         Schema::create('company_settings', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('name');                       // Firmenname
             $table->string('legal_form', 50)->nullable(); // Rechtsform, z. B. GmbH
             $table->string('street')->nullable();
@@ -34,7 +34,7 @@ return new class extends Migration
         });
 
         Schema::create('tax_rates', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('name', 60);
             $table->decimal('rate', 5, 2);                // Prozent
             $table->boolean('active')->default(true);
@@ -42,7 +42,7 @@ return new class extends Migration
         });
 
         Schema::create('number_ranges', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('type', 30)->unique();         // rechnung, angebot, ...
             $table->string('label', 60);
             $table->string('prefix', 20)->default('');

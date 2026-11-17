@@ -9,11 +9,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('audit_logs', function (Blueprint $table) {
+            // Das Protokoll behält eine fortlaufende Zahl: Es wird nur angefügt und nie importiert.
             $table->id();
-            $table->unsignedBigInteger('user_id')->nullable()->index();
+            $table->uuid('user_id')->nullable()->index();
             $table->string('event', 40)->index();            // created, updated, deleted, login, ...
             $table->string('auditable_type')->nullable();
-            $table->unsignedBigInteger('auditable_id')->nullable();
+            $table->uuid('auditable_id')->nullable();
             $table->json('old_values')->nullable();
             $table->json('new_values')->nullable();
             $table->string('ip_address', 45)->nullable();

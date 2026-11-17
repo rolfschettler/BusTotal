@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\CustomerType;
 use App\Models\Concerns\Auditable;
 use Database\Factories\CustomerFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Customer extends Model
 {
     /** @use HasFactory<CustomerFactory> */
-    use Auditable, HasFactory, SoftDeletes;
+    use Auditable, HasFactory, HasUuids, SoftDeletes;
 
     // Nummern werden nie per Formular gesetzt, sondern vom Server vergeben.
     protected $guarded = ['id', 'customer_number', 'debitor_number'];

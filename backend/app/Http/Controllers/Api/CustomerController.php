@@ -87,7 +87,7 @@ class CustomerController extends Controller
         return response()->json(['message' => 'Kunde archiviert.']);
     }
 
-    public function restore(int $id): JsonResponse
+    public function restore(string $id): JsonResponse
     {
         $customer = Customer::onlyTrashed()->findOrFail($id);
         $customer->restore();
@@ -104,7 +104,7 @@ class CustomerController extends Controller
             'first_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             'postal_code' => ['nullable', 'string', 'max:10'],
-            'ignore' => ['nullable', 'integer'],
+            'ignore' => ['nullable', 'uuid'],
         ]);
 
         $hits = collect();

@@ -7,6 +7,7 @@ use App\Models\Concerns\Auditable;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -17,7 +18,8 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use Auditable, HasApiTokens, HasFactory, Notifiable;
+    // HasUuids: Die ID ist eine UUID (Version 7) und wird beim Anlegen automatisch vergeben.
+    use Auditable, HasApiTokens, HasFactory, HasUuids, Notifiable;
 
     protected array $auditExclude = ['password', 'remember_token'];
 

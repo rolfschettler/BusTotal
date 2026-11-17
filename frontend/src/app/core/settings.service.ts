@@ -26,14 +26,14 @@ export interface Company {
 }
 
 export interface TaxRate {
-  id: number;
+  id: string;
   name: string;
   rate: string;
   active: boolean;
 }
 
 export interface NumberRange {
-  id: number;
+  id: string;
   type: string;
   label: string;
   prefix: string;

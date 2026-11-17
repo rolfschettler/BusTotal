@@ -155,6 +155,13 @@ Getroffene Entscheidungen:
 
 **Erledigt (2026-11-19, Anmeldung komfortabler):** Login merkt sich die E-Mail-Adresse der letzten erfolgreichen Anmeldung im Browser (`localStorage`, nur die Adresse, nie das Passwort); der Cursor springt dann ins Passwortfeld; „Anderer Benutzer“ vergisst die Adresse (für gemeinsam genutzte PCs). Die Felder tragen die Attribute für Passwort-Manager (`username`, `current-password`, `new-password`); die Seite „Mein Konto“ hat dafür ein unsichtbares Benutzernamen-Feld.
 
+**Erledigt (2026-11-19, UUID als Primärschlüssel):**
+- Entscheidung des Nutzers: Alle fachlichen Tabellen (Benutzer, Kunden, Ansprechpartner, Adressen, Firmeneinstellungen, Steuersätze, Nummernkreise) haben eine **UUID Version 7** als ID (Trait `HasUuids`, Spalte `uuid('id')->primary()`), zeitlich geordnet, gut für den Datenbank-Index. Gründe: Datenübernahmen aus Fremdsystemen, Zusammenführen und Verschieben von Mandanten, nicht erratbare Adressen.
+- Ausnahmen: `audit_logs` behält eine fortlaufende Zahl als eigene ID (wird nur angefügt, nie importiert) und verweist per UUID. Technische Laravel-Tabellen (Cache, Jobs, Token-ID) bleiben unverändert. Geschäftsnummern (Kunde, Debitor, Rechnung) bleiben getrennte, lückenlose Zähler.
+- Datenübernahme: `App\Support\ImportId::for($quellsystem, $art, $quellnummer)` leitet eine **feste UUID (Version 5)** ab, damit Importe wiederholbar sind und keine Dubletten erzeugen. Der Namensraum darf sich nie ändern (ein Test hält den Wert fest). **Falle:** `id` und Nummern sind gegen Zuweisung gesperrt; Importe müssen `Model::unguarded(fn () => …)` nutzen, sonst wird die feste ID still verworfen (auch das ist getestet). Fremdschlüssel bleiben aktiv: Kunden müssen vor ihren Ansprechpartnern gespeichert werden, aber ohne Zuordnungstabelle.
+- **Regel für neue Tabellen:** `uuid('id')->primary()`, `foreignUuid(...)` für Verweise, Trait `HasUuids` am Modell; im Frontend sind IDs vom Typ `string`.
+- Die Migrationen wurden direkt geändert (es gab noch keine echte Datenbank); die Entwicklungsdatenbank wurde mit `migrate:fresh --seed` neu aufgebaut. 116 Backend-Tests grün, im Browser geprüft.
+
 **Nächster Schritt:** Hilfetexte fachlich prüfen lassen, dann Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen) und Phase 3 Mandantenfähigkeit (Subdomain → eigene DB je Mandant) oder Phase 4 Fuhrpark.
 
 

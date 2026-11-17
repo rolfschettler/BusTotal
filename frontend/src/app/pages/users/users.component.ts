@@ -10,7 +10,7 @@ import { ManagedUser, UserAdminService } from '../../core/user-admin.service';
 import { HelpLinkComponent } from '../../help/help-link.component';
 
 interface Draft {
-  id: number | null;
+  id: string | null;
   name: string;
   email: string;
   role: Role;

@@ -45,7 +45,7 @@ export class CustomerFormComponent implements OnInit {
   /** DSGVO-Löschung: Administrator und Buchhaltung (der Server prüft zusätzlich). */
   canAnonymize = computed(() => ['admin', 'buchhaltung'].includes(this.auth.user()?.role ?? ''));
 
-  id: number | null = null;
+  id: string | null = null;
   customer = signal<Customer | null>(null);
   types = signal<CustomerType[]>([]);
   tab = signal<Tab>('stamm');
@@ -84,7 +84,7 @@ export class CustomerFormComponent implements OnInit {
     this.api.types().subscribe((t) => this.types.set(t));
 
     const idParam = this.route.snapshot.paramMap.get('id');
-    this.id = idParam ? Number(idParam) : null;
+    this.id = idParam ?? null;
     if (this.id) this.load(this.id);
 
     this.form.controls.type.valueChanges.subscribe((v) => {
@@ -105,7 +105,7 @@ export class CustomerFormComponent implements OnInit {
     last_name.updateValueAndValidity({ emitEvent: false });
   }
 
-  private load(id: number) {
+  private load(id: string) {
     this.api.get(id).subscribe({
       next: (c) => {
         this.customer.set(c);

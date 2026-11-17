@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use App\Models\Concerns\Auditable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
 class CompanySetting extends Model
 {
-    use Auditable;
+    use Auditable, HasUuids;
 
     public const DEFAULT_COLOR = '#1d4e89';
 

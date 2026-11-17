@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('customers', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('customer_number', 30)->unique();          // z. B. K-00001
             $table->unsignedBigInteger('debitor_number')->nullable()->unique(); // DATEV-Debitorenkonto
             $table->string('type', 20)->index();                      // firma, privat, schule, verein, reisebuero
@@ -35,8 +35,8 @@ return new class extends Migration
         });
 
         Schema::create('contacts', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('customer_id')->constrained()->cascadeOnDelete();
             $table->string('salutation', 20)->nullable();
             $table->string('first_name')->nullable();
             $table->string('last_name');
@@ -51,8 +51,8 @@ return new class extends Migration
 
         // Weitere Adressen, z. B. Abholpunkte für Busreisen
         Schema::create('addresses', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('customer_id')->constrained()->cascadeOnDelete();
             $table->string('type', 20)->default('abholung');          // abholung, lieferung, sonstige
             $table->string('label')->nullable();
             $table->string('street')->nullable();

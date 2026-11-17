@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Role } from './auth.service';
 
 export interface ManagedUser {
-  id: number;
+  id: string;
   name: string;
   email: string;
   role: Role;
@@ -31,10 +31,10 @@ export class UserAdminService {
   create(data: UserInput) {
     return this.http.post<ManagedUser>('/api/users', data);
   }
-  update(id: number, data: UserInput & { active: boolean }) {
+  update(id: string, data: UserInput & { active: boolean }) {
     return this.http.put<ManagedUser>(`/api/users/${id}`, data);
   }
-  resetPassword(id: number) {
+  resetPassword(id: string) {
     return this.http.post<ManagedUser>(`/api/users/${id}/reset-password`, {});
   }
 }

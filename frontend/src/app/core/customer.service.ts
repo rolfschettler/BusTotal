@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 
 export interface Contact {
-  id?: number;
+  id?: string;
   salutation: string | null;
   first_name: string | null;
   last_name: string;
@@ -15,7 +15,7 @@ export interface Contact {
 }
 
 export interface Address {
-  id?: number;
+  id?: string;
   type: 'abholung' | 'lieferung' | 'sonstige';
   label: string | null;
   street: string;
@@ -26,7 +26,7 @@ export interface Address {
 }
 
 export interface Customer {
-  id: number;
+  id: string;
   customer_number: string;
   debitor_number: number | null;
   display_name: string;
@@ -87,25 +87,25 @@ export class CustomerService {
   types() {
     return this.http.get<CustomerType[]>(`${this.base}/types`);
   }
-  get(id: number) {
+  get(id: string) {
     return this.http.get<Customer>(`${this.base}/${id}`);
   }
   create(data: CustomerInput) {
     return this.http.post<Customer>(this.base, data);
   }
-  update(id: number, data: CustomerInput) {
+  update(id: string, data: CustomerInput) {
     return this.http.put<Customer>(`${this.base}/${id}`, data);
   }
-  archive(id: number) {
+  archive(id: string) {
     return this.http.delete(`${this.base}/${id}`);
   }
-  restore(id: number) {
+  restore(id: string) {
     return this.http.post<Customer>(`${this.base}/${id}/restore`, {});
   }
-  anonymize(id: number) {
+  anonymize(id: string) {
     return this.http.post(`${this.base}/${id}/anonymize`, {});
   }
-  export(id: number) {
+  export(id: string) {
     return this.http.get(`${this.base}/${id}/export`, { responseType: 'blob' });
   }
 
@@ -115,20 +115,20 @@ export class CustomerService {
     return this.http.get<DuplicateHit[]>(`${this.base}/duplicates`, { params });
   }
 
-  saveContact(customerId: number, c: Contact) {
+  saveContact(customerId: string, c: Contact) {
     return c.id
       ? this.http.put<Contact>(`${this.base}/${customerId}/contacts/${c.id}`, c)
       : this.http.post<Contact>(`${this.base}/${customerId}/contacts`, c);
   }
-  deleteContact(customerId: number, id: number) {
+  deleteContact(customerId: string, id: string) {
     return this.http.delete(`${this.base}/${customerId}/contacts/${id}`);
   }
-  saveAddress(customerId: number, a: Address) {
+  saveAddress(customerId: string, a: Address) {
     return a.id
       ? this.http.put<Address>(`${this.base}/${customerId}/addresses/${a.id}`, a)
       : this.http.post<Address>(`${this.base}/${customerId}/addresses`, a);
   }
-  deleteAddress(customerId: number, id: number) {
+  deleteAddress(customerId: string, id: string) {
     return this.http.delete(`${this.base}/${customerId}/addresses/${id}`);
   }
 }
