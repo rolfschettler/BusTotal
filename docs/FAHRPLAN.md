@@ -145,7 +145,13 @@ Getroffene Entscheidungen:
 - Sicherheit: Der Seeder legt Testbenutzer mit bekanntem Passwort **nur noch lokal** an. Auf einem echten Server legt man den ersten Admin mit `php artisan bustotal:admin-anlegen <email> [name]` an (druckt vorläufiges Passwort einmalig).
 - Das Modell `User` hat jetzt dieselben Standardwerte wie die Datenbank (`active`, `role`, `must_change_password`); Fehler dabei hatte anfangs 59 Tests gebrochen.
 - Hilfe: neues Thema „Benutzer und Passwörter“. 88 Backend-Tests grün, im Browser durchgespielt (anlegen, doppelte E-Mail, zurücksetzen, Zwangswechsel, falsche/schwache Passwörter, sperren, Selbstsperre).
-- **Offen:** Serverseitige Fehlermeldungen von Laravel sind teils noch englisch (z. B. bei Kunden-Ansprechpartnern); deutsche Meldungen müssen zentral ergänzt werden. Kein E-Mail-Versand (deshalb vorläufiges Passwort statt Einladung); kein „Passwort vergessen“ für nicht angemeldete Benutzer (der Admin setzt zurück).
+- **Offen:** Kein E-Mail-Versand (deshalb vorläufiges Passwort statt Einladung); kein „Passwort vergessen“ für nicht angemeldete Benutzer (der Admin setzt zurück).
+
+**Erledigt (2026-11-19, Meldungen eingedeutscht):**
+- Deutsche Sprachdateien in `backend/lang/de/` (Validierung mit allen Regeln, Feldnamen passend zur Oberfläche, Passwortregeln, Auth, Pagination, Passwörter) plus `lang/de.json`; Standardsprache ist `de` (auch in `config/app.php` und `.env.example`).
+- Deutsche API-Fehler für nicht angemeldet (401), nicht gefunden (404), falsche Methode (405), zu viele Anfragen (429) und Serverfehler ohne Debug-Modus (`bootstrap/app.php`). Nebeneffekt: Ein nicht gefundener Eintrag verrät nicht mehr den internen Klassennamen.
+- Ein Test (`LocalizationTest`) vergleicht die deutschen Dateien mit Laravels Vorlage und schlägt bei neuen, unübersetzten Schlüsseln nach einem Laravel-Update an. 104 Backend-Tests grün.
+- **Regel für neue Felder:** Neue Eingabefelder bekommen einen Namen unter `attributes` in `lang/de/validation.php`, sonst erscheint der interne Feldname in der Meldung.
 
 **Nächster Schritt:** Hilfetexte fachlich prüfen lassen, dann Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen) und Phase 3 Mandantenfähigkeit (Subdomain → eigene DB je Mandant) oder Phase 4 Fuhrpark.
 

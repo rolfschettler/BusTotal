@@ -1,0 +1,11 @@
+{
+    "(and :count more error)": "(und :count weiterer Fehler)",
+    "(and :count more errors)": "(und :count weitere Fehler)",
+    "Server Error": "Serverfehler",
+    "Not Found": "Nicht gefunden",
+    "Forbidden": "Keine Berechtigung",
+    "Unauthorized": "Nicht angemeldet",
+    "Too Many Requests": "Zu viele Anfragen",
+    "Service Unavailable": "Der Dienst ist vorübergehend nicht erreichbar",
+    "Page Expired": "Die Sitzung ist abgelaufen"
+}
