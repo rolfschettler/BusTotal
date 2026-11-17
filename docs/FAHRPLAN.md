@@ -1,4 +1,4 @@
-> Stand: 2026-11-17 – Phase 1.1 erledigt, 1.2 teilweise. Planung vom 2026-11-16. Erledigte Schritte mit [x] abhaken.
+> Stand: 2026-11-21 – Phasen 1 bis 4 erledigt (Fahrzeuge und Fahrer), nächste Phase: 5 Streckenplanung. Planung vom 2026-11-16. Erledigte Schritte mit [x] abhaken.
 
 # BusTotal – Grober Entwicklungsfahrplan (Bustouristik)
 
@@ -60,14 +60,14 @@ Getroffene Entscheidungen:
 - Kunden (Firma/Privat/Schule/Verein/Reisebüro), Ansprechpartner, Adressen, Zahlungsbedingungen, Debitorennummer
 - Suche, Dublettenprüfung, Notizen, DSGVO-Export/Löschung
 
-## [ ] Phase 3 – Mandantenfähigkeit
+## [x] Phase 3 – Mandantenfähigkeit
 - Zentrale DB (Mandanten, Domains, DB-Zugangsdaten verschlüsselt) + DB je Mandant
 - Middleware: Subdomain → Mandant → DB-Verbindung; Migrationen für alle Mandanten-DBs
 - Superadmin-Oberfläche: Mandant anlegen (DB-Zugangsdaten eintragen → migrieren → Admin-User)
 
-## [ ] Phase 4 – Fuhrparkverwaltung
-- Fahrzeuge (Typ, Sitzplätze, Ausstattung, Maße/Gewicht, km-Kostensatz), Fristen (HU, SP, Tacho, Wartung)
-- Fahrer/Personal (Führerschein, Fahrerkarte, Code 95, Verfügbarkeit, Urlaub)
+## [x] Phase 4 – Fuhrparkverwaltung (Fahrzeuge und Fahrer erledigt)
+- [x] Fahrzeuge (Typ, Sitzplätze, Ausstattung, Maße/Gewicht, km-Kostensatz), Fristen (HU, SP, Tacho, Wartung)
+- [x] Fahrer/Personal (Führerschein, Fahrerkarte, Code 95, Verfügbarkeit, Urlaub)
 
 ## [ ] Phase 5 – Streckenplanung (OSM)
 - Routing-Schnittstelle + Adapter für externen Dienst, Geocoding, Karte
@@ -198,6 +198,24 @@ Getroffene Entscheidungen:
 - **Fehler dabei gefunden und behoben:** War jemand bei einer gesperrten Firma noch angemeldet, blieb die Seite leer (Endlosschleife zwischen `authGuard` und `guestGuard`, weil das Token blieb). Jetzt beendet der Guard die Sitzung, wenn der Benutzer nicht geladen werden kann; die Anmeldeseite sagt bei 404 „Firma unbekannt oder gesperrt“.
 - Dev: Betreiber-Konto angelegt; die alten Tabellen `personal_access_tokens`, `cache`, `cache_locks` in `bustotal_central` wurden zu `legacy_*` umbenannt (nicht gelöscht), weil die zentrale Datenbank eigene braucht.
 
-**Nächster Schritt:** Hilfetexte fachlich prüfen lassen, dann Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen) und Phase 3 Mandantenfähigkeit (Subdomain → eigene DB je Mandant) oder Phase 4 Fuhrpark.
+**Erledigt (2026-11-21, Phase 4 Fuhrpark – Fahrzeuge):**
+- Fahrzeuge (`vehicles`, UUID, archivieren statt löschen): Fuhrparknummer und Kennzeichen eindeutig (Kennzeichen wird vereinheitlicht, archivierte Fahrzeuge blockieren es weiter), Art, Hersteller/Modell/Baujahr, Fahrgestellnummer (17 Zeichen ohne I/O/Q), Sitzplätze, Ausstattung (8 feste Schlüssel), Maße, Gesamtgewicht, Kostensatz je km, vier Fristen als Datumsspalten (HU, SP, Fahrtenschreiber, Wartung).
+- Fristen: abgelaufen (vor heute), bald fällig (heute bis 30 Tage, `Vehicle::WARN_DAYS`), sonst in Ordnung; die Logik steht im Backend (`Vehicle::deadlines`) und gleichlautend im Frontend (`shared/deadline.ts`, Testfälle in `deadline.spec.ts`).
+- Rechte: Lesen Admin/Disponent/Buchhaltung, Ändern und Archivieren Admin/Disponent, Wiederherstellen nur Admin, Fahrer kein Zugriff (kommt mit den Einsätzen).
+- Oberfläche: Fahrzeugliste nach Tabellen-Muster (server-seitig; Sortierung auch nach „Nächste Frist“, Filter Art und Fristen, Treffer-Hinweis für die Fahrgestellnummer), Formular nach Formular-Muster, Menüpunkt „Fahrzeuge“, Startseiten-Kachel „Fällige Fristen im Fuhrpark“ (Admin, Disponent; nur sichtbar, wenn etwas fällig ist), Hilfethema `fuhrpark.md`, Rollentabelle ergänzt.
+- 204 Backend-Tests grün (22 neu in `VehicleTest`), `ng build` läuft, Fristenlogik per Hilfsskript geprüft. **Im Browser noch nicht angesehen.**
+- **Für die Entwicklung:** Die neue Tabelle muss in die Firmen-Datenbanken: `php artisan tenant:migrate`.
+- **Offen in Phase 4:** Fahrer/Personal (Führerschein, Fahrerkarte, Code 95, Verfügbarkeit, Urlaub), Fahrzeug-Fristen für Fahrer in dieselbe Kachel, Demo-Daten für Fahrzeuge, Verfügbarkeit/Werkstatt-Status eines Fahrzeugs (mit der Disposition, Phase 7).
+
+**Erledigt (2026-11-21, Phase 4 Fuhrpark – Fahrer und Personal):**
+- Fahrer (`drivers`, UUID, archivieren statt löschen, z. B. bei Austritt): eigene Personalnummer (eindeutig), Name, Geburtsdatum, Kontakt, Adresse, Beschäftigung (Vollzeit/Teilzeit/Aushilfe/Extern), Eintritt, Stundensatz, Führerscheinklassen (B bis DE), Führerschein- und Fahrerkartennummer, fünf Fristen (Führerschein, P-Schein, Fahrerkarte, Code 95, ärztliche Untersuchung).
+- Abwesenheiten (`driver_absences`: Urlaub, Krank, Schulung, Sonstiges, erster und letzter Tag): Überschneidungen beim selben Fahrer werden abgelehnt, direkt anschließende Zeiträume sind erlaubt; „heute abwesend“ in Liste und Detail. Das ist die Grundlage für die Verfügbarkeitsprüfung der Disposition (Phase 7).
+- Fristenlogik jetzt gemeinsam (`HasDeadlines`) für Fahrzeuge und Fahrer; Kachel „Fällige Fristen beim Personal“ neben der des Fuhrparks.
+- **Rechte (Entscheidung von mir, bitte bestätigen):** Fahrer sind Personendaten, deshalb nur Admin und Disponent (lesen und ändern); Buchhaltung und Fahrer kein Zugriff; Wiederherstellen nur Admin.
+- Oberfläche: Liste und Formular nach den Mustern, Reiter „Abwesenheiten“, Menüpunkt „Fahrer“, Hilfethema `fahrer.md` (Entwurf), Rollentabelle ergänzt.
+- Tests: Backend alle grün (224 insgesamt, 20 neu in `DriverTest`), `ng build` läuft. **Im Browser noch nicht angesehen.** Neue Tabellen in die Firmen-Datenbanken: `php artisan tenant:migrate`.
+- **Offen:** Verknüpfung Fahrer ↔ Benutzerkonto (für die Kachel „Ihre Einsätze“, kommt mit der Disposition), Demo-Daten für Fahrzeuge und Fahrer, Datenschutz für Personendaten (Aufbewahrung nach Austritt, Anonymisierung, Auskunft) mit Steuerberater/Datenschutz klären, Fristen und Nachweise fachlich prüfen lassen. Phase 4 ist damit funktional abgeschlossen.
+
+**Nächster Schritt:** Fahrzeuge und Fahrer im Browser ansehen (Formulare, Listen, Kacheln), danach Phase 5 (Streckenplanung) oder zuerst Demo-Daten für Fuhrpark. Parallel: Hilfetexte fachlich prüfen lassen, Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen).
 
 

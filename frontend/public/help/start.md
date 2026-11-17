@@ -10,6 +10,8 @@ Die Startseite begrüßt Sie und zeigt Kacheln, die zu Ihrer [Rolle](/hilfe/anme
 |---|---|---|
 | Schnellzugriff | Administrator, Disponent, Buchhaltung | Suchfeld für Kunden und der Knopf **Neuer Kunde**. Mit **Suchen** landen Sie in der [Kundenliste](/hilfe/kunden#kundenliste), schon mit Ihrem Suchbegriff. |
 | Einrichtung | Administrator | Eine Checkliste, was für eine startklare Firma noch fehlt. |
+| Fällige Fristen im Fuhrpark | Administrator, Disponent | Abgelaufene und in 30 Tagen fällige Prüffristen der Fahrzeuge (HU, SP, Tacho, Wartung), die dringendsten zuerst. Die Kachel erscheint nur, wenn es etwas zu tun gibt. Mehr unter [Fristen](/hilfe/fuhrpark#fristen). |
+| Fällige Fristen beim Personal | Administrator, Disponent | Abgelaufene und in 30 Tagen fällige Nachweise der Fahrer (Führerschein, P-Schein, Fahrerkarte, Code 95, Untersuchung), die dringendsten zuerst. Die Kachel erscheint nur, wenn es etwas zu tun gibt. Mehr unter [Fristen](/hilfe/fahrer#fristen). |
 | Zuletzt bearbeitete Kunden | Administrator, Disponent, Buchhaltung | Die fünf zuletzt angelegten oder geänderten Kunden mit Direktlink. Archivierte Kunden erscheinen hier nicht. |
 | Ihre Einsätze | Fahrer | Hier erscheinen künftig Ihre Fahrten. Bis dahin steht dort ein Hinweis. |
 

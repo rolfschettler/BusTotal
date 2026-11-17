@@ -1,9 +1,11 @@
 import { Type } from '@angular/core';
 import { Role } from '../../../core/auth.service';
+import { DriverDeadlinesTileComponent } from './driver-deadlines.tile';
 import { DriverTileComponent } from './driver.tile';
 import { QuickActionsTileComponent } from './quick-actions.tile';
 import { RecentCustomersTileComponent } from './recent-customers.tile';
 import { SetupTileComponent } from './setup.tile';
+import { VehicleDeadlinesTileComponent } from './vehicle-deadlines.tile';
 
 export interface TileDef {
   id: string;
@@ -24,6 +26,8 @@ export interface TileDef {
 export const TILES: TileDef[] = [
   { id: 'quick-actions', roles: ['admin', 'disponent', 'buchhaltung'], component: QuickActionsTileComponent },
   { id: 'setup', roles: ['admin'], component: SetupTileComponent },
+  { id: 'vehicle-deadlines', roles: ['admin', 'disponent'], component: VehicleDeadlinesTileComponent },
+  { id: 'driver-deadlines', roles: ['admin', 'disponent'], component: DriverDeadlinesTileComponent },
   { id: 'recent-customers', roles: ['admin', 'disponent', 'buchhaltung'], component: RecentCustomersTileComponent },
   { id: 'driver-assignments', roles: ['fahrer'], component: DriverTileComponent },
 ];

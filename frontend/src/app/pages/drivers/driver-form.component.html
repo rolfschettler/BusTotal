@@ -1,0 +1,252 @@
+<!-- Formular-Muster, siehe docs/ClaudeCodePatterns/EditFormPattern.md. Die Optik kommt aus src/styles/_edit-form.scss. -->
+<a routerLink="/fahrer" class="small text-decoration-none">‹ Alle Fahrer</a>
+
+<div class="mb-3">
+  @if (driver(); as d) {
+    <h1 class="h3 mb-1">{{ d.first_name }} {{ d.last_name }}</h1>
+    <p class="mb-0 small text-body-secondary">
+      Personalnr. <code>{{ d.personnel_number }}</code>
+      @if (archived()) { <span class="badge text-bg-danger ms-2">Archiviert</span> }
+      @if (d.absent_today) { <span class="badge text-bg-secondary ms-2" title="Hat heute Urlaub, ist krank oder in Schulung">Heute abwesend</span> }
+    </p>
+  } @else {
+    <h1 class="h3 mb-0">Neuer Fahrer</h1>
+  }
+</div>
+
+@if (loading()) {
+  <div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary"></div></div>
+} @else {
+
+@if (id) {
+  <ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'stamm'" (click)="show('stamm')">Stammdaten</button></li>
+    <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'abwesenheiten'" (click)="show('abwesenheiten')">Abwesenheiten ({{ driver()?.absences?.length ?? 0 }})</button></li>
+  </ul>
+}
+
+@if (message(); as m) {
+  <div class="alert py-2 small" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
+}
+
+@switch (tab()) {
+  @case ('stamm') {
+    <form id="driverForm" class="form-area" [formGroup]="form" (ngSubmit)="save()" novalidate>
+      <div class="row g-3">
+
+        <div class="col-12"><div class="section-title">Person</div></div>
+
+        <div class="col-12 col-lg-4">
+          <label class="form-label" for="personnel_number">Personalnr. <span class="text-danger">*</span></label>
+          <input class="form-control" id="personnel_number" formControlName="personnel_number" [class.is-invalid]="invalid('personnel_number')" />
+          <div class="invalid-feedback">{{ fieldErrors()['personnel_number'] || 'Bitte eine Personalnummer angeben.' }}</div>
+          <div class="form-text">z. B. P-001</div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <label class="form-label" for="first_name">Vorname <span class="text-danger">*</span></label>
+          <input class="form-control" id="first_name" formControlName="first_name" [class.is-invalid]="invalid('first_name')" />
+          <div class="invalid-feedback">{{ fieldErrors()['first_name'] || 'Bitte einen Vornamen angeben.' }}</div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <label class="form-label" for="last_name">Nachname <span class="text-danger">*</span></label>
+          <input class="form-control" id="last_name" formControlName="last_name" [class.is-invalid]="invalid('last_name')" />
+          <div class="invalid-feedback">{{ fieldErrors()['last_name'] || 'Bitte einen Nachnamen angeben.' }}</div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+          <label class="form-label" for="birth_date">Geburtsdatum</label>
+          <input type="date" class="form-control" id="birth_date" formControlName="birth_date" [class.is-invalid]="!!fieldErrors()['birth_date']" />
+          <div class="invalid-feedback">{{ fieldErrors()['birth_date'] }}</div>
+        </div>
+
+        <div class="col-12"><div class="section-title">Kontakt</div></div>
+
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="email">E-Mail</label>
+          <input type="email" class="form-control" id="email" formControlName="email" [class.is-invalid]="invalid('email')" />
+          <div class="invalid-feedback">{{ fieldErrors()['email'] || 'Ungültige E-Mail-Adresse.' }}</div>
+        </div>
+        <div class="col-12 col-lg-3">
+          <label class="form-label" for="phone">Telefon</label>
+          <input class="form-control" id="phone" formControlName="phone" />
+        </div>
+        <div class="col-12 col-lg-3">
+          <label class="form-label" for="mobile">Mobil</label>
+          <input class="form-control" id="mobile" formControlName="mobile" />
+        </div>
+
+        <div class="col-12">
+          <label class="form-label" for="street">Straße, Nr.</label>
+          <input class="form-control" id="street" formControlName="street" />
+        </div>
+        <div class="col-12 col-lg-3">
+          <label class="form-label" for="postal_code">PLZ</label>
+          <input class="form-control" id="postal_code" formControlName="postal_code" />
+        </div>
+        <div class="col-12 col-lg-9">
+          <label class="form-label" for="city">Ort</label>
+          <input class="form-control" id="city" formControlName="city" />
+        </div>
+
+        <div class="col-12"><div class="section-title">Beschäftigung</div></div>
+
+        <div class="col-12 col-lg-4">
+          <label class="form-label" for="employment_type">Beschäftigung</label>
+          <select class="form-select" id="employment_type" formControlName="employment_type">
+            @for (t of options()?.employment_types ?? []; track t.value) {
+              <option [value]="t.value">{{ t.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="col-12 col-lg-4">
+          <label class="form-label" for="hired_on">Eintritt</label>
+          <input type="date" class="form-control" id="hired_on" formControlName="hired_on" [class.is-invalid]="!!fieldErrors()['hired_on']" />
+          <div class="invalid-feedback">{{ fieldErrors()['hired_on'] }}</div>
+        </div>
+        <div class="col-12 col-lg-4">
+          <label class="form-label" for="hourly_rate">Stundensatz</label>
+          <input type="number" step="0.01" min="0" class="form-control" id="hourly_rate" formControlName="hourly_rate" [class.is-invalid]="invalid('hourly_rate')" />
+          <div class="invalid-feedback">{{ fieldErrors()['hourly_rate'] || 'Bitte einen Betrag von 0 bis 999 angeben.' }}</div>
+          <div class="form-text">in Euro, für die Kalkulation</div>
+        </div>
+
+        <div class="col-12"><div class="section-title">Führerschein</div></div>
+
+        @for (c of options()?.license_classes ?? []; track c.value) {
+          <div class="col-6 col-lg-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" [id]="'lc_' + c.value" [checked]="has(c.value)"
+                     [disabled]="form.disabled" (change)="toggle(c.value, $any($event.target).checked)" />
+              <label class="form-check-label" [for]="'lc_' + c.value">{{ c.label }}</label>
+            </div>
+          </div>
+        }
+
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="license_number">Führerscheinnr.</label>
+          <input class="form-control" id="license_number" formControlName="license_number" />
+        </div>
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="driver_card_number">Fahrerkartennr.</label>
+          <input class="form-control" id="driver_card_number" formControlName="driver_card_number" />
+        </div>
+
+        <div class="col-12"><div class="section-title">Fristen</div></div>
+
+        @for (d of deadlineFields; track d.field) {
+          <div class="col-12" [class.col-lg-4]="$index < 3" [class.col-lg-6]="$index >= 3">
+            <label class="form-label" [for]="d.field">{{ d.label }}</label>
+            <input type="date" class="form-control" [id]="d.field" [formControlName]="d.field" [class.is-invalid]="!!fieldErrors()[d.field]" />
+            <div class="invalid-feedback">{{ fieldErrors()[d.field] }}</div>
+            @if (deadlineInfo(d.field); as info) {
+              <div class="form-text" [class]="info.cls">{{ info.text }}</div>
+            } @else {
+              <div class="form-text">{{ d.hint }}</div>
+            }
+          </div>
+        }
+
+        <div class="col-12"><div class="section-title">Notizen (intern)</div></div>
+
+        <div class="col-12">
+          <label class="form-label" for="notes">Notizen</label>
+          <textarea class="form-control" id="notes" rows="4" formControlName="notes"></textarea>
+        </div>
+      </div>
+    </form>
+
+    <!-- Tastenleiste (Muster): links Speichern, Zurück; rechts seltene Aktion, Abbrechen. Klebt unten. -->
+    <div class="form-bar">
+      @if (!archived()) {
+        <button type="submit" form="driverForm" class="btn btn-primary" [disabled]="saving()">
+          @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+          {{ saving() ? 'Speichert …' : id ? 'Speichern' : 'Fahrer anlegen' }}
+        </button>
+      }
+      <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
+      @if (form.dirty && !archived()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
+      <div class="form-bar-right">
+        @if (id && driver() && !archived()) {
+          <button type="button" class="btn btn-outline-secondary" (click)="archive()"><i class="bi bi-archive me-1"></i>Archivieren</button>
+        }
+        @if (archived() && isAdmin()) {
+          <button type="button" class="btn btn-outline-secondary" (click)="restore()"><i class="bi bi-arrow-counterclockwise me-1"></i>Wiederherstellen</button>
+        }
+        @if (!archived()) {
+          <button type="button" class="btn btn-outline-secondary" [disabled]="!form.dirty" [attr.title]="form.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancel()">Abbrechen</button>
+        }
+      </div>
+    </div>
+  }
+
+  @case ('abwesenheiten') {
+    @if (!absenceEdit()) {
+      @if (!archived()) { <button class="btn btn-primary mb-3" (click)="newAbsence()">Abwesenheit hinzufügen</button> }
+      <div class="card">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light"><tr><th>Art</th><th>Von</th><th>Bis</th><th>Tage</th><th>Notiz</th><th></th></tr></thead>
+          <tbody>
+            @for (a of driver()?.absences; track a.id) {
+              <tr>
+                <td>{{ typeLabel(a.type) }}</td>
+                <td>{{ date(a.start_date) }}</td>
+                <td>{{ date(a.end_date) }}</td>
+                <td>{{ days(a) }}</td>
+                <td>{{ a.notes }}</td>
+                <td class="text-end text-nowrap">
+                  @if (!archived()) {
+                    <button class="btn btn-sm btn-outline-secondary me-1" (click)="editAbsence(a)">Bearbeiten</button>
+                    <button class="btn btn-sm btn-outline-danger" (click)="deleteAbsence(a)">Löschen</button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="text-center text-body-secondary py-4">Noch keine Abwesenheiten (Urlaub, Krankheit, Schulung).</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      @if (absenceEdit(); as a) {
+        <form id="absenceForm" class="form-area" #af="ngForm" (ngSubmit)="saveAbsence(af)" novalidate [class.was-validated]="absenceSubmitted()">
+          <div class="row g-3">
+            <div class="col-12"><div class="section-title">{{ a.id ? 'Abwesenheit bearbeiten' : 'Neue Abwesenheit' }}</div></div>
+
+            <div class="col-12 col-lg-4">
+              <label class="form-label" for="a_type">Art</label>
+              <select class="form-select" id="a_type" name="type" [(ngModel)]="a.type">
+                @for (t of options()?.absence_types ?? []; track t.value) {
+                  <option [value]="t.value">{{ t.label }}</option>
+                }
+              </select>
+            </div>
+            <div class="col-12 col-lg-4">
+              <label class="form-label" for="a_start">Von <span class="text-danger">*</span></label>
+              <input type="date" class="form-control" id="a_start" name="start" required [(ngModel)]="a.start_date" [class.is-invalid]="!!fieldErrors()['start_date']" />
+              <div class="invalid-feedback">{{ fieldErrors()['start_date'] || 'Bitte den ersten Tag angeben.' }}</div>
+            </div>
+            <div class="col-12 col-lg-4">
+              <label class="form-label" for="a_end">Bis <span class="text-danger">*</span></label>
+              <input type="date" class="form-control" id="a_end" name="end" required [(ngModel)]="a.end_date"
+                     [class.is-invalid]="!!fieldErrors()['end_date'] || (absenceSubmitted() && endBeforeStart(a))" />
+              <div class="invalid-feedback">{{ fieldErrors()['end_date'] || (endBeforeStart(a) ? 'Das Ende liegt vor dem Beginn.' : 'Bitte den letzten Tag angeben.') }}</div>
+              <div class="form-text">letzter Tag, zählt mit</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="a_notes">Notiz</label>
+              <input class="form-control" id="a_notes" name="notes" [(ngModel)]="a.notes" />
+            </div>
+          </div>
+        </form>
+
+        <div class="form-bar">
+          <button type="submit" form="absenceForm" class="btn btn-primary">Speichern</button>
+          <div class="form-bar-right">
+            <button type="button" class="btn btn-outline-secondary" (click)="absenceEdit.set(null)">Abbrechen</button>
+          </div>
+        </div>
+      }
+    }
+  }
+}
+}

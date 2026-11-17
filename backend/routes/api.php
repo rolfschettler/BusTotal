@@ -6,10 +6,13 @@ use App\Http\Controllers\Api\BrandingController;
 use App\Http\Controllers\Api\CustomerChildController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\DriverAbsenceController;
+use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\Superadmin\AuthController as SuperadminAuthController;
 use App\Http\Controllers\Api\Superadmin\TenantController as SuperadminTenantController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\VehicleController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
@@ -77,6 +80,38 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
         Route::delete('/{customer}/addresses/{address}', [CustomerChildController::class, 'destroyAddress']);
     });
 
+    // Fuhrpark: Lesen für Admin, Disponent und Buchhaltung (Kostensatz), Ändern für Admin und Disponent.
+    // Fahrer haben (noch) keinen Zugriff. Feste Pfade (options) stehen VOR /vehicles/{vehicle}.
+    Route::middleware('role:admin,disponent,buchhaltung')->prefix('vehicles')->group(function () {
+        Route::get('/', [VehicleController::class, 'index']);
+        Route::get('/options', [VehicleController::class, 'options']);
+        Route::get('/{vehicle}', [VehicleController::class, 'show'])->withTrashed();
+    });
+    Route::middleware('role:admin,disponent')->prefix('vehicles')->group(function () {
+        Route::post('/', [VehicleController::class, 'store']);
+        Route::put('/{vehicle}', [VehicleController::class, 'update']);
+        Route::delete('/{vehicle}', [VehicleController::class, 'destroy']);
+    });
+    Route::get('/dashboard/vehicle-deadlines', [DashboardController::class, 'vehicleDeadlines'])
+        ->middleware('role:admin,disponent');
+
+    // Fahrer und Personal: Personendaten, deshalb nur Admin und Disponent (lesen und ändern). Buchhaltung und Fahrer
+    // haben keinen Zugriff. Wiederherstellen archivierter Fahrer nur der Admin (siehe unten).
+    Route::middleware('role:admin,disponent')->prefix('drivers')->group(function () {
+        Route::get('/', [DriverController::class, 'index']);
+        Route::post('/', [DriverController::class, 'store']);
+        Route::get('/options', [DriverController::class, 'options']);
+        Route::get('/{driver}', [DriverController::class, 'show'])->withTrashed();
+        Route::put('/{driver}', [DriverController::class, 'update']);
+        Route::delete('/{driver}', [DriverController::class, 'destroy']);
+
+        Route::post('/{driver}/absences', [DriverAbsenceController::class, 'store']);
+        Route::put('/{driver}/absences/{absence}', [DriverAbsenceController::class, 'update']);
+        Route::delete('/{driver}/absences/{absence}', [DriverAbsenceController::class, 'destroy']);
+    });
+    Route::get('/dashboard/driver-deadlines', [DashboardController::class, 'driverDeadlines'])
+        ->middleware('role:admin,disponent');
+
     // DSGVO-Löschung (unwiderruflich): Administrator und Buchhaltung.
     Route::post('/customers/{customer}/anonymize', [CustomerController::class, 'anonymize'])
         ->middleware('role:admin,buchhaltung');
@@ -89,6 +124,8 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
         Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword']);
 
         Route::post('/customers/{id}/restore', [CustomerController::class, 'restore']);
+        Route::post('/vehicles/{id}/restore', [VehicleController::class, 'restore']);
+        Route::post('/drivers/{id}/restore', [DriverController::class, 'restore']);
 
         Route::put('/settings/company', [SettingsController::class, 'updateCompany']);
         Route::post('/settings/logo', [SettingsController::class, 'uploadLogo']);

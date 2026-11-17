@@ -1,0 +1,169 @@
+<!-- Formular-Muster, siehe docs/ClaudeCodePatterns/EditFormPattern.md. Die Optik kommt aus src/styles/_edit-form.scss. -->
+<a routerLink="/fahrzeuge" class="small text-decoration-none">‹ Alle Fahrzeuge</a>
+
+<div class="mb-3">
+  @if (vehicle(); as v) {
+    <h1 class="h3 mb-1">{{ v.display_name }}</h1>
+    <p class="mb-0 small text-body-secondary">
+      {{ v.manufacturer }} {{ v.model }}
+      @if (archived()) { <span class="badge text-bg-danger ms-2">Archiviert</span> }
+      @if (!canEdit()) { <span class="badge text-bg-secondary ms-2">Nur Ansicht</span> }
+    </p>
+  } @else {
+    <h1 class="h3 mb-0">Neues Fahrzeug</h1>
+  }
+</div>
+
+@if (loading()) {
+  <div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary"></div></div>
+} @else {
+
+  @if (message(); as m) {
+    <div class="alert py-2 small" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
+  }
+
+  <form id="vehicleForm" class="form-area" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <div class="row g-3">
+
+      <div class="col-12"><div class="section-title">Fahrzeug</div></div>
+
+      <div class="col-12 col-lg-3">
+        <label class="form-label" for="fleet_number">Fuhrparknr. <span class="text-danger">*</span></label>
+        <input class="form-control" id="fleet_number" formControlName="fleet_number" [class.is-invalid]="invalid('fleet_number')" />
+        <div class="invalid-feedback">{{ fieldErrors()['fleet_number'] || 'Bitte eine Fuhrparknummer angeben.' }}</div>
+        <div class="form-text">z. B. B-01</div>
+      </div>
+      <div class="col-12 col-lg-3">
+        <label class="form-label" for="license_plate">Kennzeichen <span class="text-danger">*</span></label>
+        <input class="form-control" id="license_plate" formControlName="license_plate" [class.is-invalid]="invalid('license_plate')" />
+        <div class="invalid-feedback">{{ fieldErrors()['license_plate'] || 'Bitte ein Kennzeichen angeben.' }}</div>
+        <div class="form-text">z. B. M-AB 123</div>
+      </div>
+      <div class="col-12 col-lg-6">
+        <label class="form-label" for="type">Art</label>
+        <select class="form-select" id="type" formControlName="type">
+          @for (t of options()?.types ?? []; track t.value) {
+            <option [value]="t.value">{{ t.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="col-12 col-lg-4">
+        <label class="form-label" for="manufacturer">Hersteller</label>
+        <input class="form-control" id="manufacturer" formControlName="manufacturer" />
+      </div>
+      <div class="col-12 col-lg-4">
+        <label class="form-label" for="model">Modell</label>
+        <input class="form-control" id="model" formControlName="model" />
+      </div>
+      <div class="col-12 col-lg-4">
+        <label class="form-label" for="year_built">Baujahr</label>
+        <input type="number" class="form-control" id="year_built" formControlName="year_built" [class.is-invalid]="invalid('year_built')" />
+        <div class="invalid-feedback">{{ fieldErrors()['year_built'] || 'Bitte ein gültiges Baujahr angeben.' }}</div>
+      </div>
+
+      <div class="col-12 col-lg-6">
+        <label class="form-label" for="vin">Fahrgestellnr.</label>
+        <input class="form-control" id="vin" formControlName="vin" [class.is-invalid]="invalid('vin')" />
+        <div class="invalid-feedback">{{ fieldErrors()['vin'] || '17 Zeichen, ohne die Buchstaben I, O und Q.' }}</div>
+        <div class="form-text">17 Zeichen (VIN)</div>
+      </div>
+      <div class="col-12 col-lg-3">
+        <label class="form-label" for="seats">Sitzplätze <span class="text-danger">*</span></label>
+        <input type="number" class="form-control" id="seats" formControlName="seats" [class.is-invalid]="invalid('seats')" />
+        <div class="invalid-feedback">{{ fieldErrors()['seats'] || 'Bitte die Zahl der Sitzplätze angeben (1 bis 200).' }}</div>
+        <div class="form-text">ohne Fahrer</div>
+      </div>
+      <div class="col-12 col-lg-3">
+        <label class="form-label" for="cost_per_km">Kostensatz je km</label>
+        <input type="number" step="0.01" min="0" class="form-control" id="cost_per_km" formControlName="cost_per_km" [class.is-invalid]="invalid('cost_per_km')" />
+        <div class="invalid-feedback">{{ fieldErrors()['cost_per_km'] || 'Bitte einen Betrag von 0 bis 999 angeben.' }}</div>
+        <div class="form-text">in Euro, für die Kalkulation</div>
+      </div>
+
+      <div class="col-12"><div class="section-title">Ausstattung</div></div>
+
+      @for (e of options()?.equipment ?? []; track e.value) {
+        <div class="col-6 col-lg-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" [id]="'eq_' + e.value" [checked]="has(e.value)"
+                   [disabled]="readOnly()" (change)="toggle(e.value, $any($event.target).checked)" />
+            <label class="form-check-label" [for]="'eq_' + e.value">{{ e.label }}</label>
+          </div>
+        </div>
+      }
+
+      <div class="col-12"><div class="section-title">Maße und Gewicht</div></div>
+
+      <div class="col-12 col-lg-3">
+        <label class="form-label" for="length_m">Länge</label>
+        <input type="number" step="0.01" class="form-control" id="length_m" formControlName="length_m" [class.is-invalid]="invalid('length_m')" />
+        <div class="invalid-feedback">{{ fieldErrors()['length_m'] || 'Bitte 1 bis 30 Meter angeben.' }}</div>
+        <div class="form-text">in Metern</div>
+      </div>
+      <div class="col-12 col-lg-3">
+        <label class="form-label" for="width_m">Breite</label>
+        <input type="number" step="0.01" class="form-control" id="width_m" formControlName="width_m" [class.is-invalid]="invalid('width_m')" />
+        <div class="invalid-feedback">{{ fieldErrors()['width_m'] || 'Bitte 1 bis 5 Meter angeben.' }}</div>
+        <div class="form-text">in Metern</div>
+      </div>
+      <div class="col-12 col-lg-3">
+        <label class="form-label" for="height_m">Höhe</label>
+        <input type="number" step="0.01" class="form-control" id="height_m" formControlName="height_m" [class.is-invalid]="invalid('height_m')" />
+        <div class="invalid-feedback">{{ fieldErrors()['height_m'] || 'Bitte 1 bis 6 Meter angeben.' }}</div>
+        <div class="form-text">in Metern</div>
+      </div>
+      <div class="col-12 col-lg-3">
+        <label class="form-label" for="gross_weight_kg">Gesamtgewicht</label>
+        <input type="number" class="form-control" id="gross_weight_kg" formControlName="gross_weight_kg" [class.is-invalid]="invalid('gross_weight_kg')" />
+        <div class="invalid-feedback">{{ fieldErrors()['gross_weight_kg'] || 'Bitte 500 bis 60000 kg angeben.' }}</div>
+        <div class="form-text">zulässig, in kg</div>
+      </div>
+
+      <div class="col-12"><div class="section-title">Fristen</div></div>
+
+      @for (d of deadlineFields; track d.field) {
+        <div class="col-12 col-lg-3">
+          <label class="form-label" [for]="d.field">{{ d.label }}</label>
+          <input type="date" class="form-control" [id]="d.field" [formControlName]="d.field" [class.is-invalid]="!!fieldErrors()[d.field]" />
+          <div class="invalid-feedback">{{ fieldErrors()[d.field] }}</div>
+          @if (deadlineInfo(d.field); as info) {
+            <div class="form-text" [class]="info.cls">{{ info.text }}</div>
+          } @else {
+            <div class="form-text">{{ d.hint }}</div>
+          }
+        </div>
+      }
+
+      <div class="col-12"><div class="section-title">Notizen (intern)</div></div>
+
+      <div class="col-12">
+        <label class="form-label" for="notes">Notizen</label>
+        <textarea class="form-control" id="notes" rows="4" formControlName="notes"></textarea>
+      </div>
+    </div>
+  </form>
+
+  <!-- Tastenleiste (Muster): links Speichern, Zurück; rechts seltene Aktion, Abbrechen. Klebt unten. -->
+  <div class="form-bar">
+    @if (!readOnly()) {
+      <button type="submit" form="vehicleForm" class="btn btn-primary" [disabled]="saving()">
+        @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+        {{ saving() ? 'Speichert …' : id ? 'Speichern' : 'Fahrzeug anlegen' }}
+      </button>
+    }
+    <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
+    @if (form.dirty && !readOnly()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
+    <div class="form-bar-right">
+      @if (id && vehicle() && !readOnly()) {
+        <button type="button" class="btn btn-outline-secondary" (click)="archive()"><i class="bi bi-archive me-1"></i>Archivieren</button>
+      }
+      @if (archived() && isAdmin()) {
+        <button type="button" class="btn btn-outline-secondary" (click)="restore()"><i class="bi bi-arrow-counterclockwise me-1"></i>Wiederherstellen</button>
+      }
+      @if (!readOnly()) {
+        <button type="button" class="btn btn-outline-secondary" [disabled]="!form.dirty" [attr.title]="form.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancel()">Abbrechen</button>
+      }
+    </div>
+  </div>
+}

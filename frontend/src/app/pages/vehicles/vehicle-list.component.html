@@ -1,0 +1,169 @@
+<!-- Tabellen-Muster, siehe docs/ClaudeCodePatterns/TableViewPattern.md. Die Optik kommt aus src/styles/_list-page.scss. -->
+
+<!-- ── Seitenkopf ──────────────────────────────────────────────────── -->
+<div class="page-header">
+  <div class="row g-2 align-items-center">
+    <div class="col-auto">
+      <div class="d-flex align-items-center gap-2">
+        <h5 class="page-title mb-0">{{ archived ? 'Archivierte Fahrzeuge' : 'Fahrzeuge' }}</h5>
+        @if (loaded()) {
+          <span class="badge rounded-pill record-count d-none d-sm-inline-flex">{{ total() }} {{ total() === 1 ? 'Fahrzeug' : 'Fahrzeuge' }}</span>
+        }
+      </div>
+    </div>
+    <div class="col-12 col-sm-auto ms-sm-auto">
+      <div class="row row-cols-1 row-cols-sm-auto g-1 justify-content-end align-items-center header-ctrl">
+        <div class="col">
+          <button type="button" class="btn btn-sm btn-header w-100" (click)="refresh()" [disabled]="loading()">
+            <i class="bi bi-arrow-clockwise"></i><span class="ms-1">Aktualisieren</span>
+          </button>
+        </div>
+        @if (canEdit()) {
+          <div class="col">
+            <a routerLink="/fahrzeuge/neu" class="btn btn-sm btn-header-new w-100">
+              <i class="bi bi-plus-lg"></i><span class="ms-1">Neues Fahrzeug</span>
+            </a>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Inhalt: der EINE Scroll-Container ───────────────────────────── -->
+<div class="page-content">
+
+  <div class="filter-bar" appStickyFilterBar>
+    <div class="row g-2 align-items-center">
+      <div class="col-12 col-sm-6 col-lg-4">
+        <input type="search" class="form-control form-control-sm" [class.filter-active]="q.trim() !== ''"
+               placeholder="Suche: Fuhrparknr., Kennzeichen, Hersteller, Modell …" aria-label="Suche"
+               [(ngModel)]="q" (ngModelChange)="onSearch()" />
+      </div>
+      <div class="col-6 col-sm-auto">
+        <select class="form-select form-select-sm" [class.filter-active]="type !== ''" aria-label="Fahrzeugart"
+                [(ngModel)]="type" (ngModelChange)="filterChanged()">
+          <option value="">Alle Arten</option>
+          @for (t of types(); track t.value) {
+            <option [value]="t.value">{{ t.label }}</option>
+          }
+        </select>
+      </div>
+      <div class="col-6 col-sm-auto">
+        <select class="form-select form-select-sm" [class.filter-active]="deadline !== ''" aria-label="Fristen"
+                [(ngModel)]="deadline" (ngModelChange)="filterChanged()">
+          <option value="">Alle Fristen</option>
+          <option value="overdue">Abgelaufen</option>
+          <option value="soon">Abgelaufen oder bald fällig</option>
+        </select>
+      </div>
+      <div class="col-6 col-sm-auto">
+        <div class="form-check mb-0">
+          <input id="archived" class="form-check-input" type="checkbox" [(ngModel)]="archived" (ngModelChange)="filterChanged()" />
+          <label class="form-check-label small" for="archived">Archivierte</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @if (message(); as m) {
+    <div class="alert alert-success py-2 mb-3" role="status">{{ m }}</div>
+  }
+  @if (error()) {
+    <div class="alert alert-danger py-2 mb-3" role="alert">{{ error() }}</div>
+  }
+
+  <!-- KEIN overflow-Wrapper um die Tabelle (klebender Tabellenkopf), siehe Muster. -->
+  <div class="card table-card rounded-3" [class.dimmed]="loading()">
+    <table class="table table-hover table-sm align-middle data-table mb-0">
+
+      <colgroup>
+        <col style="width:76px">   <!-- Aktionen -->
+        <col style="width:110px">  <!-- Fuhrparknr. -->
+        <col style="width:140px">  <!-- Kennzeichen -->
+        <col style="width:150px">  <!-- Art -->
+        <col style="width:230px">  <!-- Hersteller / Modell -->
+        <col style="width:80px">   <!-- Sitze -->
+        <col style="width:218px">  <!-- Nächste Frist -->
+      </colgroup>
+
+      <thead>
+        <tr>
+          <th class="col-actions"><span class="visually-hidden">Aktionen</span></th>
+          <th class="sortable" [class.sort-active]="sortCol() === 'fleet_number'" [attr.aria-sort]="ariaSort('fleet_number')" tabindex="0"
+              (click)="sort('fleet_number')" (keydown.enter)="sort('fleet_number')">Nr. <i class="bi {{ sortIcon('fleet_number') }}"></i></th>
+          <th class="sortable" [class.sort-active]="sortCol() === 'plate'" [attr.aria-sort]="ariaSort('plate')" tabindex="0"
+              (click)="sort('plate')" (keydown.enter)="sort('plate')">Kennzeichen <i class="bi {{ sortIcon('plate') }}"></i></th>
+          <th class="sortable" [class.sort-active]="sortCol() === 'type'" [attr.aria-sort]="ariaSort('type')" tabindex="0"
+              (click)="sort('type')" (keydown.enter)="sort('type')">Art <i class="bi {{ sortIcon('type') }}"></i></th>
+          <th class="sortable" [class.sort-active]="sortCol() === 'model'" [attr.aria-sort]="ariaSort('model')" tabindex="0"
+              (click)="sort('model')" (keydown.enter)="sort('model')">Fahrzeug <i class="bi {{ sortIcon('model') }}"></i></th>
+          <th class="sortable" [class.sort-active]="sortCol() === 'seats'" [attr.aria-sort]="ariaSort('seats')" tabindex="0"
+              (click)="sort('seats')" (keydown.enter)="sort('seats')">Sitze <i class="bi {{ sortIcon('seats') }}"></i></th>
+          <th class="sortable" [class.sort-active]="sortCol() === 'deadline'" [attr.aria-sort]="ariaSort('deadline')" tabindex="0"
+              (click)="sort('deadline')" (keydown.enter)="sort('deadline')">Nächste Frist <i class="bi {{ sortIcon('deadline') }}"></i></th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (v of rows(); track v.id) {
+          <tr (click)="currentId.set(v.id)" [class.row-current]="v.id === currentId()">
+            <td class="col-actions" (click)="$event.stopPropagation()">
+              <a class="btn-action edit" [routerLink]="['/fahrzeuge', v.id]" [title]="canEdit() ? 'Öffnen und bearbeiten' : 'Öffnen'" [attr.aria-label]="v.display_name + ' öffnen'">
+                <i class="bi" [class.bi-pencil]="canEdit()" [class.bi-eye]="!canEdit()"></i>
+              </a>
+              @if (canEdit() && !archived) {
+                <button type="button" class="btn-action delete" (click)="archive(v)" title="Archivieren" [attr.aria-label]="v.display_name + ' archivieren'">
+                  <i class="bi bi-archive"></i>
+                </button>
+              } @else if (archived && auth.user()?.role === 'admin') {
+                <button type="button" class="btn-action restore" (click)="restore(v)" title="Wiederherstellen" [attr.aria-label]="v.display_name + ' wiederherstellen'">
+                  <i class="bi bi-arrow-counterclockwise"></i>
+                </button>
+              }
+            </td>
+            <td><code><app-highlight [text]="v.fleet_number" [query]="shownQuery()" /></code></td>
+            <td>
+              <a [routerLink]="['/fahrzeuge', v.id]" class="fw-semibold"><app-highlight [text]="v.license_plate" [query]="shownQuery()" /></a>
+              @for (h of hiddenHits(v); track h.label) {
+                <div class="small text-body-secondary">Treffer in {{ h.label }}: <app-highlight [text]="h.value" [query]="shownQuery()" /></div>
+              }
+            </td>
+            <td>{{ typeLabel(v.type) }}</td>
+            <td [title]="(v.manufacturer ?? '') + ' ' + (v.model ?? '')">
+              <app-highlight [text]="v.manufacturer" [query]="shownQuery()" />{{ ' ' }}<app-highlight [text]="v.model" [query]="shownQuery()" />
+            </td>
+            <td class="text-end">{{ v.seats }}</td>
+            <td>
+              @if (v.next_deadline; as d) {
+                <span class="badge me-1" [class.text-bg-danger]="d.status === 'overdue'" [class.text-bg-warning]="d.status === 'soon'" [class.text-bg-light]="d.status === 'ok'"
+                      [title]="d.label + ': ' + text(d.days)">{{ d.status === 'overdue' ? 'Abgelaufen' : d.status === 'soon' ? 'Bald fällig' : 'In Ordnung' }}</span>
+                <span class="small">{{ d.label.split(' (')[0] }} {{ date(d.date) }}</span>
+              } @else {
+                <span class="dim">–</span>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="text-center text-secondary py-5 small">
+              {{ loaded() ? 'Keine Fahrzeuge gefunden.' : 'Daten werden geladen …' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pager">
+    <span>{{ total() }} {{ total() === 1 ? 'Fahrzeug' : 'Fahrzeuge' }}</span>
+    <span class="ms-auto"></span>
+    <button type="button" class="btn btn-sm btn-outline-primary" (click)="go(page() - 1)" [disabled]="page() <= 1 || loading()">
+      <i class="bi bi-chevron-left"></i> Zurück
+    </button>
+    <span>Seite {{ page() }} von {{ lastPage() }}</span>
+    <button type="button" class="btn btn-sm btn-outline-primary" (click)="go(page() + 1)" [disabled]="page() >= lastPage() || loading()">
+      Weiter <i class="bi bi-chevron-right"></i>
+    </button>
+  </div>
+</div>

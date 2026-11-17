@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\CompanySetting;
 use App\Models\Customer;
+use App\Models\Driver;
+use App\Models\Vehicle;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -64,6 +66,37 @@ class DashboardController extends Controller
             'done' => count(array_filter($items, fn ($i) => $i['done'])),
             'total' => count($items),
         ]);
+    }
+
+    /**
+     * Fällige Fristen des Fuhrparks: alles, was abgelaufen ist oder in Vehicle::WARN_DAYS Tagen abläuft,
+     * die dringendsten zuerst. Archivierte Fahrzeuge erscheinen nicht.
+     */
+    public function vehicleDeadlines(): JsonResponse
+    {
+        return $this->dueDeadlines(Vehicle::query()->get(), 'vehicle');
+    }
+
+    /** Fällige Fristen des Personals (Führerschein, Fahrerkarte, Code 95 …), gleiche Regeln wie beim Fuhrpark. */
+    public function driverDeadlines(): JsonResponse
+    {
+        return $this->dueDeadlines(Driver::query()->get(), 'driver');
+    }
+
+    /**
+     * Gemeinsame Antwort der Fristen-Kacheln: alle nicht in Ordnung befindlichen Fristen der Modelle,
+     * die dringendsten zuerst, höchstens acht. `$name` ist der Schlüsselname ("vehicle" gibt vehicle_id und vehicle).
+     */
+    private function dueDeadlines($models, string $name): JsonResponse
+    {
+        $items = $models
+            ->flatMap(fn ($m) => collect($m->deadlines)
+                ->filter(fn ($d) => $d['status'] !== 'ok')
+                ->map(fn ($d) => $d + [$name.'_id' => $m->id, $name => $m->display_name]))
+            ->sortBy([['days', 'asc'], [$name, 'asc']])
+            ->values();
+
+        return response()->json(['total' => $items->count(), 'items' => $items->take(8)->values()]);
     }
 
     /** Die fünf zuletzt geänderten oder angelegten Kunden. */

@@ -30,6 +30,10 @@
         @if (auth.user()?.role !== 'fahrer') {
           <div class="group">Stammdaten</div>
           <a class="nav-link" routerLink="/kunden" routerLinkActive="active">Kunden</a>
+          <a class="nav-link" routerLink="/fahrzeuge" routerLinkActive="active">Fahrzeuge</a>
+          @if (auth.user()?.role === 'admin' || auth.user()?.role === 'disponent') {
+            <a class="nav-link" routerLink="/fahrer" routerLinkActive="active">Fahrer</a>
+          }
         }
 
         <div class="group">System</div>

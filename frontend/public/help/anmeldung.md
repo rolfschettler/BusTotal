@@ -23,6 +23,11 @@ Jeder Benutzer hat eine Rolle. Sie bestimmt, was er sehen und ändern darf.
 | Benutzer verwalten (anlegen, sperren, Passwort zurücksetzen) | ja | nein | nein | nein |
 | Eigenes Passwort ändern | ja | ja | ja | ja |
 | Kunden ansehen, anlegen, ändern, archivieren | ja | ja | ja | nein |
+| Fahrzeuge ansehen | ja | ja | ja | nein |
+| Fahrzeuge anlegen, ändern, archivieren | ja | ja | nein | nein |
+| Fahrzeuge wiederherstellen | ja | nein | nein | nein |
+| Fahrer ansehen, anlegen, ändern, archivieren | ja | ja | nein | nein |
+| Fahrer wiederherstellen | ja | nein | nein | nein |
 | Kundendaten exportieren (Auskunft) | ja | ja | ja | nein |
 | Kunden anonymisieren (DSGVO-Löschung) | ja | nein | ja | nein |
 | Kunden wiederherstellen | ja | nein | nein | nein |

@@ -46,6 +46,53 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'fahrzeuge',
+        // Lesen: Admin, Disponent, Buchhaltung. Ändern dürfen nur Admin und Disponent (Formular und Server prüfen das).
+        canActivate: [roleGuard('admin', 'disponent', 'buchhaltung')],
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            data: { help: 'fuhrpark#fahrzeugliste', fullPage: true },
+            loadComponent: () => import('./pages/vehicles/vehicle-list.component').then((m) => m.VehicleListComponent),
+          },
+          {
+            path: 'neu',
+            canActivate: [roleGuard('admin', 'disponent')],
+            data: { help: 'fuhrpark#fahrzeug-anlegen' },
+            loadComponent: () => import('./pages/vehicles/vehicle-form.component').then((m) => m.VehicleFormComponent),
+          },
+          {
+            path: ':id',
+            data: { help: 'fuhrpark#stammdaten' },
+            loadComponent: () => import('./pages/vehicles/vehicle-form.component').then((m) => m.VehicleFormComponent),
+          },
+        ],
+      },
+      {
+        path: 'fahrer',
+        // Personendaten: nur Administrator und Disponent (der Server prüft zusätzlich).
+        canActivate: [roleGuard('admin', 'disponent')],
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            data: { help: 'fahrer#fahrerliste', fullPage: true },
+            loadComponent: () => import('./pages/drivers/driver-list.component').then((m) => m.DriverListComponent),
+          },
+          {
+            path: 'neu',
+            data: { help: 'fahrer#fahrer-anlegen' },
+            loadComponent: () => import('./pages/drivers/driver-form.component').then((m) => m.DriverFormComponent),
+          },
+          {
+            path: ':id',
+            data: { help: 'fahrer#stammdaten' },
+            loadComponent: () => import('./pages/drivers/driver-form.component').then((m) => m.DriverFormComponent),
+          },
+        ],
+      },
+      {
         path: 'einstellungen',
         canActivate: [roleGuard('admin', 'disponent', 'buchhaltung')],
         data: { help: 'einstellungen#firmendaten' },
