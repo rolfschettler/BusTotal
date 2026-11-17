@@ -16,15 +16,18 @@ class Customer extends Model
     /** @use HasFactory<CustomerFactory> */
     use Auditable, HasFactory, HasUuids, SoftDeletes;
 
-    // Nummern werden nie per Formular gesetzt, sondern vom Server vergeben.
-    protected $guarded = ['id', 'customer_number', 'debitor_number'];
+    // Nummern werden nie per Formular gesetzt, sondern vom Server vergeben. Ebenso die Demo-Markierung.
+    protected $guarded = ['id', 'customer_number', 'debitor_number', 'is_demo'];
+
+    // Dieselben Standardwerte wie in der Datenbank, damit auch ein frisch angelegtes Objekt sie kennt.
+    protected $attributes = ['is_demo' => false];
 
     // Wird bei jeder JSON-Ausgabe mitgeschickt.
     protected $appends = ['display_name'];
 
     protected function casts(): array
     {
-        return ['type' => CustomerType::class];
+        return ['type' => CustomerType::class, 'is_demo' => 'boolean'];
     }
 
     /** Anzeigename: Firmenname oder "Vorname Nachname". */

@@ -46,12 +46,14 @@ export interface Customer {
   country: string;
   payment_term_days: number | null;
   notes: string | null;
+  /** true bei Demo-Datensätzen (Schulung, Messe, Tests) */
+  is_demo: boolean;
   deleted_at: string | null;
   contacts?: Contact[];
   addresses?: Address[];
 }
 
-export type CustomerInput = Omit<Customer, 'id' | 'customer_number' | 'debitor_number' | 'display_name' | 'deleted_at' | 'contacts' | 'addresses'>;
+export type CustomerInput = Omit<Customer, 'id' | 'customer_number' | 'debitor_number' | 'display_name' | 'is_demo' | 'deleted_at' | 'contacts' | 'addresses'>;
 
 export interface CustomerType {
   value: string;

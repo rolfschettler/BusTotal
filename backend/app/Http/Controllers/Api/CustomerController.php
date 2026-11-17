@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CustomerRequest;
 use App\Models\AuditLog;
 use App\Models\Customer;
-use App\Services\NumberRangeService;
+use App\Services\CustomerService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -52,17 +52,10 @@ class CustomerController extends Controller
         return response()->json($page);
     }
 
-    public function store(CustomerRequest $request, NumberRangeService $numbers): JsonResponse
+    public function store(CustomerRequest $request, CustomerService $customers): JsonResponse
     {
-        // Eine Transaktion: Wird der Kunde nicht gespeichert, verfallen auch die Nummern nicht.
-        $customer = DB::transaction(function () use ($request, $numbers) {
-            $customer = new Customer($request->validated());
-            $customer->customer_number = $numbers->next('kunde');
-            $customer->debitor_number = (int) $numbers->next('debitor');
-            $customer->save();
-
-            return $customer;
-        });
+        // Nummern und Kunde in einer Transaktion (siehe CustomerService).
+        $customer = $customers->create($request->validated());
 
         return response()->json($customer->load(['contacts', 'addresses']), 201);
     }

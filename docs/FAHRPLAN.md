@@ -162,6 +162,15 @@ Getroffene Entscheidungen:
 - **Regel für neue Tabellen:** `uuid('id')->primary()`, `foreignUuid(...)` für Verweise, Trait `HasUuids` am Modell; im Frontend sind IDs vom Typ `string`.
 - Die Migrationen wurden direkt geändert (es gab noch keine echte Datenbank); die Entwicklungsdatenbank wurde mit `migrate:fresh --seed` neu aufgebaut. 116 Backend-Tests grün, im Browser geprüft.
 
+**Erledigt (2026-11-19, Demo-Daten):**
+- Befehl `php artisan bustotal:demo-daten [--anzahl=200] [--entfernen] [--force]` für eigene Tests, Schulungen und Messen; Anleitung in `docs/DEMO-DATEN.md`.
+- Realistische, erfundene Kunden (Privat, Verein, Firma, Schule, Reisebüro) mit passenden Orten/PLZ/Vorwahlen, Ansprechpartnern, Abholadressen, einigen archivierten; E-Mail-Adressen enden auf `.example`.
+- Wiederholbar (feste UUIDs per `ImportId`, Zufall mit festem Startwert je Kundennummer): gleiche Daten bei jedem Lauf, zweiter Lauf legt nichts doppelt an, größere Anzahl behält die ersten.
+- Markierung `customers.is_demo` (im Formular nicht setzbar): `--entfernen` trifft nur Demo-Kunden; sind danach keine Kunden mehr da, beginnen Kunden-/Debitorennummern wieder bei K-00001/10000. Schutz in `production` nur mit `--force`. Ein Protokolleintrag je Lauf. Oberfläche zeigt das Kennzeichen „Demo“ am Kunden.
+- Gemeinsamer Anlegeweg `CustomerService` (Anwendung und Demo-Daten). 142 Backend-Tests grün; 200 Demokunden in der Entwicklungsdatenbank geladen und im Browser geprüft.
+- **Hinweis:** Jede Kundenanlage schreibt auch zwei Protokollzeilen für die Nummernzähler (Technik-Rauschen im Änderungsprotokoll); bei Gelegenheit prüfen, ob das gewollt ist.
+- **Regel:** Neue Kundenfelder oder -arten müssen im Generator ergänzt werden (ein Test prüft, dass alle Demo-Kunden die Eingaberegeln bestehen).
+
 **Nächster Schritt:** Hilfetexte fachlich prüfen lassen, dann Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen) und Phase 3 Mandantenfähigkeit (Subdomain → eigene DB je Mandant) oder Phase 4 Fuhrpark.
 
 
