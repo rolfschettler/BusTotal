@@ -103,6 +103,8 @@ Getroffene Entscheidungen:
 - Phase 1.1: Lokale Umgebung, Git-Repo, Laravel (`/backend`, MySQL `bustotal_central`), Angular (`/frontend`).
 - Phase 1.2 teilweise: Sanctum-Login (`/api/login`, `/api/logout`, `/api/me`), Rollen (admin/disponent/buchhaltung/fahrer), Tests laufen gegen MySQL `bustotal_test`.
 
-**Nächster Schritt:** Audit-Log (GoBD), dann Phase 1.4 Angular-Shell mit Login, danach 1.3 Mandanten-Einstellungen und die Kundenverwaltung als Lernmodul.
+- Phase 1.2 Audit-Log: Tabelle `audit_logs` (nur anfügen, unveränderlich), Trait `Auditable` (am User aktiv, Passwörter ausgeschlossen), Login/Logout/Fehlversuche protokolliert. 12 Tests grün.
+
+**Nächster Schritt:** Phase 1.4 Angular-Shell mit Login, danach 1.3 Mandanten-Einstellungen und die Kundenverwaltung als Lernmodul.
 
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,10 +24,14 @@ class AuthController extends Controller
         // Gleiche Fehlermeldung für "unbekannt", "falsches Passwort" und "gesperrt",
         // damit niemand herausfinden kann, welche E-Mail-Adressen existieren.
         if (! $user || ! $user->active || ! Hash::check($data['password'], $user->password)) {
+            AuditLog::record('login_failed', $user, null, ['email' => $data['email']], $user?->id);
+
             throw ValidationException::withMessages([
                 'email' => ['Die Anmeldedaten sind ungültig.'],
             ]);
         }
+
+        AuditLog::record('login', $user, userId: $user->id);
 
         return response()->json([
             'token' => $user->createToken('angular')->plainTextToken,
@@ -36,6 +41,7 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
+        AuditLog::record('logout', $request->user());
         $request->user()->currentAccessToken()->delete();
 
         return response()->json(['message' => 'Abgemeldet.']);
