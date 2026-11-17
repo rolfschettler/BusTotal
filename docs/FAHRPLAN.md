@@ -181,7 +181,9 @@ Getroffene Entscheidungen:
 - Quelle: `D:\angular\DATACUR26\ClaudeCodePatterns\TableViewTemplate.(html|scss)` + `src\styles\_list-page.scss`; für BusTotal angepasst und in `docs/patterns/TableViewPattern.md` dokumentiert (inkl. Tabelle der Unterschiede). Globale Optik: `frontend/src/styles/_list-page.scss`. Lebende Referenz: Kundenliste.
 - Kundenliste neu: Seitenkopf mit Zähler, klebende Filterleiste, klebender getönter Tabellenkopf, **serverseitige Sortierung** je Spalte (feste Spaltenliste, leere Werte am Ende, Kundennummer bei Gleichstand, SQL-sicher), Aktionsspalte (Öffnen, Archivieren, Wiederherstellen), Auswahlzeile, Dimmen statt Spinner. 155 Backend-Tests grün; im Browser geprüft (Kleben, Sortieren, Blättern, Archiv-Dialog, schmales Fenster, Firmenfarbe).
 - Tabellentöne folgen der Firmenfarbe zur Laufzeit (`BrandService`: `--brand-subtle` usw.). Bootstrap Icons eingebunden. Rahmen: Route-Daten `fullPage: true` für Listenseiten.
-- Regel aus dem Muster: **keine weichen Schatten** im Listenlayout (scharfe 1–2-px-Linien). Offen: Benutzerliste noch im alten Stil; `EditFormTemplate` aus DATACUR26 als nächstes Muster (Bearbeitungsformular) prüfen.
+- Regel aus dem Muster: **keine weichen Schatten** im Listenlayout (scharfe 1–2-px-Linien).
+- **Benutzerliste ebenfalls nach dem Muster** (clientseitige Variante): Suche in Name/E-Mail/Rolle mit Markierung, Filter Rolle und Status, Sortierung (leere Werte immer am Ende), Aktionssymbole (Stift, Schlüssel, Schloss) statt Menü, Formular und vorläufiges Passwort oberhalb der Liste. Logik in `users-view.ts` mit 14 Testfällen (zusammen mit der Markierung 32 Fälle, lauffähig mit `ng test` bzw. hier per Hilfsskript). Im Browser durchgespielt (Anlegen, doppelte E-Mail, Zurücksetzen, Sperren, Entsperren, Bearbeiten, schmales Fenster).
+- Offen: `EditFormTemplate` aus DATACUR26 als nächstes Muster (Bearbeitungsformulare) prüfen.
 
 **Nächster Schritt:** Hilfetexte fachlich prüfen lassen, dann Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen) und Phase 3 Mandantenfähigkeit (Subdomain → eigene DB je Mandant) oder Phase 4 Fuhrpark.
 

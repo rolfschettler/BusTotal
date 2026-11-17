@@ -59,7 +59,8 @@ export const routes: Routes = [
       {
         path: 'benutzer',
         canActivate: [roleGuard('admin')],
-        data: { help: 'benutzer#benutzerliste' },
+        // fullPage: Listenseite nach dem Tabellen-Muster (docs/patterns/TableViewPattern.md)
+        data: { help: 'benutzer#benutzerliste', fullPage: true },
         loadComponent: () => import('./pages/users/users.component').then((m) => m.UsersComponent),
       },
       {

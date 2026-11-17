@@ -3,7 +3,11 @@
 Das Muster für jede Listenseite in BusTotal (Kunden, später Fahrzeuge, Fahrer, Belege …).
 Herkunft: `D:\angular\DATACUR26\ClaudeCodePatterns\TableViewTemplate.html/.scss`, für BusTotal angepasst.
 
-**Lebende Referenz:** `frontend/src/app/pages/customers/customer-list.component.(ts|html)`.
+**Lebende Referenzen:**
+- Server-seitig (Seiten, Sortierung im Backend): `frontend/src/app/pages/customers/customer-list.component.(ts|html)`
+- Client-seitig (kleine Liste, Filtern und Sortieren im Browser): `frontend/src/app/pages/users/users.component.(ts|html)`.
+  Die Logik steht dort in `users-view.ts` (reine Funktionen `filterUsers`, `sortUsers`) mit Testfällen in `users-view.spec.ts`:
+  So lässt sie sich ohne Browser prüfen, besonders leere Werte beim Sortieren.
 **Globale Optik:** `frontend/src/styles/_list-page.scss` (einmal definiert, jede Liste nutzt nur die Klassen).
 Eine neue Liste kopiert die Referenz und passt Spalten und Daten an. **Kein eigenes CSS pro Seite.**
 

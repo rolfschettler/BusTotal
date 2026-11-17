@@ -13,6 +13,13 @@ Unter **Benutzer** in der Seitenleiste sehen Sie alle Personen, die sich anmelde
 
 Ihre eigene Zeile ist mit **Sie** gekennzeichnet.
 
+Bedienung der Liste:
+
+- **Suchen und filtern:** Das Suchfeld durchsucht Name, E-Mail-Adresse und Rolle, die Treffer sind gelb markiert. Dazu gibt es Filter für **Rolle** und **Status**. Der Zähler oben zeigt dann „2 von 4 Benutzer“. Groß- und Kleinschreibung sowie Umlaute spielen keine Rolle.
+- **Sortieren:** Ein Klick auf eine Spaltenüberschrift sortiert die Liste, ein zweiter dreht die Richtung um. „Noch nie angemeldet“ steht in beiden Richtungen am Ende.
+- **Symbole in der ersten Spalte:** der **Stift** bearbeitet den Benutzer, der **Schlüssel** setzt das Passwort zurück, das **Schloss** sperrt (bei einem gesperrten Benutzer öffnet das geöffnete Schloss die Sperre wieder). Bei Ihrer eigenen Zeile sind Schlüssel und Schloss blass und nicht bedienbar, denn Sie können sich nicht selbst sperren oder zurücksetzen.
+- Der Kopf mit Suche und Spaltenüberschriften bleibt beim Scrollen sichtbar.
+
 ## Benutzer anlegen {#anlegen}
 
 1. Wählen Sie **Neuer Benutzer**.
@@ -30,17 +37,17 @@ Das System erzeugt ein [vorläufiges Passwort](#vorlaeufiges-passwort) und zeigt
 
 ## Benutzer bearbeiten {#bearbeiten}
 
-Mit **Bearbeiten** ändern Sie Name, E-Mail-Adresse und Rolle. Die Änderung gilt sofort, der Benutzer muss sich dafür nicht neu anmelden. Alle Änderungen stehen mit altem und neuem Wert im [Änderungsprotokoll](/hilfe/datenschutz#protokoll).
+Mit dem **Stift** ändern Sie Name, E-Mail-Adresse und Rolle. Das Formular erscheint oberhalb der Liste. Die Änderung gilt sofort, der Benutzer muss sich dafür nicht neu anmelden. Alle Änderungen stehen mit altem und neuem Wert im [Änderungsprotokoll](/hilfe/datenschutz#protokoll).
 
 Ihre **eigene Rolle** können Sie nicht ändern, damit Sie sich nicht versehentlich selbst die Rechte nehmen.
 
 ## Sperren und entsperren {#sperren}
 
-Mit **Sperren** verliert ein Benutzer sofort den Zugang:
+Mit dem **Schloss** (Sperren) verliert ein Benutzer sofort den Zugang. Sie müssen es in einer Rückfrage bestätigen.
 
 - Er wird **auf allen Geräten abgemeldet** und kann sich nicht mehr anmelden.
 - Seine Daten und seine Einträge im Änderungsprotokoll bleiben erhalten.
-- Mit **Entsperren** kann er sich später wieder anmelden, mit seinem bisherigen Passwort.
+- Mit dem geöffneten Schloss (**Entsperren**, ohne Rückfrage) kann er sich später wieder anmelden, mit seinem bisherigen Passwort.
 
 Benutzer können **nicht gelöscht** werden. Das Änderungsprotokoll verweist auf sie, und es muss nach den Grundsätzen ordnungsmäßiger Buchführung (GoBD) vollständig bleiben. Für ausgeschiedene Mitarbeiter ist Sperren der richtige Weg.
 
@@ -48,7 +55,7 @@ Sie können sich **nicht selbst sperren**. Außerdem bleibt immer mindestens ein
 
 ## Passwort zurücksetzen {#zuruecksetzen}
 
-Hat jemand sein Passwort vergessen, wählen Sie **Passwort zurücksetzen**:
+Hat jemand sein Passwort vergessen, klicken Sie auf den **Schlüssel** (Passwort zurücksetzen) und bestätigen die Rückfrage:
 
 - Das bisherige Passwort wird ungültig, der Benutzer wird überall abgemeldet.
 - Sie erhalten ein neues [vorläufiges Passwort](#vorlaeufiges-passwort), das er beim nächsten Anmelden ändern muss.

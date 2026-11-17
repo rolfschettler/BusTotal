@@ -1,112 +1,208 @@
-<div class="d-flex align-items-center justify-content-between mb-3">
-  <h1 class="h3 mb-0">Benutzer <app-help-link topic="benutzer" anchor="benutzerliste" label="Benutzerverwaltung" /></h1>
-  @if (!draft()) {
-    <button type="button" class="btn btn-primary" (click)="newUser()">Neuer Benutzer</button>
-  }
-</div>
+<!-- Tabellen-Muster (clientseitige Variante), siehe docs/patterns/TableViewPattern.md -->
 
-@if (message(); as m) {
-  <div class="alert py-2" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
-}
-
-@if (secret(); as s) {
-  <div class="alert alert-warning" role="alert">
-    <div class="fw-semibold mb-1">
-      Vorläufiges Passwort für {{ s.name }}
-      <app-help-link topic="benutzer" anchor="vorlaeufiges-passwort" label="Vorläufiges Passwort" />
+<!-- ── Seitenkopf ──────────────────────────────────────────────────── -->
+<div class="page-header">
+  <div class="row g-2 align-items-center">
+    <div class="col-auto">
+      <div class="d-flex align-items-center gap-2">
+        <h5 class="page-title mb-0">Benutzer</h5>
+        <app-help-link topic="benutzer" anchor="benutzerliste" label="Benutzerverwaltung" />
+        @if (!loading()) {
+          <span class="badge rounded-pill record-count d-none d-sm-inline-flex">
+            {{ filtered() ? displayRows().length + ' von ' + users().length : users().length }} Benutzer
+          </span>
+        }
+      </div>
     </div>
-    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-      <code class="fs-5 user-select-all px-2 py-1 bg-white border rounded">{{ s.password }}</code>
-      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="copy()">{{ copied() ? 'Kopiert ✔' : 'Kopieren' }}</button>
-      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="closeSecret()">Schließen</button>
-    </div>
-    <div class="small">
-      <strong>Das Passwort wird nur jetzt angezeigt</strong> und ist nirgends gespeichert. Geben Sie es dem Benutzer persönlich weiter
-      (nicht per E-Mail). Beim ersten Anmelden muss er sich ein eigenes Passwort vergeben.
-    </div>
-  </div>
-}
-
-@if (draft(); as d) {
-  <form class="card mb-4" (ngSubmit)="save()">
-    <div class="card-header fw-semibold">{{ d.id === null ? 'Neuer Benutzer' : 'Benutzer bearbeiten' }}</div>
-    <div class="card-body vstack gap-3">
-      @if (d.id === null) {
-        <div class="small text-body-secondary">Das System erzeugt ein vorläufiges Passwort, das Sie nach dem Speichern einmalig sehen.</div>
-      }
-      <div class="row g-3">
-        <div class="col-md-4">
-          <label class="form-label w-100 mb-0">Name *
-            <input class="form-control mt-1" name="name" [(ngModel)]="d.name" required [class.is-invalid]="!!fieldErrors()['name']" />
-            <span class="invalid-feedback">{{ fieldErrors()['name'] }}</span>
-          </label>
+    <div class="col-12 col-sm-auto ms-sm-auto">
+      <div class="row row-cols-1 row-cols-sm-auto g-1 justify-content-end align-items-center header-ctrl">
+        <div class="col">
+          <button type="button" class="btn btn-sm btn-header w-100" (click)="refresh()" [disabled]="loading()">
+            <i class="bi bi-arrow-clockwise"></i><span class="ms-1">Aktualisieren</span>
+          </button>
         </div>
-        <div class="col-md-4">
-          <label class="form-label w-100 mb-0">E-Mail *
-            <input type="email" class="form-control mt-1" name="email" [(ngModel)]="d.email" required autocomplete="off" [class.is-invalid]="!!fieldErrors()['email']" />
-            <span class="invalid-feedback">{{ fieldErrors()['email'] }}</span>
-          </label>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label w-100 mb-0">Rolle *
-            <select class="form-select mt-1" name="role" [(ngModel)]="d.role" [disabled]="d.id !== null && d.id === me()?.id" [class.is-invalid]="!!fieldErrors()['role']">
-              @for (r of roles; track r.value) {
-                <option [value]="r.value">{{ r.label }}</option>
-              }
-            </select>
-            <span class="invalid-feedback">{{ fieldErrors()['role'] }}</span>
-          </label>
+        <div class="col">
+          <button type="button" class="btn btn-sm btn-header-new w-100" (click)="newUser()" [disabled]="draft() !== null">
+            <i class="bi bi-plus-lg"></i><span class="ms-1">Neuer Benutzer</span>
+          </button>
         </div>
       </div>
-      @if (fieldErrors()['user']) {
-        <div class="text-danger small">{{ fieldErrors()['user'] }}</div>
-      }
     </div>
-    <div class="card-footer d-flex gap-2">
-      <button type="submit" class="btn btn-primary">{{ d.id === null ? 'Anlegen' : 'Speichern' }}</button>
-      <button type="button" class="btn btn-outline-secondary" (click)="cancel()">Abbrechen</button>
-    </div>
-  </form>
-}
+  </div>
+</div>
 
-<div class="card">
-  <table class="table table-hover align-middle mb-0">
-    <thead class="table-light">
-      <tr><th>Name</th><th>Rolle</th><th>Status</th><th>Letzte Anmeldung</th><th></th></tr>
-    </thead>
-    <tbody>
-      @for (u of users(); track u.id) {
-        <tr [class.text-body-secondary]="!u.active">
-          <td>
-            <div class="fw-semibold">{{ u.name }} @if (isMe(u)) { <span class="badge text-bg-secondary">Sie</span> }</div>
-            <div class="small">{{ u.email }}</div>
-          </td>
-          <td>{{ roleLabel(u.role) }}</td>
-          <td>
-            @if (u.active) { <span class="badge text-bg-success">Aktiv</span> } @else { <span class="badge text-bg-danger">Gesperrt</span> }
-            @if (u.must_change_password) { <span class="badge text-bg-warning ms-1" title="Hat sich noch nicht mit dem vorläufigen Passwort angemeldet und ein eigenes vergeben">Vorläufiges Passwort</span> }
-          </td>
-          <td class="small">{{ u.last_login_at ? (u.last_login_at | date: 'dd.MM.y, HH:mm') : 'noch nie' }}</td>
-          <td>
-            <div class="d-flex justify-content-end gap-1">
-              <button class="btn btn-sm btn-outline-secondary" (click)="edit(u)">Bearbeiten</button>
-              <div ngbDropdown placement="bottom-end" container="body">
-                <button class="btn btn-sm btn-outline-secondary" ngbDropdownToggle [attr.aria-label]="'Weitere Aktionen für ' + u.name">Mehr</button>
-                <div ngbDropdownMenu>
-                  <button ngbDropdownItem type="button" (click)="resetPassword(u)" [disabled]="isMe(u)"
-                          [title]="isMe(u) ? 'Eigenes Passwort ändern Sie im Benutzermenü' : ''">Passwort zurücksetzen</button>
-                  <button ngbDropdownItem type="button" (click)="toggleActive(u)" [disabled]="isMe(u)"
-                          [class.text-danger]="u.active" [title]="isMe(u) ? 'Sie können sich nicht selbst sperren' : ''">
-                    {{ u.active ? 'Sperren' : 'Entsperren' }}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </td>
+<!-- ── Inhalt: der EINE Scroll-Container ───────────────────────────── -->
+<div class="page-content" #content>
+
+  <!-- Filterleiste (klebt oben) -->
+  <div class="filter-bar" appStickyFilterBar>
+    <div class="row g-2 align-items-center">
+      <div class="col-12 col-sm-6 col-lg-4">
+        <input type="search" class="form-control form-control-sm" [class.filter-active]="q().trim() !== ''"
+               placeholder="Suche: Name, E-Mail, Rolle …" aria-label="Suche"
+               [ngModel]="q()" (ngModelChange)="q.set($event)" />
+      </div>
+      <div class="col-6 col-sm-auto">
+        <select class="form-select form-select-sm" [class.filter-active]="roleFilter() !== ''" aria-label="Rolle"
+                [ngModel]="roleFilter()" (ngModelChange)="roleFilter.set($event)">
+          <option value="">Alle Rollen</option>
+          @for (r of roles; track r.value) {
+            <option [value]="r.value">{{ r.label }}</option>
+          }
+        </select>
+      </div>
+      <div class="col-6 col-sm-auto">
+        <select class="form-select form-select-sm" [class.filter-active]="statusFilter() !== ''" aria-label="Status"
+                [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+          <option value="">Alle Status</option>
+          <option value="active">Aktiv</option>
+          <option value="locked">Gesperrt</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  @if (message(); as m) {
+    <div class="alert py-2 mb-3" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
+  }
+
+  <!-- Vorläufiges Passwort: wird nur einmal angezeigt -->
+  @if (secret(); as s) {
+    <div class="alert alert-warning mb-3" role="alert">
+      <div class="fw-semibold mb-1">
+        Vorläufiges Passwort für {{ s.name }}
+        <app-help-link topic="benutzer" anchor="vorlaeufiges-passwort" label="Vorläufiges Passwort" />
+      </div>
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+        <code class="fs-5 user-select-all px-2 py-1 bg-white border rounded">{{ s.password }}</code>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="copy()">{{ copied() ? 'Kopiert ✔' : 'Kopieren' }}</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="closeSecret()">Schließen</button>
+      </div>
+      <div class="small">
+        <strong>Das Passwort wird nur jetzt angezeigt</strong> und ist nirgends gespeichert. Geben Sie es dem Benutzer persönlich weiter
+        (nicht per E-Mail). Beim ersten Anmelden muss er sich ein eigenes Passwort vergeben.
+      </div>
+    </div>
+  }
+
+  <!-- Formular: Anlegen und Bearbeiten -->
+  @if (draft(); as d) {
+    <form class="card mb-3" (ngSubmit)="save()">
+      <div class="card-header fw-semibold">{{ d.id === null ? 'Neuer Benutzer' : 'Benutzer bearbeiten' }}</div>
+      <div class="card-body vstack gap-3">
+        @if (d.id === null) {
+          <div class="small text-body-secondary">Das System erzeugt ein vorläufiges Passwort, das Sie nach dem Speichern einmalig sehen.</div>
+        }
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label w-100 mb-0">Name *
+              <input class="form-control mt-1" name="name" [(ngModel)]="d.name" required [class.is-invalid]="!!fieldErrors()['name']" />
+              <span class="invalid-feedback">{{ fieldErrors()['name'] }}</span>
+            </label>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label w-100 mb-0">E-Mail *
+              <input type="email" class="form-control mt-1" name="email" [(ngModel)]="d.email" required autocomplete="off" [class.is-invalid]="!!fieldErrors()['email']" />
+              <span class="invalid-feedback">{{ fieldErrors()['email'] }}</span>
+            </label>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label w-100 mb-0">Rolle *
+              <select class="form-select mt-1" name="role" [(ngModel)]="d.role" [disabled]="d.id !== null && d.id === me()?.id" [class.is-invalid]="!!fieldErrors()['role']">
+                @for (r of roles; track r.value) {
+                  <option [value]="r.value">{{ r.label }}</option>
+                }
+              </select>
+              <span class="invalid-feedback">{{ fieldErrors()['role'] }}</span>
+            </label>
+          </div>
+        </div>
+        @if (fieldErrors()['user']) {
+          <div class="text-danger small">{{ fieldErrors()['user'] }}</div>
+        }
+      </div>
+      <div class="card-footer d-flex gap-2">
+        <button type="submit" class="btn btn-primary">{{ d.id === null ? 'Anlegen' : 'Speichern' }}</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="cancel()">Abbrechen</button>
+      </div>
+    </form>
+  }
+
+  <!-- KEIN overflow-Wrapper um die Tabelle! .page-content scrollt schon beide Achsen. -->
+  <div class="card table-card rounded-3">
+    <table class="table table-hover table-sm align-middle data-table mb-0">
+
+      <colgroup>
+        <col style="width:116px">  <!-- Aktionen: drei Symbole à 28 px + Abstand -->
+        <col style="width:200px">  <!-- Name -->
+        <col style="width:250px">  <!-- E-Mail -->
+        <col style="width:130px">  <!-- Rolle -->
+        <col style="width:200px">  <!-- Status -->
+        <col style="width:144px">  <!-- Letzte Anmeldung -->
+      </colgroup>
+
+      <thead>
+        <tr>
+          <th class="col-actions"><span class="visually-hidden">Aktionen</span></th>
+          <th class="sortable" [class.sort-active]="sortCol() === 'name'" [attr.aria-sort]="ariaSort('name')" tabindex="0"
+              (click)="sort('name')" (keydown.enter)="sort('name')">Name <i class="bi {{ sortIcon('name') }}"></i></th>
+          <th class="sortable" [class.sort-active]="sortCol() === 'email'" [attr.aria-sort]="ariaSort('email')" tabindex="0"
+              (click)="sort('email')" (keydown.enter)="sort('email')">E-Mail <i class="bi {{ sortIcon('email') }}"></i></th>
+          <th class="sortable" [class.sort-active]="sortCol() === 'role'" [attr.aria-sort]="ariaSort('role')" tabindex="0"
+              (click)="sort('role')" (keydown.enter)="sort('role')">Rolle <i class="bi {{ sortIcon('role') }}"></i></th>
+          <th class="sortable" [class.sort-active]="sortCol() === 'status'" [attr.aria-sort]="ariaSort('status')" tabindex="0"
+              (click)="sort('status')" (keydown.enter)="sort('status')">Status <i class="bi {{ sortIcon('status') }}"></i></th>
+          <th class="sortable" [class.sort-active]="sortCol() === 'lastLogin'" [attr.aria-sort]="ariaSort('lastLogin')" tabindex="0"
+              (click)="sort('lastLogin')" (keydown.enter)="sort('lastLogin')">Letzte Anmeldung <i class="bi {{ sortIcon('lastLogin') }}"></i></th>
         </tr>
-      } @empty {
-        <tr><td colspan="5" class="text-center text-body-secondary py-4">{{ loading() ? 'Lade …' : 'Keine Benutzer.' }}</td></tr>
-      }
-    </tbody>
-  </table>
+      </thead>
+
+      <tbody>
+        @for (u of displayRows(); track u.id) {
+          <tr (click)="currentId.set(u.id)" [class.row-current]="u.id === currentId()" [class.text-body-secondary]="!u.active">
+            <!-- Aktionen: stopPropagation, damit der Zeilenklick nicht mitfeuert -->
+            <td class="col-actions" (click)="$event.stopPropagation()">
+              <button type="button" class="btn-action edit" (click)="edit(u)" title="Bearbeiten" [attr.aria-label]="u.name + ' bearbeiten'">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button type="button" class="btn-action key" (click)="resetPassword(u)" [disabled]="isMe(u)"
+                      [title]="isMe(u) ? 'Ihr eigenes Passwort ändern Sie im Benutzermenü' : 'Passwort zurücksetzen'"
+                      [attr.aria-label]="u.name + ' Passwort zurücksetzen'">
+                <i class="bi bi-key"></i>
+              </button>
+              @if (u.active) {
+                <button type="button" class="btn-action delete" (click)="toggleActive(u)" [disabled]="isMe(u)"
+                        [title]="isMe(u) ? 'Sie können sich nicht selbst sperren' : 'Sperren'" [attr.aria-label]="u.name + ' sperren'">
+                  <i class="bi bi-lock"></i>
+                </button>
+              } @else {
+                <button type="button" class="btn-action restore" (click)="toggleActive(u)" title="Entsperren" [attr.aria-label]="u.name + ' entsperren'">
+                  <i class="bi bi-unlock"></i>
+                </button>
+              }
+            </td>
+            <td [title]="u.name">
+              <span class="fw-semibold"><app-highlight [text]="u.name" [query]="q()" /></span>
+              @if (isMe(u)) { <span class="badge text-bg-secondary ms-1">Sie</span> }
+            </td>
+            <td [title]="u.email"><app-highlight [text]="u.email" [query]="q()" /></td>
+            <td><app-highlight [text]="roleLabel(u.role)" [query]="q()" /></td>
+            <td>
+              @if (u.active) { <span class="badge text-bg-success">Aktiv</span> } @else { <span class="badge text-bg-danger">Gesperrt</span> }
+              @if (u.must_change_password) {
+                <span class="badge text-bg-warning ms-1" title="Hat sich noch nicht mit dem vorläufigen Passwort angemeldet und ein eigenes vergeben">Vorläufiges Passwort</span>
+              }
+            </td>
+            <td class="dim">{{ u.last_login_at ? (u.last_login_at | date: 'dd.MM.y, HH:mm') : 'noch nie' }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="text-center text-secondary py-5 small">
+              {{ loading() ? 'Daten werden geladen …' : filtered() ? 'Keine Benutzer zu diesem Filter.' : 'Keine Benutzer.' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
 </div>

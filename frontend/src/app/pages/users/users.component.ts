@@ -1,13 +1,15 @@
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { AuthService, Role } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { ROLE_OPTIONS, roleLabel } from '../../core/roles';
 import { ManagedUser, UserAdminService } from '../../core/user-admin.service';
 import { HelpLinkComponent } from '../../help/help-link.component';
+import { HighlightComponent } from '../../shared/highlight.component';
+import { StickyFilterBarDirective } from '../../shared/sticky-filter-bar.directive';
+import { StatusFilter, UserSortCol, filterUsers, sortUsers } from './users-view';
 
 interface Draft {
   id: string | null;
@@ -16,31 +18,60 @@ interface Draft {
   role: Role;
 }
 
-/** Benutzerverwaltung (nur Administrator): Liste, Anlegen, Bearbeiten, Sperren, Passwort zurücksetzen. */
+/**
+ * Benutzerverwaltung (nur Administrator): Liste, Anlegen, Bearbeiten, Sperren, Passwort zurücksetzen.
+ * Tabellen-Muster (docs/patterns/TableViewPattern.md), clientseitige Variante: Die Liste ist klein,
+ * deshalb filtern und sortieren wir im Browser (Logik in users-view.ts, mit Testfällen).
+ */
 @Component({
   selector: 'app-users',
-  imports: [FormsModule, DatePipe, HelpLinkComponent, NgbDropdownModule],
+  imports: [FormsModule, DatePipe, HelpLinkComponent, HighlightComponent, StickyFilterBarDirective],
   templateUrl: './users.component.html',
+  // list-page: globales Listenlayout. --sheet-w: Summe der Spaltenbreiten in <colgroup>.
+  host: { class: 'list-page', style: '--sheet-w: 1040px' },
 })
 export class UsersComponent implements OnInit {
   private api = inject(UserAdminService);
   private confirm = inject(ConfirmService);
   private auth = inject(AuthService);
+  private content = viewChild<ElementRef<HTMLElement>>('content');
 
   users = signal<ManagedUser[]>([]);
+  loading = signal(true);
+
+  // Filter und Sortierung
+  q = signal('');
+  roleFilter = signal('');
+  statusFilter = signal<StatusFilter>('');
+  sortCol = signal<UserSortCol>('name');
+  sortDir = signal<'asc' | 'desc'>('asc');
+
+  displayRows = computed(() =>
+    sortUsers(filterUsers(this.users(), this.q(), this.roleFilter(), this.statusFilter()), this.sortCol(), this.sortDir()),
+  );
+  filtered = computed(() => this.q().trim() !== '' || this.roleFilter() !== '' || this.statusFilter() !== '');
+
+  /** Die in der Liste markierte Zeile (nur optisch) */
+  currentId = signal<string | null>(null);
+
   draft = signal<Draft | null>(null);
   /** Vorläufiges Passwort, das einmalig angezeigt wird */
   secret = signal<{ name: string; password: string } | null>(null);
   copied = signal(false);
   message = signal<{ ok: boolean; text: string } | null>(null);
   fieldErrors = signal<Record<string, string>>({});
-  loading = signal(true);
 
   roles = ROLE_OPTIONS;
   roleLabel = roleLabel;
   me = this.auth.user;
 
   ngOnInit() {
+    this.load();
+  }
+
+  refresh() {
+    this.message.set(null);
+    this.loading.set(true);
     this.load();
   }
 
@@ -61,16 +92,40 @@ export class UsersComponent implements OnInit {
     return u.id === this.me()?.id;
   }
 
+  // ---------- Sortieren ----------
+
+  /** Klick auf einen Spaltenkopf: neue Spalte aufsteigend, dieselbe Spalte wechselt die Richtung. */
+  sort(col: UserSortCol) {
+    if (this.sortCol() === col) {
+      this.sortDir.update((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      this.sortCol.set(col);
+      this.sortDir.set('asc');
+    }
+  }
+
+  sortIcon(col: UserSortCol): string {
+    if (this.sortCol() !== col) return 'bi-chevron-expand';
+    return this.sortDir() === 'asc' ? 'bi-chevron-up' : 'bi-chevron-down';
+  }
+
+  ariaSort(col: UserSortCol): 'ascending' | 'descending' | 'none' {
+    if (this.sortCol() !== col) return 'none';
+    return this.sortDir() === 'asc' ? 'ascending' : 'descending';
+  }
+
   // ---------- Formular ----------
 
   newUser() {
     this.reset();
     this.draft.set({ id: null, name: '', email: '', role: 'disponent' });
+    this.scrollToTop();
   }
 
   edit(u: ManagedUser) {
     this.reset();
     this.draft.set({ id: u.id, name: u.name, email: u.email, role: u.role });
+    this.scrollToTop();
   }
 
   cancel() {
@@ -149,6 +204,7 @@ export class UsersComponent implements OnInit {
     this.message.set(null);
     this.copied.set(false);
     this.secret.set({ name: u.name, password: u.temporary_password ?? '' });
+    this.scrollToTop();
   }
 
   async copy() {
@@ -167,6 +223,11 @@ export class UsersComponent implements OnInit {
   }
 
   // ---------- Meldungen ----------
+
+  /** Formular und Hinweise stehen oben im scrollenden Bereich: Dorthin springen, damit man sie sieht. */
+  private scrollToTop() {
+    this.content()?.nativeElement.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   private reset() {
     this.message.set(null);
