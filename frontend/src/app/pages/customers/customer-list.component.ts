@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { Customer, CustomerService, CustomerType } from '../../core/customer.service';
 
@@ -11,6 +11,7 @@ import { Customer, CustomerService, CustomerType } from '../../core/customer.ser
 })
 export class CustomerListComponent implements OnInit {
   private api = inject(CustomerService);
+  private route = inject(ActivatedRoute);
   auth = inject(AuthService);
 
   q = '';
@@ -27,6 +28,8 @@ export class CustomerListComponent implements OnInit {
   private timer?: ReturnType<typeof setTimeout>;
 
   ngOnInit() {
+    // Die Suche von der Startseite kommt als ?q=… an.
+    this.q = this.route.snapshot.queryParamMap.get('q') ?? '';
     this.api.types().subscribe((t) => this.types.set(t));
     this.load();
   }

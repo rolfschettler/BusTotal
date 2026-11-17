@@ -131,6 +131,11 @@ Getroffene Entscheidungen:
 - Kunden anonymisieren dürfen Administrator **und Buchhaltung**; Wiederherstellen bleibt beim Administrator. 54 Backend-Tests grün, im Browser mit allen Rollen geprüft.
 - **Offen für Phase 0 (Steuerberater):** Debitorenkreis klären. Aktuell vergibt die Software Debitorennummern ab 10000 aufwärts. Einschränkung: Im Nummernkreis kann man die nächste Nummer nur erhöhen, nie senken. Verlangt der Steuerberater einen Bereich unter 10000 (oder Debitornummer = Kundennummer), muss das vor dem ersten echten Kunden angepasst werden, sonst ist der Startwert nicht mehr nach unten korrigierbar.
 
+**Erledigt (2026-11-18, Startseite):**
+- Startseite als Kachel-Raster, feste Anordnung je Rolle (keine Benutzeranpassung). Kachel-Verzeichnis: `frontend/src/app/pages/dashboard/tiles/tile-registry.ts`; jede Kachel lädt ihre Daten über eine eigene Schnittstelle `/api/dashboard/<kachel>` mit eigener Rollenprüfung.
+- Heute: Schnellzugriff (Suche → Kundenliste mit `?q=`, Neuer Kunde), Einrichtungs-Checkliste (nur Admin, erkennt Erledigtes selbst, verschwindet bei 5/5), zuletzt bearbeitete Kunden, Platzhalter „Ihre Einsätze“ für Fahrer. 66 Backend-Tests grün, im Browser mit allen Rollen geprüft.
+- **Regel für künftige Module:** Jedes Modul trägt seine Kacheln im Kachel-Verzeichnis ein (z. B. „Anstehende Fahrten“ für Disponenten, „Fällige Fristen“ für den Fuhrpark) und ergänzt den Hilfetext „Die Startseite“ in `help/start.md`.
+
 **Nächster Schritt:** Hilfetexte fachlich prüfen lassen, dann Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen) und Phase 3 Mandantenfähigkeit (Subdomain → eigene DB je Mandant) oder Phase 4 Fuhrpark.
 
 

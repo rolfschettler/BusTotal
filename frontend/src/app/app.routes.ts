@@ -17,7 +17,7 @@ export const routes: Routes = [
       {
         path: '',
         pathMatch: 'full',
-        data: { help: 'start#erste-schritte' },
+        data: { help: 'start#startseite' },
         loadComponent: () => import('./pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
       },
       {

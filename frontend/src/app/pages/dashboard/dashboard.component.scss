@@ -1,0 +1,8 @@
+// Kachel-Raster: so viele Spalten, wie in die Breite passen. Kacheln haben display: contents,
+// ihre Karten liegen also direkt im Raster; fehlt eine Karte, rücken die anderen nach.
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 16px;
+  align-items: start;
+}

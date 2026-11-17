@@ -114,3 +114,6 @@ code { background: #e9edf2; padding: 1px 6px; border-radius: 3px; color: #343a40
   0%, 40% { background: rgba(var(--brand-rgb), 0.2); }
   100% { background: transparent; }
 }
+
+// Fortschrittsbalken in der Markenfarbe
+.progress { --bs-progress-bar-bg: var(--brand); }

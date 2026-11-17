@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BrandingController;
 use App\Http\Controllers\Api\CustomerChildController;
 use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\SettingsController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,6 +17,11 @@ Route::get('/branding/logo', [BrandingController::class, 'logo']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+
+    // Kacheln der Startseite: jede mit eigener Rollenprüfung.
+    Route::get('/dashboard/setup', [DashboardController::class, 'setup'])->middleware('role:admin');
+    Route::get('/dashboard/recent-customers', [DashboardController::class, 'recentCustomers'])
+        ->middleware('role:admin,disponent,buchhaltung');
 
     // Einstellungen: Admin, Disponent und Buchhaltung dürfen lesen, nur der Admin darf ändern.
     // Fahrer sehen sie nicht (Bankdaten, Steuernummer). Name, Farbe und Logo kommen für alle

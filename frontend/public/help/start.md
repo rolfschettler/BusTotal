@@ -2,6 +2,29 @@
 
 Willkommen bei BusTotal, der Verwaltung für Ihr Busunternehmen. Diese Hilfe erklärt, was die Software heute kann. Neue Funktionen werden hier ergänzt, sobald es sie gibt.
 
+## Die Startseite {#startseite}
+
+Die Startseite begrüßt Sie und zeigt Kacheln, die zu Ihrer [Rolle](/hilfe/anmeldung#rollen) passen. Jeder Benutzer mit derselben Rolle sieht dieselbe Anordnung. Mit jedem neuen Bereich der Software kommen weitere Kacheln dazu.
+
+| Kachel | Wer sieht sie | Inhalt |
+|---|---|---|
+| Schnellzugriff | Administrator, Disponent, Buchhaltung | Suchfeld für Kunden und der Knopf **Neuer Kunde**. Mit **Suchen** landen Sie in der [Kundenliste](/hilfe/kunden#kundenliste), schon mit Ihrem Suchbegriff. |
+| Einrichtung | Administrator | Eine Checkliste, was für eine startklare Firma noch fehlt. |
+| Zuletzt bearbeitete Kunden | Administrator, Disponent, Buchhaltung | Die fünf zuletzt angelegten oder geänderten Kunden mit Direktlink. Archivierte Kunden erscheinen hier nicht. |
+| Ihre Einsätze | Fahrer | Hier erscheinen künftig Ihre Fahrten. Bis dahin steht dort ein Hinweis. |
+
+### Die Einrichtungs-Checkliste {#einrichtung}
+
+Die Software erkennt selbst, welche Punkte erledigt sind, Sie müssen nichts abhaken:
+
+1. Firmenname und Adresse eingetragen
+2. Steuernummer oder USt-IdNr. eingetragen
+3. Bankverbindung (IBAN) eingetragen
+4. Logo hochgeladen
+5. Ersten Kunden angelegt
+
+Offene Punkte sind Verweise: Ein Klick führt Sie an die richtige Stelle, das Fragezeichen daneben erklärt sie. Sobald **alle** Punkte erledigt sind, verschwindet die Kachel.
+
 ## Aufbau der Oberfläche {#aufbau}
 
 - **Kopfleiste (oben):** Sie bleibt immer sichtbar. Links stehen Logo und Firmenname, rechts das Fragezeichen für die Hilfe und Ihr Benutzermenü mit **Abmelden**.
