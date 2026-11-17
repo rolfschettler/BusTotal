@@ -1,0 +1,39 @@
+// Formular-Muster (Bearbeiten/Anlegen), siehe docs/ClaudeCodePatterns/EditFormPattern.md
+// Herkunft: DATACUR26 EditFormTemplate.scss. Einmal global, jede Formularseite nutzt nur die Klassen.
+
+.form-page {
+  display: block;
+  max-width: 960px;
+}
+
+// Abschnittstrenner statt Karten-Rahmen oder <hr>, in der Firmenfarbe.
+.section-title {
+  color: var(--brand, var(--bs-primary));
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-top: 0.5rem;
+  padding-bottom: 0.3rem;
+}
+
+// Nach dem Speichern-Versuch markieren wir nur FEHLER. Das grüne "gültig" lenkt bei langen Formularen ab.
+.was-validated {
+  .form-control:valid,
+  .form-select:valid {
+    border-color: var(--bs-border-color);
+    background-image: none;
+    padding-right: 0.75rem;
+  }
+  .form-check-input:valid {
+    border-color: var(--bs-border-color);
+    ~ .form-check-label {
+      color: inherit;
+    }
+  }
+}
+
+// Mehrzeilige Felder in Floating-Label-Rahmen brauchen eine feste Höhe.
+.form-floating > textarea.form-control {
+  height: 7rem;
+}

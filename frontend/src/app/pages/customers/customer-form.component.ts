@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, ElementRef, OnInit, computed, inject, signal } from '@angular/core';
+import { FormBuilder, FormsModule, NgForm, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { debounceTime } from 'rxjs';
 import { AuthService } from '../../core/auth.service';
@@ -31,8 +31,11 @@ const emptyAddress = (): Address => ({
   selector: 'app-customer-form',
   imports: [ReactiveFormsModule, FormsModule, RouterLink, HelpLinkComponent],
   templateUrl: './customer-form.component.html',
+  // Formular-Muster: Optik (max. Breite, .section-title) kommt global aus styles/_edit-form.scss
+  host: { class: 'form-page' },
 })
 export class CustomerFormComponent implements OnInit {
+  private host = inject<ElementRef<HTMLElement>>(ElementRef);
   private api = inject(CustomerService);
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
@@ -53,6 +56,12 @@ export class CustomerFormComponent implements OnInit {
   fieldErrors = signal<Record<string, string>>({});
   duplicates = signal<DuplicateHit[]>([]);
   saving = signal(false);
+  /** Wahr, solange ein vorhandener Kunde geladen wird. */
+  loading = signal(false);
+  /** Nach dem ersten Speichern-Versuch markieren die Formulare fehlerhafte Felder. */
+  formSubmitted = signal(false);
+  contactSubmitted = signal(false);
+  addressSubmitted = signal(false);
 
   contactEdit = signal<Contact | null>(null);
   addressEdit = signal<Address | null>(null);
@@ -105,16 +114,27 @@ export class CustomerFormComponent implements OnInit {
     last_name.updateValueAndValidity({ emitEvent: false });
   }
 
+  /** Feld rot markieren: Eingabe ungültig (nach Speichern-Versuch) oder vom Server abgelehnt. */
+  invalid(name: keyof typeof this.form.controls): boolean {
+    const c = this.form.controls[name];
+    return (this.formSubmitted() && c.invalid) || !!this.fieldErrors()[name];
+  }
+
   private load(id: string) {
+    this.loading.set(true);
     this.api.get(id).subscribe({
       next: (c) => {
+        this.loading.set(false);
         this.customer.set(c);
         this.typeValue.set(c.type);
         this.form.patchValue(this.toFormValue(c), { emitEvent: false });
         this.applyTypeValidators();
         if (c.deleted_at) this.form.disable({ emitEvent: false });
       },
-      error: () => this.router.navigate(['/kunden']),
+      error: () => {
+        this.loading.set(false);
+        this.router.navigate(['/kunden']);
+      },
     });
   }
 
@@ -141,11 +161,14 @@ export class CustomerFormComponent implements OnInit {
     this.help.setAnchor({ stamm: null, kontakte: 'ansprechpartner', adressen: 'adressen' }[tab]);
     this.message.set(null);
     this.fieldErrors.set({});
+    this.contactSubmitted.set(false);
+    this.addressSubmitted.set(false);
   }
 
   save() {
+    this.formSubmitted.set(true);
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
+      this.notify(false, 'Bitte die markierten Felder korrigieren.');
       return;
     }
     // Leere Felder als null senden, nicht als Text "".
@@ -219,14 +242,18 @@ export class CustomerFormComponent implements OnInit {
   // ---------- Ansprechpartner ----------
 
   newContact() {
+    this.contactSubmitted.set(false);
     this.contactEdit.set(emptyContact());
   }
   editContact(c: Contact) {
+    this.contactSubmitted.set(false);
     this.contactEdit.set({ ...c });
   }
-  saveContact() {
+  saveContact(f: NgForm) {
     const c = this.contactEdit();
     if (!c || !this.id) return;
+    this.contactSubmitted.set(true);
+    if (f.invalid) return;
     this.api.saveContact(this.id, c).subscribe({
       next: () => {
         this.contactEdit.set(null);
@@ -249,14 +276,18 @@ export class CustomerFormComponent implements OnInit {
   // ---------- Adressen ----------
 
   newAddress() {
+    this.addressSubmitted.set(false);
     this.addressEdit.set(emptyAddress());
   }
   editAddress(a: Address) {
+    this.addressSubmitted.set(false);
     this.addressEdit.set({ ...a });
   }
-  saveAddress() {
+  saveAddress(f: NgForm) {
     const a = this.addressEdit();
     if (!a || !this.id) return;
+    this.addressSubmitted.set(true);
+    if (f.invalid) return;
     this.api.saveAddress(this.id, a).subscribe({
       next: () => {
         this.addressEdit.set(null);
@@ -286,15 +317,21 @@ export class CustomerFormComponent implements OnInit {
 
   private ok(text: string) {
     this.fieldErrors.set({});
-    this.message.set({ ok: true, text });
+    this.notify(true, text);
   }
 
   private fail(err: HttpErrorResponse) {
     const errors: Record<string, string[]> = err.error?.errors ?? {};
     this.fieldErrors.set(Object.fromEntries(Object.entries(errors).map(([k, v]) => [k, v[0]])));
-    this.message.set({
-      ok: false,
-      text: err.status === 403 ? 'Keine Berechtigung.' : (err.error?.message ?? 'Speichern fehlgeschlagen.'),
-    });
+    this.notify(false, err.status === 403 ? 'Keine Berechtigung.' : (err.error?.message ?? 'Speichern fehlgeschlagen.'));
+  }
+
+  /**
+   * Meldung ganz oben zeigen UND dorthin scrollen: "Speichern" sitzt bei langen Formularen weit unten,
+   * sonst sieht der Nutzer die Meldung nicht. Gescrollt wird am eigenen Host, nicht am Fenster.
+   */
+  private notify(ok: boolean, text: string) {
+    this.message.set({ ok, text });
+    this.host.nativeElement.scrollIntoView({ block: 'start', behavior: 'smooth' });
   }
 }

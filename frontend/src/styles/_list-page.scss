@@ -5,7 +5,7 @@
 //  EINMAL hier definiert, jede Listenseite nutzt nur die Klassen (kein SCSS pro Seite).
 //
 //  Verwendung:  @Component({ host: { class: 'list-page' }, ... })
-//  Markup:      docs/patterns/TableViewPattern.md, lebende Referenz: customer-list.component.html
+//  Markup:      docs/ClaudeCodePatterns/TableViewPattern.md, lebende Referenz: customer-list.component.html
 //
 //  Unterschiede zum Original (bewusst):
 //   - Farben hängen an der Markenfarbe der Firma (--bs-primary-*-subtle, vom BrandService zur Laufzeit).

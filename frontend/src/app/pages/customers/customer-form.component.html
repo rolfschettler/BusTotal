@@ -1,3 +1,4 @@
+<!-- Formular-Muster, siehe docs/ClaudeCodePatterns/EditFormPattern.md. Die Optik kommt aus src/styles/_edit-form.scss. -->
 <a routerLink="/kunden" class="small text-decoration-none">‹ Alle Kunden</a>
 
 <div class="mb-3">
@@ -14,6 +15,10 @@
   }
 </div>
 
+@if (loading()) {
+  <div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary"></div></div>
+} @else {
+
 @if (id) {
   <ul class="nav nav-tabs mb-3" role="tablist">
     <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'stamm'" (click)="show('stamm')">Stammdaten</button></li>
@@ -23,7 +28,7 @@
 }
 
 @if (message(); as m) {
-  <div class="alert py-2" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
+  <div class="alert py-2 small" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
 }
 
 @switch (tab()) {
@@ -44,110 +49,152 @@
 
     <form [formGroup]="form" (ngSubmit)="save()" novalidate>
       <div class="row g-3">
-        <div class="col-lg-6">
-          <div class="card h-100">
-            <div class="card-header fw-semibold">Kunde</div>
-            <div class="card-body vstack gap-3">
-              <label class="form-label w-100 mb-0">Art
-                <select class="form-select mt-1" formControlName="type">
-                  @for (t of types(); track t.value) {
-                    <option [value]="t.value">{{ t.label }}</option>
-                  }
-                </select>
-              </label>
-              <label class="form-label w-100 mb-0">{{ isOrganisation() ? 'Firmen- / Organisationsname *' : 'Firmenname (optional)' }}
-                <input class="form-control mt-1" formControlName="company_name"
-                       [class.is-invalid]="form.controls.company_name.touched && form.controls.company_name.invalid" />
-                <span class="invalid-feedback">Bitte einen Namen angeben.</span>
-              </label>
-              <div class="row g-2">
-                <div class="col-3"><label class="form-label w-100 mb-0">Anrede<input class="form-control mt-1" formControlName="salutation" placeholder="Herr/Frau" /></label></div>
-                <div class="col-4"><label class="form-label w-100 mb-0">Vorname<input class="form-control mt-1" formControlName="first_name" /></label></div>
-                <div class="col-5">
-                  <label class="form-label w-100 mb-0">{{ isOrganisation() ? 'Nachname' : 'Nachname *' }}
-                    <input class="form-control mt-1" formControlName="last_name"
-                           [class.is-invalid]="form.controls.last_name.touched && form.controls.last_name.invalid" />
-                    <span class="invalid-feedback">Bitte einen Nachnamen angeben.</span>
-                  </label>
-                </div>
-              </div>
-            </div>
+
+        <div class="col-12"><div class="section-title">Kunde</div></div>
+
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <select class="form-select" id="type" formControlName="type">
+              @for (t of types(); track t.value) {
+                <option [value]="t.value">{{ t.label }}</option>
+              }
+            </select>
+            <label for="type">Art</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="company_name" placeholder="Firma" formControlName="company_name" [class.is-invalid]="invalid('company_name')" />
+            <label for="company_name">{{ isOrganisation() ? 'Firmen- / Organisationsname' : 'Firmenname (optional)' }}@if (isOrganisation()) { <span class="text-danger"> *</span> }</label>
+            <div class="invalid-feedback">Bitte einen Namen angeben.</div>
           </div>
         </div>
 
-        <div class="col-lg-6">
-          <div class="card h-100">
-            <div class="card-header fw-semibold">Kontakt</div>
-            <div class="card-body vstack gap-3">
-              <label class="form-label w-100 mb-0">E-Mail
-                <input type="email" class="form-control mt-1" formControlName="email"
-                       [class.is-invalid]="form.controls.email.touched && form.controls.email.invalid" />
-                <span class="invalid-feedback">Ungültige E-Mail-Adresse.</span>
-              </label>
-              <div class="row g-2">
-                <div class="col"><label class="form-label w-100 mb-0">Telefon<input class="form-control mt-1" formControlName="phone" /></label></div>
-                <div class="col"><label class="form-label w-100 mb-0">Mobil<input class="form-control mt-1" formControlName="mobile" /></label></div>
-              </div>
-              <label class="form-label w-100 mb-0">Webseite<input class="form-control mt-1" formControlName="website" /></label>
-            </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="salutation" placeholder="Anrede" formControlName="salutation" />
+            <label for="salutation">Anrede (z. B. Herr, Frau)</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="first_name" placeholder="Vorname" formControlName="first_name" />
+            <label for="first_name">Vorname</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="last_name" placeholder="Nachname" formControlName="last_name" [class.is-invalid]="invalid('last_name')" />
+            <label for="last_name">Nachname@if (!isOrganisation()) { <span class="text-danger"> *</span> }</label>
+            <div class="invalid-feedback">Bitte einen Nachnamen angeben.</div>
           </div>
         </div>
 
-        <div class="col-lg-6">
-          <div class="card h-100">
-            <div class="card-header fw-semibold">Rechnungsadresse</div>
-            <div class="card-body vstack gap-3">
-              <label class="form-label w-100 mb-0">Straße, Nr.<input class="form-control mt-1" formControlName="street" /></label>
-              <div class="row g-2">
-                <div class="col-3"><label class="form-label w-100 mb-0">PLZ<input class="form-control mt-1" formControlName="postal_code" /></label></div>
-                <div class="col-6"><label class="form-label w-100 mb-0">Ort<input class="form-control mt-1" formControlName="city" /></label></div>
-                <div class="col-3"><label class="form-label w-100 mb-0">Land<input class="form-control mt-1" formControlName="country" maxlength="2" /></label></div>
-              </div>
-            </div>
+        <div class="col-12"><div class="section-title">Kontakt</div></div>
+
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input type="email" class="form-control" id="email" placeholder="E-Mail" formControlName="email" [class.is-invalid]="invalid('email')" />
+            <label for="email">E-Mail</label>
+            <div class="invalid-feedback">{{ fieldErrors()['email'] || 'Ungültige E-Mail-Adresse.' }}</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="website" placeholder="Webseite" formControlName="website" />
+            <label for="website">Webseite</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="phone" placeholder="Telefon" formControlName="phone" />
+            <label for="phone">Telefon</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="mobile" placeholder="Mobil" formControlName="mobile" />
+            <label for="mobile">Mobil</label>
           </div>
         </div>
 
-        <div class="col-lg-6">
-          <div class="card h-100">
-            <div class="card-header fw-semibold">Rechnung</div>
-            <div class="card-body vstack gap-3">
-              <label class="form-label w-100 mb-0">USt-IdNr.
-                <input class="form-control mt-1" formControlName="vat_id" placeholder="DE123456789" [class.is-invalid]="!!fieldErrors()['vat_id']" />
-                <span class="invalid-feedback">Format: z. B. DE123456789</span>
-              </label>
-              <label class="form-label w-100 mb-0">Zahlungsziel (Tage)
-                <input type="number" min="0" class="form-control mt-1" formControlName="payment_term_days" placeholder="leer = Standard der Firma" />
-              </label>
-            </div>
+        <div class="col-12"><div class="section-title">Rechnungsadresse</div></div>
+
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="street" placeholder="Straße" formControlName="street" />
+            <label for="street">Straße, Nr.</label>
           </div>
         </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="postal_code" placeholder="PLZ" formControlName="postal_code" />
+            <label for="postal_code">PLZ</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="city" placeholder="Ort" formControlName="city" />
+            <label for="city">Ort</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="country" placeholder="Land" maxlength="2" formControlName="country" [class.is-invalid]="invalid('country')" />
+            <label for="country">Land (2 Buchstaben, z. B. DE)</label>
+            <div class="invalid-feedback">Bitte den Ländercode mit zwei Buchstaben angeben.</div>
+          </div>
+        </div>
+
+        <div class="col-12"><div class="section-title">Rechnung</div></div>
+
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="vat_id" placeholder="USt-IdNr." formControlName="vat_id" [class.is-invalid]="invalid('vat_id')" />
+            <label for="vat_id">USt-IdNr. (z. B. DE123456789)</label>
+            <div class="invalid-feedback">{{ fieldErrors()['vat_id'] || 'Ungültiges Format, z. B. DE123456789.' }}</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input type="number" min="0" class="form-control" id="payment_term_days" placeholder="Zahlungsziel" formControlName="payment_term_days" />
+            <label for="payment_term_days">Zahlungsziel in Tagen</label>
+          </div>
+          <div class="form-text">Leer = Standard der Firma.</div>
+        </div>
+
+        <div class="col-12"><div class="section-title">Notizen (intern)</div></div>
 
         <div class="col-12">
-          <div class="card">
-            <div class="card-header fw-semibold">Notizen (intern)</div>
-            <div class="card-body"><textarea rows="4" class="form-control" formControlName="notes" aria-label="Notizen"></textarea></div>
+          <div class="form-floating">
+            <textarea class="form-control" id="notes" placeholder="Notizen" formControlName="notes"></textarea>
+            <label for="notes">Notizen</label>
           </div>
         </div>
 
-        @if (!archived()) {
-          <div class="col-12">
-            <button type="submit" class="btn btn-primary" [disabled]="saving()">{{ id ? 'Speichern' : 'Kunde anlegen' }}</button>
-          </div>
-        }
+        <div class="col-12 d-flex flex-wrap gap-2 mt-2">
+          @if (!archived()) {
+            <button type="submit" class="btn btn-primary" [disabled]="saving()">
+              @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+              {{ id ? 'Speichern' : 'Kunde anlegen' }}
+            </button>
+          }
+          @if (id && customer() && !archived()) {
+            <button type="button" class="btn btn-outline-secondary ms-auto" (click)="archive()"><i class="bi bi-archive me-1"></i>Archivieren</button>
+          }
+          @if (archived() && isAdmin()) {
+            <button type="button" class="btn btn-outline-secondary ms-auto" (click)="restore()"><i class="bi bi-arrow-counterclockwise me-1"></i>Wiederherstellen</button>
+          }
+        </div>
       </div>
     </form>
 
     @if (id && customer()) {
       <section class="mt-4 pt-3 border-top">
-        <h2 class="h6">Weitere Aktionen <app-help-link topic="datenschutz" anchor="anonymisieren" label="Auskunft und Löschung (DSGVO)" /></h2>
+        <h2 class="h6">Datenschutz <app-help-link topic="datenschutz" anchor="anonymisieren" label="Auskunft und Löschung (DSGVO)" /></h2>
         <div class="d-flex flex-wrap gap-2">
-          <button class="btn btn-outline-secondary btn-sm" (click)="export()">Daten exportieren (DSGVO Auskunft)</button>
-          @if (archived()) {
-            @if (isAdmin()) { <button class="btn btn-outline-secondary btn-sm" (click)="restore()">Wiederherstellen</button> }
-          } @else {
-            <button class="btn btn-outline-secondary btn-sm" (click)="archive()">Archivieren</button>
-          }
-          @if (canAnonymize()) { <button class="btn btn-outline-danger btn-sm" (click)="anonymize()">Anonymisieren (DSGVO Löschung)</button> }
+          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="export()">Daten exportieren (DSGVO Auskunft)</button>
+          @if (canAnonymize()) { <button type="button" class="btn btn-outline-danger btn-sm" (click)="anonymize()">Anonymisieren (DSGVO Löschung)</button> }
         </div>
       </section>
     }
@@ -181,35 +228,62 @@
       </div>
     } @else {
       @if (contactEdit(); as c) {
-        <form (ngSubmit)="saveContact()">
-          <div class="card">
-            <div class="card-header fw-semibold">{{ c.id ? 'Ansprechpartner bearbeiten' : 'Neuer Ansprechpartner' }}</div>
-            <div class="card-body vstack gap-3">
-              <div class="row g-2">
-                <div class="col-3"><label class="form-label w-100 mb-0">Anrede<input class="form-control mt-1" name="sal" [(ngModel)]="c.salutation" /></label></div>
-                <div class="col-4"><label class="form-label w-100 mb-0">Vorname<input class="form-control mt-1" name="fn" [(ngModel)]="c.first_name" /></label></div>
-                <div class="col-5">
-                  <label class="form-label w-100 mb-0">Nachname *
-                    <input class="form-control mt-1" name="ln" [(ngModel)]="c.last_name" required [class.is-invalid]="!!fieldErrors()['last_name']" />
-                    <span class="invalid-feedback">{{ fieldErrors()['last_name'] }}</span>
-                  </label>
-                </div>
+        <form #cf="ngForm" (ngSubmit)="saveContact(cf)" novalidate [class.was-validated]="contactSubmitted()">
+          <div class="row g-3">
+            <div class="col-12"><div class="section-title">{{ c.id ? 'Ansprechpartner bearbeiten' : 'Neuer Ansprechpartner' }}</div></div>
+
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="c_sal" name="sal" placeholder="Anrede" [(ngModel)]="c.salutation" />
+                <label for="c_sal">Anrede</label>
               </div>
-              <label class="form-label w-100 mb-0">Position<input class="form-control mt-1" name="pos" [(ngModel)]="c.position" /></label>
-              <label class="form-label w-100 mb-0">E-Mail
-                <input type="email" class="form-control mt-1" name="em" [(ngModel)]="c.email" [class.is-invalid]="!!fieldErrors()['email']" />
-                <span class="invalid-feedback">{{ fieldErrors()['email'] }}</span>
-              </label>
-              <div class="row g-2">
-                <div class="col"><label class="form-label w-100 mb-0">Telefon<input class="form-control mt-1" name="ph" [(ngModel)]="c.phone" /></label></div>
-                <div class="col"><label class="form-label w-100 mb-0">Mobil<input class="form-control mt-1" name="mo" [(ngModel)]="c.mobile" /></label></div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="c_fn" name="fn" placeholder="Vorname" [(ngModel)]="c.first_name" />
+                <label for="c_fn">Vorname</label>
               </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="c_ln" name="ln" placeholder="Nachname" required [(ngModel)]="c.last_name" [class.is-invalid]="!!fieldErrors()['last_name']" />
+                <label for="c_ln">Nachname <span class="text-danger">*</span></label>
+                <div class="invalid-feedback">{{ fieldErrors()['last_name'] || 'Bitte einen Nachnamen angeben.' }}</div>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="c_pos" name="pos" placeholder="Position" [(ngModel)]="c.position" />
+                <label for="c_pos">Position</label>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input type="email" class="form-control" id="c_em" name="em" placeholder="E-Mail" [(ngModel)]="c.email" [class.is-invalid]="!!fieldErrors()['email']" />
+                <label for="c_em">E-Mail</label>
+                <div class="invalid-feedback">{{ fieldErrors()['email'] || 'Ungültige E-Mail-Adresse.' }}</div>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="c_ph" name="ph" placeholder="Telefon" [(ngModel)]="c.phone" />
+                <label for="c_ph">Telefon</label>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="c_mo" name="mo" placeholder="Mobil" [(ngModel)]="c.mobile" />
+                <label for="c_mo">Mobil</label>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
               <div class="form-check">
                 <input id="primary" class="form-check-input" name="pri" type="checkbox" [(ngModel)]="c.is_primary" />
                 <label class="form-check-label" for="primary">Hauptansprechpartner</label>
               </div>
             </div>
-            <div class="card-footer d-flex gap-2">
+
+            <div class="col-12 d-flex gap-2 mt-2">
               <button type="submit" class="btn btn-primary">Speichern</button>
               <button type="button" class="btn btn-outline-secondary" (click)="contactEdit.set(null)">Abbrechen</button>
             </div>
@@ -246,34 +320,55 @@
       </div>
     } @else {
       @if (addressEdit(); as a) {
-        <form (ngSubmit)="saveAddress()">
-          <div class="card">
-            <div class="card-header fw-semibold">{{ a.id ? 'Adresse bearbeiten' : 'Neue Adresse' }}</div>
-            <div class="card-body vstack gap-3">
-              <div class="row g-2">
-                <div class="col-md-4">
-                  <label class="form-label w-100 mb-0">Art
-                    <select class="form-select mt-1" name="t" [(ngModel)]="a.type">
-                      <option value="abholung">Abholung</option>
-                      <option value="lieferung">Lieferung</option>
-                      <option value="sonstige">Sonstige</option>
-                    </select>
-                  </label>
-                </div>
-                <div class="col-md-8"><label class="form-label w-100 mb-0">Bezeichnung<input class="form-control mt-1" name="lb" [(ngModel)]="a.label" placeholder="z. B. Schulhof" /></label></div>
+        <form #af="ngForm" (ngSubmit)="saveAddress(af)" novalidate [class.was-validated]="addressSubmitted()">
+          <div class="row g-3">
+            <div class="col-12"><div class="section-title">{{ a.id ? 'Adresse bearbeiten' : 'Neue Adresse' }}</div></div>
+
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <select class="form-select" id="a_t" name="t" [(ngModel)]="a.type">
+                  <option value="abholung">Abholung</option>
+                  <option value="lieferung">Lieferung</option>
+                  <option value="sonstige">Sonstige</option>
+                </select>
+                <label for="a_t">Art</label>
               </div>
-              <label class="form-label w-100 mb-0">Straße, Nr. *
-                <input class="form-control mt-1" name="st" [(ngModel)]="a.street" required [class.is-invalid]="!!fieldErrors()['street']" />
-                <span class="invalid-feedback">{{ fieldErrors()['street'] }}</span>
-              </label>
-              <div class="row g-2">
-                <div class="col-3"><label class="form-label w-100 mb-0">PLZ *<input class="form-control mt-1" name="pz" [(ngModel)]="a.postal_code" required [class.is-invalid]="!!fieldErrors()['postal_code']" /></label></div>
-                <div class="col-6"><label class="form-label w-100 mb-0">Ort *<input class="form-control mt-1" name="ci" [(ngModel)]="a.city" required [class.is-invalid]="!!fieldErrors()['city']" /></label></div>
-                <div class="col-3"><label class="form-label w-100 mb-0">Land<input class="form-control mt-1" name="co" [(ngModel)]="a.country" maxlength="2" /></label></div>
-              </div>
-              @if (fieldErrors()['postal_code'] || fieldErrors()['city']) { <div class="text-danger small">PLZ und Ort sind Pflicht.</div> }
             </div>
-            <div class="card-footer d-flex gap-2">
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="a_lb" name="lb" placeholder="Bezeichnung" [(ngModel)]="a.label" />
+                <label for="a_lb">Bezeichnung (z. B. Schulhof)</label>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="a_st" name="st" placeholder="Straße" required [(ngModel)]="a.street" [class.is-invalid]="!!fieldErrors()['street']" />
+                <label for="a_st">Straße, Nr. <span class="text-danger">*</span></label>
+                <div class="invalid-feedback">{{ fieldErrors()['street'] || 'Bitte Straße und Hausnummer angeben.' }}</div>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="a_pz" name="pz" placeholder="PLZ" required [(ngModel)]="a.postal_code" [class.is-invalid]="!!fieldErrors()['postal_code']" />
+                <label for="a_pz">PLZ <span class="text-danger">*</span></label>
+                <div class="invalid-feedback">{{ fieldErrors()['postal_code'] || 'Bitte die PLZ angeben.' }}</div>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="a_ci" name="ci" placeholder="Ort" required [(ngModel)]="a.city" [class.is-invalid]="!!fieldErrors()['city']" />
+                <label for="a_ci">Ort <span class="text-danger">*</span></label>
+                <div class="invalid-feedback">{{ fieldErrors()['city'] || 'Bitte den Ort angeben.' }}</div>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="a_co" name="co" placeholder="Land" maxlength="2" [(ngModel)]="a.country" />
+                <label for="a_co">Land (z. B. DE)</label>
+              </div>
+            </div>
+
+            <div class="col-12 d-flex gap-2 mt-2">
               <button type="submit" class="btn btn-primary">Speichern</button>
               <button type="button" class="btn btn-outline-secondary" (click)="addressEdit.set(null)">Abbrechen</button>
             </div>
@@ -282,4 +377,6 @@
       }
     }
   }
+}
+
 }

@@ -20,7 +20,7 @@ interface Draft {
 
 /**
  * Benutzerverwaltung (nur Administrator): Liste, Anlegen, Bearbeiten, Sperren, Passwort zurücksetzen.
- * Tabellen-Muster (docs/patterns/TableViewPattern.md), clientseitige Variante: Die Liste ist klein,
+ * Tabellen-Muster (docs/ClaudeCodePatterns/TableViewPattern.md), clientseitige Variante: Die Liste ist klein,
  * deshalb filtern und sortieren wir im Browser (Logik in users-view.ts, mit Testfällen).
  */
 @Component({

@@ -9,7 +9,7 @@ import { HighlightComponent } from '../../shared/highlight.component';
 import { StickyFilterBarDirective } from '../../shared/sticky-filter-bar.directive';
 
 /**
- * Kundenliste. Lebende Referenz des Tabellen-Musters (docs/patterns/TableViewPattern.md):
+ * Kundenliste. Lebende Referenz des Tabellen-Musters (docs/ClaudeCodePatterns/TableViewPattern.md):
  * Seitenkopf mit Zähler und Schaltflächen, klebende Filterleiste, klebender Tabellenkopf mit Sortierung,
  * Aktionsspalte, Auswahlzeile. Weil die Menge groß werden kann, filtert, sortiert und blättert der SERVER.
  */

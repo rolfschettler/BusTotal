@@ -29,7 +29,7 @@ export const routes: Routes = [
           {
             path: '',
             pathMatch: 'full',
-            // fullPage: Listenseite nach dem Tabellen-Muster (docs/patterns/TableViewPattern.md)
+            // fullPage: Listenseite nach dem Tabellen-Muster (docs/ClaudeCodePatterns/TableViewPattern.md)
             data: { help: 'kunden#kundenliste', fullPage: true },
             loadComponent: () => import('./pages/customers/customer-list.component').then((m) => m.CustomerListComponent),
           },
@@ -59,7 +59,7 @@ export const routes: Routes = [
       {
         path: 'benutzer',
         canActivate: [roleGuard('admin')],
-        // fullPage: Listenseite nach dem Tabellen-Muster (docs/patterns/TableViewPattern.md)
+        // fullPage: Listenseite nach dem Tabellen-Muster (docs/ClaudeCodePatterns/TableViewPattern.md)
         data: { help: 'benutzer#benutzerliste', fullPage: true },
         loadComponent: () => import('./pages/users/users.component').then((m) => m.UsersComponent),
       },

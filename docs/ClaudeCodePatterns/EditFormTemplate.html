@@ -1,0 +1,382 @@
+<!-- Formular-Muster, siehe docs/ClaudeCodePatterns/EditFormPattern.md. Die Optik kommt aus src/styles/_edit-form.scss. -->
+<a routerLink="/kunden" class="small text-decoration-none">‹ Alle Kunden</a>
+
+<div class="mb-3">
+  @if (customer(); as c) {
+    <h1 class="h3 mb-1">{{ c.display_name }}</h1>
+    <p class="mb-0 small text-body-secondary">
+      Kundennr. <code>{{ c.customer_number }}</code> · Debitorennr. <code>{{ c.debitor_number }}</code>
+      <app-help-link topic="kunden" anchor="nummern" label="Kunden- und Debitorennummer" />
+      @if (archived()) { <span class="badge text-bg-danger ms-2">Archiviert</span> }
+      @if (c.is_demo) { <span class="badge text-bg-info ms-2" title="Erfundener Datensatz für Schulung, Messe oder Tests. Entfernen: php artisan bustotal:demo-daten --entfernen">Demo</span> }
+    </p>
+  } @else {
+    <h1 class="h3 mb-0">Neuer Kunde</h1>
+  }
+</div>
+
+@if (loading()) {
+  <div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary"></div></div>
+} @else {
+
+@if (id) {
+  <ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'stamm'" (click)="show('stamm')">Stammdaten</button></li>
+    <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'kontakte'" (click)="show('kontakte')">Ansprechpartner ({{ customer()?.contacts?.length ?? 0 }})</button></li>
+    <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'adressen'" (click)="show('adressen')">Adressen ({{ customer()?.addresses?.length ?? 0 }})</button></li>
+  </ul>
+}
+
+@if (message(); as m) {
+  <div class="alert py-2 small" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
+}
+
+@switch (tab()) {
+  @case ('stamm') {
+    @if (duplicates().length) {
+      <div class="alert alert-warning" role="alert">
+        <strong>Mögliche Dublette:</strong> <app-help-link topic="kunden" anchor="dubletten" label="Mögliche Dubletten" />
+        <ul class="mb-0 mt-1">
+          @for (d of duplicates(); track d.customer.id) {
+            <li>
+              <a [routerLink]="['/kunden', d.customer.id]" target="_blank" class="alert-link">{{ d.customer.display_name }}</a>
+              ({{ d.customer.customer_number }}, {{ d.customer.postal_code }} {{ d.customer.city }}) – {{ d.reason }}
+            </li>
+          }
+        </ul>
+      </div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+      <div class="row g-3">
+
+        <div class="col-12"><div class="section-title">Kunde</div></div>
+
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <select class="form-select" id="type" formControlName="type">
+              @for (t of types(); track t.value) {
+                <option [value]="t.value">{{ t.label }}</option>
+              }
+            </select>
+            <label for="type">Art</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="company_name" placeholder="Firma" formControlName="company_name" [class.is-invalid]="invalid('company_name')" />
+            <label for="company_name">{{ isOrganisation() ? 'Firmen- / Organisationsname' : 'Firmenname (optional)' }}@if (isOrganisation()) { <span class="text-danger"> *</span> }</label>
+            <div class="invalid-feedback">Bitte einen Namen angeben.</div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="salutation" placeholder="Anrede" formControlName="salutation" />
+            <label for="salutation">Anrede (z. B. Herr, Frau)</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="first_name" placeholder="Vorname" formControlName="first_name" />
+            <label for="first_name">Vorname</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="last_name" placeholder="Nachname" formControlName="last_name" [class.is-invalid]="invalid('last_name')" />
+            <label for="last_name">Nachname@if (!isOrganisation()) { <span class="text-danger"> *</span> }</label>
+            <div class="invalid-feedback">Bitte einen Nachnamen angeben.</div>
+          </div>
+        </div>
+
+        <div class="col-12"><div class="section-title">Kontakt</div></div>
+
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input type="email" class="form-control" id="email" placeholder="E-Mail" formControlName="email" [class.is-invalid]="invalid('email')" />
+            <label for="email">E-Mail</label>
+            <div class="invalid-feedback">{{ fieldErrors()['email'] || 'Ungültige E-Mail-Adresse.' }}</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="website" placeholder="Webseite" formControlName="website" />
+            <label for="website">Webseite</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="phone" placeholder="Telefon" formControlName="phone" />
+            <label for="phone">Telefon</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="mobile" placeholder="Mobil" formControlName="mobile" />
+            <label for="mobile">Mobil</label>
+          </div>
+        </div>
+
+        <div class="col-12"><div class="section-title">Rechnungsadresse</div></div>
+
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="street" placeholder="Straße" formControlName="street" />
+            <label for="street">Straße, Nr.</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="postal_code" placeholder="PLZ" formControlName="postal_code" />
+            <label for="postal_code">PLZ</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="city" placeholder="Ort" formControlName="city" />
+            <label for="city">Ort</label>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="country" placeholder="Land" maxlength="2" formControlName="country" [class.is-invalid]="invalid('country')" />
+            <label for="country">Land (2 Buchstaben, z. B. DE)</label>
+            <div class="invalid-feedback">Bitte den Ländercode mit zwei Buchstaben angeben.</div>
+          </div>
+        </div>
+
+        <div class="col-12"><div class="section-title">Rechnung</div></div>
+
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input class="form-control" id="vat_id" placeholder="USt-IdNr." formControlName="vat_id" [class.is-invalid]="invalid('vat_id')" />
+            <label for="vat_id">USt-IdNr. (z. B. DE123456789)</label>
+            <div class="invalid-feedback">{{ fieldErrors()['vat_id'] || 'Ungültiges Format, z. B. DE123456789.' }}</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="form-floating">
+            <input type="number" min="0" class="form-control" id="payment_term_days" placeholder="Zahlungsziel" formControlName="payment_term_days" />
+            <label for="payment_term_days">Zahlungsziel in Tagen</label>
+          </div>
+          <div class="form-text">Leer = Standard der Firma.</div>
+        </div>
+
+        <div class="col-12"><div class="section-title">Notizen (intern)</div></div>
+
+        <div class="col-12">
+          <div class="form-floating">
+            <textarea class="form-control" id="notes" placeholder="Notizen" formControlName="notes"></textarea>
+            <label for="notes">Notizen</label>
+          </div>
+        </div>
+
+        <div class="col-12 d-flex flex-wrap gap-2 mt-2">
+          @if (!archived()) {
+            <button type="submit" class="btn btn-primary" [disabled]="saving()">
+              @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+              {{ id ? 'Speichern' : 'Kunde anlegen' }}
+            </button>
+          }
+          @if (id && customer() && !archived()) {
+            <button type="button" class="btn btn-outline-secondary ms-auto" (click)="archive()"><i class="bi bi-archive me-1"></i>Archivieren</button>
+          }
+          @if (archived() && isAdmin()) {
+            <button type="button" class="btn btn-outline-secondary ms-auto" (click)="restore()"><i class="bi bi-arrow-counterclockwise me-1"></i>Wiederherstellen</button>
+          }
+        </div>
+      </div>
+    </form>
+
+    @if (id && customer()) {
+      <section class="mt-4 pt-3 border-top">
+        <h2 class="h6">Datenschutz <app-help-link topic="datenschutz" anchor="anonymisieren" label="Auskunft und Löschung (DSGVO)" /></h2>
+        <div class="d-flex flex-wrap gap-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="export()">Daten exportieren (DSGVO Auskunft)</button>
+          @if (canAnonymize()) { <button type="button" class="btn btn-outline-danger btn-sm" (click)="anonymize()">Anonymisieren (DSGVO Löschung)</button> }
+        </div>
+      </section>
+    }
+  }
+
+  @case ('kontakte') {
+    @if (!contactEdit()) {
+      @if (!archived()) { <button class="btn btn-primary mb-3" (click)="newContact()">Ansprechpartner hinzufügen</button> }
+      <div class="card">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light"><tr><th>Name</th><th>Position</th><th>E-Mail</th><th>Telefon</th><th></th></tr></thead>
+          <tbody>
+            @for (c of customer()?.contacts; track c.id) {
+              <tr>
+                <td>@if (c.is_primary) { <span title="Hauptansprechpartner" class="text-warning">★ </span> }{{ c.salutation }} {{ c.first_name }} {{ c.last_name }}</td>
+                <td>{{ c.position }}</td>
+                <td>{{ c.email }}</td>
+                <td>{{ c.phone || c.mobile }}</td>
+                <td class="text-end text-nowrap">
+                  @if (!archived()) {
+                    <button class="btn btn-sm btn-outline-secondary me-1" (click)="editContact(c)">Bearbeiten</button>
+                    <button class="btn btn-sm btn-outline-danger" (click)="deleteContact(c)">Löschen</button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="text-center text-body-secondary py-4">Noch keine Ansprechpartner.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      @if (contactEdit(); as c) {
+        <form #cf="ngForm" (ngSubmit)="saveContact(cf)" novalidate [class.was-validated]="contactSubmitted()">
+          <div class="row g-3">
+            <div class="col-12"><div class="section-title">{{ c.id ? 'Ansprechpartner bearbeiten' : 'Neuer Ansprechpartner' }}</div></div>
+
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="c_sal" name="sal" placeholder="Anrede" [(ngModel)]="c.salutation" />
+                <label for="c_sal">Anrede</label>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="c_fn" name="fn" placeholder="Vorname" [(ngModel)]="c.first_name" />
+                <label for="c_fn">Vorname</label>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="c_ln" name="ln" placeholder="Nachname" required [(ngModel)]="c.last_name" [class.is-invalid]="!!fieldErrors()['last_name']" />
+                <label for="c_ln">Nachname <span class="text-danger">*</span></label>
+                <div class="invalid-feedback">{{ fieldErrors()['last_name'] || 'Bitte einen Nachnamen angeben.' }}</div>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="c_pos" name="pos" placeholder="Position" [(ngModel)]="c.position" />
+                <label for="c_pos">Position</label>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input type="email" class="form-control" id="c_em" name="em" placeholder="E-Mail" [(ngModel)]="c.email" [class.is-invalid]="!!fieldErrors()['email']" />
+                <label for="c_em">E-Mail</label>
+                <div class="invalid-feedback">{{ fieldErrors()['email'] || 'Ungültige E-Mail-Adresse.' }}</div>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="c_ph" name="ph" placeholder="Telefon" [(ngModel)]="c.phone" />
+                <label for="c_ph">Telefon</label>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="c_mo" name="mo" placeholder="Mobil" [(ngModel)]="c.mobile" />
+                <label for="c_mo">Mobil</label>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-check">
+                <input id="primary" class="form-check-input" name="pri" type="checkbox" [(ngModel)]="c.is_primary" />
+                <label class="form-check-label" for="primary">Hauptansprechpartner</label>
+              </div>
+            </div>
+
+            <div class="col-12 d-flex gap-2 mt-2">
+              <button type="submit" class="btn btn-primary">Speichern</button>
+              <button type="button" class="btn btn-outline-secondary" (click)="contactEdit.set(null)">Abbrechen</button>
+            </div>
+          </div>
+        </form>
+      }
+    }
+  }
+
+  @case ('adressen') {
+    @if (!addressEdit()) {
+      @if (!archived()) { <button class="btn btn-primary mb-3" (click)="newAddress()">Adresse hinzufügen</button> }
+      <div class="card">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light"><tr><th>Art</th><th>Bezeichnung</th><th>Adresse</th><th></th></tr></thead>
+          <tbody>
+            @for (a of customer()?.addresses; track a.id) {
+              <tr>
+                <td>{{ a.type }}</td>
+                <td>{{ a.label }}</td>
+                <td>{{ a.street }}, {{ a.postal_code }} {{ a.city }}</td>
+                <td class="text-end text-nowrap">
+                  @if (!archived()) {
+                    <button class="btn btn-sm btn-outline-secondary me-1" (click)="editAddress(a)">Bearbeiten</button>
+                    <button class="btn btn-sm btn-outline-danger" (click)="deleteAddress(a)">Löschen</button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="4" class="text-center text-body-secondary py-4">Noch keine zusätzlichen Adressen (z. B. Abholpunkte).</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      @if (addressEdit(); as a) {
+        <form #af="ngForm" (ngSubmit)="saveAddress(af)" novalidate [class.was-validated]="addressSubmitted()">
+          <div class="row g-3">
+            <div class="col-12"><div class="section-title">{{ a.id ? 'Adresse bearbeiten' : 'Neue Adresse' }}</div></div>
+
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <select class="form-select" id="a_t" name="t" [(ngModel)]="a.type">
+                  <option value="abholung">Abholung</option>
+                  <option value="lieferung">Lieferung</option>
+                  <option value="sonstige">Sonstige</option>
+                </select>
+                <label for="a_t">Art</label>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="a_lb" name="lb" placeholder="Bezeichnung" [(ngModel)]="a.label" />
+                <label for="a_lb">Bezeichnung (z. B. Schulhof)</label>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="a_st" name="st" placeholder="Straße" required [(ngModel)]="a.street" [class.is-invalid]="!!fieldErrors()['street']" />
+                <label for="a_st">Straße, Nr. <span class="text-danger">*</span></label>
+                <div class="invalid-feedback">{{ fieldErrors()['street'] || 'Bitte Straße und Hausnummer angeben.' }}</div>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="a_pz" name="pz" placeholder="PLZ" required [(ngModel)]="a.postal_code" [class.is-invalid]="!!fieldErrors()['postal_code']" />
+                <label for="a_pz">PLZ <span class="text-danger">*</span></label>
+                <div class="invalid-feedback">{{ fieldErrors()['postal_code'] || 'Bitte die PLZ angeben.' }}</div>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="a_ci" name="ci" placeholder="Ort" required [(ngModel)]="a.city" [class.is-invalid]="!!fieldErrors()['city']" />
+                <label for="a_ci">Ort <span class="text-danger">*</span></label>
+                <div class="invalid-feedback">{{ fieldErrors()['city'] || 'Bitte den Ort angeben.' }}</div>
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="form-floating">
+                <input class="form-control" id="a_co" name="co" placeholder="Land" maxlength="2" [(ngModel)]="a.country" />
+                <label for="a_co">Land (z. B. DE)</label>
+              </div>
+            </div>
+
+            <div class="col-12 d-flex gap-2 mt-2">
+              <button type="submit" class="btn btn-primary">Speichern</button>
+              <button type="button" class="btn btn-outline-secondary" (click)="addressEdit.set(null)">Abbrechen</button>
+            </div>
+          </div>
+        </form>
+      }
+    }
+  }
+}
+
+}
