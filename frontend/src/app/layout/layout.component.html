@@ -34,7 +34,9 @@
       }
 
       <div class="group">System</div>
-      <a class="nav-link" routerLink="/einstellungen" routerLinkActive="active">Einstellungen</a>
+      @if (auth.user()?.role !== 'fahrer') {
+        <a class="nav-link" routerLink="/einstellungen" routerLinkActive="active">Einstellungen</a>
+      }
       <a class="nav-link" routerLink="/hilfe" routerLinkActive="active">Hilfe</a>
     </nav>
   </aside>

@@ -1,6 +1,6 @@
 # Einstellungen {#einstellungen}
 
-Die Einstellungen gelten für Ihre ganze Firma. Alle angemeldeten Benutzer dürfen sie ansehen, **ändern darf sie nur der Administrator**. Für alle anderen sind die Felder grau und es gibt keine Schaltflächen zum Speichern.
+Die Einstellungen gelten für Ihre ganze Firma. Administrator, Disponent und Buchhaltung dürfen sie ansehen, **ändern darf sie nur der Administrator**. Für Disponent und Buchhaltung sind die Felder grau und es gibt keine Schaltflächen zum Speichern. Fahrer sehen die Einstellungen nicht.
 
 ## Firmendaten {#firmendaten}
 

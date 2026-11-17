@@ -17,10 +17,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
 
-    // Einstellungen: alle Angemeldeten dürfen lesen, nur der Admin darf ändern.
-    Route::get('/settings/company', [SettingsController::class, 'company']);
-    Route::get('/settings/tax-rates', [SettingsController::class, 'taxRates']);
-    Route::get('/settings/number-ranges', [SettingsController::class, 'numberRanges']);
+    // Einstellungen: Admin, Disponent und Buchhaltung dürfen lesen, nur der Admin darf ändern.
+    // Fahrer sehen sie nicht (Bankdaten, Steuernummer). Name, Farbe und Logo kommen für alle
+    // über die öffentliche /branding-Schnittstelle.
+    Route::middleware('role:admin,disponent,buchhaltung')->group(function () {
+        Route::get('/settings/company', [SettingsController::class, 'company']);
+        Route::get('/settings/tax-rates', [SettingsController::class, 'taxRates']);
+        Route::get('/settings/number-ranges', [SettingsController::class, 'numberRanges']);
+    });
 
     // Kunden: Admin, Disponent und Buchhaltung. Fahrer haben keinen Zugriff.
     // Feste Pfade (duplicates, types) müssen VOR /customers/{customer} stehen.
@@ -42,9 +46,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{customer}/addresses/{address}', [CustomerChildController::class, 'destroyAddress']);
     });
 
+    // DSGVO-Löschung (unwiderruflich): Administrator und Buchhaltung.
+    Route::post('/customers/{customer}/anonymize', [CustomerController::class, 'anonymize'])
+        ->middleware('role:admin,buchhaltung');
+
     Route::middleware('role:admin')->group(function () {
         Route::post('/customers/{id}/restore', [CustomerController::class, 'restore']);
-        Route::post('/customers/{customer}/anonymize', [CustomerController::class, 'anonymize']);
 
         Route::put('/settings/company', [SettingsController::class, 'updateCompany']);
         Route::post('/settings/logo', [SettingsController::class, 'uploadLogo']);

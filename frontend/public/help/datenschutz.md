@@ -14,7 +14,7 @@ Der Export steht Administrator, Disponent und Buchhaltung zur Verfügung. Jeder 
 
 ## Löschung: Anonymisieren {#anonymisieren}
 
-Verlangt ein Kunde die Löschung, benutzen Sie **Anonymisieren (DSGVO Löschung)** unter **Weitere Aktionen**. Das darf **nur der Administrator**, und es ist **nicht rückgängig zu machen**. Vor der Ausführung erscheint eine Bestätigung.
+Verlangt ein Kunde die Löschung, benutzen Sie **Anonymisieren (DSGVO Löschung)** unter **Weitere Aktionen**. Das dürfen **Administrator und Buchhaltung**, und es ist **nicht rückgängig zu machen**. Vor der Ausführung erscheint eine Bestätigung.
 
 Dabei werden entfernt:
 

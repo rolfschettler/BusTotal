@@ -42,6 +42,8 @@ export class CustomerFormComponent implements OnInit {
   private help = inject(HelpService);
 
   isAdmin = computed(() => this.auth.user()?.role === 'admin');
+  /** DSGVO-Löschung: Administrator und Buchhaltung (der Server prüft zusätzlich). */
+  canAnonymize = computed(() => ['admin', 'buchhaltung'].includes(this.auth.user()?.role ?? ''));
 
   id: number | null = null;
   customer = signal<Customer | null>(null);

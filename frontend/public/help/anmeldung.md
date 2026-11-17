@@ -19,8 +19,11 @@ Jeder Benutzer hat eine Rolle. Sie bestimmt, was er sehen und ändern darf.
 |---|---|---|---|---|
 | Kunden ansehen, anlegen, ändern, archivieren | ja | ja | ja | nein |
 | Kundendaten exportieren (Auskunft) | ja | ja | ja | nein |
-| Kunden wiederherstellen und anonymisieren | ja | nein | nein | nein |
-| Einstellungen ansehen | ja | ja | ja | ja |
+| Kunden anonymisieren (DSGVO-Löschung) | ja | nein | ja | nein |
+| Kunden wiederherstellen | ja | nein | nein | nein |
+| Einstellungen ansehen | ja | ja | ja | nein |
 | Einstellungen ändern | ja | nein | nein | nein |
+
+Fahrer sehen den Menüpunkt „Einstellungen“ nicht, weil dort Bank- und Steuerdaten der Firma stehen. Name, Farbe und Logo der Firma sehen sie trotzdem in der Kopfleiste.
 
 Wenn Ihnen ein Menüpunkt fehlt oder eine Schaltfläche nicht erscheint, fehlt dafür in der Regel nur das Recht Ihrer Rolle. Wenden Sie sich an Ihren Administrator.

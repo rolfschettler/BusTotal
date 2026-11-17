@@ -52,6 +52,22 @@ class SettingsTest extends TestCase
             ->assertJsonPath('iban', 'DE89370400440532013000');
     }
 
+    public function test_fahrer_sehen_die_einstellungen_nicht(): void
+    {
+        foreach (['company', 'tax-rates', 'number-ranges'] as $path) {
+            $this->as(Role::Fahrer)->getJson("/api/settings/{$path}")->assertForbidden();
+        }
+
+        // Name, Farbe und Logo bleiben über die öffentliche Schnittstelle erreichbar.
+        $this->as(Role::Fahrer)->getJson('/api/branding')->assertOk()->assertJsonMissingPath('iban');
+    }
+
+    public function test_buchhaltung_darf_einstellungen_lesen_aber_nicht_aendern(): void
+    {
+        $this->as(Role::Buchhaltung)->getJson('/api/settings/company')->assertOk();
+        $this->as(Role::Buchhaltung)->putJson('/api/settings/company', $this->companyData())->assertForbidden();
+    }
+
     public function test_ungueltige_iban_wird_abgelehnt(): void
     {
         $this->as(Role::Admin)->putJson('/api/settings/company', $this->companyData(['iban' => 'DE00 1234 5678 9012 3456 78']))

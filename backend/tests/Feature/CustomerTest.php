@@ -209,13 +209,17 @@ class CustomerTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['event' => 'exported', 'auditable_id' => $c->id]);
     }
 
-    public function test_anonymisieren_nur_admin_und_nummern_bleiben(): void
+    public function test_anonymisieren_nur_admin_und_buchhaltung_und_nummern_bleiben(): void
     {
         $c = Customer::factory()->create(['company_name' => 'Geheim GmbH', 'email' => 'geheim@test.de', 'customer_number' => 'K-00042', 'debitor_number' => 10042]);
         $c->contacts()->create(['last_name' => 'Müller']);
 
+        // Disponent und Fahrer dürfen nicht, Buchhaltung darf.
         $this->as(Role::Disponent)->postJson("/api/customers/{$c->id}/anonymize")->assertForbidden();
-        $this->as(Role::Admin)->postJson("/api/customers/{$c->id}/anonymize")->assertOk();
+        $this->as(Role::Fahrer)->postJson("/api/customers/{$c->id}/anonymize")->assertForbidden();
+        $this->assertSame('Geheim GmbH', $c->fresh()->company_name);
+
+        $this->as(Role::Buchhaltung)->postJson("/api/customers/{$c->id}/anonymize")->assertOk();
 
         $c = Customer::withTrashed()->find($c->id);
         $this->assertSame('Anonymisiert', $c->company_name);
@@ -229,5 +233,21 @@ class CustomerTest extends TestCase
         $entry = AuditLog::where('event', 'anonymized')->where('auditable_id', $c->id)->first();
         $this->assertNotNull($entry);
         $this->assertNull($entry->old_values);
+    }
+
+    public function test_admin_darf_ebenfalls_anonymisieren(): void
+    {
+        $c = Customer::factory()->create();
+
+        $this->as(Role::Admin)->postJson("/api/customers/{$c->id}/anonymize")->assertOk();
+        $this->assertSame('Anonymisiert', Customer::withTrashed()->find($c->id)->company_name);
+    }
+
+    public function test_wiederherstellen_bleibt_dem_admin_vorbehalten(): void
+    {
+        $c = Customer::factory()->create();
+        $c->delete();
+
+        $this->as(Role::Buchhaltung)->postJson("/api/customers/{$c->id}/restore")->assertForbidden();
     }
 }

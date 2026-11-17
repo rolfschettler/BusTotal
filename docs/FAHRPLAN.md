@@ -126,6 +126,11 @@ Getroffene Entscheidungen:
 - 5 Themen geschrieben (Erste Schritte, Anmeldung und Rollen, Kundenverwaltung, Einstellungen, Datenschutz); Texte sind ein Entwurf zur fachlichen Prüfung durch den Auftraggeber.
 - **Regel für alle künftigen Seiten:** Jede neue Seite bekommt ein Hilfethema (oder einen Abschnitt) und einen `data.help`-Eintrag; Hilfetexte nur zu Funktionen schreiben, die es wirklich gibt.
 
+**Entscheidungen aus der Textprüfung (2026-11-18):**
+- Fahrer sehen die Einstellungen nicht (Menü ausgeblendet, Route gesperrt, Server liefert 403). Name, Farbe und Logo bleiben über `/api/branding` für alle sichtbar.
+- Kunden anonymisieren dürfen Administrator **und Buchhaltung**; Wiederherstellen bleibt beim Administrator. 54 Backend-Tests grün, im Browser mit allen Rollen geprüft.
+- **Offen für Phase 0 (Steuerberater):** Debitorenkreis klären. Aktuell vergibt die Software Debitorennummern ab 10000 aufwärts. Einschränkung: Im Nummernkreis kann man die nächste Nummer nur erhöhen, nie senken. Verlangt der Steuerberater einen Bereich unter 10000 (oder Debitornummer = Kundennummer), muss das vor dem ersten echten Kunden angepasst werden, sonst ist der Startwert nicht mehr nach unten korrigierbar.
+
 **Nächster Schritt:** Hilfetexte fachlich prüfen lassen, dann Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen) und Phase 3 Mandantenfähigkeit (Subdomain → eigene DB je Mandant) oder Phase 4 Fuhrpark.
 
 

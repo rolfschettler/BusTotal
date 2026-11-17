@@ -44,6 +44,7 @@ export const routes: Routes = [
       },
       {
         path: 'einstellungen',
+        canActivate: [roleGuard('admin', 'disponent', 'buchhaltung')],
         data: { help: 'einstellungen#firmendaten' },
         loadComponent: () => import('./pages/settings/settings.component').then((m) => m.SettingsComponent),
       },

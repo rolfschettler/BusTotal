@@ -146,7 +146,7 @@
           } @else {
             <button class="btn btn-outline-secondary btn-sm" (click)="archive()">Archivieren</button>
           }
-          @if (isAdmin()) { <button class="btn btn-outline-danger btn-sm" (click)="anonymize()">Anonymisieren (DSGVO Löschung)</button> }
+          @if (canAnonymize()) { <button class="btn btn-outline-danger btn-sm" (click)="anonymize()">Anonymisieren (DSGVO Löschung)</button> }
         </div>
       </section>
     }
