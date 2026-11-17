@@ -22,6 +22,7 @@ class SettingsSeeder extends Seeder
 
         $ranges = [
             ['kunde', 'Kundennummer', 'K', false, 5, false],
+            ['debitor', 'Debitorennummer (DATEV)', '', false, 5, false],
             ['angebot', 'Angebot', 'AN', true, 5, true],
             ['auftrag', 'Auftrag', 'AU', true, 5, true],
             ['auftragsbestaetigung', 'Auftragsbestätigung', 'AB', true, 5, true],
@@ -32,6 +33,8 @@ class SettingsSeeder extends Seeder
             NumberRange::firstOrCreate(['type' => $type], [
                 'label' => $label, 'prefix' => $prefix, 'include_year' => $year,
                 'padding' => $pad, 'reset_yearly' => $reset,
+                // DATEV-Debitorenkonten beginnen üblicherweise bei 10000.
+                'next_number' => $type === 'debitor' ? 10000 : 1,
             ]);
         }
     }

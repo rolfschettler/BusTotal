@@ -1,0 +1,48 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\CustomerType;
+use App\Models\Concerns\Auditable;
+use Database\Factories\CustomerFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Customer extends Model
+{
+    /** @use HasFactory<CustomerFactory> */
+    use Auditable, HasFactory, SoftDeletes;
+
+    // Nummern werden nie per Formular gesetzt, sondern vom Server vergeben.
+    protected $guarded = ['id', 'customer_number', 'debitor_number'];
+
+    // Wird bei jeder JSON-Ausgabe mitgeschickt.
+    protected $appends = ['display_name'];
+
+    protected function casts(): array
+    {
+        return ['type' => CustomerType::class];
+    }
+
+    /** Anzeigename: Firmenname oder "Vorname Nachname". */
+    public function getDisplayNameAttribute(): string
+    {
+        if ($this->company_name) {
+            return $this->company_name;
+        }
+
+        return trim($this->first_name.' '.$this->last_name) ?: $this->customer_number;
+    }
+
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(Contact::class)->orderByDesc('is_primary')->orderBy('last_name');
+    }
+
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(Address::class)->orderBy('id');
+    }
+}

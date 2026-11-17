@@ -50,13 +50,13 @@ Getroffene Entscheidungen:
 
 ---
 
-## [ ] Phase 1 – Fundament
+## [x] Phase 1 – Fundament
 1. Repo, lokale Umgebung, Laravel- und Angular-Grundgerüst
 2. Auth, Benutzer, Rollen/Rechte, Audit-Log (GoBD)
 3. Mandanten-Einstellungen (Firmendaten, Briefkopf, Bank, Steuersätze, Nummernkreise)
 4. Angular-Shell: Login, Layout, Navigation, Guards, API-Client
 
-## [ ] Phase 2 – Kundenverwaltung (gleichzeitig Laravel-Lernmodul)
+## [x] Phase 2 – Kundenverwaltung (gleichzeitig Laravel-Lernmodul)
 - Kunden (Firma/Privat/Schule/Verein/Reisebüro), Ansprechpartner, Adressen, Zahlungsbedingungen, Debitorennummer
 - Suche, Dublettenprüfung, Notizen, DSGVO-Export/Löschung
 
@@ -109,6 +109,10 @@ Getroffene Entscheidungen:
 
 - Phase 1.3: Mandanten-Einstellungen – Firmendaten (inkl. IBAN-Prüfung), Steuersätze, lückenlose Nummernkreise (`NumberRangeService`, nächste Nummer nur erhöhbar); nur Admin darf ändern (`role:admin`-Middleware). Angular-Seite `/einstellungen` mit Layout/Navigation. 21 Backend-Tests grün, im Browser geprüft.
 
-**Nächster Schritt (alt, erledigt):** 1.3 Mandanten-Einstellungen und die Kundenverwaltung als Lernmodul.
+**Erledigt (2026-11-18):**
+- Phase 2 Kundenverwaltung: Kunden (Firma/Privat/Schule/Verein/Reisebüro), Ansprechpartner (ein Hauptansprechpartner), Zusatzadressen, Zahlungsziel, automatische Kunden- und Debitorennummer (ab 10000), Suche/Filter/Seiten, Dublettenprüfung, Notizen, Archivieren statt Löschen, DSGVO-Export und Anonymisierung (nur Admin). Rollen: Fahrer ohne Zugriff. 38 Backend-Tests grün, im Browser geprüft (Anlegen, Dublette, Ansprechpartner, Fahrer-Sperre).
+- Offen/Hinweis: Alte Audit-Log-Einträge enthalten weiterhin frühere Feldwerte eines Kunden (Protokoll ist unveränderlich). Mit Steuerberater/Datenschutz klären, ob das für die DSGVO-Löschung ausreicht (Aufbewahrungspflicht).
+
+**Nächster Schritt:** Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen) und Phase 3 Mandantenfähigkeit (Subdomain → eigene DB je Mandant) oder Phase 4 Fuhrpark.
 
 

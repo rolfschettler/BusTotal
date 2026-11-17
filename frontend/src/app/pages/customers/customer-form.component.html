@@ -1,0 +1,231 @@
+<div class="head">
+  <div>
+    <a routerLink="/kunden" class="back">‹ Alle Kunden</a>
+    @if (customer(); as c) {
+      <h1>{{ c.display_name }}</h1>
+      <p class="numbers">
+        Kundennr. <code>{{ c.customer_number }}</code> · Debitorennr. <code>{{ c.debitor_number }}</code>
+        @if (archived()) { <span class="badge">Archiviert</span> }
+      </p>
+    } @else {
+      <h1>Neuer Kunde</h1>
+    }
+  </div>
+</div>
+
+@if (id) {
+  <div class="tabs" role="tablist">
+    <button role="tab" [class.on]="tab() === 'stamm'" (click)="show('stamm')">Stammdaten</button>
+    <button role="tab" [class.on]="tab() === 'kontakte'" (click)="show('kontakte')">
+      Ansprechpartner ({{ customer()?.contacts?.length ?? 0 }})
+    </button>
+    <button role="tab" [class.on]="tab() === 'adressen'" (click)="show('adressen')">
+      Adressen ({{ customer()?.addresses?.length ?? 0 }})
+    </button>
+  </div>
+}
+
+@if (message(); as m) {
+  <div class="msg" [class.err]="!m.ok" role="status">{{ m.text }}</div>
+}
+
+@switch (tab()) {
+  @case ('stamm') {
+    @if (duplicates().length) {
+      <div class="warn" role="alert">
+        <strong>Mögliche Dublette:</strong>
+        <ul>
+          @for (d of duplicates(); track d.customer.id) {
+            <li>
+              <a [routerLink]="['/kunden', d.customer.id]" target="_blank">{{ d.customer.display_name }}</a>
+              ({{ d.customer.customer_number }}, {{ d.customer.postal_code }} {{ d.customer.city }}) – {{ d.reason }}
+            </li>
+          }
+        </ul>
+      </div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="save()" class="grid" novalidate>
+      <fieldset>
+        <legend>Kunde</legend>
+        <label>Art
+          <select formControlName="type">
+            @for (t of types(); track t.value) {
+              <option [value]="t.value">{{ t.label }}</option>
+            }
+          </select>
+        </label>
+        <label>{{ isOrganisation() ? 'Firmen- / Organisationsname *' : 'Firmenname (optional)' }}
+          <input formControlName="company_name" />
+          @if (form.controls.company_name.touched && form.controls.company_name.invalid) { <small class="e">Bitte einen Namen angeben.</small> }
+        </label>
+        <div class="row">
+          <label class="s">Anrede<input formControlName="salutation" placeholder="Herr/Frau" /></label>
+          <label>Vorname<input formControlName="first_name" /></label>
+          <label>{{ isOrganisation() ? 'Nachname' : 'Nachname *' }}<input formControlName="last_name" />
+            @if (form.controls.last_name.touched && form.controls.last_name.invalid) { <small class="e">Bitte einen Nachnamen angeben.</small> }
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Kontakt</legend>
+        <label>E-Mail<input type="email" formControlName="email" />
+          @if (form.controls.email.touched && form.controls.email.invalid) { <small class="e">Ungültige E-Mail-Adresse.</small> }
+        </label>
+        <label>Telefon<input formControlName="phone" /></label>
+        <label>Mobil<input formControlName="mobile" /></label>
+        <label>Webseite<input formControlName="website" /></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Rechnungsadresse</legend>
+        <label>Straße, Nr.<input formControlName="street" /></label>
+        <div class="row">
+          <label class="s">PLZ<input formControlName="postal_code" /></label>
+          <label>Ort<input formControlName="city" /></label>
+          <label class="s">Land<input formControlName="country" maxlength="2" /></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Rechnung</legend>
+        <label>USt-IdNr.<input formControlName="vat_id" placeholder="DE123456789" />
+          @if (fieldErrors()['vat_id']) { <small class="e">Format: z. B. DE123456789</small> }
+        </label>
+        <label>Zahlungsziel (Tage)
+          <input type="number" min="0" formControlName="payment_term_days" placeholder="leer = Standard der Firma" />
+        </label>
+      </fieldset>
+
+      <fieldset class="wide">
+        <legend>Notizen (intern)</legend>
+        <textarea rows="4" formControlName="notes"></textarea>
+      </fieldset>
+
+      @if (!archived()) {
+        <div class="wide actions">
+          <button type="submit" class="primary" [disabled]="saving()">{{ id ? 'Speichern' : 'Kunde anlegen' }}</button>
+        </div>
+      }
+    </form>
+
+    @if (id && customer()) {
+      <section class="more">
+        <h2>Weitere Aktionen</h2>
+        <button (click)="export()">Daten exportieren (DSGVO Auskunft)</button>
+        @if (archived()) {
+          @if (isAdmin()) { <button (click)="restore()">Wiederherstellen</button> }
+        } @else {
+          <button (click)="archive()">Archivieren</button>
+        }
+        @if (isAdmin()) { <button class="danger" (click)="anonymize()">Anonymisieren (DSGVO Löschung)</button> }
+      </section>
+    }
+  }
+
+  @case ('kontakte') {
+    @if (!contactEdit()) {
+      @if (!archived()) { <button class="primary" (click)="newContact()">Ansprechpartner hinzufügen</button> }
+      <table>
+        <thead><tr><th>Name</th><th>Position</th><th>E-Mail</th><th>Telefon</th><th></th></tr></thead>
+        <tbody>
+          @for (c of customer()?.contacts; track c.id) {
+            <tr>
+              <td>@if (c.is_primary) { <span title="Hauptansprechpartner">★ </span> }{{ c.salutation }} {{ c.first_name }} {{ c.last_name }}</td>
+              <td>{{ c.position }}</td>
+              <td>{{ c.email }}</td>
+              <td>{{ c.phone || c.mobile }}</td>
+              <td class="right">
+                @if (!archived()) {
+                  <button (click)="editContact(c)">Bearbeiten</button>
+                  <button (click)="deleteContact(c)">Löschen</button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="empty">Noch keine Ansprechpartner.</td></tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      @if (contactEdit(); as c) {
+        <form class="grid" (ngSubmit)="saveContact()">
+          <fieldset>
+            <legend>{{ c.id ? 'Ansprechpartner bearbeiten' : 'Neuer Ansprechpartner' }}</legend>
+            <div class="row">
+              <label class="s">Anrede<input name="sal" [(ngModel)]="c.salutation" /></label>
+              <label>Vorname<input name="fn" [(ngModel)]="c.first_name" /></label>
+              <label>Nachname *<input name="ln" [(ngModel)]="c.last_name" required /></label>
+            </div>
+            @if (fieldErrors()['last_name']) { <small class="e">{{ fieldErrors()['last_name'] }}</small> }
+            <label>Position<input name="pos" [(ngModel)]="c.position" /></label>
+            <label>E-Mail<input name="em" type="email" [(ngModel)]="c.email" /></label>
+            @if (fieldErrors()['email']) { <small class="e">{{ fieldErrors()['email'] }}</small> }
+            <label>Telefon<input name="ph" [(ngModel)]="c.phone" /></label>
+            <label>Mobil<input name="mo" [(ngModel)]="c.mobile" /></label>
+            <label class="check"><input name="pri" type="checkbox" [(ngModel)]="c.is_primary" /> Hauptansprechpartner</label>
+          </fieldset>
+          <div class="wide actions">
+            <button type="submit" class="primary">Speichern</button>
+            <button type="button" (click)="contactEdit.set(null)">Abbrechen</button>
+          </div>
+        </form>
+      }
+    }
+  }
+
+  @case ('adressen') {
+    @if (!addressEdit()) {
+      @if (!archived()) { <button class="primary" (click)="newAddress()">Adresse hinzufügen</button> }
+      <table>
+        <thead><tr><th>Art</th><th>Bezeichnung</th><th>Adresse</th><th></th></tr></thead>
+        <tbody>
+          @for (a of customer()?.addresses; track a.id) {
+            <tr>
+              <td>{{ a.type }}</td>
+              <td>{{ a.label }}</td>
+              <td>{{ a.street }}, {{ a.postal_code }} {{ a.city }}</td>
+              <td class="right">
+                @if (!archived()) {
+                  <button (click)="editAddress(a)">Bearbeiten</button>
+                  <button (click)="deleteAddress(a)">Löschen</button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="4" class="empty">Noch keine zusätzlichen Adressen (z. B. Abholpunkte).</td></tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      @if (addressEdit(); as a) {
+        <form class="grid" (ngSubmit)="saveAddress()">
+          <fieldset>
+            <legend>{{ a.id ? 'Adresse bearbeiten' : 'Neue Adresse' }}</legend>
+            <label>Art
+              <select name="t" [(ngModel)]="a.type">
+                <option value="abholung">Abholung</option>
+                <option value="lieferung">Lieferung</option>
+                <option value="sonstige">Sonstige</option>
+              </select>
+            </label>
+            <label>Bezeichnung<input name="lb" [(ngModel)]="a.label" placeholder="z. B. Schulhof" /></label>
+            <label>Straße, Nr. *<input name="st" [(ngModel)]="a.street" required /></label>
+            @if (fieldErrors()['street']) { <small class="e">{{ fieldErrors()['street'] }}</small> }
+            <div class="row">
+              <label class="s">PLZ *<input name="pz" [(ngModel)]="a.postal_code" required /></label>
+              <label>Ort *<input name="ci" [(ngModel)]="a.city" required /></label>
+              <label class="s">Land<input name="co" [(ngModel)]="a.country" maxlength="2" /></label>
+            </div>
+            @if (fieldErrors()['postal_code'] || fieldErrors()['city']) { <small class="e">PLZ und Ort sind Pflicht.</small> }
+          </fieldset>
+          <div class="wide actions">
+            <button type="submit" class="primary">Speichern</button>
+            <button type="button" (click)="addressEdit.set(null)">Abbrechen</button>
+          </div>
+        </form>
+      }
+    }
+  }
+}

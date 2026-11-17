@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard } from './core/auth.guard';
+import { authGuard, guestGuard, roleGuard } from './core/auth.guard';
 
 export const routes: Routes = [
   {
@@ -16,6 +16,25 @@ export const routes: Routes = [
         path: '',
         pathMatch: 'full',
         loadComponent: () => import('./pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+      },
+      {
+        path: 'kunden',
+        canActivate: [roleGuard('admin', 'disponent', 'buchhaltung')],
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            loadComponent: () => import('./pages/customers/customer-list.component').then((m) => m.CustomerListComponent),
+          },
+          {
+            path: 'neu',
+            loadComponent: () => import('./pages/customers/customer-form.component').then((m) => m.CustomerFormComponent),
+          },
+          {
+            path: ':id',
+            loadComponent: () => import('./pages/customers/customer-form.component').then((m) => m.CustomerFormComponent),
+          },
+        ],
       },
       {
         path: 'einstellungen',

@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
-import { AuthService } from './auth.service';
+import { AuthService, Role } from './auth.service';
 
 /** Lässt nur angemeldete Benutzer durch; lädt bei Seitenstart den Benutzer nach. */
 export const authGuard: CanActivateFn = () => {
@@ -19,6 +19,14 @@ export const authGuard: CanActivateFn = () => {
     catchError(() => of(router.createUrlTree(['/login']))),
   );
 };
+
+/** Nur bestimmte Rollen dürfen auf die Seite (der Server prüft zusätzlich!). */
+export const roleGuard =
+  (...roles: Role[]): CanActivateFn =>
+  () => {
+    const auth = inject(AuthService);
+    return roles.includes(auth.user()?.role as Role) ? true : inject(Router).createUrlTree(['/']);
+  };
 
 /** Angemeldete Benutzer brauchen die Login-Seite nicht mehr. */
 export const guestGuard: CanActivateFn = () => {
