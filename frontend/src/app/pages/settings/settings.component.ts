@@ -68,6 +68,15 @@ export class SettingsComponent implements OnInit {
   ranges = signal<NumberRange[]>([]);
 
   ngOnInit() {
+    // Eine Server-Fehlermeldung gilt nur für den abgelehnten Wert: wird das Feld geändert, verschwindet sie.
+    for (const [name, control] of Object.entries(this.company.controls)) {
+      control.valueChanges.subscribe(() => {
+        if (this.fieldErrors()[name]) {
+          const { [name]: _gone, ...rest } = this.fieldErrors();
+          this.fieldErrors.set(rest);
+        }
+      });
+    }
     this.api.getCompany().subscribe((c) => {
       this.company.patchValue(c);
       this.saved = this.company.getRawValue();
