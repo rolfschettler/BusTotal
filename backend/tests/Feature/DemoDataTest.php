@@ -33,7 +33,7 @@ class DemoDataTest extends TestCase
 
     private function demo(int $count = 200): void
     {
-        $this->artisan('bustotal:demo-daten', ['--anzahl' => $count])->assertSuccessful();
+        $this->artisan('bustotal:demo-daten', ['--art' => 'kunden', '--anzahl' => $count])->assertSuccessful();
     }
 
     private function all(): \Illuminate\Database\Eloquent\Collection
@@ -220,7 +220,7 @@ class DemoDataTest extends TestCase
         $this->demo(50);
         $ids = Customer::withTrashed()->orderBy('customer_number')->pluck('id')->all();
 
-        $this->artisan('bustotal:demo-daten', ['--anzahl' => 50])
+        $this->artisan('bustotal:demo-daten', ['--art' => 'kunden', '--anzahl' => 50])
             ->expectsOutputToContain('0 Demo-Kunden angelegt, 50 waren schon vorhanden')
             ->assertSuccessful();
 
@@ -272,7 +272,7 @@ class DemoDataTest extends TestCase
         $this->demo(20);
         $this->assertSame(21, Customer::withTrashed()->count());
 
-        $this->artisan('bustotal:demo-daten', ['--entfernen' => true])
+        $this->artisan('bustotal:demo-daten', ['--art' => 'kunden', '--entfernen' => true])
             ->expectsOutputToContain('20 Demo-Kunden entfernt')
             ->expectsOutputToContain('Nummernzähler bleiben unverändert')
             ->assertSuccessful();
@@ -288,7 +288,7 @@ class DemoDataTest extends TestCase
         $this->demo(60);
         $this->assertGreaterThan(0, Contact::count());
 
-        $this->artisan('bustotal:demo-daten', ['--entfernen' => true])->assertSuccessful();
+        $this->artisan('bustotal:demo-daten', ['--art' => 'kunden', '--entfernen' => true])->assertSuccessful();
 
         $this->assertSame(0, Customer::withTrashed()->count());
         $this->assertSame(0, Contact::count());
@@ -298,7 +298,7 @@ class DemoDataTest extends TestCase
     public function test_ohne_kunden_beginnen_die_nummern_wieder_am_anfang(): void
     {
         $this->demo(10);
-        $this->artisan('bustotal:demo-daten', ['--entfernen' => true])
+        $this->artisan('bustotal:demo-daten', ['--art' => 'kunden', '--entfernen' => true])
             ->expectsOutputToContain('beginnen wieder am Anfang')
             ->assertSuccessful();
 
@@ -312,7 +312,7 @@ class DemoDataTest extends TestCase
 
     public function test_entfernen_ohne_demo_kunden_tut_nichts(): void
     {
-        $this->artisan('bustotal:demo-daten', ['--entfernen' => true])->expectsOutputToContain('0 Demo-Kunden entfernt')->assertSuccessful();
+        $this->artisan('bustotal:demo-daten', ['--art' => 'kunden', '--entfernen' => true])->expectsOutputToContain('0 Demo-Kunden entfernt')->assertSuccessful();
 
         $this->assertSame(0, AuditLog::where('event', 'demo_data_removed')->count());
     }
@@ -323,10 +323,10 @@ class DemoDataTest extends TestCase
     {
         $this->app['env'] = 'production';
 
-        $this->artisan('bustotal:demo-daten', ['--anzahl' => 5])->expectsOutputToContain('produktive Umgebung')->assertFailed();
+        $this->artisan('bustotal:demo-daten', ['--art' => 'kunden', '--anzahl' => 5])->expectsOutputToContain('produktive Umgebung')->assertFailed();
         $this->assertSame(0, Customer::withTrashed()->count());
 
-        $this->artisan('bustotal:demo-daten', ['--anzahl' => 5, '--force' => true])->assertSuccessful();
+        $this->artisan('bustotal:demo-daten', ['--art' => 'kunden', '--anzahl' => 5, '--force' => true])->assertSuccessful();
         $this->assertSame(5, Customer::withTrashed()->count());
     }
 
@@ -335,14 +335,14 @@ class DemoDataTest extends TestCase
         $this->demo(5);
         $this->app['env'] = 'production';
 
-        $this->artisan('bustotal:demo-daten', ['--entfernen' => true])->assertFailed();
+        $this->artisan('bustotal:demo-daten', ['--art' => 'kunden', '--entfernen' => true])->assertFailed();
         $this->assertSame(5, Customer::withTrashed()->count());
     }
 
     public function test_anzahl_wird_geprueft(): void
     {
-        $this->artisan('bustotal:demo-daten', ['--anzahl' => 0])->assertFailed();
-        $this->artisan('bustotal:demo-daten', ['--anzahl' => 99999])->assertFailed();
+        $this->artisan('bustotal:demo-daten', ['--art' => 'kunden', '--anzahl' => 0])->assertFailed();
+        $this->artisan('bustotal:demo-daten', ['--art' => 'kunden', '--anzahl' => 99999])->assertFailed();
         $this->assertSame(0, Customer::withTrashed()->count());
     }
 

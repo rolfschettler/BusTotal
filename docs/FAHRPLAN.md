@@ -85,6 +85,7 @@ Getroffene Entscheidungen:
 
 ## [ ] Phase 8 – Betrieb auf Mittwald
 - Deployment-Ablauf, Cronjobs, Backups, Monitoring; Sicherheitsprüfung
+- Performance im Produktivbetrieb: Checkliste in `PRODUKTIV-PERFORMANCE.md` (OPcache, Caches, Produktions-Build)
 
 ## Verifikation
 - Automatisierte Tests je Modul (PHPUnit/Pest, Angular-Tests, Playwright für Belegkette)
@@ -214,8 +215,13 @@ Getroffene Entscheidungen:
 - **Rechte (Entscheidung von mir, bitte bestätigen):** Fahrer sind Personendaten, deshalb nur Admin und Disponent (lesen und ändern); Buchhaltung und Fahrer kein Zugriff; Wiederherstellen nur Admin.
 - Oberfläche: Liste und Formular nach den Mustern, Reiter „Abwesenheiten“, Menüpunkt „Fahrer“, Hilfethema `fahrer.md` (Entwurf), Rollentabelle ergänzt.
 - Tests: Backend alle grün (224 insgesamt, 20 neu in `DriverTest`), `ng build` läuft. **Im Browser noch nicht angesehen.** Neue Tabellen in die Firmen-Datenbanken: `php artisan tenant:migrate`.
-- **Offen:** Verknüpfung Fahrer ↔ Benutzerkonto (für die Kachel „Ihre Einsätze“, kommt mit der Disposition), Demo-Daten für Fahrzeuge und Fahrer, Datenschutz für Personendaten (Aufbewahrung nach Austritt, Anonymisierung, Auskunft) mit Steuerberater/Datenschutz klären, Fristen und Nachweise fachlich prüfen lassen. Phase 4 ist damit funktional abgeschlossen.
+- **Offen:** Verknüpfung Fahrer ↔ Benutzerkonto (für die Kachel „Ihre Einsätze“, kommt mit der Disposition), Datenschutz für Personendaten (Aufbewahrung nach Austritt, Anonymisierung, Auskunft) mit Steuerberater/Datenschutz klären, Fristen und Nachweise fachlich prüfen lassen. Phase 4 ist damit funktional abgeschlossen.
 
-**Nächster Schritt:** Fahrzeuge und Fahrer im Browser ansehen (Formulare, Listen, Kacheln), danach Phase 5 (Streckenplanung) oder zuerst Demo-Daten für Fuhrpark. Parallel: Hilfetexte fachlich prüfen lassen, Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen).
+**Erledigt (2026-11-22, Demo-Daten für den Fuhrpark):**
+- `php artisan bustotal:demo-daten` legt jetzt neben den Kunden auch 14 Fahrzeuge, 20 Fahrer und Abwesenheiten an (`--art=kunden|fuhrpark|alles`, `--fahrzeuge`, `--fahrer`, `--entfernen`). Fristen und Abwesenheiten sind relativ zu heute gesetzt, damit die Kacheln „Fällige Fristen“ und „heute abwesend“ immer etwas zeigen. Wiederholbar, mit `is_demo` markiert (Entfernen trifft nie echte Daten), Namenskonflikte mit echten Datensätzen werden übersprungen. Anleitung: `docs/DEMO-DATEN.md`.
+- Neue Migration `add_is_demo_to_fleet_tables` (Firmen-Datenbanken: `php artisan tenant:migrate`). 244 Backend-Tests grün (17 neu in `DemoFleetTest`; die Kunden-Tests nutzen `--art=kunden`).
+- Offen: Kennzeichen „Demo“ in den Fahrzeug- und Fahrerformularen (bei Kunden vorhanden), noch nicht gebaut.
+
+**Nächster Schritt:** Demo-Fuhrpark laden (`php artisan tenant:migrate`, dann `php artisan bustotal:demo-daten --art=fuhrpark --tenant=dev`) und Fahrzeuge und Fahrer im Browser ansehen (Formulare, Listen, Kacheln), danach Phase 5 (Streckenplanung). Parallel: Hilfetexte fachlich prüfen lassen, Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen).
 
 

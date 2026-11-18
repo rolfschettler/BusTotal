@@ -1,6 +1,6 @@
 # Demo-Daten für Tests, Schulungen und Messen
 
-Mit einem Befehl entstehen realistische, **erfundene** Kunden. Sie werden über denselben Weg angelegt wie echte
+Mit einem Befehl entstehen realistische, **erfundene** Kunden (und ein Demo-Fuhrpark, siehe unten). Sie werden über denselben Weg angelegt wie echte
 Kunden (richtige Kunden- und Debitorennummern) und sind als **Demo** markiert, damit man sie später gezielt entfernen kann.
 
 ## Befehle
@@ -75,3 +75,37 @@ Für eine Schulung, die jedes Mal bei `K-00001` beginnen soll: `--entfernen`, da
   Anwendung besteht, Nummern lückenlos sind und Entfernen nur Demo-Kunden trifft.
 - Neue Kundenarten oder Felder: Der Generator muss mitwachsen, sonst schlägt der Test „alle Kunden bestehen die
   Prüfregeln“ an.
+
+## Demo-Fuhrpark (Fahrzeuge, Fahrer, Abwesenheiten)
+
+Ohne weitere Angabe legt `php artisan bustotal:demo-daten` neben den Kunden auch einen **Fuhrpark** an:
+**14 Fahrzeuge**, **20 Fahrer** und deren **Abwesenheiten**. Mit `--art` wählt man gezielt:
+
+```bash
+php artisan bustotal:demo-daten --art=fuhrpark                      # nur Fahrzeuge und Fahrer
+php artisan bustotal:demo-daten --art=kunden                        # nur Kunden
+php artisan bustotal:demo-daten --art=fuhrpark --fahrzeuge=30 --fahrer=50
+php artisan bustotal:demo-daten --art=fuhrpark --entfernen          # entfernt nur den Demo-Fuhrpark
+```
+
+Grenzen: `--fahrzeuge` 0 bis 200, `--fahrer` 0 bis 500. `--entfernen` ohne `--art` entfernt Kunden **und** Fuhrpark.
+
+- **Fahrzeuge:** Reisebusse, ein Doppeldecker, Midi- und Minibusse (Setra, Mercedes-Benz, MAN, Neoplan, Iveco, VW) mit
+  passenden Sitzplätzen, Maßen, Gewicht, Ausstattung und Kostensatz je km; Fuhrparknummer `B-01` …, Kennzeichen `AN-…`.
+- **Fahrer:** Name, Adresse (Raum Ansbach/Nürnberg), Beschäftigungsart, Stundensatz, Führerscheinklassen, Nummern und
+  fünf Fristen. E-Mail-Adressen enden auf `.example`.
+- **Fristen und Abwesenheiten sind relativ zu heute** und gezielt gesetzt, damit es immer etwas zum Vorführen gibt:
+  je 10 Fahrzeuge eine abgelaufene HU, eine bald fällige SP, eine bald fällige Wartung und ein bald fälliger
+  Fahrtenschreiber; je 8 Fahrer eine abgelaufene Fahrerkarte, ein bald fälliges Code 95 und eine bald fällige
+  ärztliche Untersuchung. Fahrer Nr. 3, 11, 19 haben **heute Urlaub**, Fahrer Nr. 5, 13 sind **heute krank**.
+  Alle übrigen Fristen liegen weit in der Zukunft (die Kacheln „Fällige Fristen“ zeigen also nur die gewollten).
+- Jedes 12. Fahrzeug und jeder 15. Fahrer ist **archiviert** (verkauft bzw. ausgetreten).
+- Wiederholbar wie bei den Kunden (feste UUIDs, fester Zufall je Nummer): zweiter Lauf legt nichts doppelt an,
+  eine größere Menge behält die ersten Datensätze. Nur die Datumswerte wandern mit dem heutigen Tag mit.
+- **Schutz:** Alles ist mit `is_demo` markiert, Entfernen trifft nie echte Fahrzeuge oder Fahrer. Ist eine
+  Fuhrpark- oder Personalnummer oder ein Kennzeichen schon an einen **echten** Datensatz vergeben, wird der
+  Demo-Datensatz übersprungen (Hinweis in der Ausgabe). Ein Protokolleintrag je Lauf (`demo_fleet_created` bzw. `demo_fleet_removed`).
+- Für Entwickler: `app/Support/DemoFleetGenerator.php` (Daten), `app/Services/DemoFleetService.php` (Speichern/Entfernen),
+  Tests in `tests/Feature/DemoFleetTest.php`. Neue Felder an Fahrzeug oder Fahrer: den Generator ergänzen, sonst schlägt der
+  Test „alle bestehen die Prüfregeln“ an.
+- In der Firmen-Datenbank muss vorher die neue Spalte da sein: `php artisan tenant:migrate`.
