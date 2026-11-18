@@ -77,8 +77,9 @@
         <button type="button" class="btn btn-sm btn-outline-secondary" (click)="closeSecret()">Schließen</button>
       </div>
       <div class="small">
-        <strong>Das Passwort wird nur jetzt angezeigt</strong> und ist nirgends gespeichert. Geben Sie es dem Administrator der Firma
-        persönlich weiter (nicht per E-Mail). Beim ersten Anmelden muss er sich ein eigenes Passwort vergeben.
+        Geben Sie es dem Administrator der Firma persönlich weiter (nicht per E-Mail). Beim ersten Anmelden muss er sich ein eigenes Passwort vergeben.
+        Bis dahin können Sie es jederzeit wieder einblenden: Symbol <i class="bi bi-key"></i> „Administratoren“ in der Firmenliste.
+        Danach ist es gelöscht.
       </div>
     </div>
   }
@@ -202,12 +203,64 @@
     </div>
   }
 
+  <!-- Administratoren einer Firma: vorläufiges Passwort einblenden oder neu vergeben -->
+  @if (adminList(); as l) {
+    <div class="form-page mb-3">
+      <div class="form-area">
+        <div class="row g-3">
+          <div class="col-12"><div class="section-title">Administratoren von {{ l.tenant.name }}</div></div>
+          @if (l.loading) {
+            <div class="col-12 small text-body-secondary">Wird geladen …</div>
+          } @else {
+            <div class="col-12">
+              <table class="table table-sm align-middle mb-0 bg-white">
+                <thead>
+                  <tr><th>Name</th><th>E-Mail</th><th>Zustand</th><th class="text-end">Vorläufiges Passwort</th></tr>
+                </thead>
+                <tbody>
+                  @for (a of l.admins; track a.id) {
+                    <tr>
+                      <td>{{ a.name }}</td>
+                      <td>{{ a.email }}</td>
+                      <td>
+                        @if (!a.active) { <span class="badge text-bg-danger">Gesperrt</span> }
+                        @else if (a.must_change_password) { <span class="badge text-bg-warning">Noch nicht angemeldet</span> }
+                        @else { <span class="badge text-bg-success">Hat eigenes Passwort</span> }
+                      </td>
+                      <td class="text-end text-nowrap">
+                        @if (a.has_temporary) {
+                          <button type="button" class="btn btn-sm btn-outline-primary me-1" (click)="showPassword(a)" [disabled]="busy()">Anzeigen</button>
+                        }
+                        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="resetPassword(a)" [disabled]="busy()">Neu vergeben</button>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="4" class="text-center text-secondary small py-3">Diese Firma hat noch keinen Administrator.</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <div class="col-12 form-text">
+              „Anzeigen“ gibt es, solange der Administrator noch kein eigenes Passwort gesetzt hat. „Neu vergeben“ ersetzt das Passwort und beendet seine Anmeldungen.
+              Jedes Anzeigen und Neuvergeben steht im Betreiber-Protokoll.
+            </div>
+          }
+        </div>
+      </div>
+      <div class="form-bar form-bar-static">
+        <div class="form-bar-right">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeAdmins()">Schließen</button>
+        </div>
+      </div>
+    </div>
+  }
+
   <!-- KEIN overflow-Wrapper um die Tabelle! .page-content scrollt schon beide Achsen. -->
   <div class="card table-card rounded-3">
     <table class="table table-hover table-sm align-middle data-table mb-0">
 
       <colgroup>
-        <col style="width:144px">  <!-- Aktionen: vier Symbole à 28 px + Abstand -->
+        <col style="width:176px">  <!-- Aktionen: fünf Symbole à 28 px + Abstand -->
         <col style="width:220px">  <!-- Name -->
         <col style="width:230px">  <!-- Adresse -->
         <col style="width:170px">  <!-- Datenbank -->
@@ -240,6 +293,9 @@
               </button>
               <button type="button" class="btn-action key" (click)="migrate(t)" [disabled]="busy()" title="Datenbank aktualisieren" [attr.aria-label]="t.name + ' Datenbank aktualisieren'">
                 <i class="bi bi-database-up"></i>
+              </button>
+              <button type="button" class="btn-action key" (click)="openAdmins(t)" [disabled]="busy()" title="Administratoren und vorläufige Passwörter" [attr.aria-label]="t.name + ' Administratoren'">
+                <i class="bi bi-key"></i>
               </button>
               <button type="button" class="btn-action key" (click)="newAdmin(t)" [disabled]="busy()" title="Administrator anlegen" [attr.aria-label]="t.name + ' Administrator anlegen'">
                 <i class="bi bi-person-plus"></i>

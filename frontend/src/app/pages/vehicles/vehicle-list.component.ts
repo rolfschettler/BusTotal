@@ -1,8 +1,10 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
+import { httpErrorText } from '../../core/http-error';
 import { Option, Vehicle, VehicleService } from '../../core/vehicle.service';
 import { deadlineText, germanDate } from '../../shared/deadline';
 import { hasHit } from '../../shared/highlight';
@@ -124,7 +126,7 @@ export class VehicleListComponent implements OnInit {
         this.message.set(`${v.display_name} wurde archiviert.`);
         this.load();
       },
-      error: () => this.error.set('Das Archivieren hat nicht geklappt.'),
+      error: (e: HttpErrorResponse) => this.error.set(httpErrorText(e, 'Das Archivieren hat nicht geklappt.')),
     });
   }
 
@@ -134,7 +136,7 @@ export class VehicleListComponent implements OnInit {
         this.message.set(`${v.display_name} wurde wiederhergestellt.`);
         this.load();
       },
-      error: () => this.error.set('Das Wiederherstellen hat nicht geklappt.'),
+      error: (e: HttpErrorResponse) => this.error.set(httpErrorText(e, 'Das Wiederherstellen hat nicht geklappt.')),
     });
   }
 
@@ -163,9 +165,9 @@ export class VehicleListComponent implements OnInit {
           this.loaded.set(true);
           this.loading.set(false);
         },
-        error: () => {
+        error: (e: HttpErrorResponse) => {
           if (request !== this.requestNo) return;
-          this.error.set('Fahrzeuge konnten nicht geladen werden.');
+          this.error.set(httpErrorText(e, 'Fahrzeuge konnten nicht geladen werden.'));
           this.loading.set(false);
         },
       });

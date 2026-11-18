@@ -40,14 +40,14 @@ class CreateAdmin extends Command
 
         $temporary = TemporaryPassword::generate();
 
-        User::create([
+        $user = new User([
             'name' => (string) $this->argument('name'),
             'email' => $email,
-            'password' => $temporary,
             'role' => Role::Admin,
             'active' => true,
-            'must_change_password' => true,
         ]);
+        $user->setRetrievableTemporaryPassword($temporary);
+        $user->save();
 
         $this->info("Administrator {$email} angelegt.");
         $this->line("Vorläufiges Passwort (wird nur jetzt angezeigt): {$temporary}");

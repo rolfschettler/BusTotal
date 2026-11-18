@@ -131,6 +131,38 @@ class TenantController extends Controller
         return response()->json(['email' => mb_strtolower($data['email']), 'temporary_password' => $temporary], 201);
     }
 
+    /** Administratoren der Firma, ohne Passwörter. */
+    public function admins(Tenant $tenant): JsonResponse
+    {
+        return response()->json($this->provisioner->admins($tenant));
+    }
+
+    /** Das aufbewahrte vorläufige Passwort eines Administrators anzeigen (wird protokolliert). */
+    public function showAdminPassword(Tenant $tenant, string $user): JsonResponse
+    {
+        try {
+            $result = $this->provisioner->revealAdminPassword($tenant, $user);
+        } catch (TenantException $e) {
+            return $this->refuse($e);
+        }
+        SuperadminAuditLog::record('tenant_admin_password_shown', null, $tenant->id, ['email' => $result['email']]);
+
+        return response()->json(['email' => $result['email'], 'temporary_password' => $result['password']]);
+    }
+
+    /** Neues vorläufiges Passwort für einen Administrator vergeben. */
+    public function resetAdminPassword(Tenant $tenant, string $user): JsonResponse
+    {
+        try {
+            $result = $this->provisioner->resetAdminPassword($tenant, $user);
+        } catch (TenantException $e) {
+            return $this->refuse($e);
+        }
+        SuperadminAuditLog::record('tenant_admin_password_reset', null, $tenant->id, ['email' => $result['email']]);
+
+        return response()->json(['email' => $result['email'], 'temporary_password' => $result['password']]);
+    }
+
     private function refuse(TenantException $e): JsonResponse
     {
         return response()->json(['message' => $e->getMessage()], 422);

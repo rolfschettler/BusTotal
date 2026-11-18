@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { debounceTime } from 'rxjs';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
+import { httpErrorText } from '../../core/http-error';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { HelpService } from '../../help/help.service';
 import {
@@ -356,7 +357,7 @@ export class CustomerFormComponent implements OnInit {
   private fail(err: HttpErrorResponse) {
     const errors: Record<string, string[]> = err.error?.errors ?? {};
     this.fieldErrors.set(Object.fromEntries(Object.entries(errors).map(([k, v]) => [k, v[0]])));
-    this.notify(false, err.status === 403 ? 'Keine Berechtigung.' : (err.error?.message ?? 'Speichern fehlgeschlagen.'));
+    this.notify(false, httpErrorText(err, 'Speichern fehlgeschlagen.'));
   }
 
   /**

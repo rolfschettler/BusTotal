@@ -4,6 +4,7 @@ import { Component, ElementRef, OnInit, computed, inject, signal, viewChild } fr
 import { FormsModule, NgForm } from '@angular/forms';
 import { AuthService, Role } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
+import { httpErrorText } from '../../core/http-error';
 import { ROLE_OPTIONS, roleLabel } from '../../core/roles';
 import { ManagedUser, UserAdminService } from '../../core/user-admin.service';
 import { HelpLinkComponent } from '../../help/help-link.component';
@@ -83,9 +84,9 @@ export class UsersComponent implements OnInit {
         this.users.set(u);
         this.loading.set(false);
       },
-      error: () => {
+      error: (e: HttpErrorResponse) => {
         this.loading.set(false);
-        this.fail(null, 'Die Benutzer konnten nicht geladen werden.');
+        this.fail(e, 'Die Benutzer konnten nicht geladen werden.');
       },
     });
   }
@@ -249,6 +250,6 @@ export class UsersComponent implements OnInit {
   private fail(err: HttpErrorResponse | null, fallback = 'Das hat nicht geklappt.') {
     const errors: Record<string, string[]> = err?.error?.errors ?? {};
     this.fieldErrors.set(Object.fromEntries(Object.entries(errors).map(([k, v]) => [k, v[0]])));
-    this.message.set({ ok: false, text: err?.error?.message ?? fallback });
+    this.message.set({ ok: false, text: httpErrorText(err, fallback) });
   }
 }

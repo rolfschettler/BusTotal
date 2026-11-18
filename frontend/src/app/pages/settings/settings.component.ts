@@ -1,10 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, OnInit, computed, inject, signal } from '@angular/core';
-import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { BrandService } from '../../core/brand.service';
 import { ConfirmService } from '../../core/confirm.service';
+import { httpErrorText } from '../../core/http-error';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { HelpService } from '../../help/help.service';
 import { NumberRange, SettingsService, TaxRate } from '../../core/settings.service';
@@ -69,7 +70,7 @@ export class SettingsComponent implements OnInit {
 
   ngOnInit() {
     // Eine Server-Fehlermeldung gilt nur für den abgelehnten Wert: wird das Feld geändert, verschwindet sie.
-    for (const [name, control] of Object.entries(this.company.controls)) {
+    for (const [name, control] of Object.entries<AbstractControl>(this.company.controls)) {
       control.valueChanges.subscribe(() => {
         if (this.fieldErrors()[name]) {
           const { [name]: _gone, ...rest } = this.fieldErrors();
@@ -237,7 +238,7 @@ export class SettingsComponent implements OnInit {
   private fail(err: HttpErrorResponse) {
     const errors: Record<string, string[]> = err.error?.errors ?? {};
     this.fieldErrors.set(Object.fromEntries(Object.entries(errors).map(([k, v]) => [k, v[0]])));
-    this.notify(false, err.status === 403 ? 'Keine Berechtigung.' : (err.error?.message ?? 'Speichern fehlgeschlagen.'));
+    this.notify(false, httpErrorText(err, 'Speichern fehlgeschlagen.'));
   }
 
   /** Meldung ganz oben zeigen UND dorthin scrollen: "Speichern" sitzt unten in der Tastenleiste. */

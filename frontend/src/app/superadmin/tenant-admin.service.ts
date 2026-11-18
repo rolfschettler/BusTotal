@@ -16,6 +16,17 @@ export interface ManagedTenant {
   created_at: string | null;
 }
 
+export interface TenantAdminUser {
+  id: string;
+  name: string;
+  email: string;
+  active: boolean;
+  /** Hat sich noch nicht mit eigenem Passwort angemeldet */
+  must_change_password: boolean;
+  /** Das vorläufige Passwort ist noch einsehbar */
+  has_temporary: boolean;
+}
+
 export interface TenantCreateInput {
   name: string;
   subdomain: string;
@@ -56,5 +67,15 @@ export class TenantAdminService {
   }
   createAdmin(id: string, email: string, name: string) {
     return this.http.post<{ email: string; temporary_password: string }>(`/api/superadmin/tenants/${id}/admin`, { email, name });
+  }
+  admins(id: string) {
+    return this.http.get<TenantAdminUser[]>(`/api/superadmin/tenants/${id}/admins`);
+  }
+  /** Aufbewahrtes vorläufiges Passwort anzeigen (wird protokolliert). */
+  showAdminPassword(id: string, userId: string) {
+    return this.http.post<{ email: string; temporary_password: string }>(`/api/superadmin/tenants/${id}/admins/${userId}/password`, {});
+  }
+  resetAdminPassword(id: string, userId: string) {
+    return this.http.post<{ email: string; temporary_password: string }>(`/api/superadmin/tenants/${id}/admins/${userId}/password/reset`, {});
   }
 }

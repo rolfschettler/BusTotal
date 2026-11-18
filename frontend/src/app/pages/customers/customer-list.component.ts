@@ -1,8 +1,10 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
+import { httpErrorText } from '../../core/http-error';
 import { Customer, CustomerService, CustomerType } from '../../core/customer.service';
 import { hasHit } from '../../shared/highlight';
 import { HighlightComponent } from '../../shared/highlight.component';
@@ -122,7 +124,7 @@ export class CustomerListComponent implements OnInit {
         this.message.set(`${c.display_name} wurde archiviert.`);
         this.load();
       },
-      error: () => this.error.set('Das Archivieren hat nicht geklappt.'),
+      error: (e: HttpErrorResponse) => this.error.set(httpErrorText(e, 'Das Archivieren hat nicht geklappt.')),
     });
   }
 
@@ -132,7 +134,7 @@ export class CustomerListComponent implements OnInit {
         this.message.set(`${c.display_name} wurde wiederhergestellt.`);
         this.load();
       },
-      error: () => this.error.set('Das Wiederherstellen hat nicht geklappt.'),
+      error: (e: HttpErrorResponse) => this.error.set(httpErrorText(e, 'Das Wiederherstellen hat nicht geklappt.')),
     });
   }
 
@@ -182,9 +184,9 @@ export class CustomerListComponent implements OnInit {
           this.loaded.set(true);
           this.loading.set(false);
         },
-        error: () => {
+        error: (e: HttpErrorResponse) => {
           if (request !== this.requestNo) return;
-          this.error.set('Kunden konnten nicht geladen werden.');
+          this.error.set(httpErrorText(e, 'Kunden konnten nicht geladen werden.'));
           this.loading.set(false);
         },
       });

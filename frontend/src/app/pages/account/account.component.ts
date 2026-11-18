@@ -4,6 +4,7 @@ import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Va
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
+import { httpErrorText } from '../../core/http-error';
 import { roleLabel } from '../../core/roles';
 import { HelpLinkComponent } from '../../help/help-link.component';
 
@@ -105,7 +106,7 @@ export class AccountComponent {
         const fields: Record<string, string[]> = e.error?.errors ?? {};
         this.errors.set(Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, v[0]])));
         this.toTop();
-        this.error.set(e.status === 429 ? 'Zu viele Versuche. Bitte eine Minute warten.' : (e.error?.message ?? 'Das Passwort konnte nicht geändert werden.'));
+        this.error.set(httpErrorText(e, 'Das Passwort konnte nicht geändert werden.'));
       },
     });
   }

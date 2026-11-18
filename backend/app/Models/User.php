@@ -14,14 +14,14 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable(['name', 'email', 'password', 'role', 'active', 'must_change_password'])]
-#[Hidden(['password', 'remember_token'])]
+#[Hidden(['password', 'remember_token', 'temporary_password'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     // HasUuids: Die ID ist eine UUID (Version 7) und wird beim Anlegen automatisch vergeben.
     use Auditable, HasApiTokens, HasFactory, HasUuids, Notifiable;
 
-    protected array $auditExclude = ['password', 'remember_token'];
+    protected array $auditExclude = ['password', 'remember_token', 'temporary_password'];
 
     // Dieselben Standardwerte wie in der Datenbank. Ohne sie kennt ein frisch erzeugtes Objekt
     // (vor dem Neuladen) diese Felder nicht, und "active" wäre null, also scheinbar gesperrt.
@@ -39,7 +39,17 @@ class User extends Authenticatable
             'role' => Role::class,
             'active' => 'boolean',
             'must_change_password' => 'boolean',
+            'temporary_password' => 'encrypted',
         ];
+    }
+
+    /**
+     * Setzt ein vorläufiges Passwort, das der Betreiber später wieder einsehen darf (bis der Benutzer es ändert).
+     * Nur für den Weg über die Betreiber-Oberfläche; im Alltag der Firma wird ein vorläufiges Passwort nur einmal angezeigt.
+     */
+    public function setRetrievableTemporaryPassword(string $password): void
+    {
+        $this->forceFill(['password' => $password, 'must_change_password' => true, 'temporary_password' => $password]);
     }
 
     public function hasRole(Role ...$roles): bool

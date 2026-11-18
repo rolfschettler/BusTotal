@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
+import { httpErrorText } from '../../core/http-error';
 import { Option, Vehicle, VehicleInput, VehicleOptions, VehicleService } from '../../core/vehicle.service';
 import { daysUntil, deadlineState, deadlineText } from '../../shared/deadline';
 
@@ -161,7 +162,7 @@ export class VehicleFormComponent implements OnInit {
         this.saving.set(false);
         const errors: Record<string, string[]> = e.error?.errors ?? {};
         this.fieldErrors.set(Object.fromEntries(Object.entries(errors).map(([k, v]) => [k, v[0]])));
-        this.notify(false, e.status === 403 ? 'Keine Berechtigung.' : (e.error?.message ?? 'Speichern fehlgeschlagen.'));
+        this.notify(false, httpErrorText(e, 'Speichern fehlgeschlagen.'));
       },
     });
   }

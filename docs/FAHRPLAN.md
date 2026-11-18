@@ -69,10 +69,11 @@ Getroffene Entscheidungen:
 - [x] Fahrzeuge (Typ, Sitzplätze, Ausstattung, Maße/Gewicht, km-Kostensatz), Fristen (HU, SP, Tacho, Wartung)
 - [x] Fahrer/Personal (Führerschein, Fahrerkarte, Code 95, Verfügbarkeit, Urlaub)
 
-## [ ] Phase 5 – Streckenplanung (OSM)
-- Routing-Schnittstelle + Adapter für externen Dienst, Geocoding, Karte
-- Route mit Zwischenstopps, Leerfahrten Depot↔Start/Ziel, Fahrzeit inkl. Pflichtpausen und Lenkzeitprüfung
-- Ergebnis als Kalkulationsbasis speichern
+## [ ] Phase 5 – Streckenplanung (OSM) (Backend-Grundlage fertig, Oberfläche offen)
+- [x] Routing-Schnittstelle + Adapter für externen Dienst (openrouteservice), Geocoding – Details: `docs/STRECKENPLANUNG.md`
+- [x] Route mit Zwischenstopps, Leerfahrten Depot↔Start/Ziel, Fahrzeit inkl. Pflichtpausen und Lenkzeitprüfung (Berechnung, `POST /api/routes/calculate`)
+- [ ] Oberfläche: Ortssuche, Halteliste, Karte (Leaflet), Ablauf mit Warnungen; Betriebshof als Firmeneinstellung
+- [ ] Ergebnis als Kalkulationsbasis speichern
 
 ## [ ] Phase 6 – Belegwesen
 - Kalkulationsengine; Belegkette Angebot → Auftrag → AB → Rechnung
@@ -220,8 +221,15 @@ Getroffene Entscheidungen:
 **Erledigt (2026-11-22, Demo-Daten für den Fuhrpark):**
 - `php artisan bustotal:demo-daten` legt jetzt neben den Kunden auch 14 Fahrzeuge, 20 Fahrer und Abwesenheiten an (`--art=kunden|fuhrpark|alles`, `--fahrzeuge`, `--fahrer`, `--entfernen`). Fristen und Abwesenheiten sind relativ zu heute gesetzt, damit die Kacheln „Fällige Fristen“ und „heute abwesend“ immer etwas zeigen. Wiederholbar, mit `is_demo` markiert (Entfernen trifft nie echte Daten), Namenskonflikte mit echten Datensätzen werden übersprungen. Anleitung: `docs/DEMO-DATEN.md`.
 - Neue Migration `add_is_demo_to_fleet_tables` (Firmen-Datenbanken: `php artisan tenant:migrate`). 244 Backend-Tests grün (17 neu in `DemoFleetTest`; die Kunden-Tests nutzen `--art=kunden`).
-- Offen: Kennzeichen „Demo“ in den Fahrzeug- und Fahrerformularen (bei Kunden vorhanden), noch nicht gebaut.
+- Das Kennzeichen „Demo“ steht jetzt auch in den Fahrzeug- und Fahrerformularen (wie bei den Kunden).
 
-**Nächster Schritt:** Demo-Fuhrpark laden (`php artisan tenant:migrate`, dann `php artisan bustotal:demo-daten --art=fuhrpark --tenant=dev`) und Fahrzeuge und Fahrer im Browser ansehen (Formulare, Listen, Kacheln), danach Phase 5 (Streckenplanung). Parallel: Hilfetexte fachlich prüfen lassen, Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen).
+**Erledigt (2026-11-22, Phase 5 Streckenplanung – Backend-Grundlage):**
+- Schnittstellen `RoutingProvider` und `GeocodingProvider` (`app/Routing/`), umgesetzt mit openrouteservice (Profil Bus/Lkw mit Fahrzeugmaßen, Zugangsschlüssel nur in `.env` als `ORS_API_KEY`, im Header statt in der Adresse, Zwischenspeicher, Wiederholung nur bei Serverfehlern). Austausch gegen einen anderen Dienst: eine Klasse + eine Zeile im `AppServiceProvider`.
+- `GET /api/geocode` und `POST /api/routes/calculate` (nur Admin und Disponent, 60 Anfragen/Minute): Strecke, Leerfahrten getrennt, Fahrzeit, Ablauf mit Pausen und Ruhezeiten (`DrivingTimePlanner`, VO 561/2006: 4,5 h → 45 min, 9 h/Tag, 11 h Ruhe, 13-Stunden-Arbeitstag), Warnungen, Linienzug für die Karte, Fahrzeugkosten als Rechengrundlage. Speichert nichts.
+- Fehler des Dienstes kommen deutsch als 422 (Eingabe) oder 424 (Dienst), nie als 5xx, weil das Frontend 502/503/504 sonst als „Server nicht erreichbar“ deutet.
+- 291 Backend-Tests grün (47 neu: `DrivingTimePlannerTest`, `RoutePlanningTest`; der Dienst wird nie wirklich angerufen). **Nicht mit dem echten Dienst ausprobiert** (kein Schlüssel eingetragen) und im Browser nichts zu sehen (noch keine Oberfläche).
+- **Offen/Entscheidungen:** Schlüssel besorgen und Nutzungsbedingungen/Kontingent für den gewerblichen Einsatz prüfen (alle Firmen teilen einen Schlüssel); Fahrzeiten mit echten Fahrten abgleichen (`ROUTING_DURATION_FACTOR`); Lenkzeitregeln fachlich prüfen lassen; Kachelanbieter für die Karte wählen.
+
+**Nächster Schritt:** ORS-Schlüssel eintragen und die Streckenplanung einmal real ausprobieren, dann die Oberfläche (Ortssuche, Halteliste, Karte, Ablauf) bauen; Betriebshof als Firmeneinstellung. Parallel: Hilfetexte fachlich prüfen lassen, Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen).
 
 

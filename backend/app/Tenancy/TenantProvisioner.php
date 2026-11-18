@@ -3,6 +3,7 @@
 namespace App\Tenancy;
 
 use App\Enums\Role;
+use App\Models\AuditLog;
 use App\Models\CompanySetting;
 use App\Models\Tenant;
 use App\Models\User;
@@ -97,15 +98,86 @@ class TenantProvisioner
             }
 
             $temporary = TemporaryPassword::generate();
-            User::create([
-                'name' => $name, 'email' => $email, 'password' => $temporary,
-                'role' => Role::Admin, 'active' => true, 'must_change_password' => true,
-            ]);
+            $user = new User(['name' => $name, 'email' => $email, 'role' => Role::Admin, 'active' => true]);
+            $user->setRetrievableTemporaryPassword($temporary);
+            $user->save();
 
             return $temporary;
         } finally {
             $this->manager->deactivate();
         }
+    }
+
+    /** Die Administratoren einer Firma; `has_temporary` = hat noch ein einsehbares vorläufiges Passwort. */
+    public function admins(Tenant $tenant): array
+    {
+        try {
+            $this->manager->activate($tenant);
+
+            return User::where('role', Role::Admin)->orderBy('name')->get()->map(fn (User $u) => [
+                'id' => $u->id, 'name' => $u->name, 'email' => $u->email, 'active' => (bool) $u->active,
+                'must_change_password' => (bool) $u->must_change_password,
+                'has_temporary' => $u->temporary_password !== null,
+            ])->all();
+        } finally {
+            $this->manager->deactivate();
+        }
+    }
+
+    /**
+     * Das noch gültige vorläufige Passwort eines Administrators.
+     *
+     * @return array{email:string,password:string}
+     */
+    public function revealAdminPassword(Tenant $tenant, string $userId): array
+    {
+        try {
+            $this->manager->activate($tenant);
+            $user = $this->findAdmin($userId);
+            if ($user->temporary_password === null) {
+                throw new TenantException('Für diesen Administrator ist kein vorläufiges Passwort aufbewahrt. Entweder hat er schon ein eigenes Passwort, oder es muss neu vergeben werden.');
+            }
+
+            return ['email' => $user->email, 'password' => $user->temporary_password];
+        } finally {
+            $this->manager->deactivate();
+        }
+    }
+
+    /**
+     * Vergibt einem Administrator ein neues vorläufiges Passwort (z. B. wenn keines aufbewahrt ist).
+     * Das alte Passwort und alle Anmeldungen sind sofort ungültig.
+     *
+     * @return array{email:string,password:string}
+     */
+    public function resetAdminPassword(Tenant $tenant, string $userId): array
+    {
+        try {
+            $this->manager->activate($tenant);
+            $user = $this->findAdmin($userId);
+            $temporary = TemporaryPassword::generate();
+
+            DB::connection(config('tenancy.tenant_connection'))->transaction(function () use ($user, $temporary) {
+                $user->setRetrievableTemporaryPassword($temporary);
+                $user->save();
+                $user->tokens()->delete();
+                AuditLog::record('password_reset', $user, null, ['durch' => 'Betreiber']);
+            });
+
+            return ['email' => $user->email, 'password' => $temporary];
+        } finally {
+            $this->manager->deactivate();
+        }
+    }
+
+    private function findAdmin(string $userId): User
+    {
+        $user = User::where('role', Role::Admin)->find($userId);
+        if ($user === null) {
+            throw new TenantException('Diesen Administrator gibt es in der Firma nicht.');
+        }
+
+        return $user;
     }
 
     public function checkSubdomain(string $subdomain, ?string $ignoreId = null): void

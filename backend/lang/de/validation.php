@@ -280,6 +280,23 @@ return [
         'start_date' => 'Beginn',
         'end_date' => 'Ende',
 
+        // Streckenplanung
+        'stops' => 'Halte',
+        'stops.*.lat' => 'Breitengrad des Halts',
+        'stops.*.lon' => 'Längengrad des Halts',
+        'stops.*.label' => 'Bezeichnung des Halts',
+        'stops.*.dwell_minutes' => 'Aufenthalt',
+        'stops.*.driver_free' => 'Fahrer frei',
+        'depot' => 'Betriebshof',
+        'depot.lat' => 'Breitengrad des Betriebshofs',
+        'depot.lon' => 'Längengrad des Betriebshofs',
+        'depot.label' => 'Bezeichnung des Betriebshofs',
+        'return_to_depot' => 'Rückfahrt zum Betriebshof',
+        'vehicle_id' => 'Fahrzeug',
+        'start_at' => 'Abfahrt',
+        'extended_days' => 'Tage mit 10 Stunden Lenkzeit',
+        'limit' => 'Anzahl',
+
         // Suche und Listen
         'q' => 'Suchbegriff',
         'sort' => 'Sortierung',

@@ -28,6 +28,17 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // Streckenplanung (Phase 5): Routing und Adresssuche über openrouteservice.org.
+    // Der Schlüssel gehört nur in die .env des Servers (ORS_API_KEY), nie ins Frontend oder in die Datenbank.
+    'openrouteservice' => [
+        'key' => env('ORS_API_KEY'),
+        'base_url' => env('ORS_BASE_URL', 'https://api.openrouteservice.org'),
+        'timeout' => (int) env('ORS_TIMEOUT', 15),
+        // Faktor auf die berechnete Fahrzeit. Mit echten Fahrten abgleichen (Fahrplan, Verifikation):
+        // Das Lkw-Profil rechnet eher langsamer als ein Reisebus, der auf der Autobahn 100 km/h fahren darf.
+        'duration_factor' => (float) env('ROUTING_DURATION_FACTOR', 1.0),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

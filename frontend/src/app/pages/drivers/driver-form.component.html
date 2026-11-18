@@ -7,6 +7,7 @@
     <p class="mb-0 small text-body-secondary">
       Personalnr. <code>{{ d.personnel_number }}</code>
       @if (archived()) { <span class="badge text-bg-danger ms-2">Archiviert</span> }
+      @if (d.is_demo) { <span class="badge text-bg-info ms-2" title="Erfundener Datensatz für Schulung, Messe oder Tests. Entfernen: php artisan bustotal:demo-daten --art=fuhrpark --entfernen">Demo</span> }
       @if (d.absent_today) { <span class="badge text-bg-secondary ms-2" title="Hat heute Urlaub, ist krank oder in Schulung">Heute abwesend</span> }
     </p>
   } @else {

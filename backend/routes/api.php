@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DriverAbsenceController;
 use App\Http\Controllers\Api\DriverController;
+use App\Http\Controllers\Api\RouteController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\Superadmin\AuthController as SuperadminAuthController;
 use App\Http\Controllers\Api\Superadmin\TenantController as SuperadminTenantController;
@@ -32,6 +33,9 @@ Route::prefix('superadmin')->group(function () {
         Route::put('/tenants/{tenant}', [SuperadminTenantController::class, 'update']);
         Route::post('/tenants/{tenant}/migrate', [SuperadminTenantController::class, 'migrate']);
         Route::post('/tenants/{tenant}/admin', [SuperadminTenantController::class, 'createAdmin']);
+        Route::get('/tenants/{tenant}/admins', [SuperadminTenantController::class, 'admins']);
+        Route::post('/tenants/{tenant}/admins/{user}/password', [SuperadminTenantController::class, 'showAdminPassword']);
+        Route::post('/tenants/{tenant}/admins/{user}/password/reset', [SuperadminTenantController::class, 'resetAdminPassword']);
     });
 });
 
@@ -111,6 +115,13 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
     });
     Route::get('/dashboard/driver-deadlines', [DashboardController::class, 'driverDeadlines'])
         ->middleware('role:admin,disponent');
+
+    // Streckenplanung (Phase 5): Adresssuche und Tourberechnung über einen externen Routing-Dienst (Kontingent!),
+    // deshalb begrenzt. Nur Admin und Disponent.
+    Route::middleware(['role:admin,disponent', 'throttle:60,1'])->group(function () {
+        Route::get('/geocode', [RouteController::class, 'geocode']);
+        Route::post('/routes/calculate', [RouteController::class, 'calculate']);
+    });
 
     // DSGVO-Löschung (unwiderruflich): Administrator und Buchhaltung.
     Route::post('/customers/{customer}/anonymize', [CustomerController::class, 'anonymize'])

@@ -4,6 +4,7 @@ import { FormBuilder, FormsModule, NgForm, ReactiveFormsModule, Validators } fro
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
+import { httpErrorText } from '../../core/http-error';
 import { Absence, Driver, DriverInput, DriverOptions, DriverService } from '../../core/driver.service';
 import { HelpService } from '../../help/help.service';
 import { daysUntil, deadlineState, deadlineText, germanDate } from '../../shared/deadline';
@@ -292,7 +293,7 @@ export class DriverFormComponent implements OnInit {
   private fail(e: HttpErrorResponse) {
     const errors: Record<string, string[]> = e.error?.errors ?? {};
     this.fieldErrors.set(Object.fromEntries(Object.entries(errors).map(([k, v]) => [k, v[0]])));
-    this.notify(false, e.status === 403 ? 'Keine Berechtigung.' : (e.error?.message ?? 'Speichern fehlgeschlagen.'));
+    this.notify(false, httpErrorText(e, 'Speichern fehlgeschlagen.'));
   }
 
   /** Meldung oben zeigen UND dorthin scrollen (Speichern sitzt weit unten). Gescrollt wird am eigenen Host. */

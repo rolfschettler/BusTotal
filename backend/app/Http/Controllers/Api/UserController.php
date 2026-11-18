@@ -108,7 +108,8 @@ class UserController extends Controller
         $temporary = TemporaryPassword::generate();
 
         DB::transaction(function () use ($user, $temporary) {
-            $user->forceFill(['password' => $temporary, 'must_change_password' => true])->save();
+            // temporary_password leeren: Ein früher aufbewahrtes Passwort wäre sonst veraltet.
+            $user->forceFill(['password' => $temporary, 'must_change_password' => true, 'temporary_password' => null])->save();
             $user->tokens()->delete(); // altes Passwort und alte Anmeldungen sind sofort ungültig
             AuditLog::record('password_reset', $user);
         });

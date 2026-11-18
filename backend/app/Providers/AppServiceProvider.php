@@ -12,6 +12,12 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(\App\Tenancy\TenantManager::class);
+
+        // Streckenplanung: Die Anwendung kennt nur die Schnittstellen. Ein anderer Dienst (GraphHopper, eigener
+        // Server) wird hier statt OpenRouteService eingetragen.
+        $this->app->singleton(\App\Routing\OpenRouteService::class);
+        $this->app->alias(\App\Routing\OpenRouteService::class, \App\Routing\RoutingProvider::class);
+        $this->app->alias(\App\Routing\OpenRouteService::class, \App\Routing\GeocodingProvider::class);
     }
 
     /**

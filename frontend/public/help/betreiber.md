@@ -32,7 +32,11 @@ Die Zugangsdaten werden **verschlüsselt** gespeichert und nie wieder angezeigt.
 
 ### Der erste Administrator und das vorläufige Passwort {#vorlaeufiges-passwort}
 
-Das System erzeugt für den ersten Administrator ein **vorläufiges Passwort** und zeigt es **nur einmal** an. Es ist nirgends gespeichert. Geben Sie es dem Administrator persönlich weiter, nicht per E-Mail. Beim ersten Anmelden muss er sich ein eigenes Passwort vergeben. Ist die Anzeige verpasst, legen Sie über das Symbol *Administrator anlegen* einen neuen an.
+Das System erzeugt für den ersten Administrator ein **vorläufiges Passwort** und zeigt es beim Anlegen an. Geben Sie es dem Administrator persönlich weiter, nicht per E-Mail. Beim ersten Anmelden muss er sich ein eigenes Passwort vergeben.
+
+Solange er das noch nicht getan hat, bleibt das vorläufige Passwort **verschlüsselt aufbewahrt**. Über das Symbol *Schlüssel* (Administratoren) in der Firmenliste können Sie es jederzeit wieder einblenden und erneut nennen. Sobald der Administrator sein eigenes Passwort gesetzt hat, wird das vorläufige gelöscht, danach ist nichts mehr einsehbar. Jedes Einblenden steht im Betreiber-Protokoll.
+
+Ist nichts mehr aufbewahrt (zum Beispiel bei einer älteren Firma) oder soll ein Passwort ersetzt werden, wählen Sie bei dem Administrator *Neu vergeben*: Das alte Passwort und seine Anmeldungen werden sofort ungültig, und es gibt ein neues vorläufiges Passwort.
 
 ## Datenbank aktualisieren {#aktualisieren}
 
@@ -40,7 +44,7 @@ Nach jedem Update der Software brauchen die Firmen-Datenbanken neue Tabellen ode
 
 ## Administrator anlegen {#administrator}
 
-Ist der einzige Zugang einer Firma verloren, legen Sie mit der *Person mit Plus* einen neuen Administrator an. Die E-Mail-Adresse darf in dieser Firma noch nicht vorkommen. Das vorläufige Passwort erscheint einmalig, wie [oben beschrieben](#vorlaeufiges-passwort).
+Ist der Zugang einer Firma verloren, vergeben Sie dem vorhandenen Administrator über das Symbol *Schlüssel* ein neues vorläufiges Passwort, wie [oben beschrieben](#vorlaeufiges-passwort). Mit der *Person mit Plus* legen Sie einen zusätzlichen Administrator an; die E-Mail-Adresse darf in dieser Firma noch nicht vorkommen.
 
 ## Firma sperren {#sperren}
 

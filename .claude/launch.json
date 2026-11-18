@@ -5,6 +5,7 @@
       "name": "backend",
       "runtimeExecutable": "php",
       "runtimeArgs": ["backend/artisan", "serve", "--host=127.0.0.1", "--port=8000"],
+      "env": { "PHP_INI_SCAN_DIR": "D:\\angular\\BusTotal\\backend\\dev-php" },
       "port": 8000
     },
     {

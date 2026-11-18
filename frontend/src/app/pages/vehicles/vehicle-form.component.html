@@ -7,6 +7,7 @@
     <p class="mb-0 small text-body-secondary">
       {{ v.manufacturer }} {{ v.model }}
       @if (archived()) { <span class="badge text-bg-danger ms-2">Archiviert</span> }
+      @if (v.is_demo) { <span class="badge text-bg-info ms-2" title="Erfundener Datensatz für Schulung, Messe oder Tests. Entfernen: php artisan bustotal:demo-daten --art=fuhrpark --entfernen">Demo</span> }
       @if (!canEdit()) { <span class="badge text-bg-secondary ms-2">Nur Ansicht</span> }
     </p>
   } @else {

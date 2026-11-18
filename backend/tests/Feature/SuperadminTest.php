@@ -231,6 +231,81 @@ class SuperadminTest extends TestCase
         $this->withToken($token)->postJson(self::ADMIN.'/tenants/'.$a->id.'/admin', ['email' => 'admin@a.test'])->assertStatus(422);
     }
 
+    public function test_vorlaeufiges_passwort_ist_einsehbar_bis_der_administrator_es_aendert(): void
+    {
+        $this->superadmin();
+        $a = $this->makeTenant('a', 'bustotal_test_a');
+        $token = $this->token();
+
+        $new = $this->withToken($token)->postJson(self::ADMIN.'/tenants/'.$a->id.'/admin', ['email' => 'neu@a.test'])->assertCreated();
+        $temporary = $new->json('temporary_password');
+
+        $admins = collect($this->withToken($token)->getJson(self::ADMIN.'/tenants/'.$a->id.'/admins')->assertOk()->json());
+        $neu = $admins->firstWhere('email', 'neu@a.test');
+        $this->assertTrue($neu['has_temporary']);
+        $this->assertStringNotContainsString($temporary, json_encode($admins)); // die Liste enthält nie Passwörter
+        $this->assertFalse($admins->firstWhere('email', 'admin@a.test')['has_temporary']);
+
+        // Beliebig oft einsehbar, jedes Mal protokolliert
+        for ($i = 0; $i < 2; $i++) {
+            $this->withToken($token)->postJson(self::ADMIN.'/tenants/'.$a->id.'/admins/'.$neu['id'].'/password')
+                ->assertOk()->assertJson(['email' => 'neu@a.test', 'temporary_password' => $temporary]);
+        }
+        $this->assertSame(2, SuperadminAuditLog::where('event', 'tenant_admin_password_shown')->count());
+
+        // In der Datenbank der Firma steht es verschlüsselt, nicht im Klartext
+        $raw = $this->inTenant($a, fn () => DB::table('users')->where('email', 'neu@a.test')->value('temporary_password'));
+        $this->assertNotSame($temporary, $raw);
+
+        // Mit dem Passwort anmelden und ein eigenes vergeben: danach ist nichts mehr aufbewahrt
+        $login = $this->postJson('http://a.localhost/api/login', ['email' => 'neu@a.test', 'password' => $temporary])->assertOk();
+        $this->withToken($login->json('token'))->postJson('http://a.localhost/api/me/password', [
+            'current_password' => $temporary, 'password' => 'Eigenes-Passwort-42', 'password_confirmation' => 'Eigenes-Passwort-42',
+        ])->assertOk();
+
+        $this->withToken($token)->postJson(self::ADMIN.'/tenants/'.$a->id.'/admins/'.$neu['id'].'/password')->assertStatus(422);
+        $raw = $this->inTenant($a, fn () => DB::table('users')->where('email', 'neu@a.test')->value('temporary_password'));
+        $this->assertNull($raw);
+    }
+
+    public function test_neues_vorlaeufiges_passwort_vergeben(): void
+    {
+        $this->superadmin();
+        $a = $this->makeTenant('a', 'bustotal_test_a');
+        $token = $this->token();
+        $adminId = collect($this->withToken($token)->getJson(self::ADMIN.'/tenants/'.$a->id.'/admins')->json())->firstWhere('email', 'admin@a.test')['id'];
+
+        // Ein alter Login (Token) wird ungültig
+        $old = $this->postJson('http://a.localhost/api/login', ['email' => 'admin@a.test', 'password' => 'geheim-12345'])->assertOk()->json('token');
+
+        $reset = $this->withToken($token)->postJson(self::ADMIN.'/tenants/'.$a->id.'/admins/'.$adminId.'/password/reset')->assertOk();
+        $temporary = $reset->json('temporary_password');
+
+        $this->postJson('http://a.localhost/api/login', ['email' => 'admin@a.test', 'password' => 'geheim-12345'])->assertStatus(422);
+        $this->postJson('http://a.localhost/api/login', ['email' => 'admin@a.test', 'password' => $temporary])->assertOk()
+            ->assertJsonPath('user.must_change_password', true);
+        $this->app['auth']->forgetGuards();
+        $this->withToken($old)->getJson('http://a.localhost/api/me')->assertUnauthorized();
+
+        // Danach einsehbar, und das Betreiber-Protokoll kennt den Vorgang (ohne Passwort)
+        $this->withToken($token)->postJson(self::ADMIN.'/tenants/'.$a->id.'/admins/'.$adminId.'/password')->assertOk()->assertJson(['temporary_password' => $temporary]);
+        $entry = SuperadminAuditLog::where('event', 'tenant_admin_password_reset')->firstOrFail();
+        $this->assertStringNotContainsString($temporary, json_encode($entry->details));
+    }
+
+    public function test_passwort_funktionen_gelten_nur_fuer_administratoren_der_firma(): void
+    {
+        $this->superadmin();
+        $a = $this->makeTenant('a', 'bustotal_test_a');
+        $token = $this->token();
+
+        $this->withToken($token)->postJson(self::ADMIN.'/tenants/'.$a->id.'/admins/gibt-es-nicht/password/reset')->assertStatus(422);
+        $this->withToken($token)->postJson(self::ADMIN.'/tenants/'.$a->id.'/admins/gibt-es-nicht/password')->assertStatus(422);
+        // ohne Betreiber-Anmeldung nichts
+        $this->app['auth']->forgetGuards();
+        $this->withoutToken()->getJson(self::ADMIN.'/tenants/'.$a->id.'/admins')->assertUnauthorized();
+    }
+
     public function test_es_gibt_keine_moeglichkeit_eine_firma_zu_loeschen(): void
     {
         $this->superadmin();

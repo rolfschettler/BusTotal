@@ -55,6 +55,15 @@ bearbeiten, sperren, Datenbank aktualisieren, Administrator nachlegen. Sie sieht
   (enthält auch `cache`, weil die Anmeldebremse den Zwischenspeicher braucht). In `.env` muss `DB_CONNECTION=central` stehen.
 - Hilfe: `public/help/betreiber.md`, eigener Index `index-betreiber.json` (Firmen-Benutzer sehen dieses Thema nicht).
 
+## Vorläufiges Passwort des Firmen-Administrators
+- Spalte `users.temporary_password` (verschlüsselt mit `APP_KEY`, im Protokoll ausgeschlossen, nie in API-Antworten der Firma). Gefüllt nur, wenn der **Betreiber**
+  den Administrator anlegt oder das Passwort neu vergibt (`TenantProvisioner`, `bustotal:admin-anlegen`). Gelöscht, sobald der Benutzer ein eigenes Passwort setzt
+  (`AccountController::changePassword`) oder ein Firmen-Administrator es zurücksetzt.
+- Betreiber-Oberfläche: Symbol Schlüssel in der Firmenliste → Administratoren → *Anzeigen* / *Neu vergeben*. Beides steht im Betreiber-Protokoll
+  (`tenant_admin_password_shown`, `tenant_admin_password_reset`), ohne das Passwort selbst.
+- Benutzer, die ein Firmen-Administrator anlegt, behalten das Muster „einmal anzeigen, nirgends gespeichert“.
+- Neue Spalte: nach dem Update `php artisan tenant:migrate` ausführen.
+
 ## Noch offen
 - Weitere Betreiber-Konten in der Oberfläche anlegen (heute nur per Befehl).
 - Warteschlange und `schedule:run` müssen je Firma laufen (`TenantManager::each`) – mit Phase 8 (Cronjobs).

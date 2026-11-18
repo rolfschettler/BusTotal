@@ -3,6 +3,7 @@ import { AfterViewInit, Component, ElementRef, inject, signal, viewChild } from 
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { APP_NAME } from '../core/app-info';
+import { fieldErrors, httpErrorText, isUnreachable } from '../core/http-error';
 import { SuperadminAuthService } from './superadmin-auth.service';
 
 /**
@@ -52,13 +53,12 @@ export class SuperadminLoginComponent implements AfterViewInit {
       error: (err: HttpErrorResponse) => {
         this.busy.set(false);
         this.error.set(
-          err.status === 429
-            ? 'Zu viele Versuche. Bitte eine Minute warten.'
-            : err.status === 404
-              ? 'Diese Adresse ist nicht erreichbar. Bitte den Betreiber-Zugang des Servers prüfen.'
-              : (err.error?.errors?.email?.[0] ?? 'Anmeldung fehlgeschlagen.'),
+          err.status === 404
+            ? 'Diese Adresse ist nicht als Betreiber-Zugang eingerichtet. Bitte die Adresse prüfen.'
+            : (fieldErrors(err)['email'] ?? httpErrorText(err, 'Anmeldung fehlgeschlagen.')),
         );
-        this.passwordInput().nativeElement.select();
+        // Nur bei falschem Passwort gleich neu tippen lassen, nicht wenn der Server nicht antwortet.
+        if (!isUnreachable(err) && err.status < 500) this.passwordInput().nativeElement.select();
       },
     });
   }

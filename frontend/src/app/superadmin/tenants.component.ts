@@ -3,10 +3,11 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { ConfirmService } from '../core/confirm.service';
+import { httpErrorText } from '../core/http-error';
 import { HelpLinkComponent } from '../help/help-link.component';
 import { HighlightComponent } from '../shared/highlight.component';
 import { StickyFilterBarDirective } from '../shared/sticky-filter-bar.directive';
-import { ManagedTenant, TenantAdminService } from './tenant-admin.service';
+import { ManagedTenant, TenantAdminService, TenantAdminUser } from './tenant-admin.service';
 import { TenantSortCol, TenantStatusFilter, filterTenants, sortTenants } from './tenants-view';
 
 interface Draft {
@@ -60,6 +61,7 @@ export class TenantsComponent implements OnInit {
 
   draft = signal<Draft | null>(null);
   adminDraft = signal<AdminDraft | null>(null);
+  adminList = signal<{ tenant: ManagedTenant; admins: TenantAdminUser[]; loading: boolean } | null>(null);
   formSubmitted = signal(false);
   /** Läuft gerade eine längere Aktion (Anlegen baut eine Datenbank auf)? */
   busy = signal(false);
@@ -88,9 +90,9 @@ export class TenantsComponent implements OnInit {
         this.tenants.set(t);
         this.loading.set(false);
       },
-      error: () => {
+      error: (e: HttpErrorResponse) => {
         this.loading.set(false);
-        this.fail(null, 'Die Firmen konnten nicht geladen werden.');
+        this.fail(e, 'Die Firmen konnten nicht geladen werden.');
       },
     });
   }
@@ -267,6 +269,60 @@ export class TenantsComponent implements OnInit {
     });
   }
 
+  // ---------- Administratoren und ihre vorläufigen Passwörter ----------
+
+  /** Öffnet die Administratoren-Liste einer Firma. */
+  openAdmins(t: ManagedTenant) {
+    this.reset();
+    this.adminList.set({ tenant: t, admins: [], loading: true });
+    this.scrollToTop();
+    this.api.admins(t.id).subscribe({
+      next: (admins) => this.adminList.set({ tenant: t, admins, loading: false }),
+      error: (e) => {
+        this.adminList.set(null);
+        this.fail(e, 'Die Administratoren konnten nicht geladen werden.');
+      },
+    });
+  }
+
+  closeAdmins() {
+    this.adminList.set(null);
+  }
+
+  showPassword(a: TenantAdminUser) {
+    const l = this.adminList();
+    if (!l || this.busy()) return;
+    this.busy.set(true);
+    this.api.showAdminPassword(l.tenant.id, a.id).subscribe({
+      next: (r) => {
+        this.busy.set(false);
+        this.showSecret(`Vorläufiges Passwort von ${a.name}`, r.email, r.temporary_password, l.tenant.host);
+      },
+      error: (e) => this.failBusy(e),
+    });
+  }
+
+  async resetPassword(a: TenantAdminUser) {
+    const l = this.adminList();
+    if (!l || this.busy()) return;
+    const ok = await this.confirm.ask({
+      title: 'Neues vorläufiges Passwort',
+      message: `${a.name} (${a.email}) bekommt ein neues vorläufiges Passwort. Das bisherige Passwort und alle bestehenden Anmeldungen werden sofort ungültig, beim nächsten Anmelden muss ${a.name} ein eigenes Passwort vergeben.`,
+      confirmLabel: 'Neu vergeben',
+      danger: true,
+    });
+    if (!ok) return;
+    this.busy.set(true);
+    this.api.resetAdminPassword(l.tenant.id, a.id).subscribe({
+      next: (r) => {
+        this.busy.set(false);
+        this.showSecret(`Neues vorläufiges Passwort für ${a.name}`, r.email, r.temporary_password, l.tenant.host);
+        this.api.admins(l.tenant.id).subscribe((admins) => this.adminList.set({ tenant: l.tenant, admins, loading: false }));
+      },
+      error: (e) => this.failBusy(e),
+    });
+  }
+
   // ---------- vorläufiges Passwort ----------
 
   private showSecret(title: string, email: string, password: string, host: string) {
@@ -304,6 +360,7 @@ export class TenantsComponent implements OnInit {
     this.secret.set(null);
     this.draft.set(null);
     this.adminDraft.set(null);
+    this.adminList.set(null);
   }
 
   private ok(text: string) {
@@ -320,7 +377,7 @@ export class TenantsComponent implements OnInit {
   private fail(err: HttpErrorResponse | null, fallback = 'Das hat nicht geklappt.') {
     const errors: Record<string, string[]> = err?.error?.errors ?? {};
     this.fieldErrors.set(Object.fromEntries(Object.entries(errors).map(([k, v]) => [k, v[0]])));
-    this.message.set({ ok: false, text: err?.error?.message ?? fallback });
+    this.message.set({ ok: false, text: httpErrorText(err, fallback) });
     this.scrollToTop();
   }
 }

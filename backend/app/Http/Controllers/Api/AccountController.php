@@ -35,7 +35,8 @@ class AccountController extends Controller
             throw ValidationException::withMessages(['current_password' => ['Das aktuelle Passwort ist nicht korrekt.']]);
         }
 
-        $user->forceFill(['password' => $data['password'], 'must_change_password' => false])->save();
+        // Mit dem eigenen Passwort verschwindet das aufbewahrte vorläufige Passwort.
+        $user->forceFill(['password' => $data['password'], 'must_change_password' => false, 'temporary_password' => null])->save();
 
         // Alle anderen Anmeldungen beenden (andere Geräte, gestohlene Token). Die aktuelle bleibt.
         $current = $user->currentAccessToken();

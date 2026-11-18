@@ -45,9 +45,10 @@ export interface Driver {
   absent_today: boolean;
   absences?: Absence[];
   deleted_at: string | null;
+  is_demo: boolean;
 }
 
-export type DriverInput = Omit<Driver, 'id' | 'display_name' | 'deadlines' | 'next_deadline' | 'absent_today' | 'absences' | 'deleted_at'>;
+export type DriverInput = Omit<Driver, 'id' | 'display_name' | 'deadlines' | 'next_deadline' | 'absent_today' | 'absences' | 'is_demo' | 'deleted_at'>;
 
 export interface DriverOptions {
   employment_types: Option[];

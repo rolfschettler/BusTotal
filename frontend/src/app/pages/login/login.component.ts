@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { BrandService } from '../../core/brand.service';
+import { fieldErrors, httpErrorText, isUnreachable } from '../../core/http-error';
 
 /** Unter diesem Schlüssel merkt sich der Browser die E-Mail-Adresse der letzten erfolgreichen Anmeldung. */
 const LAST_EMAIL_KEY = 'bustotal_last_email';
@@ -84,13 +85,12 @@ export class LoginComponent implements AfterViewInit {
       error: (err: HttpErrorResponse) => {
         this.busy.set(false);
         this.error.set(
-          err.status === 429
-            ? 'Zu viele Versuche. Bitte eine Minute warten.'
-            : err.status === 404
-              ? 'Diese Adresse ist nicht erreichbar. Die Firma ist unbekannt oder gesperrt.'
-              : (err.error?.errors?.email?.[0] ?? 'Anmeldung fehlgeschlagen.'),
+          err.status === 404
+            ? 'Firma unbekannt oder gesperrt. Bitte die Adresse prüfen.'
+            : (fieldErrors(err)['email'] ?? httpErrorText(err, 'Anmeldung fehlgeschlagen.')),
         );
-        this.passwordInput().nativeElement.select(); // falsches Passwort: gleich neu tippen
+        // Nur bei falschem Passwort gleich neu tippen lassen, nicht wenn der Server nicht antwortet.
+        if (!isUnreachable(err) && err.status < 500) this.passwordInput().nativeElement.select();
       },
     });
   }

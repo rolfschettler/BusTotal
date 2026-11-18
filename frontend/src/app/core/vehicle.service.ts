@@ -40,9 +40,10 @@ export interface Vehicle {
   deadlines: Deadline[];
   next_deadline: Deadline | null;
   deleted_at: string | null;
+  is_demo: boolean;
 }
 
-export type VehicleInput = Omit<Vehicle, 'id' | 'display_name' | 'deadlines' | 'next_deadline' | 'deleted_at'>;
+export type VehicleInput = Omit<Vehicle, 'id' | 'display_name' | 'deadlines' | 'next_deadline' | 'is_demo' | 'deleted_at'>;
 
 export interface Option {
   value: string;
