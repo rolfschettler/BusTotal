@@ -1,0 +1,13 @@
+{
+  "agentur-test": {
+    "sshUser": "p576090",
+    "sshHost": "193.53.247.58",
+    "layout": "split",
+    "appDir": "files/bt-test/backend",
+    "webDir": "html/bt-test",
+    "appDirFromWebDir": "../../files/bt-test/backend",
+    "php": "php",
+    "composer": "php ~/files/tools/composer.phar",
+    "tempDir": "files"
+  }
+}

@@ -11,6 +11,7 @@ Entwickler hat noch keine Erfahrung mit Laravel und Docker → Claude begleitet 
 Getroffene Entscheidungen:
 - Mandantenzugriff über **Subdomain** (`firma.bustotal.de`) → Mandant wird aus dem Host-Header ermittelt
 - Hosting: vorhandener **Mittwald Agentur-Server (altes Kundencenter)** → klassisches PHP/MySQL-Hosting, **kein Docker**
+  - **Update 2026-11-19 (Mittwald-Ticket #6077836):** Die App ist auf dem Agentur-Server machbar, dort gilt aber ein **PHP-Memory-Limit von 1024M**. Mittwald rät zu einem **mStudio Managed vServer** (nur gebuchte Ressourcen als Grenze; 1 vCPU / 2 GB RAM reichen für Start und Entwicklung, später skalierbar; 10 Tage Testzeitraum). **Entscheidung offen** – Details unter „Offene Klärungen mit Mittwald“.
 - DATEV: **Buchungsstapel-Export (EXTF-CSV)** + GoBD-konforme Rechnungen
 - PHP-Framework: **Laravel (Empfehlung)** – bitte bestätigen
 
@@ -69,10 +70,12 @@ Getroffene Entscheidungen:
 - [x] Fahrzeuge (Typ, Sitzplätze, Ausstattung, Maße/Gewicht, km-Kostensatz), Fristen (HU, SP, Tacho, Wartung)
 - [x] Fahrer/Personal (Führerschein, Fahrerkarte, Code 95, Verfügbarkeit, Urlaub)
 
-## [ ] Phase 5 – Streckenplanung (OSM) (Backend-Grundlage fertig, Oberfläche offen)
+## [ ] Phase 5 – Streckenplanung (OSM) (Backend und Oberfläche gebaut, Speichern offen)
 - [x] Routing-Schnittstelle + Adapter für externen Dienst (openrouteservice), Geocoding – Details: `docs/STRECKENPLANUNG.md`
 - [x] Route mit Zwischenstopps, Leerfahrten Depot↔Start/Ziel, Fahrzeit inkl. Pflichtpausen und Lenkzeitprüfung (Berechnung, `POST /api/routes/calculate`)
-- [ ] Oberfläche: Ortssuche, Halteliste, Karte (Leaflet), Ablauf mit Warnungen; Betriebshof als Firmeneinstellung
+- [x] Oberfläche: Ortssuche, Halteliste, Karte (Leaflet), Zeitplan mit Warnungen (Seite „Streckenplanung“; im Browser mit erfundenen Antworten des Routing-Dienstes geprüft, **mit dem echten Dienst noch nicht**)
+- [x] Mit dem echten Dienst ausprobiert (2026-11-22, siehe Eintrag unten)
+- [ ] Betriebshof als Firmeneinstellung (bisher nur im Browser gemerkt), Kachelanbieter für die Karte wählen
 - [ ] Ergebnis als Kalkulationsbasis speichern
 
 ## [ ] Phase 6 – Belegwesen
@@ -85,7 +88,7 @@ Getroffene Entscheidungen:
 - Fahrauftrag als PDF
 
 ## [ ] Phase 8 – Betrieb auf Mittwald
-- Deployment-Ablauf, Cronjobs, Backups, Monitoring; Sicherheitsprüfung
+- Deployment-Ablauf: **Skript `deploy\deploy.ps1`** (Anleitung `docs/DEPLOY.md`, Probelauf getestet, erster echter Lauf offen); Cronjobs, Backups, Monitoring; Sicherheitsprüfung
 - Performance im Produktivbetrieb: Checkliste in `PRODUKTIV-PERFORMANCE.md` (OPcache, Caches, Produktions-Build)
 
 ## Verifikation
@@ -96,9 +99,18 @@ Getroffene Entscheidungen:
 - Früh einen Test-Deploy auf Mittwald (nach Phase 1), um Hosting-Grenzen rechtzeitig zu erkennen
 
 ## Offene Klärungen mit Mittwald
-- [ ] Wildcard-Subdomain `*.bustotal.de` + SSL möglich?
-- [ ] SSH, Composer, PHP ≥ 8.3, Cronjobs verfügbar?
-- [ ] Anzahl MySQL-Datenbanken im Tarif (begrenzt die Mandantenzahl)?
+Antwort von Mittwald (Ticket #6077836, 2026-11-19): „Kann sowohl im Agentur-Server als auch im mStudio vServer so umgesetzt werden“ – pauschal, **ohne Einzelantworten**. Agentur-Server: PHP-Memory-Limit 1024M. Empfehlung: Managed vServer (mStudio), 1 vCPU / 2 GB RAM zum Start, 10 Tage Test.
+**Einzelantworten Mittwald (2026-11-20, mStudio-vServer):**
+- Preis 1 vCPU / 2 GB RAM: **21 € mtl. zzgl. USt.**, vCPU/RAM/Speicher im mStudio frei einstellbar und erweiterbar. Testzeitraum **30 Tage** kostenlos für Bestandskunden, **einmal je Kundennummer**, über den **Vertragsdaten-Assistenten** im Kundencenter (gilt für den ersten darüber gebuchten Tarif). Kündigungsfrist 30 Tage, Backups 30 Tage bis 12 Monate.
+- Wildcard-Subdomain auf eine App: **ja**. **Let's-Encrypt-Wildcard-Zertifikat im mStudio: ja**, automatisch ausgestellt und verlängert (keine DNS-Validierung durch den Kunden) → kein Zertifikat je Firma mehr.
+- **Keine Root-Rechte**; SSH mit dem Schlüssel des mStudio-Benutzers; **Container möglich** (z. B. dauerhaft laufender Queue-Worker); minütliche Cronjobs im mStudio; PHP 8.3/8.4/8.5, mehrere Versionen je Projekt; Composer als Software der App.
+- Datenbanken und -benutzer: **unbegrenzt**; **Anlegen per API derzeit nicht möglich** (soll wieder gehen) → Firmen-Datenbank bleibt Handarbeit im mStudio.
+- [x] Wildcard-Subdomain `*.bustotal.de` + SSL möglich? – **ja** (siehe oben). Offen: Domain muss dafür vermutlich bei Mittwald (DNS) liegen.
+- [x] SSH, Composer, PHP ≥ 8.3, Cronjobs verfügbar? – **ja**
+- [x] Anzahl MySQL-Datenbanken im Tarif (begrenzt die Mandantenzahl)? – **Agentur-Server: beliebig viele möglich** (Kundencenter, 2026-11-19); Anlegen bleibt Handarbeit. Beim vServer noch bestätigen lassen.
+- [ ] **Entscheidung:** Agentur-Server oder mStudio-Managed-vServer? **Tendenz vServer** (Wildcard-Zertifikat automatisch, Queue-Worker, kein `html/`-Zwang erwartet – im Test prüfen). Bei vServer entfallen Teile der Hosting-Folgen oben (eigener Queue-Worker statt Cron, `CREATE DATABASE` evtl. möglich, Docker ggf. möglich) – dann Tabelle „Folgen aus dem Mittwald-Hosting“ und Phase 8 anpassen.
+- **Ergebnis Test-Deploy Agentur-Server (2026-11-19, Details `DEPLOY-TEST.md`):** SSH, PHP 8.5, Composer (als Datei), alle Erweiterungen, ausgehendes HTTPS, beliebig viele Datenbanken, Backend + zentrale Datenbank + Betreiber-Konto laufen. **Wichtigste Erkenntnis:** Webserver bedient **nur `html/`** (Ziele unter `files/` → Fehler 500). Lösung: Code in `files/…/backend`, öffentlicher Teil in `html/bt-test` (siehe `DEPLOY-TEST.md`). **Läuft (2026-11-20):** Betreiber-Anmeldung, Firma anlegen, Firmen-Anmeldung. **Nachteile des Agentur-Servers:** Wildcard-Subdomain erzeugt **keinen** DNS-Eintrag (Subdomains nur einzeln), Let's Encrypt nur pro Host, Wildcard-Zertifikat kostenpflichtig → je Firma Handarbeit. Der Routing-Dienst war vom Web-PHP aus erreichbar, lieferte aber zeitweise 503 (Ausfall beim kostenlosen Dienst, nicht beim Hosting). Tendenz **vServer**, sobald Mittwald die Fragen (Wildcard-SSL, Root, Worker) beantwortet hat.
+- [ ] Testzeitraum (**30 Tage**, einmalig je Kundennummer – erst starten, wenn der Deploy vorbereitet ist) mit einem **Test-Deploy** nutzen: Wildcard, Cron/Queue, Composer, PHP-Version, Memory-Limit der Streckenplanung prüfen.
 
 ## Nächster konkreter Schritt
 **Erledigt (2026-11-17):**
@@ -230,6 +242,31 @@ Getroffene Entscheidungen:
 - 291 Backend-Tests grün (47 neu: `DrivingTimePlannerTest`, `RoutePlanningTest`; der Dienst wird nie wirklich angerufen). **Nicht mit dem echten Dienst ausprobiert** (kein Schlüssel eingetragen) und im Browser nichts zu sehen (noch keine Oberfläche).
 - **Offen/Entscheidungen:** Schlüssel besorgen und Nutzungsbedingungen/Kontingent für den gewerblichen Einsatz prüfen (alle Firmen teilen einen Schlüssel); Fahrzeiten mit echten Fahrten abgleichen (`ROUTING_DURATION_FACTOR`); Lenkzeitregeln fachlich prüfen lassen; Kachelanbieter für die Karte wählen.
 
-**Nächster Schritt:** ORS-Schlüssel eintragen und die Streckenplanung einmal real ausprobieren, dann die Oberfläche (Ortssuche, Halteliste, Karte, Ablauf) bauen; Betriebshof als Firmeneinstellung. Parallel: Hilfetexte fachlich prüfen lassen, Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen).
+**Erledigt (2026-11-22, Phase 5 Streckenplanung – Oberfläche):**
+- Seite `/streckenplanung` (Menü „Planung“, Admin und Disponent): Ortssuche (nur auf Knopfdruck, Treffer markiert), Halte mit Aufenthalt und „Fahrer frei“, Reihenfolge ändern, optionaler Betriebshof mit Rückfahrt (Leerfahrten getrennt), Fahrzeug- und Abfahrtswahl, „Lange Tage“, Karte (Leaflet) mit Linienzug, Kennzahlen, Zeitplan nach Tagen, Abschnitte, Warnungen. Ergebnis wird als „veraltet“ markiert, wenn die Eingabe danach geändert wird. Hilfethema `strecken.md`, Rollentabelle ergänzt.
+- Neu im Backend: `GET /api/vehicles/choices` (alle aktiven Fahrzeuge ohne Seiten). Frontend: `RouteService`, `MapComponent`, reine Hilfsfunktionen mit 12 Testfällen (per Hilfsskript geprüft), `ng build` läuft, 293 Backend-Tests sollten laufen (Fahrzeug-Tests 24 grün).
+- **Im Browser geprüft** (2026-11-22, mit erfundenen Antworten für Suche und Berechnung, weil kein Schlüssel eingetragen ist): Suche mit Markierung, Halte, Betriebshof, Karte, Ergebnis, „veraltet“, Hilfe. Dabei gefunden und behoben: Karte so hoch wie das Formular (jetzt mitlaufend, feste Höhe), Kacheln falsch nach Größenänderung (ResizeObserver), lange Ortsnamen im Zeitplan (gekürzt). **Nach dem Einbau von Leaflet muss `ng serve` neu gestartet werden** (sonst fehlt das Leaflet-CSS, Marker liegen unter der Karte). Mit dem echten Dienst noch nicht. Kartenkacheln: vorerst `tile.openstreetmap.org` (nur zum Ausprobieren), vor dem Produktivbetrieb Anbieter wählen (`core/map-config.ts`). Details: `docs/STRECKENPLANUNG.md`.
+
+**Erledigt (2026-11-22, Streckenplanung mit dem echten Dienst ausprobiert):**
+- Schlüssel in `backend/.env` eingetragen (vom Nutzer), erster echter Test gegen openrouteservice. Dabei drei Fehler gefunden, die die erfundenen Testantworten nicht zeigen konnten, und behoben: (1) Der Dienst verlangt für die Routenberechnung `Accept: application/geo+json`, sonst 406/Code 2007. (2) Mit `instructions: false` (und `geometry_simplify`) liefert er **keine Abschnitte** mit Strecke und Fahrzeit je Halt; beides entfernt, der Linienzug wird stattdessen selbst auf höchstens 1500 Punkte ausgedünnt (Anfang und Ende bleiben). (3) Meldung für Code 2009 („keine Route zwischen den Orten“) erklärt jetzt, dass es an den Fahrzeugmaßen liegen kann.
+- Ergebnis: Ansbach → Ulm Hbf → Hotel Bayerischer Hof München → Ansbach mit Demo-Bus B-01: 501 km (davon 349 km Leerfahrt), 7:02 Std. Lenkzeit, 8:52 Std. Gesamtdauer, Ende 14:52, Fahrzeugkosten 751,45 €. Die Abschnitte stimmen (144 / 152 / 205 km). Ø-Geschwindigkeit des Lkw-Profils rund 71 km/h: **mit echter Busfahrt vergleichen** (`ROUTING_DURATION_FACTOR`).
+- Erkenntnisse zur Ortssuche: Sie sucht Namen wie in OpenStreetMap. „Ulm Hbf“ und „München Hbf“ treffen, „Ulm Hauptbahnhof“ liefert falsche Orte; Hotels mit Ort („Hotel Bayerischer Hof München“) treffen gut. Beispiele in Oberfläche und Hilfe geändert, Hilfe erklärt es. Länderfilter bewusst nicht gesetzt (Auslandstouren).
+- Erkenntnis zu Fahrzeugmaßen: Mit Höhe 3,65 m ist der Startpunkt „München Hbf“ nicht erreichbar (nur die Höhe löst das aus, vermutlich niedrige Unterführung); andere Punkte in München gehen. Die Fahrzeugmaße wirken also wirklich.
+- 296 Backend-Tests grün (5 neu rund um diese Fehler), `ng build` läuft. Nur Backend-Server neu starten, falls er die Änderung nicht übernimmt.
+
+**Erledigt (2026-11-22, Eingabe der Streckenplanung vereinfacht):**
+- Auf Wunsch des Nutzers („zu kompliziert, Von – über – Nach“): Statt Suche, Treffer einer Rolle zuordnen, Halteliste und Betriebshof nun drei klare Felder **Von**, **Über** (beliebig viele, mit Zwischenhalt-Knopf), **Nach**, dazu „Rückfahrt zum Start“, „Tauschen“, Fahrzeug und Abfahrt. Jedes Feld sucht selbst (nach kurzem Tippen), Treffer anklicken, Kreuz zum Ändern. Betriebshof, Aufenthalt/„Fahrer frei“ und lange Tage unter eingeklapptem „Weitere Angaben“. Hilfetext angepasst.
+- Im Browser mit dem **echten Dienst** geprüft: Suche, Auswahl, Berechnung (Ulm Hbf → Bad Kissingen, 249 km, 3:16 Std.), Karte mit A/Z und Linienzug. 19 Testfälle der Anzeigelogik grün, `ng build` läuft.
+**Fehler behoben (2026-11-22, Zwischenspeicher):** Bei der Streckenplanung gab die zweite gleiche Suche (und Route) einen Serverfehler, weil Objekte im Zwischenspeicher lagen. Jetzt nur Arrays, versionierte Schlüssel, Test mit Dateispeicher. 298 Backend-Tests grün.
+
+**Erledigt (Ortsfelder ohne Vorschläge, Kontingent geschont):**
+- Anlass: Das Tageskontingent der Ortssuche war aufgebraucht („Quota exceeded“, vom Dienst als 403 gemeldet und bisher fälschlich als „Zugang abgelehnt“ angezeigt). Ursache: Vorschläge beim Tippen.
+- Auf Wunsch des Nutzers wie in RATIOserver: **kein Autocomplete mehr.** Von, Über, Nach und Betriebshof sind reine Textfelder (`place-field.component.ts`), der Text bleibt unverändert. Gesucht wird beim Berechnen, „Verwendet: …“ zeigt den gefundenen Ort. Enter im Feld berechnet. Optional „Reihenfolge der Zwischenhalte optimieren“ (Rundreiseproblem, `TourOptimizer`, Fahrzeitmatrix).
+- Keine wiederholte Suche: Zwischenspeicher im Browser (`RouteService.locate`) und normalisierter Server-Zwischenspeicher; Sperre je Bereich bis Mitternacht UTC nach „Quota exceeded“; Tageszähler; `/geocode` auf 30 je Minute und Benutzer begrenzt. Einzelheiten in `docs/STRECKENPLANUNG.md`.
+- Tests: Backend Streckenplanung 42 grün, Frontend 75 grün, `ng build` läuft. Im Browser noch nicht erneut geprüft.
+- **Später:** gespeicherte Orte je Firma (Betriebshof, häufige Kunden) zuerst lokal suchen; für viele Firmen eigener oder bezahlter Geocoder hinter `GeocodingProvider`.
+
+
+**Nächster Schritt:** Streckenplanung im Browser mit dem echten Dienst ansehen (`ng serve` neu starten), Kachelanbieter wählen, Fahrzeit mit echter Fahrt abgleichen, dann Betriebshof als Firmeneinstellung und Tour speichern. Parallel: Hilfetexte fachlich prüfen lassen, Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen).
 
 
