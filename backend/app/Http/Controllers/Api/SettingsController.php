@@ -43,8 +43,8 @@ class SettingsController extends Controller
             'letterhead_note' => ['nullable', 'string', 'max:2000'],
             'footer_text' => ['nullable', 'string', 'max:2000'],
             'payment_term_days' => ['required', 'integer', 'min:0', 'max:365'],
-            // Weißer Text auf der Markenfarbe muss lesbar bleiben (WCAG AA, Kontrast mindestens 4,5:1).
-            'brand_color' => ['sometimes', 'required', 'regex:/^#[0-9A-Fa-f]{6}$/', fn ($a, $v, $fail) => self::contrastWithWhite($v) >= 4.5 || $fail('Die Farbe ist zu hell: weiße Schrift darauf wäre schlecht lesbar.')],
+            // Die Schriftfarbe auf der Markenfarbe (schwarz oder weiß) wählt das Frontend selbst.
+            'brand_color' => ['sometimes', 'required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ]);
 
         if (isset($data['brand_color'])) {
@@ -162,22 +162,6 @@ class SettingsController extends Controller
         $numberRange->update($data);
 
         return response()->json($numberRange->fresh()->toArray() + ['preview' => $numbers->preview($numberRange->fresh())]);
-    }
-
-    /** Kontrastverhältnis zwischen Weiß und der Farbe (WCAG 2.x). 21 = schwarz, 1 = weiß. */
-    private static function contrastWithWhite(string $hex): float
-    {
-        $channel = function (int $v): float {
-            $c = $v / 255;
-
-            return $c <= 0.03928 ? $c / 12.92 : (($c + 0.055) / 1.055) ** 2.4;
-        };
-        $hex = ltrim($hex, '#');
-        $l = 0.2126 * $channel(hexdec(substr($hex, 0, 2)))
-           + 0.7152 * $channel(hexdec(substr($hex, 2, 2)))
-           + 0.0722 * $channel(hexdec(substr($hex, 4, 2)));
-
-        return 1.05 / ($l + 0.05);
     }
 
     /** IBAN-Prüfung nach ISO 13616 (Modulo 97). */

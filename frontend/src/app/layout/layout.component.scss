@@ -15,14 +15,14 @@
   height: 56px;
   padding: 0 20px;
   background: var(--brand);
-  color: #fff;
+  color: var(--brand-on);
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #fff;
+  color: var(--brand-on);
   font-size: 1.15rem;
   font-weight: 600;
   text-decoration: none;
@@ -32,17 +32,17 @@
   width: 32px;
   height: 32px;
   padding: 0;
-  border: 1px solid rgb(255 255 255 / 55%);
+  border: 1px solid color-mix(in srgb, var(--brand-on) 55%, transparent);
   border-radius: 50%;
-  color: #fff;
+  color: var(--brand-on);
   font-weight: 700;
-  &:hover, &:focus-visible { color: #fff; background: rgb(255 255 255 / 15%); border-color: #fff; }
+  &:hover, &:focus-visible { color: var(--brand-on); background: color-mix(in srgb, var(--brand-on) 15%, transparent); border-color: var(--brand-on); }
 }
 
 .user-btn {
-  color: #fff;
-  border: 1px solid rgb(255 255 255 / 55%);
-  &:hover, &:focus, &.show { color: #fff; background: rgb(255 255 255 / 15%); border-color: #fff; }
+  color: var(--brand-on);
+  border: 1px solid color-mix(in srgb, var(--brand-on) 55%, transparent);
+  &:hover, &:focus, &.show { color: var(--brand-on); background: color-mix(in srgb, var(--brand-on) 15%, transparent); border-color: var(--brand-on); }
   .role { opacity: 0.85; }
 }
 

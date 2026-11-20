@@ -75,11 +75,12 @@ class BrandingTest extends TestCase
         }
     }
 
-    public function test_zu_helle_farbe_wird_wegen_kontrast_abgelehnt(): void
+    public function test_auch_helle_farben_werden_gespeichert(): void
     {
-        $this->as(Role::Admin)->putJson('/api/settings/company', $this->company(['brand_color' => '#ffff00']))
-            ->assertStatus(422)->assertJsonValidationErrors('brand_color');
-        $this->as(Role::Admin)->putJson('/api/settings/company', $this->company(['brand_color' => '#000000']))->assertOk();
+        foreach (['#ffff00', '#228b22', '#000000'] as $color) {
+            $this->as(Role::Admin)->putJson('/api/settings/company', $this->company(['brand_color' => $color]))
+                ->assertOk()->assertJsonPath('brand_color', $color);
+        }
     }
 
     public function test_ohne_farbfeld_bleibt_die_farbe_unveraendert(): void

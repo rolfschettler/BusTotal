@@ -22,6 +22,7 @@ $form-check-input-border: 1px solid #adb5bd;
   --brand: #1d4e89;
   --brand-dark: #163b69;
   --brand-rgb: 29, 78, 137;
+  --brand-on: #fff; // Schrift auf der Markenfarbe (Schwarz oder Weiß, vom BrandService gesetzt)
   // Töne der Markenfarbe (Startwerte für #1d4e89; der BrandService überschreibt sie je Firma)
   --brand-subtle: #d2dce7;
   --brand-border-subtle: #a5b8d0;
@@ -42,6 +43,10 @@ $form-check-input-border: 1px solid #adb5bd;
 }
 
 .btn-primary {
+  --bs-btn-color: var(--brand-on);
+  --bs-btn-hover-color: var(--brand-on);
+  --bs-btn-active-color: var(--brand-on);
+  --bs-btn-disabled-color: var(--brand-on);
   --bs-btn-bg: var(--brand);
   --bs-btn-border-color: var(--brand);
   --bs-btn-hover-bg: var(--brand-dark);
@@ -55,6 +60,8 @@ $form-check-input-border: 1px solid #adb5bd;
 
 .btn-outline-primary {
   --bs-btn-color: var(--brand);
+  --bs-btn-hover-color: var(--brand-on);
+  --bs-btn-active-color: var(--brand-on);
   --bs-btn-border-color: var(--brand);
   --bs-btn-hover-bg: var(--brand);
   --bs-btn-hover-border-color: var(--brand);
@@ -90,6 +97,7 @@ code { background: #e9edf2; padding: 1px 6px; border-radius: 3px; color: #343a40
 
 // Listen-Auswahl (Hilfethemen) in der Markenfarbe
 .list-group {
+  --bs-list-group-active-color: var(--brand-on);
   --bs-list-group-active-bg: var(--brand);
   --bs-list-group-active-border-color: var(--brand);
 }

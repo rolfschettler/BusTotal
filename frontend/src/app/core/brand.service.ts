@@ -46,6 +46,7 @@ export class BrandService {
     root.setProperty('--brand', color);
     root.setProperty('--brand-dark', `#${dark}`);
     root.setProperty('--brand-rgb', `${r}, ${g}, ${b}`);
+    root.setProperty('--brand-on', textOn(color));
 
     // Töne für Tabellenköpfe, Auswahl und Hinweise. Bootstrap rechnet sie beim Bauen fest aus EINER Farbe aus
     // ("subtle" = 80 % Weiß, "border-subtle" = 60 % Weiß, "text-emphasis" = 60 % Schwarz). Da jede Firma ihre
@@ -55,6 +56,17 @@ export class BrandService {
     root.setProperty('--brand-text-emphasis', mix([r, g, b], 0, 0.6));
     this.color.set(color);
   }
+}
+
+/** Schriftfarbe auf der Markenfarbe: Schwarz oder Weiß, je nachdem, was mehr Kontrast gibt (WCAG). */
+export function textOn(hex: string): '#fff' | '#000' {
+  const n = parseInt(hex.slice(1), 16);
+  const lin = (v: number) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  const l = 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+  return 1.05 / (l + 0.05) >= (l + 0.05) / 0.05 ? '#fff' : '#000';
 }
 
 /** Mischt eine Farbe mit Weiß (255) oder Schwarz (0). `weight` ist der Anteil von Weiß bzw. Schwarz. */

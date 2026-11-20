@@ -139,9 +139,9 @@
             } @else if (invalid('brand_color')) {
               <div class="text-danger small mt-1">Bitte eine Farbe wie #1d4e89 angeben.</div>
             }
-            <div class="form-text">Weiße Schrift muss darauf gut lesbar sein, sehr helle Farben werden abgelehnt.</div>
+            <div class="form-text">Die Schrift auf der Farbe wird automatisch schwarz oder weiß.</div>
 
-            <div class="preview mt-3 p-3 rounded border" [style.--brand]="company.controls.brand_color.valid ? company.controls.brand_color.value : null">
+            <div class="preview mt-3 p-3 rounded border" [style.--brand]="company.controls.brand_color.valid ? company.controls.brand_color.value : null" [style.--brand-on]="company.controls.brand_color.valid ? textOn(company.controls.brand_color.value!) : null">
               <div class="small text-body-secondary mb-2">Vorschau</div>
               <div class="d-flex gap-2 align-items-center">
                 <span class="btn btn-primary btn-sm pe-none">Speichern</span>

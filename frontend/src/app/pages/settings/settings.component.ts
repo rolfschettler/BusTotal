@@ -3,7 +3,7 @@ import { Component, ElementRef, OnInit, computed, inject, signal } from '@angula
 import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
-import { BrandService } from '../../core/brand.service';
+import { BrandService, textOn } from '../../core/brand.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { httpErrorText } from '../../core/http-error';
 import { HelpLinkComponent } from '../../help/help-link.component';
@@ -64,6 +64,8 @@ export class SettingsComponent implements OnInit {
     brand_color: ['#1d4e89', Validators.pattern(/^#[0-9a-fA-F]{6}$/)],
   });
 
+  readonly textOn = textOn;
+
   taxRates = signal<TaxRate[]>([]);
   newTax = { name: '', rate: 0 };
   ranges = signal<NumberRange[]>([]);
@@ -75,6 +77,8 @@ export class SettingsComponent implements OnInit {
         if (this.fieldErrors()[name]) {
           const { [name]: _gone, ...rest } = this.fieldErrors();
           this.fieldErrors.set(rest);
+          // Die Fehlermeldung oben gehörte zu diesem Feld: mit der Korrektur verschwindet auch sie.
+          if (Object.keys(rest).length === 0 && this.message()?.ok === false) this.message.set(null);
         }
       });
     }

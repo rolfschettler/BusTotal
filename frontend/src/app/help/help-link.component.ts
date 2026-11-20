@@ -15,7 +15,7 @@ import { HelpPanelService } from './help-panel.component';
       background: #fff; color: var(--brand);
       font-size: 12px; font-weight: 700; line-height: 1; vertical-align: middle; cursor: pointer;
     }
-    .help-link:hover, .help-link:focus-visible { background: var(--brand); color: #fff; }
+    .help-link:hover, .help-link:focus-visible { background: var(--brand); color: var(--brand-on, #fff); }
   `,
 })
 export class HelpLinkComponent {
