@@ -1,0 +1,147 @@
+<!-- Tabellen-Muster, siehe docs/ClaudeCodePatterns/TableViewPattern.md. Die Optik kommt aus src/styles/_list-page.scss. -->
+
+<div class="page-header">
+  <div class="row g-2 align-items-center">
+    <div class="col-auto">
+      <div class="d-flex align-items-center gap-2">
+        <h5 class="page-title mb-0">Belege</h5>
+        @if (loaded()) {
+          <span class="badge rounded-pill record-count d-none d-sm-inline-flex">{{ total() }} {{ total() === 1 ? 'Beleg' : 'Belege' }}</span>
+        }
+      </div>
+    </div>
+    <div class="col-12 col-sm-auto ms-sm-auto">
+      <div class="row row-cols-1 row-cols-sm-auto g-1 justify-content-end align-items-center header-ctrl">
+        <div class="col">
+          <button type="button" class="btn btn-sm btn-header w-100" (click)="refresh()" [disabled]="loading()">
+            <i class="bi bi-arrow-clockwise"></i><span class="ms-1">Aktualisieren</span>
+          </button>
+        </div>
+        <div class="col">
+          <a routerLink="/belege/neu" class="btn btn-sm btn-header-new w-100">
+            <i class="bi bi-plus-lg"></i><span class="ms-1">Neuer Beleg</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-content">
+
+  <div class="filter-bar" appStickyFilterBar>
+    <div class="row g-2 align-items-center">
+      <div class="col-12 col-sm-6 col-lg-4">
+        <input type="search" class="form-control form-control-sm" [class.filter-active]="q.trim() !== ''"
+               placeholder="Suche: Belegnr., Kunde, Betreff …" aria-label="Suche"
+               [(ngModel)]="q" (ngModelChange)="onSearch()" />
+      </div>
+      <div class="col-6 col-sm-auto">
+        <select class="form-select form-select-sm" [class.filter-active]="type !== ''" aria-label="Belegart"
+                [(ngModel)]="type" (ngModelChange)="filterChanged()">
+          <option value="">Alle Belegarten</option>
+          @for (t of types(); track t.value) {
+            <option [value]="t.value">{{ t.label }}</option>
+          }
+        </select>
+      </div>
+      <div class="col-6 col-sm-auto">
+        <select class="form-select form-select-sm" [class.filter-active]="status !== ''" aria-label="Status"
+                [(ngModel)]="status" (ngModelChange)="filterChanged()">
+          <option value="">Alle Stände</option>
+          <option value="entwurf">Entwürfe</option>
+          <option value="festgeschrieben">Festgeschrieben</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-danger py-2 mb-3" role="alert">{{ error() }}</div>
+  }
+
+  <div class="card table-card rounded-3" [class.dimmed]="loading()">
+    <table class="table table-hover table-sm align-middle data-table mb-0">
+
+      <colgroup>
+        <col style="width:76px">   <!-- Aktionen -->
+        <col style="width:130px">  <!-- Nr. -->
+        <col style="width:170px">  <!-- Art -->
+        <col style="width:258px">  <!-- Kunde -->
+        <col style="width:100px">  <!-- Datum -->
+        <col style="width:110px">  <!-- Brutto -->
+        <col style="width:120px">  <!-- Status -->
+      </colgroup>
+
+      <thead>
+        <tr>
+          <th class="col-actions"><span class="visually-hidden">Aktionen</span></th>
+          <th>Nr.</th>
+          <th>Art</th>
+          <th>Kunde</th>
+          <th>Datum</th>
+          <th class="text-end">Brutto</th>
+          <th>Stand</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (d of rows(); track d.id) {
+          <tr (click)="currentId.set(d.id)" [class.row-current]="d.id === currentId()">
+            <td class="col-actions" (click)="$event.stopPropagation()">
+              <a class="btn-action edit" [routerLink]="['/belege', d.id]" title="Öffnen" [attr.aria-label]="typeLabel(d.type) + ' öffnen'">
+                <i class="bi" [class.bi-pencil]="d.status === 'entwurf'" [class.bi-eye]="d.status !== 'entwurf'"></i>
+              </a>
+            </td>
+            <td>
+              @if (d.number) {
+                <a [routerLink]="['/belege', d.id]"><code><app-highlight [text]="d.number" [query]="shownQuery()" /></code></a>
+              } @else {
+                <span class="text-body-secondary">–</span>
+              }
+            </td>
+            <td>{{ typeLabel(d.type) }}</td>
+            <td [title]="recipientName(d)">
+              <span class="fw-semibold"><app-highlight [text]="recipientName(d)" [query]="shownQuery()" /></span>
+              @if (d.subject) {
+                <div class="small text-body-secondary text-truncate"><app-highlight [text]="d.subject" [query]="shownQuery()" /></div>
+              }
+              @for (h of hiddenHits(d); track h.label) {
+                <div class="small text-body-secondary">Treffer in {{ h.label }}: <app-highlight [text]="h.value" [query]="shownQuery()" /></div>
+              }
+            </td>
+            <td class="dim">{{ d.document_date ? (d.document_date | date: 'dd.MM.yyyy') : '' }}</td>
+            <td class="text-end">{{ amount(d.gross_total) }}</td>
+            <td>
+              @if (d.status === 'entwurf') {
+                <span class="badge text-bg-warning">Entwurf</span>
+              } @else if (d.cancelled_by_id) {
+                <span class="badge text-bg-secondary">Storniert</span>
+              } @else {
+                <span class="badge text-bg-success">Festgeschrieben</span>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="text-center text-secondary py-5 small">
+              {{ loaded() ? 'Keine Belege gefunden.' : 'Daten werden geladen …' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pager">
+    <span>{{ total() }} {{ total() === 1 ? 'Beleg' : 'Belege' }}</span>
+    <span class="ms-auto"></span>
+    <button type="button" class="btn btn-sm btn-outline-primary" (click)="go(page() - 1)" [disabled]="page() <= 1 || loading()">
+      <i class="bi bi-chevron-left"></i> Zurück
+    </button>
+    <span>Seite {{ page() }} von {{ lastPage() }}</span>
+    <button type="button" class="btn btn-sm btn-outline-primary" (click)="go(page() + 1)" [disabled]="page() >= lastPage() || loading()">
+      Weiter <i class="bi bi-chevron-right"></i>
+    </button>
+  </div>
+</div>

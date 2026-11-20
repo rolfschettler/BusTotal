@@ -1,0 +1,280 @@
+<!-- Formular-Muster, siehe docs/ClaudeCodePatterns/EditFormPattern.md. Die Optik kommt aus src/styles/_edit-form.scss. -->
+<a routerLink="/belege" class="small text-decoration-none">‹ Alle Belege</a>
+
+<div class="mb-3">
+  @if (doc(); as d) {
+    <h1 class="h3 mb-1">
+      {{ typeLabel(d.type) }} @if (d.number) { <code>{{ d.number }}</code> } @else { <span class="text-body-secondary">(Entwurf)</span> }
+    </h1>
+    <p class="mb-0 small text-body-secondary">
+      @if (d.status === 'entwurf') {
+        <span class="badge text-bg-warning">Entwurf</span>
+        <app-help-link topic="belege" anchor="entwurf-und-festschreiben" label="Entwurf und Festschreiben" />
+      } @else if (cancelled()) {
+        <span class="badge text-bg-secondary">Storniert</span>
+        @if (d.cancelled_by; as c) { durch <a [routerLink]="['/belege', c.id]">{{ c.number }}</a> }
+      } @else {
+        <span class="badge text-bg-success">Festgeschrieben</span>
+        <app-help-link topic="belege" anchor="entwurf-und-festschreiben" label="Entwurf und Festschreiben" />
+      }
+      @if (d.source; as s) { · aus <a [routerLink]="['/belege', s.id]">{{ typeLabel(s.type) }} {{ s.number }}</a> }
+      @if (d.cancels_id) { · Storno zu <a [routerLink]="['/belege', d.cancels_id]">dem Originalbeleg</a> }
+    </p>
+  } @else {
+    <h1 class="h3 mb-0">Neuer Beleg</h1>
+  }
+</div>
+
+@if (loading()) {
+  <div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary"></div></div>
+} @else {
+
+@if (message(); as m) {
+  <div class="alert py-2 small" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">
+    {{ m.text }}
+    @if (m.list?.length) {
+      <ul class="mb-0 mt-1">
+        @for (e of m.list; track e) { <li>{{ e }}</li> }
+      </ul>
+    }
+  </div>
+}
+
+<form id="belegForm" class="form-area" [formGroup]="form" (ngSubmit)="save()" novalidate>
+  <div class="row g-3">
+
+    <div class="col-12"><div class="section-title">Beleg</div></div>
+
+    <div class="col-12 col-lg-4">
+      <label class="form-label" for="type">Belegart</label>
+      <select class="form-select" id="type" formControlName="type">
+        @if (id) {
+          @for (t of types(); track t.value) { <option [value]="t.value">{{ t.label }}</option> }
+        } @else {
+          @for (t of creatable(); track t.value) { <option [value]="t.value">{{ t.label }}</option> }
+        }
+      </select>
+    </div>
+
+    <div class="col-12 col-lg-8">
+      <label class="form-label" for="customerSearch">Kunde <span class="text-danger">*</span></label>
+      @if (customer(); as c) {
+        <div class="input-group">
+          <input class="form-control" id="customerSearch" [value]="c.display_name + ' (' + c.customer_number + ')'" readonly />
+          @if (!readonly()) {
+            <button type="button" class="btn btn-outline-secondary" (click)="clearCustomer()">Ändern</button>
+          }
+        </div>
+      } @else {
+        <input class="form-control" id="customerSearch" autocomplete="off" [class.is-invalid]="invalid('customer_id')"
+               [value]="customerQuery()" (input)="onCustomerSearch($any($event.target).value)" />
+        <div class="invalid-feedback">Bitte einen Kunden auswählen.</div>
+        <div class="form-text">Name, Kundennummer oder Ort eingeben, mindestens zwei Zeichen.</div>
+        @if (customerHits().length) {
+          <div class="list-group mt-1">
+            @for (h of customerHits(); track h.id) {
+              <button type="button" class="list-group-item list-group-item-action" (click)="pickCustomer(h)">
+                {{ h.display_name }} <span class="text-body-secondary small">{{ h.customer_number }}</span>
+              </button>
+            }
+          </div>
+        }
+      }
+    </div>
+
+    <div class="col-12">
+      <label class="form-label" for="subject">Betreff</label>
+      <input class="form-control" id="subject" formControlName="subject" />
+    </div>
+
+    <div class="col-12"><div class="section-title">Termine</div></div>
+
+    <div class="col-12 col-lg-4">
+      <label class="form-label" for="document_date">Belegdatum</label>
+      <input type="date" class="form-control" id="document_date" formControlName="document_date" />
+      <div class="form-text">Leer: Tag des Festschreibens.</div>
+    </div>
+    <div class="col-12 col-lg-4">
+      <label class="form-label" for="service_date_from">Leistung von</label>
+      <input type="date" class="form-control" id="service_date_from" formControlName="service_date_from" />
+      <div class="form-text">Fahrtdatum, bei Rechnungen Pflicht.</div>
+    </div>
+    <div class="col-12 col-lg-4">
+      <label class="form-label" for="service_date_to">Leistung bis</label>
+      <input type="date" class="form-control" id="service_date_to" formControlName="service_date_to" />
+      <div class="form-text">Nur bei mehrtägigen Fahrten.</div>
+    </div>
+    <div class="col-12 col-lg-4">
+      <label class="form-label" for="payment_term_days">Zahlungsziel (Tage)</label>
+      <input type="number" min="0" max="365" class="form-control" id="payment_term_days" formControlName="payment_term_days" />
+      <div class="form-text">Leer: Standard des Kunden bzw. der Firma.</div>
+    </div>
+
+    <div class="col-12"><div class="section-title">Positionen</div></div>
+
+    @for (g of lines.controls; track g; let i = $index) {
+      <div class="col-12" [formGroup]="g">
+        <div class="border rounded-2 p-3 bg-body">
+          <div class="row g-3">
+            <div class="col-12 d-flex align-items-center">
+              <strong>Position {{ i + 1 }}</strong>
+              @if (!readonly()) {
+                <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" (click)="removeLine(i)" [attr.aria-label]="'Position ' + (i + 1) + ' entfernen'">
+                  <i class="bi bi-x-lg me-1"></i>Entfernen
+                </button>
+              }
+            </div>
+
+            <div class="col-12 col-lg-6">
+              <label class="form-label" [for]="'title' + i">Bezeichnung <span class="text-danger">*</span></label>
+              <input class="form-control" [id]="'title' + i" formControlName="title" [class.is-invalid]="lineInvalid(i, 'title')" />
+              <div class="invalid-feedback">Bitte bezeichnen.</div>
+            </div>
+            <div class="col-12 col-lg-2">
+              <label class="form-label" [for]="'quantity' + i">Menge</label>
+              <input type="number" step="any" class="form-control" [id]="'quantity' + i" formControlName="quantity" [class.is-invalid]="lineInvalid(i, 'quantity')" />
+              <div class="invalid-feedback">Nicht 0.</div>
+            </div>
+            <div class="col-12 col-lg-2">
+              <label class="form-label" [for]="'unit' + i">Einheit</label>
+              <input class="form-control" [id]="'unit' + i" formControlName="unit" />
+            </div>
+            <div class="col-12 col-lg-2">
+              <label class="form-label" [for]="'price' + i">Einzelpreis</label>
+              <input type="number" step="0.01" class="form-control" [id]="'price' + i" formControlName="unit_price" [class.is-invalid]="lineInvalid(i, 'unit_price')" />
+              <div class="invalid-feedback">Pflicht.</div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label" [for]="'desc' + i">Beschreibung</label>
+              <textarea class="form-control" rows="2" [id]="'desc' + i" formControlName="description"></textarea>
+            </div>
+
+            <div class="col-12 col-lg-3">
+              <label class="form-label" [for]="'tax' + i">Steuersatz</label>
+              <select class="form-select" [id]="'tax' + i" formControlName="tax_rate">
+                @for (o of taxOptions(g.value.tax_rate); track o.rate) { <option [ngValue]="o.rate">{{ o.label }}</option> }
+              </select>
+            </div>
+            <div class="col-12 col-lg-6">
+              <label class="form-label" [for]="'note' + i">Steuerhinweis</label>
+              <input class="form-control" [id]="'note' + i" formControlName="tax_note" />
+              @if (isZeroRate(g) && isInvoiceType()) {
+                <div class="form-text text-danger">Bei 0 % Steuer ist ein Grund Pflicht, z. B. steuerfrei oder Ausland.</div>
+              }
+            </div>
+            <div class="col-12 col-lg-3">
+              <label class="form-label" [for]="'net' + i">Netto</label>
+              <input class="form-control text-end" [id]="'net' + i" [value]="formatCents(lineNet(i))" readonly tabindex="-1" />
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (!readonly()) {
+      <div class="col-12">
+        <button type="button" class="btn btn-outline-secondary" (click)="addLine()"><i class="bi bi-plus-lg me-1"></i>Position hinzufügen</button>
+      </div>
+    }
+
+    <div class="col-12"><div class="section-title">Summen</div></div>
+
+    <div class="col-12 col-lg-6 ms-lg-auto">
+      <table class="table table-sm mb-0 bg-white">
+        <tbody>
+          <tr><td>Netto</td><td class="text-end">{{ formatCents(totals().net) }}</td></tr>
+          @for (gr of totals().groups; track gr.rate) {
+            <tr><td>Steuer {{ gr.rate }} % <span class="text-body-secondary small">auf {{ formatCents(gr.net) }}</span></td><td class="text-end">{{ formatCents(gr.tax) }}</td></tr>
+          }
+          <tr class="fw-semibold"><td>Brutto</td><td class="text-end">{{ formatCents(totals().gross) }}</td></tr>
+        </tbody>
+      </table>
+      <div class="form-text">Vorschau. Maßgeblich ist die Berechnung des Servers beim Speichern.</div>
+    </div>
+
+    <div class="col-12"><div class="section-title">Texte</div></div>
+
+    <div class="col-12">
+      <label class="form-label" for="intro_text">Einleitung</label>
+      <textarea class="form-control" rows="3" id="intro_text" formControlName="intro_text"></textarea>
+    </div>
+    <div class="col-12">
+      <label class="form-label" for="footer_text">Schlusstext</label>
+      <textarea class="form-control" rows="3" id="footer_text" formControlName="footer_text"></textarea>
+    </div>
+    <div class="col-12">
+      <label class="form-label" for="notes">Interne Notiz</label>
+      <textarea class="form-control" rows="2" id="notes" formControlName="notes"></textarea>
+      <div class="form-text">Erscheint nicht auf dem Beleg.</div>
+    </div>
+
+    @if (readonly() && doc(); as d) {
+      <div class="col-12"><div class="section-title">Festgeschrieben</div></div>
+      <div class="col-12 col-lg-6">
+        <div class="form-label">Absender</div>
+        @if (d.seller; as s) {
+          <div>{{ s.name }}</div>
+          <div class="small text-body-secondary">{{ s.street }}, {{ s.postal_code }} {{ s.city }}</div>
+          <div class="small text-body-secondary">@if (s.tax_number) { Steuernr. {{ s.tax_number }} } @if (s.vat_id) { USt-IdNr. {{ s.vat_id }} }</div>
+        }
+      </div>
+      <div class="col-12 col-lg-6">
+        <div class="form-label">Empfänger</div>
+        @if (d.recipient; as r) {
+          <div>{{ r.name }}</div>
+          <div class="small text-body-secondary">{{ r.street }}, {{ r.postal_code }} {{ r.city }}</div>
+          <div class="small text-body-secondary">Kundennr. {{ r.customer_number }}</div>
+        }
+      </div>
+      <div class="col-12">
+        <div class="form-text">
+          So wurden Absender und Empfänger beim Festschreiben am {{ d.finalized_at?.slice(0, 10) }} gespeichert. Spätere Änderungen an den Stammdaten berühren den Beleg nicht.
+          @if (d.due_date) { Fällig am {{ d.due_date }}. }
+        </div>
+      </div>
+    }
+
+  </div>
+</form>
+
+<!-- Tastenleiste (Muster): links Speichern, Zurück; rechts seltene Aktionen, Abbrechen. Klebt unten. -->
+<div class="form-bar">
+  @if (!readonly()) {
+    <button type="submit" form="belegForm" class="btn btn-primary" [disabled]="saving() || working()">
+      @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+      {{ saving() ? 'Speichert …' : id ? 'Speichern' : 'Beleg anlegen' }}
+    </button>
+  }
+  <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
+  @if (form.dirty && !readonly()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
+
+  <div class="form-bar-right">
+    @if (readonly()) {
+      @for (t of typeInfo()?.convertible_to ?? []; track t) {
+        <button type="button" class="btn btn-outline-secondary" [disabled]="working()" (click)="convertTo(t)">
+          <i class="bi bi-arrow-right-circle me-1"></i>{{ typeLabel(t) }} erstellen
+        </button>
+      }
+      @if (canCancel()) {
+        <button type="button" class="btn btn-outline-secondary" [disabled]="working()" (click)="cancelDocument()">
+          <i class="bi bi-x-octagon me-1"></i>Stornieren
+        </button>
+      }
+    } @else {
+      @if (id && canFinalize()) {
+        <button type="button" class="btn btn-outline-secondary" [disabled]="saving() || working()" (click)="finalize()">
+          <i class="bi bi-lock me-1"></i>Festschreiben
+        </button>
+      }
+      @if (id) {
+        <button type="button" class="btn btn-outline-secondary" [disabled]="saving() || working()" (click)="deleteDraft()">
+          <i class="bi bi-trash me-1"></i>Entwurf löschen
+        </button>
+      }
+      <button type="button" class="btn btn-outline-secondary" [disabled]="!form.dirty" [attr.title]="form.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancelEdit()">Abbrechen</button>
+    }
+  </div>
+</div>
+
+}

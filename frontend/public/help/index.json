@@ -3,6 +3,7 @@
   { "id": "anmeldung", "title": "Anmeldung und Rollen", "summary": "Anmelden, Abmelden und wer was darf." },
   { "id": "benutzer", "title": "Benutzer und Passwörter", "summary": "Benutzer anlegen, sperren, Passwörter zurücksetzen und ändern." },
   { "id": "kunden", "title": "Kundenverwaltung", "summary": "Kunden suchen, anlegen, ändern und archivieren." },
+  { "id": "belege", "title": "Belege", "summary": "Angebot, Auftragsbestätigung und Rechnung: Entwurf, Festschreiben, Storno und Folgebelege." },
   { "id": "fuhrpark", "title": "Fuhrpark", "summary": "Fahrzeuge verwalten: Stammdaten, Ausstattung, Maße und Prüffristen (HU, SP, Tacho, Wartung)." },
   { "id": "fahrer", "title": "Fahrer und Personal", "summary": "Fahrer verwalten: Führerschein, Fahrerkarte, Prüffristen und Abwesenheiten." },
   { "id": "strecken", "title": "Streckenplanung", "summary": "Touren berechnen: Strecke, Fahrzeit, Leerfahrten sowie Pausen und Ruhezeiten." },

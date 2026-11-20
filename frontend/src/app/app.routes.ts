@@ -46,6 +46,29 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'belege',
+        // Entwürfe: Admin, Disponent, Buchhaltung. Festschreiben und Stornieren nur Admin und Buchhaltung (Formular und Server prüfen das).
+        canActivate: [roleGuard('admin', 'disponent', 'buchhaltung')],
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            data: { help: 'belege#belegliste', fullPage: true },
+            loadComponent: () => import('./pages/documents/document-list.component').then((m) => m.DocumentListComponent),
+          },
+          {
+            path: 'neu',
+            data: { help: 'belege#beleg-anlegen' },
+            loadComponent: () => import('./pages/documents/document-form.component').then((m) => m.DocumentFormComponent),
+          },
+          {
+            path: ':id',
+            data: { help: 'belege#entwurf-und-festschreiben' },
+            loadComponent: () => import('./pages/documents/document-form.component').then((m) => m.DocumentFormComponent),
+          },
+        ],
+      },
+      {
         path: 'fahrzeuge',
         // Lesen: Admin, Disponent, Buchhaltung. Ändern dürfen nur Admin und Disponent (Formular und Server prüfen das).
         canActivate: [roleGuard('admin', 'disponent', 'buchhaltung')],
