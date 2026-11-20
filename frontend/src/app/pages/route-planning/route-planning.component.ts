@@ -90,7 +90,9 @@ export class RoutePlanningComponent implements OnInit {
     if (!r || this.stale()) return;
     // Betitelt wird mit Von und Nach der Fahrt mit Fahrgästen; Leerfahrten zum Betriebshof gehören nicht in den Betreff.
     const loaded = r.legs.filter((l) => !l.empty);
-    const label = loaded.length ? `${loaded[0].from.label} – ${loaded[loaded.length - 1].to.label}` : '';
+    // Die Namen des Dienstes sind lang ("München Hauptbahnhof, München"): im Betreff genügt der Teil vor dem ersten Komma.
+    const short = (s: string) => s.split(',')[0].trim();
+    const label = loaded.length ? `${short(loaded[0].from.label)} – ${short(loaded[loaded.length - 1].to.label)}` : '';
 
     this.quoting.set(true);
     this.quoteError.set(null);
