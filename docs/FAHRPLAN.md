@@ -79,9 +79,25 @@ Getroffene Entscheidungen:
 - [ ] Ergebnis als Kalkulationsbasis speichern
 
 ## [ ] Phase 6 – Belegwesen
-- Kalkulationsengine; Belegkette Angebot → Auftrag → AB → Rechnung
-- GoBD: festgeschriebene Rechnungen, Storno/Gutschrift, lückenlose Nummern, §14 UStG
+Fachliche Grundlagen: `docs/fachlich/belegwesen.md` (Recherche, offene Fragen an Steuerberater und Auftraggeber).
+- [x] **Beleg-Backend (2026-11-23):** Tabellen `documents` und `document_lines`, Dienst `DocumentService` (Entwurf, Festschreiben, Storno, Folgebeleg), Rechner `DocumentCalculator` (ganze Cent, Steuer je Satz aus der Nettosumme), Schnittstelle `/api/documents`, 29 Tests. Details unten.
+- [ ] Oberfläche für Belege (Liste, Formular, Festschreiben, Storno), Hilfetexte
+- [ ] Kalkulationsengine / Preisfindung (austauschbarer Baustein, bisher nur Handeingabe der Positionen), Anbindung Streckenplanung
+- [ ] Angebot/Auftragsbestätigung: neue Version statt Änderung nach dem Festschreiben
+- [ ] Gutschrift (Teilbetrag), Schlussrechnung mit Abzug der Anzahlungen
+- [ ] GoBD: festgeschriebene Rechnungen, Storno/Gutschrift, lückenlose Nummern, §14 UStG (Grundlage steht, siehe unten)
 - PDF, E-Mail-Versand, **DATEV-EXTF-Export** + Debitoren; später E-Rechnung
+
+**Beleg-Backend, Entscheidungen (Stand 2026-11-23):**
+- Belegarten: Angebot, Auftragsbestätigung, Anzahlungsrechnung, Rechnung, Gutschrift (= Storno). Anzahlung und Rechnung teilen sich den Nummernkreis `rechnung`, Storno nutzt `gutschrift`.
+- Status `entwurf` (ohne Nummer, änderbar, löschbar) → `festgeschrieben` (Nummer, gesperrt). Die Nummer wird erst beim Festschreiben in derselben Transaktion vergeben: Fehler oder gelöschter Entwurf verbrauchen keine Nummer.
+- Sperre gilt auch im Modell (`Document`, `DocumentLine`), nicht nur in der Schnittstelle. Erlaubt nach dem Festschreiben ist nur der Verweis auf den Storno-Beleg (`cancelled_by_id`).
+- Absender und Empfänger werden **beim Festschreiben** als Kopie (`seller`, `recipient`) gespeichert, solange Entwurf folgt der Beleg dem Kundenstamm. Der Storno übernimmt die Kopien des Originals.
+- Steuer je Satz aus der Nettosumme (nicht je Position), Steuersatz je Position einstellbar, bei 0 % ist ein Grund Pflicht. **[offen, Steuerberater]**
+- Pflichtangaben-Prüfung beim Festschreiben (Rechnungen: Anschriften, Steuernummer/USt-IdNr., Leistungszeitpunkt, Positionen). Angebot und AB brauchen weniger.
+- Rechte: Entwürfe Admin/Disponent/Buchhaltung, Festschreiben und Storno nur Admin/Buchhaltung (Disponent darf Angebote bisher nicht freigeben – mit Auftraggeber klären).
+- Einzelinstanz-Modus: nichts im Beleg-Code setzt mehrere Firmen voraus (alles liegt in der Mandanten-Datenbank).
+- Noch **nicht** gebaut: Löschsperre nach Aufbewahrungsfrist/Verknüpfung mit DSGVO-Anonymisierung (Beleg trägt Kopie, Kunde kann anonymisiert werden, siehe `belegwesen.md` Abschnitt 2), PDF, E-Mail, DATEV, E-Rechnung.
 
 ## [ ] Phase 7 – Disposition
 - Plantafel Fahrzeuge × Fahrer, Drag & Drop, Konfliktprüfung (Doppelbelegung, Fristen, Lenkzeiten, Sitzplätze)

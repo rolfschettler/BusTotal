@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\BrandingController;
 use App\Http\Controllers\Api\CustomerChildController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\DriverAbsenceController;
 use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\RouteController;
@@ -124,6 +125,23 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
     Route::middleware('role:admin,disponent')->group(function () {
         Route::get('/geocode', [RouteController::class, 'geocode'])->middleware('throttle:30,1');
         Route::post('/routes/calculate', [RouteController::class, 'calculate'])->middleware('throttle:60,1');
+    });
+
+    // Belege (Phase 6): Entwürfe anlegen und bearbeiten dürfen Admin, Disponent und Buchhaltung.
+    // Festschreiben (vergibt die Nummer, sperrt den Beleg) und Stornieren nur Admin und Buchhaltung.
+    // Feste Pfade (types) stehen VOR /documents/{document}.
+    Route::middleware('role:admin,disponent,buchhaltung')->prefix('documents')->group(function () {
+        Route::get('/', [DocumentController::class, 'index']);
+        Route::get('/types', [DocumentController::class, 'types']);
+        Route::post('/', [DocumentController::class, 'store']);
+        Route::get('/{document}', [DocumentController::class, 'show']);
+        Route::put('/{document}', [DocumentController::class, 'update']);
+        Route::delete('/{document}', [DocumentController::class, 'destroy']);
+        Route::post('/{document}/convert', [DocumentController::class, 'convert']);
+    });
+    Route::middleware('role:admin,buchhaltung')->prefix('documents')->group(function () {
+        Route::post('/{document}/finalize', [DocumentController::class, 'finalize']);
+        Route::post('/{document}/cancel', [DocumentController::class, 'cancel']);
     });
 
     // DSGVO-Löschung (unwiderruflich): Administrator und Buchhaltung.
