@@ -317,6 +317,30 @@
             <div class="form-text">Vorbelegung der Positionen, im Beleg änderbar.</div>
           </div>
 
+          <div class="col-12"><div class="section-title">Preise je Fahrzeugtyp <app-help-link topic="einstellungen" anchor="preise-fahrzeugtyp" label="Preise je Fahrzeugtyp" /></div></div>
+          <div class="col-12">
+            <div class="form-text mt-0">
+              Gilt für Touren, in denen ein Fahrzeug gewählt ist. Ein leeres Feld übernimmt den Standardpreis oben, eine 0 schaltet den Bestandteil für diesen Typ aus.
+            </div>
+          </div>
+
+          <ng-container formGroupName="vehicle_rates">
+            @for (t of vehicleTypes(); track t.value) {
+              <ng-container [formGroupName]="t.value">
+                <div class="col-12">
+                  <div class="fw-semibold">{{ t.label }} @if (hasOwnRates(t.value)) { <span class="badge text-bg-secondary ms-1">eigene Preise</span> }</div>
+                </div>
+                @for (f of rateFields; track f.key) {
+                  <div class="col-12 col-lg-4">
+                    <label class="form-label" [for]="'r_' + t.value + '_' + f.key">{{ f.label }}</label>
+                    <input type="number" [step]="f.step" min="0" class="form-control" [id]="'r_' + t.value + '_' + f.key" [formControlName]="f.key" [placeholder]="standardOf(f.key)" [class.is-invalid]="invalidTypeRate(t.value, f.key)" />
+                    <div class="invalid-feedback">{{ fieldErrors()['vehicle_rates.' + t.value + '.' + f.key] || 'Bitte eine Zahl ab 0 angeben.' }}</div>
+                  </div>
+                }
+              </ng-container>
+            }
+          </ng-container>
+
         </div>
       </form>
 

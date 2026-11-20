@@ -15,6 +15,9 @@ use App\Services\DocumentCalculator;
  *   Mindestpreis   fehlt die Summe zum Mindestpreis, kommt eine Ausgleichsposition dazu
  *   Zuschlag       Prozent auf die Summe (von Hand gewählt)
  *
+ * Je Fahrzeugtyp können Preis je km, Stundensatz, Tagespauschale, Übernachtung und Mindestpreis abweichen
+ * (PricingVehicleRate). Ein leeres Feld beim Typ übernimmt den Standardpreis.
+ *
  * Das ist eine Vorlage zum Ausprobieren, nicht das endgültige Kalkulationsschema. Maut fehlt bewusst (kein Dienst liefert sie):
  * Sie kommt als Position von Hand dazu.
  */
@@ -24,9 +27,12 @@ class StandardPriceCalculator implements PriceCalculator
 
     public function quote(TourFigures $tour): array
     {
-        $p = PricingSetting::current();
-        $rate = (string) $p->tax_rate;
+        $settings = PricingSetting::current();
+        $rate = (string) $settings->tax_rate;
         $lines = [];
+
+        // Preise des Fahrzeugtyps, wo ausgefüllt, sonst die Standardpreise. Leerfahrt-Prozent und Steuer gelten für alle.
+        $p = (object) ($settings->ratesFor($tour->vehicleType) + ['empty_km_percent' => $settings->empty_km_percent]);
 
         $billedKm = round($tour->loadedKm + $tour->emptyKm * $p->empty_km_percent / 100, 1);
         if ((float) $p->price_per_km > 0 && $billedKm > 0) {

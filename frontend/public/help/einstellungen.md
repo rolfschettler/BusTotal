@@ -85,4 +85,14 @@ Der Reiter **Preise** legt fest, wie die Software beim [Angebot aus der Strecken
 - **Mindestpreis:** Liegt die Summe darunter, kommt eine Position „Mindestpreis-Ausgleich“ dazu.
 - **Steuersatz:** Vorbelegung der Positionen. Im Beleg lässt er sich je Position ändern.
 
+### Preise je Fahrzeugtyp {#preise-fahrzeugtyp}
+
+Ein Doppeldecker kostet mehr als ein Minibus. Darum können Sie unter **Preise je Fahrzeugtyp** für jeden Typ (Reisebus, Doppeldeckerbus, Midibus, Minibus, Sonstiges) eigene Werte für Preis je km, Stundensatz, Tagespauschale, Übernachtung und Mindestpreis eintragen.
+
+- **Leeres Feld:** Es gilt der Standardpreis darüber. Er steht grau im Feld („Standard: 1.80“).
+- **0:** schaltet den Bestandteil für diesen Typ aus, auch wenn der Standardpreis etwas anderes sagt.
+- **Leerfahrt (%) und Steuersatz** gelten für alle Typen gleich.
+- Welcher Typ gilt, richtet sich nach dem Fahrzeug, das in der Streckenplanung gewählt ist. **Ohne Fahrzeug** gelten die Standardpreise.
+- Ein Typ, bei dem alle Felder leer sind, hat keine eigenen Preise. Das Kennzeichen „eigene Preise“ an der Überschrift zeigt, welche Typen abweichen.
+
 > Das ist eine Vorlage zum Ausprobieren, **nicht das endgültige Kalkulationsschema**. Welche Bestandteile Ihr Betrieb abrechnet und mit welchen Sätzen, stimmen Sie mit Ihrer Kalkulation und Ihrem Steuerberater ab. Ein Preis, der zu doppelten Positionen führt (zum Beispiel Preis je km und Stundensatz gleichzeitig), ist Ihre Entscheidung.

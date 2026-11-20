@@ -189,6 +189,13 @@
       </button>
       <app-help-link topic="strecken" anchor="angebot-aus-tour" label="Angebot aus der Tour" />
     </div>
+    <div class="form-text mb-3">
+      @if (selectedVehicle(); as sv) {
+        Es gelten die Preise des Fahrzeugtyps von {{ sv.display_name }}, wo für den Typ welche hinterlegt sind.
+      } @else {
+        Ohne gewähltes Fahrzeug gelten die Standardpreise.
+      }
+    </div>
     @if (quoteError(); as qe) {
       <div class="alert alert-danger py-2 small" role="alert">{{ qe }}</div>
     }

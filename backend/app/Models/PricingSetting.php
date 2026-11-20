@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\VehicleType;
 use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -32,11 +33,38 @@ class PricingSetting extends Model
         return static::first() ?? static::create([])->fresh();
     }
 
-    /** Ist überhaupt ein Preis hinterlegt? Sonst kann die Preisfindung nichts vorschlagen. */
-    public function hasAnyPrice(): bool
+    /**
+     * Die Preise, die für einen Fahrzeugtyp gelten: der Standardpreis, überschrieben von den Feldern, die für den Typ
+     * ausgefüllt sind. Ein Typ-Preis von 0 gilt (schaltet den Bestandteil für diesen Typ aus), ein leeres Feld nicht.
+     *
+     * @return array{price_per_km: string, hourly_rate: string, day_rate: string, overnight_rate: string, minimum_price: string}
+     */
+    public function ratesFor(?VehicleType $type): array
     {
-        return (float) $this->price_per_km > 0 || (float) $this->hourly_rate > 0
-            || (float) $this->day_rate > 0 || (float) $this->overnight_rate > 0
-            || (float) $this->minimum_price > 0;
+        $rates = array_intersect_key($this->attributesToArray(), array_flip(PricingVehicleRate::FIELDS));
+        $rates = array_map(fn ($v) => (string) $v, $rates);
+
+        if ($type !== null) {
+            $own = PricingVehicleRate::where('vehicle_type', $type->value)->first();
+            foreach (PricingVehicleRate::FIELDS as $field) {
+                if ($own?->{$field} !== null) {
+                    $rates[$field] = (string) $own->{$field};
+                }
+            }
+        }
+
+        return $rates;
+    }
+
+    /** Ist für diesen Fahrzeugtyp (oder ohne Typ) überhaupt ein Preis hinterlegt? Sonst kann die Preisfindung nichts vorschlagen. */
+    public function hasAnyPrice(?VehicleType $type = null): bool
+    {
+        foreach ($this->ratesFor($type) as $value) {
+            if ((float) $value > 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

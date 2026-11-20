@@ -105,6 +105,7 @@ export class RoutePlanningComponent implements OnInit {
         surcharge_percent: this.surcharge() || 0,
         label,
         start_at: r.start_at,
+        vehicle_id: this.vehicleId() || null,
       })
       .subscribe({
         next: (doc) => {

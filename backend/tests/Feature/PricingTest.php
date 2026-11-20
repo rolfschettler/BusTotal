@@ -3,9 +3,12 @@
 namespace Tests\Feature;
 
 use App\Enums\Role;
+use App\Enums\VehicleType;
 use App\Models\Customer;
 use App\Models\PricingSetting;
+use App\Models\PricingVehicleRate;
 use App\Models\User;
+use App\Models\Vehicle;
 use App\Pricing\PriceCalculator;
 use App\Pricing\StandardPriceCalculator;
 use App\Pricing\TourFigures;
@@ -107,6 +110,88 @@ class PricingTest extends TestCase
 
         $this->assertSame('Zuschlag 10 %', $lines[1]['title']);
         $this->assertSame('100.00', $lines[1]['unit_price']);
+    }
+
+    // ---------- Preise je Fahrzeugtyp ----------
+
+    private function typeRates(string $type, array $rates): void
+    {
+        PricingVehicleRate::create(['vehicle_type' => $type] + $rates);
+    }
+
+    public function test_fahrzeugtyp_ueberschreibt_nur_ausgefuellte_felder(): void
+    {
+        $this->prices(['price_per_km' => 1.80, 'hourly_rate' => 30]);
+        $this->typeRates('doppeldecker', ['price_per_km' => 2.50]);  // Stundensatz leer = Standard
+
+        $byTitle = collect(app(StandardPriceCalculator::class)->quote(new TourFigures(400, 0, 7200, 1, 0, VehicleType::Doppeldecker)))->keyBy('title');
+        $this->assertSame('2.50', $byTitle['Fahrstrecke']['unit_price']);
+        $this->assertSame('30.00', $byTitle['Fahrerzeit']['unit_price']);
+
+        // anderer Typ und ohne Fahrzeug: Standardpreis
+        foreach ([VehicleType::Reisebus, null] as $type) {
+            $lines = app(StandardPriceCalculator::class)->quote(new TourFigures(400, 0, 7200, 1, 0, $type));
+            $this->assertSame('1.80', $lines[0]['unit_price']);
+        }
+    }
+
+    public function test_typpreis_null_schaltet_den_bestandteil_fuer_den_typ_aus(): void
+    {
+        $this->prices(['hourly_rate' => 30]);
+        $this->typeRates('minibus', ['hourly_rate' => 0]);
+
+        $lines = app(StandardPriceCalculator::class)->quote(new TourFigures(100, 0, 7200, 1, 0, VehicleType::Minibus));
+        $this->assertSame(['Fahrstrecke'], array_column($lines, 'title'));
+    }
+
+    public function test_angebot_aus_tour_nimmt_den_typ_des_fahrzeugs(): void
+    {
+        $this->prices(['price_per_km' => 1.80]);
+        $this->typeRates('doppeldecker', ['price_per_km' => 3.00]);
+        $bus = Vehicle::factory()->create(['type' => 'doppeldecker']);
+
+        $this->as(Role::Disponent)->postJson('/api/quotes/from-tour', $this->tour(['empty_km' => 0, 'vehicle_id' => $bus->id]))
+            ->assertCreated()->assertJsonPath('net_total', '1200.00');   // 400 km × 3,00
+
+        $this->as(Role::Disponent)->postJson('/api/quotes/from-tour', $this->tour(['empty_km' => 0]))
+            ->assertCreated()->assertJsonPath('net_total', '720.00');    // ohne Fahrzeug: 400 km × 1,80
+    }
+
+    public function test_nur_typpreise_genuegen_fuer_ein_angebot(): void
+    {
+        $this->typeRates('reisebus', ['price_per_km' => 2]);
+        $bus = Vehicle::factory()->create(['type' => 'reisebus']);
+
+        $this->as(Role::Admin)->postJson('/api/quotes/from-tour', $this->tour(['vehicle_id' => $bus->id]))->assertCreated();
+        $this->as(Role::Admin)->postJson('/api/quotes/from-tour', $this->tour())->assertUnprocessable();   // ohne Fahrzeug keine Standardpreise
+    }
+
+    public function test_typpreise_speichern_und_leeren(): void
+    {
+        $body = ['price_per_km' => 1.9, 'empty_km_percent' => 50, 'hourly_rate' => 30, 'day_rate' => 100,
+            'overnight_rate' => 80, 'minimum_price' => 400, 'tax_rate' => 19];
+
+        $res = $this->as(Role::Admin)->putJson('/api/settings/pricing', $body + [
+            'vehicle_rates' => ['reisebus' => ['price_per_km' => 2.2, 'hourly_rate' => null], 'midibus' => ['price_per_km' => null]],
+        ])->assertOk()
+            ->assertJsonPath('vehicle_rates.reisebus.price_per_km', '2.20')
+            ->assertJsonPath('vehicle_rates.reisebus.hourly_rate', null)
+            ->assertJsonPath('vehicle_rates.midibus.price_per_km', null);
+        $this->assertCount(5, $res->json('vehicle_types'));
+        $this->assertDatabaseCount('pricing_vehicle_rates', 1);   // Midibus ganz leer: keine Zeile
+
+        $this->as(Role::Admin)->putJson('/api/settings/pricing', $body + ['vehicle_rates' => ['reisebus' => ['price_per_km' => null]]])->assertOk();
+        $this->assertDatabaseCount('pricing_vehicle_rates', 0);
+
+        $this->as(Role::Buchhaltung)->getJson('/api/settings/pricing')->assertOk()->assertJsonStructure(['vehicle_rates' => ['reisebus' => ['price_per_km']]]);
+    }
+
+    public function test_ungueltiger_typpreis_wird_abgelehnt(): void
+    {
+        $this->as(Role::Admin)->putJson('/api/settings/pricing', [
+            'price_per_km' => 1, 'empty_km_percent' => 100, 'hourly_rate' => 0, 'day_rate' => 0, 'overnight_rate' => 0, 'minimum_price' => 0, 'tax_rate' => 19,
+            'vehicle_rates' => ['reisebus' => ['price_per_km' => -2]],
+        ])->assertUnprocessable()->assertJsonValidationErrors(['vehicle_rates.reisebus.price_per_km']);
     }
 
     public function test_ohne_preise_keine_positionen(): void

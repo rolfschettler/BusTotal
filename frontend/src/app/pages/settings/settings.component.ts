@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, OnInit, computed, inject, signal } from '@angular/core';
-import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { BrandService, textOn } from '../../core/brand.service';
@@ -8,7 +8,7 @@ import { ConfirmService } from '../../core/confirm.service';
 import { httpErrorText } from '../../core/http-error';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { HelpService } from '../../help/help.service';
-import { PricingService, PricingSettings } from '../../core/pricing.service';
+import { PricingService, PricingSettings, VehicleRateField } from '../../core/pricing.service';
 import { NumberRange, SettingsService, TaxRate } from '../../core/settings.service';
 
 type Tab = 'firma' | 'steuern' | 'nummern' | 'preise';
@@ -77,7 +77,17 @@ export class SettingsComponent implements OnInit {
     overnight_rate: [0, [Validators.required, Validators.min(0)]],
     minimum_price: [0, [Validators.required, Validators.min(0)]],
     tax_rate: [19, [Validators.required, Validators.min(0), Validators.max(100)]],
+    // Preise je Fahrzeugtyp: je Typ eine Gruppe, entsteht beim Laden aus der Typenliste des Servers. Leer = Standardpreis.
+    vehicle_rates: this.fb.group<Record<string, FormGroup>>({}),
   });
+  vehicleTypes = signal<{ value: string; label: string }[]>([]);
+  readonly rateFields: { key: VehicleRateField; label: string; step: string }[] = [
+    { key: 'price_per_km', label: 'Preis je km (€)', step: '0.01' },
+    { key: 'hourly_rate', label: 'Stundensatz (€)', step: '0.01' },
+    { key: 'day_rate', label: 'Tagespauschale (€)', step: '0.01' },
+    { key: 'overnight_rate', label: 'Übernachtung (€)', step: '0.01' },
+    { key: 'minimum_price', label: 'Mindestpreis (€)', step: '0.01' },
+  ];
   pricingSubmitted = signal(false);
   private pricingSaved: unknown = null;
 
@@ -106,14 +116,48 @@ export class SettingsComponent implements OnInit {
     this.loadTaxRates();
     this.loadRanges();
     this.pricingApi.get().subscribe((p) => {
-      this.pricing.reset(this.pricingToForm(p));
-      this.pricingSaved = this.pricing.getRawValue();
+      this.applyPricing(p);
       if (!this.canEdit()) this.pricing.disable();
     });
   }
 
+  /** Server-Stand ins Formular übernehmen (beim Laden und nach dem Speichern) und als Stand für "Abbrechen" merken. */
+  private applyPricing(p: PricingSettings) {
+    this.vehicleTypes.set(p.vehicle_types);
+    const rates = this.pricing.controls.vehicle_rates;
+    for (const t of p.vehicle_types) {
+      if (!rates.contains(t.value)) {
+        rates.addControl(t.value, this.fb.group(Object.fromEntries(this.rateFields.map((f) => [f.key, new FormControl<number | null>(null, Validators.min(0))]))));
+      }
+    }
+    const own = Object.fromEntries(
+      p.vehicle_types.map((t) => [t.value, Object.fromEntries(this.rateFields.map((f) => [f.key, p.vehicle_rates[t.value]?.[f.key] == null ? null : Number(p.vehicle_rates[t.value][f.key])]))]),
+    );
+    this.pricing.reset({ ...this.pricingToForm(p), vehicle_rates: own } as never);
+    this.pricingSaved = this.pricing.getRawValue();
+  }
+
   private pricingToForm(p: PricingSettings) {
-    return Object.fromEntries(Object.entries(p as unknown as Record<string, string | number>).filter(([k]) => k in this.pricing.controls).map(([k, v]) => [k, Number(v)]));
+    return Object.fromEntries(
+      Object.entries(p as unknown as Record<string, string | number>)
+        .filter(([k]) => k in this.pricing.controls && k !== 'vehicle_rates')
+        .map(([k, v]) => [k, Number(v)]),
+    );
+  }
+
+  /** Platzhalter eines Typ-Feldes: der Standardpreis, der gilt, solange das Feld leer ist. */
+  standardOf(key: VehicleRateField): string {
+    const v = this.pricing.controls[key].value;
+    return `Standard: ${v}`;
+  }
+
+  /** Hat der Typ mindestens einen eigenen Preis? (für die Kennzeichnung der Überschrift) */
+  hasOwnRates(type: string): boolean {
+    return Object.values(this.pricing.controls.vehicle_rates.get(type)?.getRawValue() ?? {}).some((v) => v !== null && v !== '');
+  }
+
+  invalidTypeRate(type: string, key: VehicleRateField): boolean {
+    return (this.pricingSubmitted() && !!this.pricing.controls.vehicle_rates.get([type, key])?.invalid) || !!this.fieldErrors()[`vehicle_rates.${type}.${key}`];
   }
 
   /** Ist im aktuellen Reiter etwas ungespeichert? (Nur Firmendaten und Preise sind Formulare.) */
@@ -135,8 +179,7 @@ export class SettingsComponent implements OnInit {
     this.pricingApi.save(this.pricing.getRawValue()).subscribe({
       next: (p) => {
         this.saving.set(false);
-        this.pricing.reset(this.pricingToForm(p));
-        this.pricingSaved = this.pricing.getRawValue();
+        this.applyPricing(p);
         this.pricingSubmitted.set(false);
         this.ok('Preise gespeichert.');
       },

@@ -47,8 +47,9 @@ Der **Zeitplan** zeigt jeden Abschnitt: Fahrt, Pause, Halt und Ruhezeit, geglied
 Unter dem Ergebnis legt **Angebot erstellen** aus der berechneten Tour ein Angebot als [Entwurf](/hilfe/belege#entwurf-und-festschreiben) an und öffnet es. Die Positionen schlägt die Software aus den [Preisen](/hilfe/einstellungen#preise) vor: Fahrstrecke, Fahrerzeit, Tagespauschale, Übernachtung und, falls nötig, ein Ausgleich auf den Mindestpreis.
 
 - **Zuschlag (%):** Hier tragen Sie von Hand einen Zuschlag auf die Summe ein, zum Beispiel für ein Wochenende oder einen Feiertag. Er erscheint als eigene Position.
+- **Fahrzeug:** Ist oben ein Fahrzeug gewählt, gelten die [Preise seines Fahrzeugtyps](/hilfe/einstellungen#preise-fahrzeugtyp), soweit für den Typ welche hinterlegt sind, sonst die Standardpreise. Ohne Fahrzeug gelten immer die Standardpreise.
 - **Kunde:** Den Kunden wählen Sie im geöffneten Angebot.
-- **Nur Zahlen:** Zum Server gehen nur Kilometer, Lenkzeit und Zahl der Tage, nicht die Route und nicht die Orte. Der Betreff nennt Start und Ziel der Fahrt.
+- **Nur Zahlen:** Zum Server gehen nur Kilometer, Lenkzeit, Zahl der Tage und das gewählte Fahrzeug (daraus nimmt der Server den Typ), nicht die Route und nicht die Orte. Der Betreff nennt Start und Ziel der Fahrt.
 - **Maut** und Besonderheiten fehlen: Fügen Sie sie im Angebot als eigene Position hinzu.
 - Alle Positionen lassen sich im Entwurf ändern. Das Ergebnis ist ein Vorschlag, kein verbindlicher Preis.
 - Wurde die Eingabe nach der Berechnung geändert, ist der Knopf gesperrt: Bitte zuerst neu berechnen.

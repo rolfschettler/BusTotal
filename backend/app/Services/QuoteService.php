@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\DocumentType;
 use App\Models\Document;
 use App\Models\PricingSetting;
+use App\Models\Vehicle;
 use App\Pricing\PriceCalculator;
 use App\Pricing\TourFigures;
 use Illuminate\Support\Carbon;
@@ -22,11 +23,14 @@ class QuoteService
     ) {}
 
     /**
-     * @param  array{loaded_km: float, empty_km: float, drive_s: int, days: int, surcharge_percent?: float, label?: ?string, start_at?: ?string}  $tour
+     * @param  array{loaded_km: float, empty_km: float, drive_s: int, days: int, surcharge_percent?: float, label?: ?string, start_at?: ?string, vehicle_id?: ?string}  $tour
      */
     public function draftFromTour(array $tour, ?string $customerId = null): Document
     {
-        if (! PricingSetting::current()->hasAnyPrice()) {
+        // Der Typ des Fahrzeugs bestimmt die Preise; nur der Typ geht weiter, nicht das Fahrzeug selbst.
+        $vehicleType = ! empty($tour['vehicle_id']) ? Vehicle::withTrashed()->find($tour['vehicle_id'])?->type : null;
+
+        if (! PricingSetting::current()->hasAnyPrice($vehicleType)) {
             throw ValidationException::withMessages(['pricing' => ['In den Einstellungen sind noch keine Preise hinterlegt. Bitte zuerst unter „Preise“ eintragen.']]);
         }
 
@@ -36,6 +40,7 @@ class QuoteService
             driveSeconds: (int) $tour['drive_s'],
             days: max(1, (int) $tour['days']),
             surchargePercent: (float) ($tour['surcharge_percent'] ?? 0),
+            vehicleType: $vehicleType,
         ));
 
         if ($lines === []) {
