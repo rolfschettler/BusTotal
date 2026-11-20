@@ -6,10 +6,13 @@ use App\Enums\DocumentStatus;
 use App\Enums\DocumentType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\DocumentRequest;
+use App\Models\AuditLog;
 use App\Models\Document;
+use App\Services\DocumentPdf;
 use App\Services\DocumentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 
 class DocumentController extends Controller
@@ -118,6 +121,25 @@ class DocumentController extends Controller
             DocumentType::from($data['type']),
             isset($data['percent']) ? (float) $data['percent'] : null,
         ), 201);
+    }
+
+    /**
+     * PDF des Belegs. Wird bei jedem Abruf neu erzeugt. Ein Entwurf trägt den Hinweis „ENTWURF“.
+     * Der Abruf steht im Änderungsprotokoll (wer hat wann ein PDF erzeugt).
+     */
+    public function pdf(Document $document, DocumentPdf $pdf): Response
+    {
+        $binary = $pdf->render($document);
+        AuditLog::record('pdf_created', $document, null, ['number' => $document->number, 'status' => $document->status->value]);
+
+        $name = ($document->number ?? 'Entwurf-'.$document->type->value).'.pdf';
+
+        return response($binary, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$name.'"',
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'private, no-store',
+        ]);
     }
 
     /** Auswahlliste für Formulare. */

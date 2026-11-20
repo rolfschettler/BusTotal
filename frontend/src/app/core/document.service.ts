@@ -131,6 +131,10 @@ export class DocumentService {
   update(id: string, data: DocumentInput) {
     return this.http.put<BusDocument>(`${this.base}/${id}`, data);
   }
+  /** PDF des Belegs (wird bei jedem Abruf neu erzeugt) */
+  pdf(id: string) {
+    return this.http.get(`${this.base}/${id}/pdf`, { responseType: 'blob' });
+  }
   remove(id: string) {
     return this.http.delete(`${this.base}/${id}`);
   }

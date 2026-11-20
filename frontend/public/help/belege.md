@@ -45,6 +45,18 @@ Rechnungen und Anzahlungsrechnungen lassen sich stornieren (Administrator und Bu
 
 Ein Beleg lässt sich nur einmal stornieren. Entwürfe werden nicht storniert, sondern gelöscht. Angebote und Auftragsbestätigungen werden nicht storniert.
 
+## PDF {#pdf}
+
+Mit **PDF** (in der Tastenleiste des Belegs und als Symbol in der Liste) öffnet sich der Beleg als PDF in einem neuen Tab. Von dort drucken oder speichern Sie ihn.
+
+- Das PDF enthält Briefkopf mit Logo, Empfängeranschrift, Belegnummer, Datum, Leistungszeitpunkt, die Positionen, die Summen (mit Steuer je Satz, bei einer Schlussrechnung mit abgezogenen Anzahlungen und „Zu zahlen“), Steuerhinweise als Fußnoten, bei Rechnungen den Zahlungshinweis mit Fälligkeit und Bankverbindung und die Fußzeile mit den Firmenangaben. Briefkopf-Zusatz und Fußzeile stellen Sie unter [Firmendaten](/hilfe/einstellungen#firmendaten) ein.
+- Ein **Entwurf** trägt oben den Hinweis „ENTWURF“ und hat keine Belegnummer. Er ist keine gültige Rechnung.
+- Ein **festgeschriebener** Beleg zeigt Absender und Empfänger so, wie sie beim Festschreiben gespeichert wurden. Spätere Änderungen an Kunde oder Firmendaten erscheinen nicht.
+- Das PDF zeigt immer den **gespeicherten** Stand. Speichern Sie Änderungen zuerst.
+- Das PDF wird bei jedem Öffnen neu erzeugt, nicht abgelegt. Jedes Öffnen steht im Änderungsprotokoll. Logo und Markenfarbe stammen aus den heutigen Einstellungen.
+
+> Für eine revisionssichere Ablage (GoBD) bewahren Sie die versandten PDFs selbst auf, bis die Software beim Festschreiben ein Archiv-PDF ablegt. Ob Ihre Rechnung alle Pflichtangaben trägt, klären Sie mit Ihrem Steuerberater.
+
 ## Folgebelege {#folgebelege}
 
 Aus einem **festgeschriebenen** Beleg erstellen Sie den nächsten Schritt der Belegkette:

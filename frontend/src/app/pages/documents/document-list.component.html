@@ -92,6 +92,9 @@
               <a class="btn-action edit" [routerLink]="['/belege', d.id]" title="Öffnen" [attr.aria-label]="typeLabel(d.type) + ' öffnen'">
                 <i class="bi" [class.bi-pencil]="d.status === 'entwurf'" [class.bi-eye]="d.status !== 'entwurf'"></i>
               </a>
+              <button type="button" class="btn-action edit" (click)="openPdf(d)" [disabled]="pdfBusyId() === d.id" title="PDF öffnen" [attr.aria-label]="'PDF von ' + typeLabel(d.type) + ' öffnen'">
+                <i class="bi bi-file-earmark-pdf"></i>
+              </button>
             </td>
             <td>
               @if (d.number) {

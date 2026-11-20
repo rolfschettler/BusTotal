@@ -6,6 +6,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { httpErrorText } from '../../core/http-error';
 import { BusDocument, DocumentService, DocumentTypeInfo } from '../../core/document.service';
 import { hasHit } from '../../shared/highlight';
+import { openPdfWindow, showPdf } from '../../shared/pdf-open';
 import { HighlightComponent } from '../../shared/highlight.component';
 import { StickyFilterBarDirective } from '../../shared/sticky-filter-bar.directive';
 import { formatAmount } from './document-calc';
@@ -69,6 +70,24 @@ export class DocumentListComponent implements OnInit {
   go(p: number) {
     this.page.set(p);
     this.load();
+  }
+
+  /** PDF in einem neuen Tab (Aktionsspalte). */
+  pdfBusyId = signal<string | null>(null);
+  openPdf(d: BusDocument) {
+    const target = openPdfWindow();
+    this.pdfBusyId.set(d.id);
+    this.api.pdf(d.id).subscribe({
+      next: (blob) => {
+        this.pdfBusyId.set(null);
+        showPdf(blob, target, `${d.number ?? 'Entwurf'}.pdf`);
+      },
+      error: (e: HttpErrorResponse) => {
+        this.pdfBusyId.set(null);
+        target?.close();
+        this.error.set(httpErrorText(e, 'Das PDF konnte nicht erstellt werden.'));
+      },
+    });
   }
 
   typeLabel(value: string) {

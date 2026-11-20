@@ -379,15 +379,16 @@ class DocumentService
         return $errors;
     }
 
-    private function sellerSnapshot(CompanySetting $company): array
+    public function sellerSnapshot(CompanySetting $company): array
     {
         return $company->only([
             'name', 'legal_form', 'street', 'postal_code', 'city', 'country', 'phone', 'email', 'website',
             'tax_number', 'vat_id', 'commercial_register', 'managing_director', 'bank_name', 'iban', 'bic',
+            'letterhead_note', 'footer_text',
         ]);
     }
 
-    private function recipientSnapshot(Customer $customer): array
+    public function recipientSnapshot(Customer $customer): array
     {
         return array_merge(
             $customer->only([
