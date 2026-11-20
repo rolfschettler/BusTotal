@@ -17,4 +17,14 @@ interface RoutingProvider
      * @throws RoutingException
      */
     public function route(array $points, ?VehicleLimits $limits = null): RouteResult;
+
+    /**
+     * Fahrzeitmatrix zwischen allen Punkten (Sekunden; null: nicht erreichbar), für die Reihenfolge der Halte.
+     *
+     * @param  list<Coordinate>  $points
+     * @return list<list<?float>>
+     *
+     * @throws RoutingException
+     */
+    public function durations(array $points): array;
 }

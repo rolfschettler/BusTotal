@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\Role;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Routing\OpenRouteService;
 use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
@@ -130,6 +131,68 @@ class RoutePlanningTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_leerzeichen_und_satzzeichen_am_ende_loesen_keine_neue_suche_aus(): void
+    {
+        Http::fake(['*/geocode/search*' => Http::response(['features' => []])]);
+
+        $user = User::factory()->create(['role' => Role::Admin]);
+        foreach (['Ulm Hbf', 'ulm  hbf', ' Ulm Hbf,', 'Ulm Hbf.'] as $q) {
+            $this->actingAs($user, 'sanctum')->getJson('/api/geocode?q='.urlencode($q))->assertOk();
+        }
+
+        Http::assertSentCount(1);
+    }
+
+    public function test_aufgebrauchtes_kontingent_sperrt_die_ortssuche_bis_mitternacht(): void
+    {
+        Http::fake(['*/geocode/search*' => Http::response(['error' => 'Quota exceeded'], 403)]);
+        $user = User::factory()->create(['role' => Role::Disponent]);
+
+        $this->actingAs($user, 'sanctum')->getJson('/api/geocode?q=Ulm')
+            ->assertStatus(424)->assertJsonPath('reason', 'limit')->assertJsonPath('message', fn ($m) => str_contains($m, 'Tageskontingent'));
+        // Weitere Suchen gehen nicht mehr an den Dienst (jede Absage würde sonst weiter zählen).
+        $this->actingAs($user, 'sanctum')->getJson('/api/geocode?q=Biberach')->assertStatus(424)->assertJsonPath('reason', 'limit');
+        Http::assertSentCount(1);
+    }
+
+    public function test_gesperrte_ortssuche_laesst_die_routenberechnung_weiterlaufen(): void
+    {
+        Http::fake([
+            '*/geocode/search*' => Http::response(['error' => 'Quota exceeded'], 403),
+            '*/v2/directions/driving-hgv/geojson' => Http::response(['features' => [[
+                'properties' => ['summary' => ['distance' => 200000, 'duration' => 9000], 'segments' => [['distance' => 200000, 'duration' => 9000]]],
+                'geometry' => ['coordinates' => [[10.57, 49.30], [11.58, 48.14]]],
+            ]]]),
+        ]);
+        $user = User::factory()->create(['role' => Role::Disponent]);
+
+        $this->actingAs($user, 'sanctum')->getJson('/api/geocode?q=Ulm')->assertStatus(424);
+        $this->actingAs($user, 'sanctum')->postJson('/api/routes/calculate', $this->payload())->assertOk();
+    }
+
+    public function test_anfragen_an_den_dienst_werden_je_bereich_gezaehlt(): void
+    {
+        Http::fake(['*/geocode/search*' => Http::response(['features' => []])]);
+        $user = User::factory()->create(['role' => Role::Admin]);
+
+        $this->actingAs($user, 'sanctum')->getJson('/api/geocode?q=Ulm')->assertOk();
+        $this->actingAs($user, 'sanctum')->getJson('/api/geocode?q=Ulm')->assertOk(); // aus dem Zwischenspeicher: zählt nicht
+        $this->actingAs($user, 'sanctum')->getJson('/api/geocode?q=Biberach')->assertOk();
+
+        $this->assertSame(['geocode' => 2, 'directions' => 0, 'matrix' => 0], OpenRouteService::usage());
+    }
+
+    public function test_ortssuche_ist_je_benutzer_begrenzt(): void
+    {
+        Http::fake(['*/geocode/search*' => Http::response(['features' => []])]);
+        $user = User::factory()->create(['role' => Role::Admin]);
+
+        for ($i = 0; $i < 30; $i++) {
+            $this->actingAs($user, 'sanctum')->getJson('/api/geocode?q=Ulm')->assertOk();
+        }
+        $this->actingAs($user, 'sanctum')->getJson('/api/geocode?q=Ulm')->assertStatus(429);
+    }
+
     // ---------- Tourberechnung ----------
 
     public function test_tour_mit_betriebshof_trennt_leerfahrten_von_besetzter_strecke(): void
@@ -238,6 +301,52 @@ class RoutePlanningTest extends TestCase
         $this->assertSame((int) ceil(7200 * 0.9), $r['drive_s']);
     }
 
+    /**
+     * Aus der Praxis: Mit einem Speicher, der wirklich serialisiert (Datei, Datenbank), gab die ZWEITE gleiche Suche einen
+     * Serverfehler ("incomplete object"), weil Objekte im Speicher lagen. Der Test-Speicher "array" zeigt das nicht.
+     */
+    public function test_wiederholte_anfragen_funktionieren_mit_einem_serialisierenden_speicher(): void
+    {
+        $dir = sys_get_temp_dir().'/bustotal-cache-test-'.bin2hex(random_bytes(4));
+        config(['cache.default' => 'file', 'cache.stores.file.path' => $dir]);
+        Cache::forgetDriver();
+
+        try {
+            Http::fake(['*/geocode/search*' => Http::response(['features' => [['geometry' => ['coordinates' => [9.99, 48.4]], 'properties' => ['label' => 'Ulm, BW, Deutschland', 'locality' => 'Ulm']]]])]);
+            foreach ([1, 2, 3] as $durchlauf) {
+                $hits = $this->as(Role::Disponent)->getJson('/api/geocode?q=Ulm')->assertOk()->json('data');
+                $this->assertSame('Ulm, BW, Deutschland', $hits[0]['label'], "Suche, Durchlauf $durchlauf");
+            }
+            Http::assertSentCount(1);
+
+            Http::swap(new Factory);
+            $this->fakeRoute([[200, 2.5]]);
+            foreach ([1, 2, 3] as $durchlauf) {
+                $r = $this->as(Role::Disponent)->postJson('/api/routes/calculate', $this->payload())->assertOk()->json();
+                $this->assertSame(200000, $r['distance_m'], "Route, Durchlauf $durchlauf");
+            }
+            Http::assertSentCount(1);
+        } finally {
+            Cache::flush();
+            Cache::forgetDriver();
+            foreach (glob($dir.'/*') ?: [] as $f) {
+                is_dir($f) ? array_map('unlink', glob($f.'/*') ?: []) : unlink($f);
+            }
+        }
+    }
+
+    public function test_alter_kaputter_zwischenspeichereintrag_wird_uebergangen(): void
+    {
+        $this->fakeRoute([[200, 2.5]]);
+        // Wie von der früheren Programmversion abgelegt: ein Objekt statt eines Arrays
+        Cache::flush();
+        $key = 'ors:v2:geocode:'.sha1('ulm|5');
+        Cache::put($key, new \stdClass, 60);
+        Http::fake(['*/geocode/search*' => Http::response(['features' => []])]);
+
+        $this->as(Role::Disponent)->getJson('/api/geocode?q=Ulm')->assertOk()->assertJsonPath('data', []);
+    }
+
     public function test_gleiche_tour_wird_zwischengespeichert(): void
     {
         $this->fakeRoute([[200, 2.5]]);
@@ -256,6 +365,35 @@ class RoutePlanningTest extends TestCase
 
         // Dienst liefert [lon, lat]; die Schnittstelle gibt [lat, lon] zurück.
         $this->assertEquals([[49.3, 10.57], [48.8, 11.0], [48.14, 11.58]], $r['geometry']);
+    }
+
+    public function test_anfrage_an_den_dienst_hat_die_richtigen_kopfzeilen_und_liefert_abschnitte(): void
+    {
+        $this->fakeRoute([[200, 2.5]]);
+
+        $this->as(Role::Disponent)->postJson('/api/routes/calculate', $this->payload())->assertOk();
+
+        Http::assertSent(function (Request $req) {
+            // Aus der Praxis (echter Dienst): Ohne application/geo+json antwortet er mit 406 (Code 2007). Ohne Anweisungen
+            // (instructions=false) fehlen die Abschnitte, ebenso mit geometry_simplify.
+            return str_contains($req->header('Accept')[0] ?? '', 'application/geo+json')
+                && ! array_key_exists('instructions', $req->data())
+                && ! array_key_exists('geometry_simplify', $req->data())
+                && $req->data()['coordinates'][0] === [11.58, 48.14]; // [lon, lat]
+        });
+    }
+
+    public function test_langer_linienzug_wird_ausgeduennt_anfang_und_ende_bleiben(): void
+    {
+        $coordinates = array_map(fn ($i) => [10 + $i / 1000, 49 - $i / 1000], range(0, 4999));
+        $this->fakeRoute([[400, 5.0]], $coordinates);
+
+        $line = $this->as(Role::Disponent)->postJson('/api/routes/calculate', $this->payload())->assertOk()->json('geometry');
+
+        $this->assertLessThanOrEqual(1501, count($line));
+        $this->assertGreaterThan(1000, count($line));
+        $this->assertEquals([49.0, 10.0], $line[0]);
+        $this->assertEquals([49 - 4.999, 10 + 4.999], end($line));
     }
 
     // ---------- Eingaben ----------
@@ -319,6 +457,16 @@ class RoutePlanningTest extends TestCase
 
         $this->as(Role::Disponent)->postJson('/api/routes/calculate', $this->payload())
             ->assertStatus(422)->assertJsonPath('reason', 'no_route')->assertJsonPath('message', fn ($m) => str_contains($m, 'keine befahrbare Straße'));
+    }
+
+    public function test_keine_route_zwischen_den_orten_erklaert_die_fahrzeugmasse(): void
+    {
+        // Echte Antwort des Dienstes (Code 2009): München Hbf mit 3,65 m Fahrzeughöhe
+        Http::fake(['*' => Http::response(['error' => ['code' => 2009, 'message' => 'Route could not be found - Unable to find a route between points 1 and 2.']], 404)]);
+
+        $this->as(Role::Disponent)->postJson('/api/routes/calculate', $this->payload())
+            ->assertStatus(422)->assertJsonPath('reason', 'no_route')
+            ->assertJsonPath('message', fn ($m) => str_contains($m, 'Zwischen den Orten') && str_contains($m, 'Unterführung'));
     }
 
     public function test_dienstfehler_werden_nie_als_5xx_weitergegeben(): void

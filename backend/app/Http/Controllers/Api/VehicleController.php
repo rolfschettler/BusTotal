@@ -115,6 +115,21 @@ class VehicleController extends Controller
         return response()->json($vehicle->fresh());
     }
 
+    /**
+     * Alle aktiven Fahrzeuge als schlanke Auswahlliste (ohne Seiten), zum Beispiel für die Streckenplanung.
+     * "has_dimensions": Maße und Gewicht sind gepflegt; sonst rechnet der Routing-Dienst ohne diese Grenzen.
+     */
+    public function choices(): JsonResponse
+    {
+        return response()->json(Vehicle::orderBy('fleet_number')->get()->map(fn (Vehicle $v) => [
+            'id' => $v->id,
+            'display_name' => $v->display_name,
+            'model' => trim($v->manufacturer.' '.$v->model),
+            'seats' => $v->seats,
+            'has_dimensions' => $v->height_m !== null && $v->width_m !== null && $v->length_m !== null && $v->gross_weight_kg !== null,
+        ])->values());
+    }
+
     /** Auswahllisten für das Formular. */
     public function options(): JsonResponse
     {

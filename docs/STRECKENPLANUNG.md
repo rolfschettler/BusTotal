@@ -1,7 +1,7 @@
 # Streckenplanung (Phase 5)
 
-Stand: Grundlage im Backend fertig (Routing-Schnittstelle, Adresssuche, Tourberechnung mit Lenk- und Ruhezeiten).
-**Noch nicht gebaut:** Oberfläche mit Karte, Speichern der Tour als Kalkulationsbasis (siehe „Nächste Schritte“).
+Stand: Backend und Oberfläche (Seite „Streckenplanung“ mit Ortssuche, Halteliste, Karte, Zeitplan) gebaut; mit dem echten Dienst noch nicht ausprobiert.
+**Noch nicht gebaut:** Speichern der Tour als Kalkulationsbasis, Betriebshof als Firmeneinstellung (siehe „Nächste Schritte“).
 
 ## Überblick
 
@@ -25,9 +25,23 @@ und eine Zeile im `AppServiceProvider`.
 
 Weitere Werte (optional): `ORS_BASE_URL` (eigene Instanz), `ORS_TIMEOUT`, `ROUTING_DURATION_FACTOR`.
 
-**Kontingent:** Der kostenlose Tarif hat Tages- und Minutengrenzen. Gleiche Anfragen werden zwischengespeichert (Strecken 12 Stunden,
-Ortssuche 7 Tage). Die Wege sind auf 60 Anfragen je Minute begrenzt. **Vor dem Produktivbetrieb** prüfen: Nutzungsbedingungen für
-den gewerblichen Einsatz und das Kontingent im Verhältnis zur Zahl der Firmen (alle Firmen teilen sich einen Schlüssel).
+**Kontingent:** Der kostenlose Tarif hat Tages- und Minutengrenzen; die Ortssuche ist am knappsten. Das „Quota exceeded“ meldet der Dienst als
+**403** (nicht 429). Schutzmaßnahmen:
+
+- **Keine Vorschläge beim Tippen** (kein Autocomplete). Die Ortsfelder sind reiner Text; gesucht wird nur beim Berechnen, je geändertem Feld
+  eine Anfrage (`RouteService.locate`, `limit=1`), wie im Projekt RATIOserver.
+- **Zwischenspeicher im Browser:** Text → gefundener Ort in `localStorage` (`bustotal.planung.orte`, höchstens 500 Einträge). Derselbe Text
+  wird nie zweimal gesucht. „Nichts gefunden“ wird nicht gemerkt.
+- **Zwischenspeicher auf dem Server** für alle Firmen: Strecken und Fahrzeitmatrix 12 Stunden, Ortssuche 7 Tage. Der Schlüssel der Ortssuche
+  ist normalisiert (Kleinschreibung, mehrfache Leerzeichen, Satzzeichen am Ende).
+- **Sperre nach „Quota exceeded“:** Merker `ors:quota:<bereich>` (geocode, directions, matrix) bis Mitternacht UTC. Solange gehen in diesem
+  Bereich keine Anfragen mehr hinaus; die anderen Bereiche laufen weiter, Treffer aus dem Zwischenspeicher auch.
+- **Zähler** je Bereich und Tag: `ors:count:<bereich>:<JJJJ-MM-TT>`, abrufbar mit `OpenRouteService::usage()`.
+- **Bremse je Benutzer:** `/geocode` 30, `/routes/calculate` 60 Anfragen je Minute.
+
+**Vor dem Produktivbetrieb** prüfen: Nutzungsbedingungen für den gewerblichen Einsatz und das Kontingent im Verhältnis zur Zahl der Firmen
+(alle Firmen teilen sich einen Schlüssel). Reicht es nicht, einen anderen Geocoder hinter `GeocodingProvider` setzen (eigener
+Photon-/Nominatim-Server oder bezahlter Tarif).
 
 ## Schnittstellen der Anwendung
 
@@ -82,8 +96,7 @@ Planung nach VO (EG) Nr. 561/2006, bewusst die einfache, sichere Auslegung:
 
 ## Nächste Schritte
 
-1. Oberfläche: Seite „Streckenplanung“ mit Ortssuche, Halteliste (Reihenfolge, Aufenthalt), Fahrzeugwahl, Karte (Leaflet, Kachelanbieter wählen: nicht die
-   openstreetmap.org-Kacheln produktiv), Ablauf-Tabelle mit Warnungen; Hilfethema und `data.help`-Eintrag.
+1. ~~Oberfläche~~ gebaut (siehe „Oberfläche“); offen: Kachelanbieter wählen, im Browser prüfen.
 2. Betriebshof als Einstellung der Firma (Adresse mit Koordinaten).
 3. Tour speichern (UUID, Halte, Ergebnis eingefroren) als Kalkulationsbasis; Verknüpfung mit Angebot (Phase 6).
 
@@ -91,3 +104,54 @@ Planung nach VO (EG) Nr. 561/2006, bewusst die einfache, sichere Auslegung:
 
 `tests/Unit/DrivingTimePlannerTest.php` (Lenk-/Ruhezeiten, reine Rechnung) und `tests/Feature/RoutePlanningTest.php` (Rechte, Adresssuche,
 Tourberechnung, Fehler des Dienstes, Schlüssel nie in Adresse oder Meldung). Der Routing-Dienst wird nie wirklich angerufen (`Http::fake`).
+
+## Oberfläche
+
+Seite `/streckenplanung` (Menü „Planung“, nur Admin und Disponent), Hilfethema `strecken.md`.
+
+- `pages/route-planning/`: Seite (Signale, keine Formular-Klasse), reine Hilfsfunktionen in `route-planning-view.ts` (Zeitformate, Halte
+  verschieben, Anfrage bauen) mit Testfällen in `route-planning-view.spec.ts` (lauffähig mit `ng test` bzw. ohne Browser per Hilfsskript).
+- `shared/map.component.ts`: Kartenbaustein mit Leaflet (nummerierte Markierungen als HTML-Symbole, Linienzug, Texte nur als Text).
+- `core/route.service.ts`: `geocode()` und `calculate()`; `VehicleService.choices()` (neu: `GET /api/vehicles/choices`, alle aktiven Fahrzeuge ohne Seiten).
+- Eingabe **Von – Über – Nach** (2026-11-22 vereinfacht auf Wunsch des Nutzers): je Ort ein Suchfeld (`place-search.component.ts`), Treffer direkt anklicken; Suche 0,5 s nach dem Tippen (ab 3 Zeichen) oder mit Enter, Treffer mit `<app-highlight>` markiert, gleiche Suchen kommen aus dem Zwischenspeicher. Ein gewählter Ort bleibt ein normales Eingabefeld: Klick markiert den Text, Tippen ersetzt ihn und startet die Suche neu (kein gesperrtes Feld). Betriebshof, Aufenthalte und lange Tage stehen eingeklappt unter „Weitere Angaben“. Marker: A = Von, Zahlen = Über, Z = Nach, H = Betriebshof. Die Halteliste baut `buildStops()` (mit Tests).
+- Der Betriebshof wird nur im Browser gemerkt (`localStorage`). Ändert sich die Eingabe nach einer Berechnung, gilt das Ergebnis als „veraltet“.
+- **Kartenkacheln:** `core/map-config.ts` nutzt vorerst `tile.openstreetmap.org` (nur zum Entwickeln und Ausprobieren). **Vor dem Produktivbetrieb
+  Anbieter wählen** und URL und Quellenangabe dort eintragen.
+- Im Browser mit erfundenen Antworten geprüft; nach dem Einbau von Leaflet `ng serve` neu starten (`angular.json` bindet das CSS ein).
+
+## Erfahrungen mit dem echten Dienst (2026-11-22)
+
+- Direktionsanfrage: `Accept: application/geo+json` ist Pflicht (sonst 406, Code 2007). `instructions` und `geometry_simplify` **nicht** setzen: ohne Anweisungen
+  fehlen die Abschnitte (`segments`), die Leerfahrten und Zeitplan brauchen. Der Linienzug wird in `OpenRouteService::thin()` auf höchstens 1500 Punkte ausgedünnt.
+- Fehlercodes des Dienstes: 2010 = Ort nicht auf einer Straße, 2009 = keine Route zwischen den Orten (mit Fahrzeugmaßen oft eine zu niedrige Unterführung
+  oder Gewichtsgrenze), 2004 = Anfrage zu groß, 2007 = falscher Medientyp.
+- Ortssuche (Pelias): trifft Namen aus OpenStreetMap, „Ulm Hbf“ statt „Ulm Hauptbahnhof“; Länderfilter nicht gesetzt wegen Auslandstouren.
+- Beispiel Ansbach → Ulm → München → Ansbach (Setra S 515 HD, 3,65 × 2,55 × 12 m, 18 t): 501 km, 7:02 Std. reine Fahrzeit (Ø 71 km/h).
+- **Zwischenspeicher:** Es werden nur einfache Arrays abgelegt, nie Objekte. Laravel gibt eigene Klassen beim Zurücklesen nicht frei (`__PHP_Incomplete_Class`):
+  Die erste Suche ging, jede gleiche zweite gab einen Serverfehler. Die Schlüssel tragen eine Formatversion (`ors:v2:…`); ändert sich das Abgelegte, Version erhöhen.
+  Der Test mit dem echten Dateispeicher (`test_wiederholte_anfragen_funktionieren_mit_einem_serialisierenden_speicher`) hält das fest; der Test-Speicher `array` zeigt den Fehler nicht.
+
+## Lizenz und Nutzungsbedingungen von openrouteservice (gelesen am 2026-11-22)
+
+Quelle: `https://account.heigit.org/info/plans` und `https://account.heigit.org/info/tos` (HeiGIT gGmbH). **Die Bedingungen können sich jederzeit ändern** (sie gelten sofort
+nach Veröffentlichung); vor dem Produktivbetrieb erneut lesen. Das ist keine Rechtsberatung.
+
+- **Tarife:** *Standard* kostenlos „für alle“: Directions 2000 Anfragen/Tag und 40/Minute, Geocoding 3000/Tag und 100/Minute. *Collaborative* (höhere Limits) nur für
+  humanitäre, akademische, staatliche oder gemeinnützige Anwendungen, für uns nicht passend. *On-Premise* (eigene Installation): keine Grenzen, aber ein eigener Server
+  (auf dem Mittwald-Shared-Hosting nicht möglich). Einen bezahlten Tarif mit Zusagen gibt es dort nicht. Alle Firmen von BusTotal teilen sich heute **einen** Schlüssel und diese Limits.
+- **Gewerblich:** Ein Verbot gewerblicher Nutzung steht in den Bedingungen nicht, ebenso wenig eine ausdrückliche Erlaubnis. „Use by an Entity“ regelt die Nutzung durch Firmen.
+  Keine Gewährleistung, keine Haftung für Richtigkeit der Routen, kein Zugesagter Betrieb. Wiederholtes Überschreiten der Limits kann zur Sperrung des Kontos führen.
+- **Personenbezogene Daten:** Unter „Prohibited Conduct“ steht ausdrücklich: *Transmit personal data (apart from the data required by the HeiGIT account management)*.
+  **Die Ortssuche sendet den Suchtext an den Dienst.** Gibt jemand die Abholadresse einer Privatperson ein, ist das ein personenbezogenes Datum. Das ist ein Widerspruch zu den
+  Bedingungen und eine Datenschutzfrage (Auftragsverarbeitung). **Vor dem Einsatz mit echten Kundenadressen klären** (schriftlich bei HeiGIT, Datenschutzbeauftragte/r) oder auf einen
+  Dienst mit Auftragsverarbeitungsvertrag bzw. auf eine eigene Installation wechseln.
+- **Quellenangabe Pflicht:** „© openrouteservice by HeiGIT | Data from OpenStreetMap“ (und OSM bei der Ortssuche). Steht jetzt in der Kartenzeile (`core/map-config.ts`); in ausgedruckten
+  oder exportierten Ergebnissen später ebenfalls nötig.
+- **Lizenz der Ergebnisse:** „Results obtained from openrouteservice in any context are licensed under CC-BY-SA 4.0.“ (Weitergabe unter gleichen Bedingungen). Was das für
+  gespeicherte Touren, Angebote und Rechnungen bedeutet (Phase 5/6: „Tour als Kalkulationsbasis speichern“), muss **vor** dem Speichern juristisch geklärt werden.
+  Die Daten der Ortssuche stammen aus OpenStreetMap (ODbL), OpenAddresses, GeoNames und Who's On First.
+- **Alternativen:** Dank der Schnittstellen (`RoutingProvider`, `GeocodingProvider`) ist ein Wechsel eine neue Klasse: eigene ORS-Installation (On-Premise), GraphHopper, oder ein
+  kommerzieller Anbieter mit Vertrag. Kostenpflichtige Anbieter haben meist Auftragsverarbeitung und Zusagen; Kosten und Bedingungen dort ebenfalls lesen.
+
+**Zur Postleitzahl:** Der Dienst wertet sie aus, wenn die Eingabe eine Adresse ist: „Marktplatz 1, 88400 Biberach an der Riß“ und „Hauptstraße 5, 91522 Ansbach“ treffen exakt
+(mit PLZ). Nur bei einem unvollständigen Ortsnamen („88400 biberach“) richten sich die Treffer allein nach dem Ortsnamen; „Biberach an der Riß 88400“ trifft eindeutig.

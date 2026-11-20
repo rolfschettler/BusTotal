@@ -54,6 +54,7 @@ class RouteController extends Controller
                 $vehicle,
                 isset($data['start_at']) ? CarbonImmutable::parse($data['start_at']) : null,
                 (int) ($data['extended_days'] ?? 0),
+                (bool) ($data['optimize'] ?? false),
             );
         } catch (RoutingException $e) {
             return $this->failure($e);

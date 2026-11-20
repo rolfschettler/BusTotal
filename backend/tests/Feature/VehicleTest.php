@@ -258,4 +258,25 @@ class VehicleTest extends TestCase
         $this->assertContains('klima', collect($r->json('equipment'))->pluck('value')->all());
         $this->assertSame(4, count($r->json('deadlines')));
     }
+
+    public function test_auswahlliste_zeigt_alle_aktiven_fahrzeuge_ohne_seiten(): void
+    {
+        foreach (range(1, 25) as $i) {
+            Vehicle::factory()->create(['fleet_number' => sprintf('C-%02d', $i), 'license_plate' => sprintf('M-CC %03d', $i)]);
+        }
+        $voll = Vehicle::factory()->create(['fleet_number' => 'D-01', 'license_plate' => 'M-DD 001', 'height_m' => 3.7, 'width_m' => 2.55, 'length_m' => 12, 'gross_weight_kg' => 18000]);
+        Vehicle::factory()->create(['fleet_number' => 'D-02', 'license_plate' => 'M-DD 002'])->delete();
+
+        $liste = $this->as(Role::Disponent)->getJson('/api/vehicles/choices')->assertOk()->json();
+
+        $this->assertCount(26, $liste, 'Alle aktiven, nicht nur eine Seite; archivierte nicht.');
+        $this->assertSame(['id', 'display_name', 'model', 'seats', 'has_dimensions'], array_keys($liste[0]));
+        $this->assertTrue(collect($liste)->firstWhere('id', $voll->id)['has_dimensions']);
+        $this->assertFalse($liste[0]['has_dimensions']);
+    }
+
+    public function test_auswahlliste_nicht_fuer_fahrer(): void
+    {
+        $this->as(Role::Fahrer)->getJson('/api/vehicles/choices')->assertForbidden();
+    }
 }

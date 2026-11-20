@@ -7,6 +7,7 @@ use App\Routing\Coordinate;
 use App\Routing\DrivingTimePlanner;
 use App\Routing\RoutingException;
 use App\Routing\RoutingProvider;
+use App\Routing\TourOptimizer;
 use App\Routing\VehicleLimits;
 use Carbon\CarbonImmutable;
 
@@ -20,7 +21,7 @@ use Carbon\CarbonImmutable;
  */
 class TourCalculator
 {
-    public function __construct(private readonly RoutingProvider $routing, private readonly DrivingTimePlanner $planner) {}
+    public function __construct(private readonly RoutingProvider $routing, private readonly DrivingTimePlanner $planner, private readonly TourOptimizer $optimizer = new TourOptimizer) {}
 
     /**
      * @param  list<array{lat: float|int|string, lon: float|int|string, label?: ?string, dwell_minutes?: ?int, driver_free?: ?bool}>  $stops  Halte in Reihenfolge; Start und Ziel eingeschlossen
@@ -29,8 +30,16 @@ class TourCalculator
      *
      * @throws RoutingException
      */
-    public function calculate(array $stops, ?array $depot = null, bool $returnToDepot = true, ?Vehicle $vehicle = null, ?CarbonImmutable $startAt = null, int $extendedDays = 0): array
+    public function calculate(array $stops, ?array $depot = null, bool $returnToDepot = true, ?Vehicle $vehicle = null, ?CarbonImmutable $startAt = null, int $extendedDays = 0, bool $optimize = false): array
     {
+        // Reihenfolge der Zwischenhalte (Halte mit "movable") nach kürzester Fahrzeit; Von und Nach bleiben stehen.
+        $order = array_keys($stops);
+        $notes = [];
+        if ($optimize) {
+            [$order, $notes] = $this->optimizeOrder($stops);
+            $stops = array_map(fn (int $i) => $stops[$i], $order);
+        }
+
         // Alle Punkte in Fahrtreihenfolge. Das Depot hat keinen Halt (Aufenthalt 0).
         $points = [];
         if ($depot) {
@@ -87,7 +96,10 @@ class TourCalculator
             'legs' => $legs,
             'schedule' => $this->schedule($plan['events'], $startAt),
             'summary' => $plan['summary'],
-            'warnings' => $plan['warnings'],
+            'warnings' => array_merge($notes, $plan['warnings']),
+            // Eingabe-Nummern der Halte in Fahrtreihenfolge (nach der Optimierung); ohne Optimierung unverändert.
+            'order' => $order,
+            'optimized' => $order !== array_keys($order),
             'geometry' => $result->geometry,
             'start_at' => $startAt?->toIso8601String(),
             'end_at' => $startAt?->addSeconds($plan['summary']['elapsed_s'])->toIso8601String(),
@@ -95,6 +107,30 @@ class TourCalculator
             // Kilometer mal Kostensatz des Fahrzeugs: nur eine Rechengrundlage, keine fertige Kalkulation (die kommt mit den Belegen).
             'vehicle_cost' => $vehicle?->cost_per_km !== null ? round($km * $vehicle->cost_per_km, 2) : null,
         ];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $stops
+     * @return array{list<int>, list<array{code: string, message: string}>}  neue Reihenfolge (Eingabe-Nummern) und Hinweise
+     */
+    private function optimizeOrder(array $stops): array
+    {
+        $identity = array_keys($stops);
+        $free = array_keys(array_filter($stops, fn (array $s) => ! empty($s['movable'])));
+        // Nur ein zusammenhängender Block von mindestens zwei Zwischenhalten mit festem Halt davor und danach.
+        if (count($free) < 2 || $free !== range($free[0], end($free)) || $free[0] === 0 || end($free) === count($stops) - 1) {
+            return [$identity, []];
+        }
+
+        try {
+            $matrix = $this->routing->durations(array_map(fn (array $s) => new Coordinate((float) $s['lat'], (float) $s['lon']), $stops));
+        } catch (RoutingException) {
+            return [$identity, [['code' => 'optimization_failed', 'message' => 'Die Reihenfolge der Zwischenhalte konnte nicht optimiert werden. Die Route folgt Ihrer Eingabe.']]];
+        }
+
+        $best = $this->optimizer->order($matrix, $free[0] - 1, end($free) + 1, $free);
+
+        return [array_merge(range(0, $free[0] - 1), $best, range(end($free) + 1, count($stops) - 1)), []];
     }
 
     /** @return array{coordinate: Coordinate, label: string, depot: bool, dwell_s: int, driver_free: bool} */

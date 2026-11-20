@@ -89,6 +89,7 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
     Route::middleware('role:admin,disponent,buchhaltung')->prefix('vehicles')->group(function () {
         Route::get('/', [VehicleController::class, 'index']);
         Route::get('/options', [VehicleController::class, 'options']);
+        Route::get('/choices', [VehicleController::class, 'choices']);
         Route::get('/{vehicle}', [VehicleController::class, 'show'])->withTrashed();
     });
     Route::middleware('role:admin,disponent')->prefix('vehicles')->group(function () {
@@ -118,9 +119,11 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
 
     // Streckenplanung (Phase 5): Adresssuche und Tourberechnung über einen externen Routing-Dienst (Kontingent!),
     // deshalb begrenzt. Nur Admin und Disponent.
-    Route::middleware(['role:admin,disponent', 'throttle:60,1'])->group(function () {
-        Route::get('/geocode', [RouteController::class, 'geocode']);
-        Route::post('/routes/calculate', [RouteController::class, 'calculate']);
+    // Die Ortssuche ist am knappsten (das Kontingent teilen sich alle Firmen): höchstens 30 je Minute und Benutzer.
+    // Ein hängender Browser oder ein Skript kann so das gemeinsame Kontingent nicht leeren.
+    Route::middleware('role:admin,disponent')->group(function () {
+        Route::get('/geocode', [RouteController::class, 'geocode'])->middleware('throttle:30,1');
+        Route::post('/routes/calculate', [RouteController::class, 'calculate'])->middleware('throttle:60,1');
     });
 
     // DSGVO-Löschung (unwiderruflich): Administrator und Buchhaltung.

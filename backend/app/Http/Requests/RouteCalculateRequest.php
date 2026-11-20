@@ -25,6 +25,9 @@ class RouteCalculateRequest extends FormRequest
             // Aufenthalt am Halt in Minuten (bis 24 Stunden); driver_free: Der Fahrer hat in dieser Zeit frei (zählt als Pause/Ruhezeit).
             'stops.*.dwell_minutes' => ['nullable', 'integer', 'min:0', 'max:1440'],
             'stops.*.driver_free' => ['nullable', 'boolean'],
+            // movable: Zwischenhalt, dessen Platz die Optimierung bestimmen darf (Von und Nach bleiben stehen).
+            'stops.*.movable' => ['nullable', 'boolean'],
+            'optimize' => ['nullable', 'boolean'],
             'depot' => ['nullable', 'array'],
             'depot.lat' => ['required_with:depot', 'numeric', 'between:-90,90'],
             'depot.lon' => ['required_with:depot', 'numeric', 'between:-180,180'],
