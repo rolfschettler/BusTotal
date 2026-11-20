@@ -121,6 +121,10 @@ Fachliche Grundlagen: `docs/fachlich/belegwesen.md` (Recherche, offene Fragen an
 ## [ ] Phase 7 – Disposition
 - Plantafel Fahrzeuge × Fahrer, Drag & Drop, Konfliktprüfung (Doppelbelegung, Fristen, Lenkzeiten, Sitzplätze)
 - Fahrauftrag als PDF
+- Fachliche Grundlagen: `docs/fachlich/lenk-ruhezeiten.md` (Recherche vom 2026-11-28 mit Quellen, Abgleich mit `DrivingTimePlanner`, Folgerungen, offene Fragen an Verband/Gewerbeaufsicht und Auftraggeber).
+  **Wichtigste Erkenntnisse:** Die bestehende Tourplanung ist eine sichere, einfache Auslegung **für eine Tour** und widerspricht den recherchierten Regeln nicht, reicht für die **Disposition aber nicht**: Dort zählt der **Verlauf je Fahrer und Woche** (Wochenlenkzeit 56 h, Doppelwoche 90 h, höchstens zwei 10-Stunden-Tage je Woche, höchstens drei verkürzte Tagesruhezeiten, Wochenruhezeit 45/24 h). Weitere Punkte: Einsatzart (Gelegenheitsverkehr oder Linie bis 50 km) und **Auslandsfahrt** am Einsatz (12-Tage-Regel nur grenzüberschreitend, **offen**), **Zweierbesatzung** (9 h in 30 h), **Arbeitszeit** (48/60 h) braucht eine Arbeitszeitbuchung, Warnung statt Sperre, Grenzwerte an **einer** Stelle.
+- [ ] **Fristen im Fuhrpark:** „Fahrerkarte zuletzt ausgelesen“ (spätestens alle 28 Tage) je Fahrer und „Fahrzeugeinheit zuletzt ausgelesen“ (spätestens alle 90 Tage) je Fahrzeug, mit Erinnerung auf der Startseite. Klein, unabhängig von der Plantafel, mit der vorhandenen Fristen-Funktion (`HasDeadlines`) machbar.
+- [ ] Fahrer-Zeitkonto je Woche aus den geplanten Einsätzen, Konfliktprüfung als Warnung mit Begründung, Zwei-Fahrer-Option, Einsatzart und Auslandsfahrt am Einsatz (Reihenfolge und Umfang nach Antworten des Verbands, siehe Fragen in der Fachdatei).
 
 ## [ ] Phase 8 – Betrieb auf Mittwald
 - Deployment-Ablauf: **Skript `deploy\deploy.ps1`** (Anleitung `docs/DEPLOY.md`, Probelauf getestet, erster echter Lauf offen); Cronjobs, Backups, Monitoring; Sicherheitsprüfung
