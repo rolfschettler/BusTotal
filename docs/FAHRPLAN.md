@@ -37,7 +37,7 @@ Getroffene Entscheidungen:
 - **E-Rechnung** (XRechnung/ZUGFeRD) ab 2027/2028 Pflicht → Architektur jetzt vorsehen
 - **DATEV-Daten** vom Steuerberater: SKR03/04, Erlöskonten, Berater-/Mandantennummer, Debitorenkreis
 
-### Offene Fragen aus der Belegwesen-Recherche (2026-11-23, Quellen und Einordnung in `docs/fachlich/belegwesen.md`)
+### Offene Fragen aus der Belegwesen-Recherche (Recherche 2026-11-20, Fragen übernommen 2026-11-23, Quellen und Einordnung in `docs/fachlich/belegwesen.md`)
 Diese Fragen blockieren nichts, die Software ist so gebaut, dass die Antworten nur Einstellungen oder kleine Änderungen auslösen. Bis zur Antwort gelten die Annahmen in Klammern.
 **An den Steuerberater:**
 1. Steuersatz je Fahrtart (Charter, Transfer, Schulbus, Linie, Ausflug), insbesondere die 50-km-Regel nach § 12 Abs. 2 Nr. 10 UStG. (Satz je Position einstellbar, Vorbelegung 19 %; bei 0 % ist ein Steuerhinweis Pflicht.)
@@ -116,7 +116,7 @@ Fachliche Grundlagen: `docs/fachlich/belegwesen.md` (Recherche, offene Fragen an
 - Pflichtangaben-Prüfung beim Festschreiben (Rechnungen: Anschriften, Steuernummer/USt-IdNr., Leistungszeitpunkt, Positionen). Angebot und AB brauchen weniger.
 - Rechte: Entwürfe Admin/Disponent/Buchhaltung, Festschreiben und Storno nur Admin/Buchhaltung (Disponent darf Angebote bisher nicht freigeben – mit Auftraggeber klären).
 - Einzelinstanz-Modus: nichts im Beleg-Code setzt mehrere Firmen voraus (alles liegt in der Mandanten-Datenbank).
-- Noch **nicht** gebaut: Löschsperre nach Aufbewahrungsfrist/Verknüpfung mit DSGVO-Anonymisierung (Beleg trägt Kopie, Kunde kann anonymisiert werden, siehe `belegwesen.md` Abschnitt 2), PDF, E-Mail, DATEV, E-Rechnung.
+- Noch **nicht** gebaut (Stand 2026-11-28): Löschsperre nach Aufbewahrungsfrist/Verknüpfung mit DSGVO-Anonymisierung (Beleg trägt Kopie, Kunde kann anonymisiert werden, siehe `belegwesen.md` Abschnitt 2), E-Mail, DATEV, E-Rechnung. PDF und Archiv-PDF sind inzwischen gebaut (siehe Liste oben).
 
 ## [ ] Phase 7 – Disposition
 - Plantafel Fahrzeuge × Fahrer, Drag & Drop, Konfliktprüfung (Doppelbelegung, Fristen, Lenkzeiten, Sitzplätze)

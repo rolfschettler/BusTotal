@@ -66,6 +66,7 @@ Vor dem Produktiveinsatz muss der Steuerberater die Umsetzung prüfen.
 
 ## 7. Zusammenfassung für den Bau von Phase 6
 **Jetzt umsetzbar** (Punkte 1–3, 5): Belegstatus und Sperre, Nummernvergabe beim Festschreiben, Storno als eigener Beleg, Wertekopie im Beleg, Pflichtangaben-Prüfung, Anzahlung/Schlussrechnung, Versionierung von Angebot und Auftragsbestätigung, Löschsperre.
+**Umsetzungsstand** (siehe `docs/FAHRPLAN.md`, Phase 6): gebaut sind Status und Sperre, Nummernvergabe, Storno, Wertekopie, Pflichtangaben-Prüfung, Anzahlung/Schlussrechnung, PDF und Archiv-PDF. **Noch nicht gebaut:** Löschsperre, Versionierung von Angebot und Auftragsbestätigung.
 **Einstellbar statt fest** (Punkt 4): Steuersatz je Position, Preisfindung als austauschbare Regel.
 **Später:** E-Rechnung (Datenmodell jetzt vorbereiten), Streckenanteil je Land, § 25-Reiseleistungen falls nötig.
 
