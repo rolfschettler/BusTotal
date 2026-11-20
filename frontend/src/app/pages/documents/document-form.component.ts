@@ -62,6 +62,8 @@ export class DocumentFormComponent implements OnInit {
   private customerTimer?: ReturnType<typeof setTimeout>;
 
   readonly formatCents = formatCents;
+  /** Betrag mit umgekehrtem Vorzeichen: Ein Abzug von 357 € steht als „−357,00 €“, bei einem Storno (negativ) als positiver Betrag. */
+  minus = (v: string) => formatCents(-Math.round(Number(v) * 100));
   readonly amount = formatAmount;
 
   form = this.fb.nonNullable.group({
@@ -84,6 +86,18 @@ export class DocumentFormComponent implements OnInit {
     this.tick();
     return summarize(this.lines.getRawValue() as CalcLine[]);
   });
+
+  /** Abgezogene Anzahlungen (Schlussrechnung), vom Server beim Speichern und Festschreiben bestimmt. */
+  deductions = computed(() => this.doc()?.deductions ?? []);
+  /** Abzug in Cent. Beim Festgeschriebenen gilt der gespeicherte Stand. */
+  private deductionCents(field: 'net' | 'tax' | 'gross'): number {
+    return this.deductions().reduce((sum, d) => sum + Math.round(Number(d[field]) * 100), 0);
+  }
+  deductionNet = computed(() => this.deductionCents('net'));
+  deductionTax = computed(() => this.deductionCents('tax'));
+  deductionGross = computed(() => this.deductionCents('gross'));
+  /** Zu zahlen: Brutto der Vorschau minus Anzahlungen. */
+  payable = computed(() => this.totals().gross - this.deductionGross());
 
   readonly = computed(() => this.doc()?.status === 'festgeschrieben');
   cancelled = computed(() => !!this.doc()?.cancelled_by_id);

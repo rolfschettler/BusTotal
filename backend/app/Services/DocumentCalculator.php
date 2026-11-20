@@ -44,12 +44,33 @@ class DocumentCalculator
             $tax += $groupTax;
         }
 
+        // Abzug erhaltener Anzahlungen (Schlussrechnung): getrennt ausgewiesen, nicht in den Positionen.
+        $dedNet = 0;
+        $dedTax = 0;
+        $dedGross = 0;
+        foreach ($document->deductions ?? [] as $d) {
+            $dedNet += $this->toCents($d['net'] ?? 0);
+            $dedTax += $this->toCents($d['tax'] ?? 0);
+            $dedGross += $this->toCents($d['gross'] ?? 0);
+        }
+
         $document->forceFill([
             'net_total' => $this->money($net),
             'tax_total' => $this->money($tax),
             'gross_total' => $this->money($net + $tax),
             'tax_summary' => $summary,
+            'deduction_net' => $this->money($dedNet),
+            'deduction_tax' => $this->money($dedTax),
+            'deduction_gross' => $this->money($dedGross),
+            'payable_total' => $this->money($net + $tax - $dedGross),
         ])->save();
+    }
+
+    private function toCents(string|int|float|null $amount): int
+    {
+        $x = (float) $amount * 100;
+
+        return (int) ($x < 0 ? -round(-$x) : round($x));
     }
 
     /** Menge (3 Nachkommastellen) × Einzelpreis (2 Nachkommastellen) in Cent, kaufmännisch gerundet. */

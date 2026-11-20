@@ -71,6 +71,9 @@ class DocumentService
             $document = $this->lockDraft($document);
             $document->load(['lines', 'customer']);
 
+            // Anzahlungen, die seit dem Anlegen des Entwurfs festgeschrieben (oder storniert) wurden, zählen jetzt.
+            $this->refreshDeductions($document);
+
             $company = CompanySetting::current();
             $customer = $document->customer;
 
@@ -141,6 +144,12 @@ class DocumentService
                 'tax_rate' => (string) $line->tax_rate,
                 'tax_note' => $line->tax_note,
             ])->all();
+            // Eine stornierte Schlussrechnung gibt ihre Anzahlungen wieder frei: Der Storno spiegelt auch den Abzug.
+            $storno->deductions = collect($original->deductions ?? [])->map(fn ($d) => array_merge($d, [
+                'net' => $this->negate((string) $d['net']),
+                'tax' => $this->negate((string) $d['tax']),
+                'gross' => $this->negate((string) $d['gross']),
+            ]))->all();
             $this->replaceLines($storno, $lines);
 
             $storno = $this->issue($storno);
@@ -156,9 +165,9 @@ class DocumentService
      * Folgebeleg als neuen Entwurf aus einem festgeschriebenen Beleg (Angebot → Auftragsbestätigung → Rechnung).
      * Kunde, Texte und Positionen werden kopiert, der Verweis auf den Vorgänger bleibt (source_id).
      */
-    public function convert(Document $source, DocumentType $target): Document
+    public function convert(Document $source, DocumentType $target, ?float $percent = null): Document
     {
-        return DB::transaction(function () use ($source, $target) {
+        return DB::transaction(function () use ($source, $target, $percent) {
             $source->load('lines');
 
             if ($source->isDraft()) {
@@ -178,14 +187,91 @@ class DocumentService
             ]);
             $document->forceFill(['type' => $target, 'status' => DocumentStatus::Entwurf, 'source_id' => $source->id])->save();
 
-            $this->replaceLines($document, $source->lines->map(fn ($l) => [
-                'title' => $l->title, 'description' => $l->description, 'quantity' => (string) $l->quantity,
-                'unit' => $l->unit, 'unit_price' => (string) $l->unit_price,
-                'tax_rate' => (string) $l->tax_rate, 'tax_note' => $l->tax_note,
-            ])->all());
+            $lines = $target === DocumentType::Anzahlung
+                ? $this->advanceLines($source, $percent ?? self::DEFAULT_ADVANCE_PERCENT)
+                : $source->lines->map(fn ($l) => [
+                    'title' => $l->title, 'description' => $l->description, 'quantity' => (string) $l->quantity,
+                    'unit' => $l->unit, 'unit_price' => (string) $l->unit_price,
+                    'tax_rate' => (string) $l->tax_rate, 'tax_note' => $l->tax_note,
+                ])->all();
+            $this->replaceLines($document, $lines);
 
             return $document->fresh(['lines', 'customer']);
         });
+    }
+
+    /** Vorbelegung der Anzahlung in Prozent des Auftrags. Im Entwurf frei änderbar. */
+    public const DEFAULT_ADVANCE_PERCENT = 30.0;
+
+    /**
+     * Positionen einer Anzahlungsrechnung: je Steuersatz des Ursprungsbelegs eine Position mit dem Anteil am Netto.
+     * Der Steuersatz folgt dem Auftrag (die Steuer auf die Anzahlung entsteht mit dem Satz der Leistung).
+     */
+    private function advanceLines(Document $source, float $percent): array
+    {
+        $label = rtrim(rtrim(number_format($percent, 2, ',', ''), '0'), ',');
+        $groups = $source->tax_summary ?? [];
+
+        return collect($groups)->map(function ($g) use ($source, $percent, $label) {
+            $cents = (int) round(((float) $g['net']) * 100 * $percent / 100);
+
+            return [
+                'title' => "Anzahlung {$label} % auf {$source->type->label()} {$source->number}",
+                'description' => null,
+                'quantity' => '1',
+                'unit' => 'pauschal',
+                'unit_price' => number_format($cents / 100, 2, '.', ''),
+                'tax_rate' => (string) $g['rate'],
+                'tax_note' => null,
+            ];
+        })->all();
+    }
+
+    /**
+     * Anzahlungen, die eine Schlussrechnung abzieht: festgeschriebene, nicht stornierte Anzahlungsrechnungen aus demselben
+     * Ursprungsbeleg (Angebot bzw. Auftragsbestätigung), die nicht schon eine andere gültige Schlussrechnung abzieht.
+     *
+     * @return list<array{document_id: string, number: string, document_date: ?string, net: string, tax: string, gross: string}>
+     */
+    private function deductionsFor(Document $document): array
+    {
+        if ($document->type !== DocumentType::Rechnung || $document->source_id === null) {
+            return [];
+        }
+
+        $alreadyUsed = Document::where('source_id', $document->source_id)
+            ->where('type', DocumentType::Rechnung)
+            ->where('status', DocumentStatus::Festgeschrieben)
+            ->whereNull('cancelled_by_id')
+            ->where('id', '!=', $document->id)
+            ->get()
+            ->flatMap(fn (Document $d) => collect($d->deductions ?? [])->pluck('document_id'))
+            ->all();
+
+        return Document::where('source_id', $document->source_id)
+            ->where('type', DocumentType::Anzahlung)
+            ->where('status', DocumentStatus::Festgeschrieben)
+            ->whereNull('cancelled_by_id')
+            ->whereNotIn('id', $alreadyUsed)
+            ->orderBy('finalized_at')->orderBy('id')
+            ->get()
+            ->map(fn (Document $a) => [
+                'document_id' => $a->id,
+                'number' => $a->number,
+                'document_date' => $a->document_date?->toDateString(),
+                'net' => (string) $a->net_total,
+                'tax' => (string) $a->tax_total,
+                'gross' => (string) $a->gross_total,
+            ])->all();
+    }
+
+    /** Abzüge eines Entwurfs neu bestimmen und die Summen nachrechnen. */
+    private function refreshDeductions(Document $document): void
+    {
+        if ($document->type === DocumentType::Rechnung && $document->isDraft()) {
+            $document->deductions = $this->deductionsFor($document);
+            $this->calculator->apply($document);
+        }
     }
 
     // ---------- intern ----------
@@ -229,6 +315,10 @@ class DocumentService
             $row->position = $i + 1;
             $row->save();
         }
+        // Eine Schlussrechnung zieht die Anzahlungen ihres Ursprungsbelegs ab (der Storno setzt seine Abzüge selbst).
+        if ($document->type === DocumentType::Rechnung && $document->isDraft()) {
+            $document->deductions = $this->deductionsFor($document);
+        }
         $this->calculator->apply($document);
     }
 
@@ -262,6 +352,11 @@ class DocumentService
             if ($isInvoice && (float) $line->tax_rate == 0.0 && blank($line->tax_note)) {
                 $errors[] = "Position {$line->position}: Bei 0 % Steuer bitte den Grund angeben (z. B. steuerfrei, Ausland).";
             }
+        }
+
+        if ($document->type === DocumentType::Rechnung && (float) $document->payable_total < 0) {
+            $errors[] = 'Die abgezogenen Anzahlungen ('.number_format((float) $document->deduction_gross, 2, ',', '.').' €) übersteigen den Rechnungsbetrag ('
+                .number_format((float) $document->gross_total, 2, ',', '.').' €). Bitte die Positionen prüfen.';
         }
 
         if ($isInvoice) {

@@ -44,6 +44,15 @@ export interface TaxSummaryRow {
   tax: string;
 }
 
+export interface DocumentDeduction {
+  document_id: string;
+  number: string;
+  document_date: string | null;
+  net: string;
+  tax: string;
+  gross: string;
+}
+
 export interface BusDocument {
   id: string;
   type: DocumentTypeValue;
@@ -69,6 +78,13 @@ export interface BusDocument {
   tax_total: string;
   gross_total: string;
   tax_summary: TaxSummaryRow[] | null;
+  /** Schlussrechnung: abgezogene Anzahlungen (getrennt ausgewiesen, nicht in den Positionen) */
+  deductions: DocumentDeduction[] | null;
+  deduction_net: string;
+  deduction_tax: string;
+  deduction_gross: string;
+  /** Brutto minus Anzahlungen */
+  payable_total: string;
   finalized_at: string | null;
   lines?: DocumentLine[];
   customer?: { id: string; customer_number: string; display_name: string } | null;
@@ -124,7 +140,8 @@ export class DocumentService {
   cancel(id: string) {
     return this.http.post<BusDocument>(`${this.base}/${id}/cancel`, {});
   }
-  convert(id: string, type: DocumentTypeValue) {
-    return this.http.post<BusDocument>(`${this.base}/${id}/convert`, { type });
+  /** `percent` gilt nur für die Anzahlungsrechnung (Anteil am Auftrag, Vorbelegung 30). */
+  convert(id: string, type: DocumentTypeValue, percent?: number) {
+    return this.http.post<BusDocument>(`${this.base}/${id}/convert`, percent ? { type, percent } : { type });
   }
 }

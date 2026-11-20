@@ -107,9 +107,17 @@ class DocumentController extends Controller
     /** Folgebeleg als Entwurf (Angebot → Auftragsbestätigung → Rechnung). */
     public function convert(Request $request, Document $document): JsonResponse
     {
-        $data = $request->validate(['type' => ['required', Rule::enum(DocumentType::class)]]);
+        $data = $request->validate([
+            'type' => ['required', Rule::enum(DocumentType::class)],
+            // Nur für die Anzahlungsrechnung: Anteil am Auftrag in Prozent (Vorbelegung 30).
+            'percent' => ['nullable', 'numeric', 'gt:0', 'max:100'],
+        ]);
 
-        return response()->json($this->documents->convert($document, DocumentType::from($data['type'])), 201);
+        return response()->json($this->documents->convert(
+            $document,
+            DocumentType::from($data['type']),
+            isset($data['percent']) ? (float) $data['percent'] : null,
+        ), 201);
     }
 
     /** Auswahlliste für Formulare. */

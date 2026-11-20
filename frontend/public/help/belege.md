@@ -54,4 +54,24 @@ Aus einem **festgeschriebenen** Beleg erstellen Sie den nächsten Schritt der Be
 
 Die Software legt einen neuen **Entwurf** an und übernimmt Kunde, Texte und Positionen. Sie prüfen und ändern ihn und schreiben ihn dann fest. Der Verweis auf den Ursprungsbeleg bleibt sichtbar.
 
-Noch nicht möglich sind eine Schlussrechnung mit Abzug der Anzahlungen, Teilgutschriften und neue Versionen eines Angebots. PDF, E-Mail-Versand, DATEV-Export und die E-Rechnung folgen später.
+Bei der **Anzahlungsrechnung** schlägt die Software 30 % des Auftrags vor, je Steuersatz eine Position („Anzahlung 30 % auf Angebot …“). Den Betrag ändern Sie im Entwurf wie jede Position.
+
+## Schlussrechnung und Anzahlungen {#schlussrechnung}
+
+Die **Schlussrechnung** ist die Rechnung, die aus demselben Angebot (oder derselben Auftragsbestätigung) entsteht wie die Anzahlungsrechnungen. Sie zeigt die **volle Leistung** und zieht die erhaltenen Anzahlungen **getrennt** ab, nicht als negative Position:
+
+- Gesamtbetrag brutto (volle Leistung, mit Steuer je Satz)
+- abzüglich Anzahlung *Nummer, Datum* (mit Netto und Steuer der Anzahlung)
+- **Zu zahlen**: der Restbetrag
+
+Welche Anzahlungen abgezogen werden:
+
+- nur **festgeschriebene** Anzahlungsrechnungen aus demselben Ursprungsbeleg, **nicht** Entwürfe und nicht stornierte;
+- jede Anzahlung nur von **einer** gültigen Schlussrechnung. Wird die Schlussrechnung storniert, ist die Anzahlung wieder frei;
+- Anzahlungen, die erst nach dem Anlegen des Entwurfs festgeschrieben werden, zählen beim Festschreiben mit.
+
+Übersteigen die Anzahlungen den Rechnungsbetrag, lässt sich die Schlussrechnung nicht festschreiben: Prüfen Sie dann die Positionen. Storniert man eine Schlussrechnung, spiegelt der Storno-Beleg auch den Abzug.
+
+> Die Steuer auf eine Anzahlung entsteht steuerlich mit dem Zahlungseingang. Die Software kennt den Zahlungseingang noch nicht und behandelt jede festgeschriebene Anzahlungsrechnung als erhalten. Klären Sie mit Ihrem Steuerberater, wie Sie Anzahlungen verbuchen.
+
+Noch nicht möglich sind Teilgutschriften und neue Versionen eines Angebots. PDF, E-Mail-Versand, DATEV-Export und die E-Rechnung folgen später.
