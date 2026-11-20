@@ -74,6 +74,15 @@ Belegnummern müssen nach den Grundsätzen ordnungsmäßiger Buchführung (GoBD)
 
 > Ändern Sie Präfix, Jahr oder Stellen nur zu Beginn eines Geschäftsjahres und bevor Belege dieser Art existieren. Bereits vergebene Nummern ändern sich dadurch nicht.
 
+## Betriebshöfe {#betriebshoefe}
+
+Der Reiter **Betriebshöfe** enthält die Standorte Ihrer Firma, von denen aus Fahrten starten und enden. Eine Firma kann mehrere haben. Nur der Administrator kann sie ändern.
+
+- **Anlegen:** Name und Adresse eintragen (Straße, Postleitzahl, Ort) und **Anlegen** wählen. Die Software sucht die Adresse einmal und speichert den Ort mit seinen Koordinaten. Darunter steht „Gespeichert: …“. Wird kein Ort gefunden, erscheint eine Meldung und nichts wird gespeichert.
+- **Standard:** Genau ein Betriebshof ist der Standard. Er ist in der [Streckenplanung](/hilfe/strecken#betriebshof) vorgewählt. Der erste angelegte Betriebshof ist automatisch der Standard. Mit **Als Standard** wechseln Sie. Wird der Standard gelöscht, übernimmt der nächste.
+- **Ändern:** Ändern Sie nur den Namen, wird nichts neu gesucht. Ändern Sie die Adresse, wird der neue Ort gesucht.
+- **Dieselbe Adresse nie zweimal:** Eine Adresse, die schon einmal gesucht wurde, wird nicht erneut beim Adressdienst angefragt, auch nicht bei einem anderen Betriebshof.
+
 ## Preise {#preise}
 
 Der Reiter **Preise** legt fest, wie die Software beim [Angebot aus der Streckenplanung](/hilfe/strecken#angebot-aus-tour) die Positionen vorschlägt. Alle Preise sind netto, ein Preis von **0** schaltet den Bestandteil aus. Nur der Administrator kann sie ändern.

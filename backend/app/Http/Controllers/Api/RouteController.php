@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\RespondsToRoutingFailure;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RouteCalculateRequest;
 use App\Models\Vehicle;
@@ -23,6 +24,8 @@ use Illuminate\Http\Request;
  */
 class RouteController extends Controller
 {
+    use RespondsToRoutingFailure;
+
     /** Orte und Adressen suchen (für die Eingabe der Halte). */
     public function geocode(Request $request, GeocodingProvider $geocoder): JsonResponse
     {
@@ -63,8 +66,4 @@ class RouteController extends Controller
         return response()->json($result);
     }
 
-    private function failure(RoutingException $e): JsonResponse
-    {
-        return response()->json(['message' => $e->getMessage(), 'reason' => $e->kind], $e->isInputProblem() ? 422 : 424);
-    }
 }

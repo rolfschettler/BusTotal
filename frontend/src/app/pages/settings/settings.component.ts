@@ -4,6 +4,7 @@ import { AbstractControl, FormBuilder, FormControl, FormGroup, FormsModule, Reac
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { BrandService, textOn } from '../../core/brand.service';
+import { Depot, DepotService } from '../../core/depot.service';
 import { GERMAN_STATES } from '../../core/german-states';
 import { ConfirmService } from '../../core/confirm.service';
 import { httpErrorText } from '../../core/http-error';
@@ -12,7 +13,18 @@ import { HelpService } from '../../help/help.service';
 import { PricingService, PricingSettings, VehicleRateField } from '../../core/pricing.service';
 import { NumberRange, SettingsService, TaxRate } from '../../core/settings.service';
 
-type Tab = 'firma' | 'steuern' | 'nummern' | 'preise';
+type Tab = 'firma' | 'steuern' | 'nummern' | 'preise' | 'betriebshoefe';
+
+/** Eine Zeile der Betriebshof-Tabelle: die Eingaben, dazu der zuletzt gespeicherte Stand und der gefundene Ort. */
+interface DepotRow extends Depot {
+  /** gespeicherter Stand: ohne Änderung gibt es nichts zu speichern */
+  savedName: string;
+  savedAddress: string;
+  busy: boolean;
+  error: string | null;
+}
+
+const toRow = (d: Depot): DepotRow => ({ ...d, savedName: d.name, savedAddress: d.address, busy: false, error: null });
 
 const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const LOGO_MAX_BYTES = 1024 * 1024;
@@ -26,6 +38,7 @@ const LOGO_MAX_BYTES = 1024 * 1024;
 export class SettingsComponent implements OnInit {
   private api = inject(SettingsService);
   private pricingApi = inject(PricingService);
+  private depotApi = inject(DepotService);
   private fb = inject(FormBuilder);
   private auth = inject(AuthService);
   brand = inject(BrandService);
@@ -98,6 +111,11 @@ export class SettingsComponent implements OnInit {
   pricingSubmitted = signal(false);
   private pricingSaved: unknown = null;
 
+  depots = signal<DepotRow[]>([]);
+  newDepot = { name: '', address: '' };
+  newDepotError = signal<string | null>(null);
+  newDepotBusy = signal(false);
+
   taxRates = signal<TaxRate[]>([]);
   newTax = { name: '', rate: 0 };
   ranges = signal<NumberRange[]>([]);
@@ -122,6 +140,7 @@ export class SettingsComponent implements OnInit {
     });
     this.loadTaxRates();
     this.loadRanges();
+    this.loadDepots();
     this.pricingApi.get().subscribe({
       next: (p) => {
         this.applyPricing(p);
@@ -214,11 +233,17 @@ export class SettingsComponent implements OnInit {
   private loadRanges() {
     this.api.getNumberRanges().subscribe((r) => this.ranges.set(r));
   }
+  private loadDepots() {
+    this.depotApi.list().subscribe({
+      next: (list) => this.depots.set(list.map(toRow)),
+      error: (e) => this.notify(false, httpErrorText(e, 'Die Betriebshöfe konnten nicht geladen werden.')),
+    });
+  }
 
   show(tab: Tab) {
     this.tab.set(tab);
     // Das Hilfefenster folgt dem Reiter.
-    this.help.setAnchor({ firma: 'firmendaten', steuern: 'steuersaetze', nummern: 'nummernkreise', preise: 'preise' }[tab]);
+    this.help.setAnchor({ firma: 'firmendaten', steuern: 'steuersaetze', nummern: 'nummernkreise', preise: 'preise', betriebshoefe: 'betriebshoefe' }[tab]);
     this.message.set(null);
     this.fieldErrors.set({});
   }
@@ -332,6 +357,76 @@ export class SettingsComponent implements OnInit {
         this.ok('Steuersatz angelegt.');
       },
       error: (e) => this.fail(e),
+    });
+  }
+
+  // ---------- Betriebshöfe ----------
+
+  depotDirty(d: DepotRow): boolean {
+    return d.name !== d.savedName || d.address !== d.savedAddress;
+  }
+
+  /** Speichert Name und Adresse. Den Ort dazu sucht der Server, und nur wenn die Adresse neu ist. */
+  saveDepot(d: DepotRow) {
+    d.busy = true;
+    d.error = null;
+    this.depotApi.update(d.id, { name: d.name, address: d.address }).subscribe({
+      next: () => {
+        this.loadDepots();
+        this.ok(`Betriebshof „${d.name}“ gespeichert.`);
+      },
+      error: (e) => {
+        d.busy = false;
+        d.error = httpErrorText(e, 'Der Betriebshof konnte nicht gespeichert werden.');
+      },
+    });
+  }
+
+  makeDefaultDepot(d: DepotRow) {
+    d.busy = true;
+    this.depotApi.update(d.id, { name: d.savedName, address: d.savedAddress, is_default: true }).subscribe({
+      next: () => {
+        this.loadDepots();
+        this.ok(`„${d.savedName}“ ist jetzt der Standard.`);
+      },
+      error: (e) => {
+        d.busy = false;
+        d.error = httpErrorText(e, 'Der Standard konnte nicht geändert werden.');
+      },
+    });
+  }
+
+  async removeDepot(d: DepotRow) {
+    const ok = await this.confirm.ask({
+      title: 'Betriebshof löschen',
+      message: `„${d.savedName}“ wirklich löschen?`,
+      confirmLabel: 'Löschen',
+      danger: true,
+    });
+    if (!ok) return;
+    this.depotApi.remove(d.id).subscribe({
+      next: () => {
+        this.loadDepots();
+        this.ok('Betriebshof gelöscht.');
+      },
+      error: (e) => (d.error = httpErrorText(e, 'Der Betriebshof konnte nicht gelöscht werden.')),
+    });
+  }
+
+  addDepot() {
+    this.newDepotBusy.set(true);
+    this.newDepotError.set(null);
+    this.depotApi.create({ name: this.newDepot.name.trim(), address: this.newDepot.address.trim() }).subscribe({
+      next: (d) => {
+        this.newDepotBusy.set(false);
+        this.newDepot = { name: '', address: '' };
+        this.loadDepots();
+        this.ok(`Betriebshof „${d.name}“ angelegt.`);
+      },
+      error: (e) => {
+        this.newDepotBusy.set(false);
+        this.newDepotError.set(httpErrorText(e, 'Der Betriebshof konnte nicht angelegt werden.'));
+      },
     });
   }
 

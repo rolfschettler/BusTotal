@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\DriverAbsenceController;
 use App\Http\Controllers\Api\DriverController;
+use App\Http\Controllers\Api\DepotController;
 use App\Http\Controllers\Api\PricingController;
 use App\Http\Controllers\Api\RouteController;
 use App\Http\Controllers\Api\SettingsController;
@@ -127,6 +128,14 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
     Route::post('/quotes/from-tour', [PricingController::class, 'quoteFromTour'])->middleware('role:admin,disponent');
     Route::get('/settings/pricing', [PricingController::class, 'show'])->middleware('role:admin,disponent,buchhaltung');
     Route::put('/settings/pricing', [PricingController::class, 'update'])->middleware('role:admin');
+
+    // Betriebshöfe: lesen Admin, Disponent und Buchhaltung, ändern nur Admin.
+    Route::get('/depots', [DepotController::class, 'index'])->middleware('role:admin,disponent,buchhaltung');
+    Route::middleware('role:admin')->group(function () {
+        Route::post('/depots', [DepotController::class, 'store']);
+        Route::put('/depots/{depot}', [DepotController::class, 'update']);
+        Route::delete('/depots/{depot}', [DepotController::class, 'destroy']);
+    });
 
     Route::middleware('role:admin,disponent')->group(function () {
         Route::get('/geocode', [RouteController::class, 'geocode'])->middleware('throttle:30,1');

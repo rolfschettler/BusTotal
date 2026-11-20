@@ -19,9 +19,9 @@ Betriebshof, Aufenthalte und lange Tage stehen unter **Weitere Angaben (freiwill
 
 ## Betriebshof und Leerfahrten {#betriebshof}
 
-Unter **Weitere Angaben** tragen Sie den **Betriebshof** ein (Ortsfeld wie bei Von und Nach). Dann rechnet die Seite die Fahrt vom Betriebshof zum Start und (mit Häkchen **Rückfahrt zum Betriebshof**) vom letzten Ort zurück mit. Diese Strecken sind **Leerfahrten**, also ohne Fahrgäste. Sie werden getrennt ausgewiesen („davon Leerfahrt“), weil sie in der Kalkulation anders behandelt werden. Auf der Karte trägt der Betriebshof ein „H“.
+Unter **Weitere Angaben** wählen Sie den **Betriebshof**. Dann rechnet die Seite die Fahrt vom Betriebshof zum Start und (mit Häkchen **Rückfahrt zum Betriebshof**) vom letzten Ort zurück mit. Diese Strecken sind **Leerfahrten**, also ohne Fahrgäste. Sie werden getrennt ausgewiesen („davon Leerfahrt“), weil sie in der Kalkulation anders behandelt werden. Auf der Karte trägt der Betriebshof ein „H“.
 
-Der Betriebshof wird **nur in diesem Browser** gemerkt. Eine feste Adresse für die ganze Firma gibt es noch nicht.
+Die Betriebshöfe Ihrer Firma pflegt der Administrator unter [Einstellungen › Betriebshöfe](/hilfe/einstellungen#betriebshoefe). Das Feld bietet sie zur Auswahl an, der **Standard** ist schon vorgewählt. Ihre Koordinaten sind gespeichert, beim Berechnen wird dafür nichts gesucht. Für eine einzelne Tour gibt es **Anderer Ort …**: Der Text wird beim Berechnen gesucht und nicht gespeichert.
 
 ## Aufenthalt und „Fahrer frei“ {#aufenthalt}
 

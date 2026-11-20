@@ -7,6 +7,6 @@
   { "id": "fuhrpark", "title": "Fuhrpark", "summary": "Fahrzeuge verwalten: Stammdaten, Ausstattung, Maße und Prüffristen (HU, SP, Tacho, Wartung)." },
   { "id": "fahrer", "title": "Fahrer und Personal", "summary": "Fahrer verwalten: Führerschein, Fahrerkarte, Prüffristen und Abwesenheiten." },
   { "id": "strecken", "title": "Streckenplanung", "summary": "Touren berechnen: Strecke, Fahrzeit, Leerfahrten sowie Pausen und Ruhezeiten." },
-  { "id": "einstellungen", "title": "Einstellungen", "summary": "Firmendaten, Erscheinungsbild, Steuersätze und Nummernkreise." },
+  { "id": "einstellungen", "title": "Einstellungen", "summary": "Firmendaten, Erscheinungsbild, Steuersätze, Nummernkreise, Betriebshöfe und Preise." },
   { "id": "datenschutz", "title": "Datenschutz und Aufbewahrung", "summary": "Auskunft, Löschung und Änderungsprotokoll." }
 ]

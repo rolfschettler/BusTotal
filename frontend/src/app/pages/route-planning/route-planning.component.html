@@ -89,9 +89,28 @@
         <summary class="section-title">Weitere Angaben (freiwillig)</summary>
 
         <div class="mt-2 mb-3">
-          <app-place-field label="Betriebshof" inputId="placeDepot" hint="Für Leerfahrten (Betriebshof → Von und Nach → Betriebshof). Wird in diesem Browser gemerkt."
-                           [text]="depotText()" [note]="depot()?.label ?? ''" (textChange)="setDepotText($event)" (enter)="calculate()" />
-          @if (depotText().trim()) {
+          <label class="form-label" for="depotChoice">Betriebshof</label>
+          <select id="depotChoice" class="form-select" [ngModel]="depotChoice()" (ngModelChange)="chooseDepot($event)">
+            <option value="">Kein Betriebshof</option>
+            @for (d of depots(); track d.id) {
+              <option [value]="d.id">{{ d.name }}{{ d.is_default ? ' (Standard)' : '' }}</option>
+            }
+            <option value="other">Anderer Ort …</option>
+          </select>
+          @if (depotsError(); as de) {
+            <div class="form-text text-danger">{{ de }}</div>
+          } @else if (depots().length === 0 && depotChoice() !== 'other') {
+            <div class="form-text">Noch kein Betriebshof angelegt (Einstellungen › Betriebshöfe). Für Leerfahrten: Betriebshof → Von und Nach → Betriebshof.</div>
+          } @else {
+            <div class="form-text">Für Leerfahrten (Betriebshof → Von und Nach → Betriebshof).</div>
+          }
+          @if (depotChoice() === 'other') {
+            <div class="mt-2">
+              <app-place-field label="Anderer Ort" inputId="placeDepot" hint="Ort oder Adresse; wird beim Berechnen gesucht und nicht gespeichert."
+                               [text]="depotText()" [note]="depot()?.label ?? ''" (textChange)="setDepotText($event)" (enter)="calculate()" />
+            </div>
+          }
+          @if (depotChoice() !== '') {
             <div class="form-check mt-2">
               <input id="returnToDepot" type="checkbox" class="form-check-input" [ngModel]="returnToDepot()" (ngModelChange)="returnToDepot.set($event); changed()" />
               <label class="form-check-label" for="returnToDepot">Rückfahrt zum Betriebshof</label>

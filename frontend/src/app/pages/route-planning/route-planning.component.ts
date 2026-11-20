@@ -8,6 +8,7 @@ import { PricingService } from '../../core/pricing.service';
 import { RouteResult, RouteService } from '../../core/route.service';
 import { httpErrorText } from '../../core/http-error';
 import { GERMAN_STATES } from '../../core/german-states';
+import { Depot, DepotService } from '../../core/depot.service';
 import { VehicleChoice, VehicleService } from '../../core/vehicle.service';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { MapComponent, MapMarker } from '../../shared/map.component';
@@ -26,13 +27,11 @@ import {
   toRequest,
 } from './route-planning-view';
 
-const DEPOT_KEY = 'bustotal.planung.depot';
-
 /**
  * Streckenplanung: Von – Über – Nach eingeben, Strecke und Fahrzeit mit Pausen und Ruhezeiten berechnen.
  * Der Alltag braucht nur Von, Nach und (freiwillig) Über-Orte; Betriebshof, Aufenthalte und lange Tage stehen unter
- * "Weitere Angaben". Es wird nichts gespeichert (Speichern als Kalkulationsbasis kommt später). Den Betriebshof merkt
- * sich nur dieser Browser. Die Seite ist ein Werkzeug, kein Bearbeitungsformular: Sie nutzt die Formular-Optik
+ * "Weitere Angaben". Es wird nichts gespeichert (Speichern als Kalkulationsbasis kommt später). Die Betriebshöfe pflegt der
+ * Administrator unter Einstellungen; ihre Koordinaten stehen dort schon fest. Die Seite ist ein Werkzeug, kein Bearbeitungsformular: Sie nutzt die Formular-Optik
  * (.form-area, .section-title), hat aber keine Tastenleiste.
  */
 @Component({
@@ -43,6 +42,7 @@ const DEPOT_KEY = 'bustotal.planung.depot';
 export class RoutePlanningComponent implements OnInit {
   private api = inject(RouteService);
   private vehicleApi = inject(VehicleService);
+  private depotApi = inject(DepotService);
   private pricing = inject(PricingService);
   private router = inject(Router);
   private nextKey = 1;
@@ -55,7 +55,12 @@ export class RoutePlanningComponent implements OnInit {
   /** Reihenfolge der Zwischenhalte nach kürzester Fahrzeit ordnen (nur auf Wunsch) */
   optimize = signal(false);
 
-  /** Text im Feld Betriebshof */
+  /** Betriebshöfe der Firma (Einstellungen), jeder mit gespeichertem Ort */
+  depots = signal<Depot[]>([]);
+  depotsError = signal<string | null>(null);
+  /** Auswahl: leer = kein Betriebshof, "other" = anderer Ort (Text), sonst die Kennung eines Betriebshofs */
+  depotChoice = signal('');
+  /** Text im Feld "Anderer Ort" */
   depotText = signal('');
   /** Der dazu gefundene Ort (null: noch nicht gesucht oder Text geändert) */
   depot = signal<Place | null>(null);
@@ -140,7 +145,7 @@ export class RoutePlanningComponent implements OnInit {
   /** Felder mit Text, zu dem noch kein Ort gesucht wurde: Sie werden beim Berechnen aufgelöst. */
   pending = computed(() => [this.start(), this.via(), this.end()].flat().filter((w) => !w.place && !this.resolved()[w.key] && this.textOf(w).trim().length >= 2));
   /** Betriebshof mit Text, aber noch ohne gefundenen Ort */
-  depotPending = computed(() => !this.depot() && this.depotText().trim().length >= 2);
+  depotPending = computed(() => this.depotChoice() === 'other' && !this.depot() && this.depotText().trim().length >= 2);
 
   canCalc = computed(() => canCalculate(this.stops().length + this.pending().length, !!this.depot() || this.depotPending(), this.returnToDepot()) && !this.calculating());
   selectedVehicle = computed(() => this.vehicles().find((v) => v.id === this.vehicleId()) ?? null);
@@ -160,9 +165,15 @@ export class RoutePlanningComponent implements OnInit {
   line = computed(() => this.result()?.geometry ?? []);
 
   ngOnInit() {
-    const saved = this.loadDepot();
-    this.depotText.set(saved.text);
-    this.depot.set(saved.place);
+    // Der Standard-Betriebshof ist vorgewählt. Sein Ort steht schon fest, beim Berechnen wird nichts gesucht.
+    this.depotApi.list().subscribe({
+      next: (list) => {
+        this.depots.set(list.filter((d) => d.place));
+        const standard = this.depots().find((d) => d.is_default);
+        if (standard && this.depotChoice() === '') this.chooseDepot(standard.id);
+      },
+      error: (err) => this.depotsError.set(httpErrorText(err, 'Die Betriebshöfe konnten nicht geladen werden.')),
+    });
     this.vehicleApi.choices().subscribe({
       next: (v) => this.vehicles.set(v),
       error: (err) => this.vehiclesError.set(httpErrorText(err, 'Die Fahrzeugliste konnte nicht geladen werden.')),
@@ -208,12 +219,19 @@ export class RoutePlanningComponent implements OnInit {
     this.changed();
   }
 
-  // ---- Betriebshof (nur dieser Browser) ----
+  // ---- Betriebshof ----
+  chooseDepot(choice: string) {
+    this.depotChoice.set(choice);
+    const d = this.depots().find((x) => x.id === choice);
+    // Ein Betriebshof der Firma hat seinen Ort gespeichert: Es wird nichts gesucht. Bei "anderer Ort" wird der Text beim Berechnen gesucht.
+    this.depot.set(d?.place ? { label: d.name, lat: d.place.lat, lon: d.place.lon } : null);
+    this.changed();
+  }
+
   setDepotText(text: string) {
     this.depotText.set(text);
     // Anderer Text: der zuvor gefundene Ort gilt nicht mehr, er wird beim Berechnen neu ermittelt.
     this.depot.set(null);
-    this.saveDepot(text, null);
     this.changed();
   }
 
@@ -271,7 +289,6 @@ export class RoutePlanningComponent implements OnInit {
         if (this.depotPending()) {
           const d = places[texts.length - 1]!;
           this.depot.set(d);
-          this.saveDepot(this.depotText(), d);
         }
         this.run();
       },
@@ -342,30 +359,5 @@ export class RoutePlanningComponent implements OnInit {
 
   private blank(): Waypoint {
     return { key: this.nextKey++, place: null, dwell_minutes: 0, driver_free: false };
-  }
-
-  /** Gemerkter Betriebshof: der eingegebene Text und (falls schon gesucht) der gefundene Ort. */
-  private loadDepot(): { text: string; place: Place | null } {
-    try {
-      const raw = localStorage.getItem(DEPOT_KEY);
-      if (!raw) return { text: '', place: null };
-      const d = JSON.parse(raw);
-      const ok = d && typeof d.label === 'string' && Number.isFinite(d.lat) && Number.isFinite(d.lon) && Math.abs(d.lat) <= 90 && Math.abs(d.lon) <= 180;
-      const place = ok ? { label: d.label, lat: d.lat, lon: d.lon } : null;
-      // Ältere Einträge haben keinen Text: dann steht der Name des Ortes im Feld.
-      const text = typeof d?.text === 'string' ? d.text : (place?.label ?? '');
-      return { text, place };
-    } catch {
-      return { text: '', place: null };
-    }
-  }
-
-  private saveDepot(text: string, place: Place | null) {
-    try {
-      if (text.trim()) localStorage.setItem(DEPOT_KEY, JSON.stringify({ text, ...(place ?? {}) }));
-      else localStorage.removeItem(DEPOT_KEY);
-    } catch {
-      // Speicher gesperrt: Der Betriebshof gilt dann nur für diese Sitzung.
-    }
   }
 }

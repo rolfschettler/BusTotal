@@ -9,6 +9,7 @@
   <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'steuern'" (click)="show('steuern')">Steuersätze</button></li>
   <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'nummern'" (click)="show('nummern')">Nummernkreise</button></li>
   <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'preise'" (click)="show('preise')">Preise</button></li>
+  <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'betriebshoefe'" (click)="show('betriebshoefe')">Betriebshöfe</button></li>
 </ul>
 
 @if (message(); as m) {
@@ -263,6 +264,61 @@
     </div>
     @if (fieldErrors()['next_number']) { <p class="text-danger small mt-2">{{ fieldErrors()['next_number'] }}</p> }
     <p class="text-body-secondary small mt-3">Lückenlose Nummern (GoBD): Die nächste Nummer kann nur erhöht werden, nie verkleinert. <app-help-link topic="einstellungen" anchor="nummern-regeln" label="Regeln für lückenlose Nummern" /></p>
+  }
+
+  @case ('betriebshoefe') {
+    <div class="card">
+      <table class="table align-middle mb-0">
+        <thead class="table-light">
+          <tr><th style="width: 220px">Name</th><th>Adresse</th><th style="width: 110px">Standard</th><th style="width: 200px"></th></tr>
+        </thead>
+        <tbody>
+          @for (d of depots(); track d.id) {
+            <tr>
+              <td><input class="form-control form-control-sm" [(ngModel)]="d.name" [disabled]="!canEdit() || d.busy" [attr.aria-label]="'Name ' + d.savedName" /></td>
+              <td>
+                <input class="form-control form-control-sm" [(ngModel)]="d.address" [disabled]="!canEdit() || d.busy" [attr.aria-label]="'Adresse ' + d.savedName" />
+                @if (d.error) {
+                  <div class="text-danger small mt-1">{{ d.error }}</div>
+                } @else if (d.place) {
+                  <div class="form-text"><i class="bi bi-geo-alt me-1" aria-hidden="true"></i>Gespeichert: {{ d.place.label }}</div>
+                }
+              </td>
+              <td>
+                @if (d.is_default) {
+                  <span class="badge text-bg-primary">Standard</span>
+                } @else if (canEdit()) {
+                  <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="d.busy || depotDirty(d)" (click)="makeDefaultDepot(d)">Als Standard</button>
+                }
+              </td>
+              <td class="text-end">
+                @if (canEdit()) {
+                  <button type="button" class="btn btn-sm btn-outline-primary me-1" [disabled]="d.busy || !depotDirty(d) || !d.name.trim() || !d.address.trim()" (click)="saveDepot(d)">Speichern</button>
+                  <button type="button" class="btn btn-sm btn-outline-danger" [disabled]="d.busy" (click)="removeDepot(d)">Löschen</button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="4" class="text-body-secondary">Noch kein Betriebshof angelegt.</td></tr>
+          }
+          @if (canEdit()) {
+            <tr class="table-light">
+              <td><input class="form-control form-control-sm" [(ngModel)]="newDepot.name" placeholder="Neuer Betriebshof" aria-label="Name des neuen Betriebshofs" /></td>
+              <td>
+                <input class="form-control form-control-sm" [(ngModel)]="newDepot.address" placeholder="Straße, Postleitzahl, Ort" aria-label="Adresse des neuen Betriebshofs" />
+                @if (newDepotError(); as ne) { <div class="text-danger small mt-1">{{ ne }}</div> }
+              </td>
+              <td></td>
+              <td class="text-end"><button type="button" class="btn btn-sm btn-primary" (click)="addDepot()" [disabled]="newDepotBusy() || !newDepot.name.trim() || !newDepot.address.trim()">Anlegen</button></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="text-body-secondary small mt-3">
+      Die Streckenplanung bietet diese Betriebshöfe für Leerfahrten an, der Standard ist vorgewählt. Beim Speichern wird die Adresse einmal gesucht und der Ort mit
+      seinen Koordinaten gespeichert; eine schon bekannte Adresse wird nicht erneut gesucht. <app-help-link topic="einstellungen" anchor="betriebshoefe" label="Betriebshöfe" />
+    </p>
   }
 
   @case ('preise') {

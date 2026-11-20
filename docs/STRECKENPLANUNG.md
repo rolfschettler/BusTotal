@@ -1,7 +1,7 @@
 # Streckenplanung (Phase 5)
 
 Stand: Backend und Oberfläche (Seite „Streckenplanung“ mit Ortssuche, Halteliste, Karte, Zeitplan) gebaut; mit dem echten Dienst noch nicht ausprobiert.
-**Noch nicht gebaut:** Speichern der Tour als Kalkulationsbasis, Betriebshof als Firmeneinstellung (siehe „Nächste Schritte“).
+**Noch nicht gebaut:** Speichern der Tour als Kalkulationsbasis (siehe „Nächste Schritte“). Betriebshöfe sind gebaut, siehe „Gespeicherte Orte“.
 
 ## Überblick
 
@@ -94,10 +94,25 @@ Planung nach VO (EG) Nr. 561/2006, bewusst die einfache, sichere Auslegung:
 - Mautkosten kommen nicht aus dem Dienst; sie gehören zur Kalkulation (Phase 6).
 - Ausland: Lenkzeitregeln gelten EU-weit, Maut, Sonntagsfahrverbote und Umweltzonen nicht berücksichtigt.
 
+## Gespeicherte Orte (`places`) {#gespeicherte-orte}
+
+**Grundsatz:** Koordinaten stehen **nie** in den Fachtabellen und werden **nie** von dort direkt beim Adressdienst angefragt. Jeder Datensatz mit Adresse, der
+in einer Geo-Funktion vorkommen kann (Betriebshof, später Kundenadresse, Haltestelle, Reiseziel), verweist mit `place_id` auf die zentrale Tabelle `places`.
+
+- **Tabelle `places`:** Suchtext (`query`), Schlüssel `lookup_key` (sha1 des Textes in Kleinschreibung ohne doppelte Leerzeichen, eindeutig), Ortsname (`label`), `lat`, `lon`,
+  PLZ, Ort, Land, `source` (welcher Dienst, aus der Klasse des `GeocodingProvider`) und `geocoded_at`. Orte werden nur angelegt, nie geändert: Neue Adresse, neuer Ort.
+- **Dienst `App\Services\PlaceResolver`:** DIE Stelle, die den Adressdienst für gespeicherte Datensätze anruft. `resolve($text)` liefert den Ort aus der Datenbank und fragt nur bei
+  einer unbekannten Adresse (auch von einem anderen Datensatz bekannt zählt). `assign($datensatz)` setzt `place_id` und fragt nur, wenn die Adresse neu oder geändert ist.
+- **Baustein `HasPlace`** am Modell: Beziehung `place()`, `needsPlace()`; das Modell nennt `placeFields()` (Felder der Adresse) und `placeQuery()` (Suchtext). `place_id` gehört nie in `$fillable`.
+- **Neue Tabelle anbinden:** Spalte `place_id` (uuid, leer erlaubt, Verweis auf `places`), `use HasPlace`, beim Speichern `PlaceResolver::assign()` aufrufen, `place` mitladen.
+  Beispiel: `Depot` und `DepotController`. Fehler des Dienstes über `RespondsToRoutingFailure` (422 am Ort, 424 am Dienst).
+- **Nicht gespeichert:** Die Halte der Streckenplanung (Von, Über, Nach, „Anderer Ort“) laufen weiter über `/geocode` mit den Zwischenspeichern; sie sind flüchtige Eingaben.
+- **Offen:** Bestehende Adressen (Kunden, Fahrer) sind noch nicht angebunden. Ein Befehl zum Nachtragen für alle Datensätze ohne `place_id` fehlt noch.
+
 ## Nächste Schritte
 
 1. ~~Oberfläche~~ gebaut (siehe „Oberfläche“); offen: Kachelanbieter wählen, im Browser prüfen.
-2. Betriebshof als Einstellung der Firma (Adresse mit Koordinaten).
+2. ~~Betriebshöfe~~ gebaut (mehrere je Firma, Standard, gespeicherter Ort; siehe „Gespeicherte Orte“).
 3. Tour speichern (UUID, Halte, Ergebnis eingefroren) als Kalkulationsbasis; Verknüpfung mit Angebot (Phase 6).
 
 ## Tests
@@ -114,7 +129,7 @@ Seite `/streckenplanung` (Menü „Planung“, nur Admin und Disponent), Hilfeth
 - `shared/map.component.ts`: Kartenbaustein mit Leaflet (nummerierte Markierungen als HTML-Symbole, Linienzug, Texte nur als Text).
 - `core/route.service.ts`: `geocode()` und `calculate()`; `VehicleService.choices()` (neu: `GET /api/vehicles/choices`, alle aktiven Fahrzeuge ohne Seiten).
 - Eingabe **Von – Über – Nach** (2026-11-22 vereinfacht auf Wunsch des Nutzers): je Ort ein Suchfeld (`place-search.component.ts`), Treffer direkt anklicken; Suche 0,5 s nach dem Tippen (ab 3 Zeichen) oder mit Enter, Treffer mit `<app-highlight>` markiert, gleiche Suchen kommen aus dem Zwischenspeicher. Ein gewählter Ort bleibt ein normales Eingabefeld: Klick markiert den Text, Tippen ersetzt ihn und startet die Suche neu (kein gesperrtes Feld). Betriebshof, Aufenthalte und lange Tage stehen eingeklappt unter „Weitere Angaben“. Marker: A = Von, Zahlen = Über, Z = Nach, H = Betriebshof. Die Halteliste baut `buildStops()` (mit Tests).
-- Der Betriebshof wird nur im Browser gemerkt (`localStorage`). Ändert sich die Eingabe nach einer Berechnung, gilt das Ergebnis als „veraltet“.
+- Der Betriebshof kommt aus den Einstellungen (Auswahl, Standard vorgewählt) oder als „Anderer Ort“ aus einem Textfeld. Ändert sich die Eingabe nach einer Berechnung, gilt das Ergebnis als „veraltet“.
 - **Kartenkacheln:** `core/map-config.ts` nutzt vorerst `tile.openstreetmap.org` (nur zum Entwickeln und Ausprobieren). **Vor dem Produktivbetrieb
   Anbieter wählen** und URL und Quellenangabe dort eintragen.
 - Im Browser mit erfundenen Antworten geprüft; nach dem Einbau von Leaflet `ng serve` neu starten (`angular.json` bindet das CSS ein).

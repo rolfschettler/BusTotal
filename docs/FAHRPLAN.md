@@ -75,7 +75,8 @@ Getroffene Entscheidungen:
 - [x] Route mit Zwischenstopps, Leerfahrten Depot↔Start/Ziel, Fahrzeit inkl. Pflichtpausen und Lenkzeitprüfung (Berechnung, `POST /api/routes/calculate`)
 - [x] Oberfläche: Ortssuche, Halteliste, Karte (Leaflet), Zeitplan mit Warnungen (Seite „Streckenplanung“; im Browser mit erfundenen Antworten des Routing-Dienstes geprüft, **mit dem echten Dienst noch nicht**)
 - [x] Mit dem echten Dienst ausprobiert (2026-11-22, siehe Eintrag unten)
-- [ ] Betriebshof als Firmeneinstellung (bisher nur im Browser gemerkt), Kachelanbieter für die Karte wählen
+- [x] **Betriebshöfe und gespeicherte Orte (2026-11-27):** Mehrere Betriebshöfe je Firma (Reiter „Betriebshöfe“, Standard), Koordinaten einmal gesucht und in der zentralen Tabelle `places` gespeichert (`PlaceResolver`, Baustein `HasPlace`, eine Adresse nie zweimal gesucht), Auswahl in der Streckenplanung statt Browser-Speicher, Tests, Hilfetexte. Architektur für Adressen, Haltestellen und Reiseziele: `docs/STRECKENPLANUNG.md` (Gespeicherte Orte). Im Browser noch nicht geprüft. Offen: Kunden- und Fahrer-Adressen anbinden, Nachtrag-Befehl.
+- [ ] Kachelanbieter für die Karte wählen
 - [ ] Ergebnis als Kalkulationsbasis speichern
 
 ## [ ] Phase 6 – Belegwesen
