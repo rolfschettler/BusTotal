@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { httpErrorText } from '../../core/http-error';
+import { HelpLinkComponent } from '../../help/help-link.component';
 import { Option, Vehicle, VehicleInput, VehicleOptions, VehicleService } from '../../core/vehicle.service';
 import { daysUntil, deadlineState, deadlineText, germanDate } from '../../shared/deadline';
 
@@ -14,7 +15,7 @@ import { daysUntil, deadlineState, deadlineText, germanDate } from '../../shared
  */
 @Component({
   selector: 'app-vehicle-form',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, HelpLinkComponent],
   templateUrl: './vehicle-form.component.html',
   host: { class: 'form-page' },
 })
@@ -45,11 +46,11 @@ export class VehicleFormComponent implements OnInit {
 
   /** Die vier Fristfelder, in der Reihenfolge der Oberfläche. Kurze Labels (einzeilig), die ganze Bezeichnung steht im Hinweis. */
   readonly deadlineFields = [
-    { field: 'hu_due_date', label: 'HU fällig', hint: 'Hauptuntersuchung' },
-    { field: 'sp_due_date', label: 'SP fällig', hint: 'Sicherheitsprüfung' },
-    { field: 'tachograph_due_date', label: 'Tacho fällig', hint: 'Fahrtenschreiber' },
-    { field: 'tachograph_read_due_date', label: 'Auslesen bis', hint: 'Fahrzeugeinheit, alle 90 Tage', warn: 14 },
-    { field: 'service_due_date', label: 'Wartung fällig', hint: 'nächste Inspektion' },
+    { field: 'hu_due_date', label: 'HU fällig', hint: 'Hauptuntersuchung', help: 'fristen' },
+    { field: 'sp_due_date', label: 'SP fällig', hint: 'Sicherheitsprüfung', help: 'fristen' },
+    { field: 'tachograph_due_date', label: 'Tacho fällig', hint: 'Fahrtenschreiber', help: 'fristen' },
+    { field: 'tachograph_read_due_date', label: 'Auslesen bis', hint: 'Fahrzeugeinheit, alle 90 Tage', warn: 14, help: 'tacho-auslesen' },
+    { field: 'service_due_date', label: 'Wartung fällig', hint: 'nächste Inspektion', help: 'fristen' },
   ] as const;
 
   form = this.fb.nonNullable.group({

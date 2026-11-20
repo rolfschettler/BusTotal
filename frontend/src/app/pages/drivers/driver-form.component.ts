@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { httpErrorText } from '../../core/http-error';
+import { HelpLinkComponent } from '../../help/help-link.component';
 import { Absence, Driver, DriverInput, DriverOptions, DriverService } from '../../core/driver.service';
 import { HelpService } from '../../help/help.service';
 import { daysUntil, deadlineState, deadlineText, germanDate } from '../../shared/deadline';
@@ -19,7 +20,7 @@ const emptyAbsence = (): Absence => ({ type: 'urlaub', start_date: '', end_date:
  */
 @Component({
   selector: 'app-driver-form',
-  imports: [ReactiveFormsModule, FormsModule, RouterLink],
+  imports: [ReactiveFormsModule, FormsModule, RouterLink, HelpLinkComponent],
   templateUrl: './driver-form.component.html',
   host: { class: 'form-page' },
 })
@@ -53,12 +54,12 @@ export class DriverFormComponent implements OnInit {
 
   /** Die fünf Fristfelder. Kurze Labels (einzeilig), die ganze Bezeichnung steht im Hinweis. */
   readonly deadlineFields = [
-    { field: 'license_due_date', label: 'Führerschein bis', hint: 'Ablauf der Fahrerlaubnis' },
-    { field: 'pbs_due_date', label: 'P-Schein bis', hint: 'Führerschein zur Fahrgastbeförderung' },
-    { field: 'driver_card_due_date', label: 'Fahrerkarte bis', hint: 'Karte für den digitalen Tacho' },
-    { field: 'driver_card_read_due_date', label: 'Auslesen bis', hint: 'Fahrerkarte, alle 28 Tage', warn: 7 },
-    { field: 'code95_due_date', label: 'Code 95 bis', hint: 'Berufskraftfahrer-Weiterbildung' },
-    { field: 'medical_due_date', label: 'Untersuchung fällig', hint: 'ärztliche Untersuchung' },
+    { field: 'license_due_date', label: 'Führerschein bis', hint: 'Ablauf der Fahrerlaubnis', help: 'fristen' },
+    { field: 'pbs_due_date', label: 'P-Schein bis', hint: 'Führerschein zur Fahrgastbeförderung', help: 'fristen' },
+    { field: 'driver_card_due_date', label: 'Fahrerkarte bis', hint: 'Karte für den digitalen Tacho', help: 'fristen' },
+    { field: 'driver_card_read_due_date', label: 'Auslesen bis', hint: 'Fahrerkarte, alle 28 Tage', warn: 7, help: 'karte-auslesen' },
+    { field: 'code95_due_date', label: 'Code 95 bis', hint: 'Berufskraftfahrer-Weiterbildung', help: 'fristen' },
+    { field: 'medical_due_date', label: 'Untersuchung fällig', hint: 'ärztliche Untersuchung', help: 'fristen' },
   ] as const;
 
   form = this.fb.nonNullable.group({

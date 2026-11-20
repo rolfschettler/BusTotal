@@ -37,11 +37,11 @@ Für jedes Fahrzeug tragen Sie ein, **bis wann** die nächste Prüfung fällig i
 
 | Feld | Bedeutung |
 |---|---|
-| HU | Hauptuntersuchung |
-| SP | Sicherheitsprüfung |
-| Tacho | Prüfung des Fahrtenschreibers |
-| Auslesen | Fahrzeugeinheit des Fahrtenschreibers auslesen, [alle 90 Tage](#tacho-auslesen) |
-| Wartung | nächste Inspektion |
+| HU | Hauptuntersuchung nach § 29 StVZO. Die Abstände je Fahrzeugart regelt Anlage VIII (für Kraftomnibusse dort nachlesen). Das Datum steht im Prüfbericht bzw. auf der Plakette. |
+| SP | Sicherheitsprüfung, ebenfalls nach Anlage VIII StVZO. |
+| Tacho | Prüfung des Fahrtenschreibers nach § 57b StVZO: mindestens einmal innerhalb von **zwei Jahren**. Die Frist endet erst mit Ablauf des Monats, in dem die letzte Prüfung zwei Jahre zurückliegt. Eine Nachprüfung ist außerdem nach jeder Reparatur der Anlage und bei Änderung des Kennzeichens nötig. |
+| Auslesen | Fahrzeugeinheit des Fahrtenschreibers auslesen, [alle 90 Tage](#tacho-auslesen). |
+| Wartung | nächste Inspektion. Dafür gibt es **keine gesetzliche Frist**, es gelten die Vorgaben des Herstellers und Ihrer Werkstatt. |
 
 Unter jedem Datum zeigt die Software, wie viel Zeit bleibt („in 12 Tagen“). Eine Frist gilt als
 
@@ -51,7 +51,12 @@ Unter jedem Datum zeigt die Software, wie viel Zeit bleibt („in 12 Tagen“). 
 
 Auf der [Startseite](/hilfe/start#startseite) zeigt die Kachel „Fällige Fristen im Fuhrpark“ für Administrator und Disponent alle abgelaufenen und bald fälligen Fristen, die dringendsten zuerst. Ohne fällige Fristen erscheint die Kachel nicht. Nach einer bestandenen Prüfung tragen Sie einfach das neue Datum ein.
 
-> Die Software **erinnert** an Fristen, ersetzt aber nicht Ihre eigene Überwachung. Prüfen Sie die Angaben fachlich mit Ihrer Werkstatt.
+> Die Software **erinnert** an Fristen, ersetzt aber nicht Ihre eigene Überwachung. Prüfen Sie die Angaben fachlich mit Ihrer Werkstatt. Die Software **berechnet keine Fristen**: Sie tragen das Datum aus dem Prüfbericht ein.
+
+**Quellen** (gelesen am 28.11.2026, keine Rechtsberatung, Gesetze ändern sich):
+
+- [§ 29 StVZO, Untersuchung der Fahrzeuge](https://www.gesetze-im-internet.de/stvzo_2012/__29.html), [Anlage VIII (Hauptuntersuchung, Sicherheitsprüfung)](https://www.gesetze-im-internet.de/stvzo_2012/anlage_viii.html) und [Anlage VIIIa](https://www.gesetze-im-internet.de/stvzo_2012/anlage_viiia.html) auf gesetze-im-internet.de
+- [§ 57b StVZO, Prüfung der Fahrtenschreiber](https://www.gesetze-im-internet.de/stvzo_2012/__57b.html) auf gesetze-im-internet.de
 
 ## Fahrzeugeinheit auslesen {#tacho-auslesen}
 
@@ -62,6 +67,12 @@ Der Massenspeicher der Fahrzeugeinheit des digitalen Fahrtenschreibers muss nach
 - Die Frist erscheint auf der Startseite, sobald nur noch **14 Tage** bleiben.
 
 > Welche Fahrzeuge einen Fahrtenschreiber brauchen und wie lange Daten aufzubewahren sind, klären Sie mit Ihrem Verband oder der Gewerbeaufsicht.
+
+**Quellen** (gelesen am 28.11.2026, Merkblätter und Ratgeber, keine Gesetzestexte; die genaue Fassung der Verordnung prüfen):
+
+- [IHK Stuttgart: Auslesen von Fahrerkarten und Fahrzeugeinheit](https://www.ihk.de/stuttgart/branchen/verkehrswirtschaft/sozialvorschriften-beschaeftigung/sozialvorschriften/auslesen-von-fahrerkarten-682606): Fahrzeugeinheit spätestens alle 90 Tage, Aufbewahrung im Betrieb ein Jahr
+- [Bußgeldkatalog.org: Fahrerkarte auslesen](https://www.bussgeldkatalog.org/lkw-fahrerkarte-auslesen/): Fristen 28 Tage (Karte) und 90 Tage (Fahrzeugeinheit)
+- [EUR-Lex: Lenk- und Ruhezeiten im Straßenverkehr (Zusammenfassung der Verordnung 561/2006)](https://eur-lex.europa.eu/DE/legal-content/summary/driving-time-and-rest-periods-in-the-road-transport-sector.html)
 
 ## Fahrzeug archivieren {#archivieren}
 

@@ -79,8 +79,15 @@ export class HelpViewerComponent {
     const href = a?.getAttribute('href');
     if (!href) return;
 
+    // Quellenangaben (Gesetze, Merkblätter) öffnen in einem neuen Tab, damit die Anwendung mit ihren Eingaben offen bleibt.
+    if (/^https?:\/\//i.test(href)) {
+      event.preventDefault();
+      window.open(href, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
     const m = /^(?:\/hilfe\/([a-z0-9-]+))?(?:#([a-z0-9-]+))?$/.exec(href);
-    if (!m || (!m[1] && !m[2])) return; // externer Link: normal öffnen
+    if (!m || (!m[1] && !m[2])) return;
     event.preventDefault();
     this.go.emit({ topic: m[1] ?? this.topic(), anchor: m[2] ?? null });
   }

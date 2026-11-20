@@ -132,11 +132,11 @@
           <input class="form-control" id="driver_card_number" formControlName="driver_card_number" />
         </div>
 
-        <div class="col-12"><div class="section-title">Fristen</div></div>
+        <div class="col-12"><div class="section-title">Fristen <app-help-link topic="fahrer" anchor="fristen" label="Fristen und ihre Quellen" /></div></div>
 
         @for (d of deadlineFields; track d.field) {
           <div class="col-12 col-lg-4">
-            <label class="form-label" [for]="d.field">{{ d.label }}</label>
+            <label class="form-label" [for]="d.field">{{ d.label }}<app-help-link topic="fahrer" [anchor]="d.help" [label]="d.hint + ' und Quellen'" /></label>
             <input type="date" class="form-control" [id]="d.field" [formControlName]="d.field" [class.is-invalid]="!!fieldErrors()[d.field]" />
             <div class="invalid-feedback">{{ fieldErrors()[d.field] }}</div>
             @if (deadlineInfo(d.field); as info) {
