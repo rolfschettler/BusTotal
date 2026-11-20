@@ -50,6 +50,15 @@ export interface Option {
   label: string;
 }
 
+export interface VehicleChoice {
+  id: string;
+  display_name: string;
+  model: string;
+  seats: number;
+  /** Maße und Gewicht gepflegt (sonst rechnet die Streckenplanung ohne diese Grenzen) */
+  has_dimensions: boolean;
+}
+
 export interface VehicleOptions {
   types: Option[];
   equipment: Option[];
@@ -73,6 +82,10 @@ export class VehicleService {
 
   options() {
     return this.http.get<VehicleOptions>(`${this.base}/options`);
+  }
+  /** Alle aktiven Fahrzeuge als schlanke Auswahlliste (ohne Seiten). */
+  choices() {
+    return this.http.get<VehicleChoice[]>(`${this.base}/choices`);
   }
   get(id: string) {
     return this.http.get<Vehicle>(`${this.base}/${id}`);

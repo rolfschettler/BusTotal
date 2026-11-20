@@ -36,6 +36,11 @@
           }
         }
 
+        @if (auth.user()?.role === 'admin' || auth.user()?.role === 'disponent') {
+          <div class="group">Planung</div>
+          <a class="nav-link" routerLink="/streckenplanung" routerLinkActive="active">Streckenplanung</a>
+        }
+
         <div class="group">System</div>
         @if (auth.user()?.role === 'admin') {
           <a class="nav-link" routerLink="/benutzer" routerLinkActive="active">Benutzer</a>

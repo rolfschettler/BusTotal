@@ -1,0 +1,55 @@
+// Ohne Kapselung (ViewEncapsulation.None), weil Leaflet seine Elemente selbst erzeugt. Alles steht unter ".app-map".
+.app-map {
+  display: block;
+  height: 100%;
+  min-height: 420px;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  overflow: hidden;
+
+  .app-map-canvas {
+    height: 100%;
+    min-height: 420px;
+    z-index: 0; // Leaflet legt eigene hohe z-index-Werte an; sie sollen Dropdowns und Dialoge nicht überdecken
+  }
+
+  .app-map-pin-wrap {
+    background: none;
+    border: 0;
+  }
+
+  .app-map-pin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--brand, var(--bs-primary));
+    color: #fff;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+    font: 600 13px/1 var(--bs-body-font-family);
+
+    &.depot {
+      background: #343a40;
+      border-radius: 6px;
+    }
+  }
+
+  &.dimmed .leaflet-overlay-pane {
+    opacity: 0.35;
+  }
+}
+
+// Karte neben einem langen Formular: bleibt beim Scrollen sichtbar und hat eine feste, sinnvolle Höhe.
+.app-map-sticky {
+  position: sticky;
+  top: 1rem;
+  height: min(70vh, 640px);
+  min-height: 420px;
+
+  .app-map {
+    height: 100%;
+  }
+}

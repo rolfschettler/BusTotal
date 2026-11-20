@@ -93,6 +93,13 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'streckenplanung',
+        // Ruft einen externen Routing-Dienst auf (Kontingent): nur Administrator und Disponent (der Server prüft zusätzlich).
+        canActivate: [roleGuard('admin', 'disponent')],
+        data: { help: 'strecken#streckenplanung' },
+        loadComponent: () => import('./pages/route-planning/route-planning.component').then((m) => m.RoutePlanningComponent),
+      },
+      {
         path: 'einstellungen',
         canActivate: [roleGuard('admin', 'disponent', 'buchhaltung')],
         data: { help: 'einstellungen#firmendaten' },

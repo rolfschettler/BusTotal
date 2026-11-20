@@ -1,0 +1,234 @@
+<div class="mb-3">
+  <h1 class="h3 mb-1">Streckenplanung</h1>
+  <p class="mb-0 small text-body-secondary">
+    Von, über, nach eingeben und Strecke, Fahrzeit sowie Pausen und Ruhezeiten berechnen. Es wird nichts gespeichert.
+    <app-help-link topic="strecken" anchor="streckenplanung" label="Streckenplanung" />
+  </p>
+</div>
+
+<div class="row g-3">
+  <!-- ============ Eingabe ============ -->
+  <div class="col-12 col-lg-5">
+    <div class="form-area">
+      <div class="section-title">Strecke</div>
+
+      <div class="mb-3">
+        <app-place-field label="Von" inputId="placeFrom" hint="Ort, Adresse oder Bahnhof, z. B. „88400 Biberach“ oder „Ulm Hbf“. Gesucht wird beim Berechnen."
+                         [text]="textOf(start())" [note]="usedFor(start())" (textChange)="setText(start().key, $event)" (enter)="calculate()" />
+      </div>
+
+      @for (w of via(); track w.key; let i = $index; let first = $first; let last = $last) {
+        <div class="mb-3 d-flex align-items-start gap-2">
+          <div class="flex-grow-1">
+            <app-place-field [label]="'Über ' + (i + 1)" [inputId]="'placeVia' + w.key"
+                             [text]="textOf(w)" [note]="usedFor(w)" (textChange)="setText(w.key, $event)" (enter)="calculate()" />
+          </div>
+          <div class="btn-group mt-4 pt-1" role="group" [attr.aria-label]="'Über ' + (i + 1) + ' verschieben oder entfernen'">
+            <button type="button" class="btn btn-outline-secondary" [disabled]="first" aria-label="Nach oben" (click)="moveVia(i, -1)"><i class="bi bi-arrow-up" aria-hidden="true"></i></button>
+            <button type="button" class="btn btn-outline-secondary" [disabled]="last" aria-label="Nach unten" (click)="moveVia(i, 1)"><i class="bi bi-arrow-down" aria-hidden="true"></i></button>
+            <button type="button" class="btn btn-outline-danger" aria-label="Entfernen" (click)="removeVia(i)"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+          </div>
+        </div>
+      }
+
+      <div class="mb-3 d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="addVia()"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Zwischenhalt (über)</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="!textOf(start()).trim() && !textOf(end()).trim()" (click)="swap()" title="Von und Nach vertauschen"><i class="bi bi-arrow-down-up me-1" aria-hidden="true"></i>Tauschen</button>
+      </div>
+
+      <div class="mb-2">
+        <app-place-field label="Nach" inputId="placeTo" [text]="textOf(end())" [note]="usedFor(end())" (textChange)="setText(end().key, $event)" (enter)="calculate()" />
+      </div>
+
+      <div class="form-check mb-3">
+        <input id="roundTrip" type="checkbox" class="form-check-input" [ngModel]="roundTrip()" (ngModelChange)="roundTrip.set($event); changed()" />
+        <label class="form-check-label" for="roundTrip">Rückfahrt zum Start (Von)</label>
+      </div>
+
+      @if (via().length >= 2) {
+        <div class="form-check mb-3">
+          <input id="optimize" type="checkbox" class="form-check-input" [ngModel]="optimize()" (ngModelChange)="optimize.set($event); changed()" />
+          <label class="form-check-label" for="optimize">Reihenfolge der Zwischenhalte optimieren</label>
+          <div class="form-text">Ordnet die Über-Orte nach kürzester Fahrzeit. Von und Nach bleiben stehen.</div>
+        </div>
+      }
+
+      <div class="section-title mt-3">Fahrt</div>
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label" for="vehicle">Fahrzeug</label>
+          <select id="vehicle" class="form-select" [ngModel]="vehicleId()" (ngModelChange)="vehicleId.set($event); changed()">
+            <option value="">Kein Fahrzeug gewählt</option>
+            @for (v of vehicles(); track v.id) {
+              <option [value]="v.id">{{ v.display_name }} · {{ v.model }} · {{ v.seats }} Plätze</option>
+            }
+          </select>
+          @if (vehiclesError(); as ve) {
+            <div class="form-text text-danger">{{ ve }}</div>
+          } @else if (vehicles().length === 0) {
+            <div class="form-text text-warning-emphasis">Es sind noch keine Fahrzeuge angelegt (Fuhrpark → Fahrzeuge).</div>
+          }
+          @if (selectedVehicle(); as v) {
+            @if (!v.has_dimensions) {
+              <div class="form-text text-warning-emphasis">Für dieses Fahrzeug fehlen Maße oder Gewicht. Die Route wird ohne diese Grenzen (Brückenhöhen, Gewicht) berechnet.</div>
+            } @else {
+              <div class="form-text">Höhe, Breite, Länge und Gewicht werden bei der Route beachtet.</div>
+            }
+          } @else {
+            <div class="form-text">Mit Fahrzeug werden dessen Maße beachtet und die Fahrzeugkosten (Kilometer × Kostensatz) angezeigt.</div>
+          }
+        </div>
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="startAt">Abfahrt</label>
+          <input id="startAt" type="datetime-local" class="form-control" [ngModel]="startAt()" (ngModelChange)="startAt.set($event); changed()" />
+          <div class="form-text">Leer lassen: Zeiten als Versatz.</div>
+        </div>
+      </div>
+
+      <details class="mt-3 more">
+        <summary class="section-title">Weitere Angaben (freiwillig)</summary>
+
+        <div class="mt-2 mb-3">
+          <app-place-field label="Betriebshof" inputId="placeDepot" hint="Für Leerfahrten (Betriebshof → Von und Nach → Betriebshof). Wird in diesem Browser gemerkt."
+                           [text]="depotText()" [note]="depot()?.label ?? ''" (textChange)="setDepotText($event)" (enter)="calculate()" />
+          @if (depotText().trim()) {
+            <div class="form-check mt-2">
+              <input id="returnToDepot" type="checkbox" class="form-check-input" [ngModel]="returnToDepot()" (ngModelChange)="returnToDepot.set($event); changed()" />
+              <label class="form-check-label" for="returnToDepot">Rückfahrt zum Betriebshof</label>
+            </div>
+          }
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="extended">Lange Tage</label>
+          <select id="extended" class="form-select" [ngModel]="extendedDays()" (ngModelChange)="extendedDays.set(+$event); changed()">
+            <option [ngValue]="0">Keine</option>
+            <option [ngValue]="1">1 Tag mit 10 Std.</option>
+            <option [ngValue]="2">2 Tage mit 10 Std.</option>
+          </select>
+          <div class="form-text">Lenkzeit 10 statt 9 Stunden (je Woche höchstens zweimal).</div>
+        </div>
+
+        @if (placed().length) {
+          <div class="form-label mb-1">Aufenthalt</div>
+          @for (w of placed(); track w.key) {
+            <div class="bg-white border rounded p-2 mb-2">
+              <div class="small text-truncate" [title]="w.place!.label"><span class="badge text-bg-secondary me-1">{{ roleOf(w) }}</span>{{ w.place!.label }}</div>
+              <div class="row g-2 mt-0 align-items-end">
+                <div class="col-6">
+                  <label class="form-label small mb-0" [for]="'dwell' + w.key">Minuten</label>
+                  <input [id]="'dwell' + w.key" type="number" min="0" max="1440" step="5" class="form-control form-control-sm"
+                         [ngModel]="w.dwell_minutes" (ngModelChange)="setDwell(w, $event)" />
+                </div>
+                <div class="col-6">
+                  <div class="form-check mb-1">
+                    <input [id]="'free' + w.key" type="checkbox" class="form-check-input" [ngModel]="w.driver_free" (ngModelChange)="setFree(w, $event)" />
+                    <label class="form-check-label small" [for]="'free' + w.key">Fahrer frei</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+          <div class="form-text">Beim Start zählt der Aufenthalt als Arbeit vor der Abfahrt (z. B. Einsteigen). „Fahrer frei“: Der Fahrer hat in dieser Zeit frei, zum Beispiel während die Gäste unterwegs sind. Ab 45 Minuten zählt das als Lenkpause, ab 11 Stunden (Übernachtung) als Tagesruhezeit. Sonst zählt der Aufenthalt als Arbeitszeit.</div>
+        }
+      </details>
+
+      <div class="d-flex flex-wrap gap-2 mt-4">
+        <button type="button" class="btn btn-primary" [disabled]="!canCalc()" (click)="calculate()">
+          @if (calculating()) { <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> }
+          Strecke berechnen
+        </button>
+        <button type="button" class="btn btn-outline-secondary" (click)="reset()">Neu beginnen</button>
+      </div>
+      @if (!canCalc() && !calculating()) {
+        <div class="form-text mt-2">Geben Sie Von und Nach ein.</div>
+      }
+    </div>
+  </div>
+
+  <!-- ============ Karte ============ -->
+  <div class="col-12 col-lg-7">
+    <div class="app-map-sticky">
+      <app-map [markers]="markers()" [line]="line()" [dimmed]="stale()" />
+    </div>
+  </div>
+</div>
+
+<!-- ============ Ergebnis ============ -->
+@if (error(); as e) {
+  <div class="alert alert-danger mt-3" role="alert">{{ e }}</div>
+}
+
+@if (result(); as r) {
+  <div class="mt-4" [class.opacity-50]="stale()">
+    @if (stale()) {
+      <div class="alert alert-secondary py-2 small" role="status">Die Eingabe wurde geändert. Dieses Ergebnis gehört noch zur vorherigen Eingabe. Bitte neu berechnen.</div>
+    }
+
+    <div class="section-title">Ergebnis</div>
+    <div class="row g-2 mb-3">
+      <div class="col-6 col-lg-4 col-xl-2"><div class="bg-white border rounded p-2 h-100"><div class="small text-body-secondary">Strecke</div><div class="fs-5 fw-semibold">{{ format.km(r.distance_m) }}</div></div></div>
+      <div class="col-6 col-lg-4 col-xl-2"><div class="bg-white border rounded p-2 h-100"><div class="small text-body-secondary">davon Leerfahrt</div><div class="fs-5 fw-semibold">{{ format.km(r.empty_distance_m) }}</div></div></div>
+      <div class="col-6 col-lg-4 col-xl-2"><div class="bg-white border rounded p-2 h-100"><div class="small text-body-secondary">Lenkzeit</div><div class="fs-5 fw-semibold">{{ format.duration(r.drive_s) }}</div></div></div>
+      <div class="col-6 col-lg-4 col-xl-2"><div class="bg-white border rounded p-2 h-100"><div class="small text-body-secondary">Gesamtdauer</div><div class="fs-5 fw-semibold">{{ format.duration(r.elapsed_s) }}</div></div></div>
+      <div class="col-6 col-lg-4 col-xl-2"><div class="bg-white border rounded p-2 h-100"><div class="small text-body-secondary">Fahrtage</div><div class="fs-5 fw-semibold">{{ r.days }}</div></div></div>
+      @if (r.vehicle_cost !== null) {
+        <div class="col-6 col-lg-4 col-xl-2"><div class="bg-white border rounded p-2 h-100"><div class="small text-body-secondary">Fahrzeugkosten</div><div class="fs-5 fw-semibold">{{ r.vehicle_cost | number: '1.2-2' : 'de-DE' }} €</div></div></div>
+      }
+    </div>
+
+    @for (w of r.warnings; track w.code) {
+      <div class="alert alert-warning py-2 small" role="alert"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>{{ w.message }}</div>
+    }
+
+    <div class="section-title">Zeitplan</div>
+    <div class="table-responsive mb-3">
+      <table class="table table-sm align-middle bg-white border mb-0">
+        <thead>
+          <tr><th scope="col" style="width: 11rem">{{ r.start_at ? 'Zeit' : 'Seit Beginn' }}</th><th scope="col">Was</th><th scope="col" class="text-end" style="width: 9rem">Dauer</th></tr>
+        </thead>
+        <tbody>
+          @for (e of r.schedule; track $index; let i = $index) {
+            @if (isNewDay(i)) {
+              <tr class="table-light"><td colspan="3" class="fw-semibold small">Tag {{ e.day }}</td></tr>
+            }
+            <tr [class.table-warning]="e.type === 'rest'" [class.table-info]="e.type === 'break'">
+              <td class="text-nowrap">{{ format.time(e, r) }}</td>
+              <td>{{ format.title(e, r.legs) }}</td>
+              <td class="text-end text-nowrap">{{ format.duration(e.duration_s) }}</td>
+            </tr>
+          }
+        </tbody>
+        @if (r.end_at) {
+          <tfoot><tr><td colspan="3" class="small text-body-secondary">Ende der Tour: {{ r.end_at | date: 'EE, dd.MM.yyyy HH:mm' : undefined : 'de-DE' }}</td></tr></tfoot>
+        }
+      </table>
+    </div>
+
+    <div class="section-title">Abschnitte</div>
+    <div class="table-responsive mb-3">
+      <table class="table table-sm align-middle bg-white border mb-0">
+        <thead>
+          <tr><th scope="col">Von</th><th scope="col">Nach</th><th scope="col" class="text-end">Strecke</th><th scope="col" class="text-end">Fahrzeit</th><th scope="col">Art</th></tr>
+        </thead>
+        <tbody>
+          @for (l of r.legs; track $index) {
+            <tr>
+              <td>{{ l.from.label }}</td>
+              <td>{{ l.to.label }}</td>
+              <td class="text-end text-nowrap">{{ format.km(l.distance_m) }}</td>
+              <td class="text-end text-nowrap">{{ format.duration(l.duration_s) }}</td>
+              <td>{{ l.empty ? 'Leerfahrt' : 'Besetzt' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <p class="small text-body-secondary">
+      Planungshilfe nach Verordnung (EG) Nr. 561/2006 mit der einfachen, sicheren Auslegung (Pause 45 Minuten am Stück). Nicht geprüft werden
+      Wochenlenkzeit, Wochenruhezeit und mehrere Fahrer. Sie ersetzt nicht die Auswertung des Fahrtenschreibers. Die Fahrzeit stammt aus dem
+      Lkw-Profil des Routing-Dienstes und sollte mit echten Fahrten verglichen werden.
+    </p>
+  </div>
+}
