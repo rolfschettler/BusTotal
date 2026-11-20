@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\DocumentPdf;
 use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class DocumentPdfTest extends TestCase
@@ -22,6 +23,7 @@ class DocumentPdfTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Storage::fake('local');
         $this->seed(SettingsSeeder::class);
         CompanySetting::current()->update([
             'name' => 'Busreisen Muster GmbH', 'street' => 'Hafenstr. 5', 'postal_code' => '20457', 'city' => 'Hamburg',

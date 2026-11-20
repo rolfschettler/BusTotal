@@ -26,7 +26,10 @@ class Document extends Model
     ];
 
     /** Felder, die auch nach dem Festschreiben noch gesetzt werden dürfen. */
-    private const MUTABLE_AFTER_FINALIZE = ['cancelled_by_id', 'updated_at'];
+    private const MUTABLE_AFTER_FINALIZE = ['cancelled_by_id', 'updated_at', 'archive_path', 'archive_sha256', 'archived_at'];
+
+    /** Archiv-Angaben: Pfad und Prüfsumme gehören nicht in die Schnittstelle. */
+    protected $hidden = ['archive_path', 'archive_sha256'];
 
     protected function casts(): array
     {
@@ -42,6 +45,7 @@ class Document extends Model
             'service_date_to' => 'date:Y-m-d',
             'due_date' => 'date:Y-m-d',
             'finalized_at' => 'datetime',
+            'archived_at' => 'datetime',
         ];
     }
 
@@ -52,6 +56,11 @@ class Document extends Model
                 return;
             }
             $forbidden = array_diff(array_keys($document->getDirty()), self::MUTABLE_AFTER_FINALIZE);
+            // Das Archiv-PDF darf nur einmal gesetzt werden (Nacherzeugung alter Belege), nie überschrieben.
+            if ($document->getRawOriginal('archive_path') !== null
+                && array_intersect(array_keys($document->getDirty()), ['archive_path', 'archive_sha256', 'archived_at']) !== []) {
+                $forbidden[] = 'archive_path';
+            }
             if ($forbidden !== []) {
                 throw new LogicException('Ein festgeschriebener Beleg ist unveränderlich (GoBD). Bitte stornieren und neu erstellen.');
             }

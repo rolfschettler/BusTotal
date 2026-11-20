@@ -22,6 +22,7 @@ class DocumentService
     public function __construct(
         private readonly NumberRangeService $numbers,
         private readonly DocumentCalculator $calculator,
+        private readonly DocumentArchive $archive,
     ) {}
 
     /**
@@ -94,7 +95,7 @@ class DocumentService
                 'currency' => 'EUR',
             ]);
 
-            return $this->issue($document);
+            return $this->issueArchived($document);
         });
     }
 
@@ -152,7 +153,7 @@ class DocumentService
             ]))->all();
             $this->replaceLines($storno, $lines);
 
-            $storno = $this->issue($storno);
+            $storno = $this->issueArchived($storno);
 
             $original->forceFill(['cancelled_by_id' => $storno->id])->save();
             AuditLog::record('cancelled', $original, null, ['cancelled_by_id' => $storno->id, 'number' => $storno->number]);
@@ -276,7 +277,29 @@ class DocumentService
 
     // ---------- intern ----------
 
-    /** Nummer vergeben und sperren. Nur innerhalb einer Transaktion aufrufen. */
+    /**
+     * Festschreiben samt Archiv-PDF. Scheitert die Erzeugung oder Ablage des PDFs, bricht alles ab: Die Transaktion
+     * wird zurückgerollt, der Entwurf bleibt unverändert und keine Nummer ist verbraucht. Der Nutzer kann es erneut versuchen.
+     * Scheitert danach noch etwas, wird die abgelegte Datei wieder entfernt (sie gehört dann zu keinem Beleg).
+     */
+    private function issueArchived(Document $document): Document
+    {
+        try {
+            return $this->issue($document);
+        } catch (\Throwable $e) {
+            $this->archive->discard($document);
+            if ($e instanceof ValidationException) {
+                throw $e;
+            }
+            report($e);
+            $this->fail('Das PDF des Belegs konnte nicht erzeugt werden. Der Beleg wurde nicht festgeschrieben und es wurde keine Nummer vergeben. Bitte später erneut versuchen.');
+        }
+    }
+
+    /**
+     * Nummer vergeben, Archiv-PDF erzeugen und ablegen, sperren. Nur innerhalb einer Transaktion aufrufen.
+     * Das PDF wird aus dem Beleg im Speicher gerendert (mit Nummer und Status), bevor er gespeichert wird.
+     */
     private function issue(Document $document): Document
     {
         $number = $this->numbers->next($document->type->numberRange());
@@ -286,7 +309,9 @@ class DocumentService
             'status' => DocumentStatus::Festgeschrieben,
             'finalized_at' => now(),
             'finalized_by' => auth()->id(),
-        ])->save();
+        ]);
+        $this->archive->store($document);
+        $document->save();
 
         AuditLog::record('finalized', $document, null, ['number' => $number, 'type' => $document->type->value]);
 

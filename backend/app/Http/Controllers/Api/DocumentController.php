@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\DocumentRequest;
 use App\Models\AuditLog;
 use App\Models\Document;
+use App\Services\DocumentArchive;
 use App\Services\DocumentPdf;
 use App\Services\DocumentService;
 use Illuminate\Http\JsonResponse;
@@ -124,12 +125,21 @@ class DocumentController extends Controller
     }
 
     /**
-     * PDF des Belegs. Wird bei jedem Abruf neu erzeugt. Ein Entwurf trägt den Hinweis „ENTWURF“.
-     * Der Abruf steht im Änderungsprotokoll (wer hat wann ein PDF erzeugt).
+     * PDF des Belegs. Ein Entwurf wird frisch erzeugt und trägt den Hinweis „ENTWURF“. Ein festgeschriebener Beleg
+     * liefert das beim Festschreiben abgelegte Archiv-PDF unverändert (nach Prüfsumme), nie ein neu erzeugtes.
+     * Der Abruf steht im Änderungsprotokoll.
      */
-    public function pdf(Document $document, DocumentPdf $pdf): Response
+    public function pdf(Document $document, DocumentPdf $pdf, DocumentArchive $archive): Response|JsonResponse
     {
-        $binary = $pdf->render($document);
+        if ($document->isDraft()) {
+            $binary = $pdf->render($document);
+        } else {
+            try {
+                $binary = $archive->read($document);
+            } catch (\RuntimeException $e) {
+                return response()->json(['message' => $e->getMessage().' Bitte die Verwaltung informieren, die Sicherung enthält die Datei.'], 500);
+            }
+        }
         AuditLog::record('pdf_created', $document, null, ['number' => $document->number, 'status' => $document->status->value]);
 
         $name = ($document->number ?? 'Entwurf-'.$document->type->value).'.pdf';

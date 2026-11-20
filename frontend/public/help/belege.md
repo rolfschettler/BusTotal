@@ -53,9 +53,14 @@ Mit **PDF** (in der Tastenleiste des Belegs und als Symbol in der Liste) öffnet
 - Ein **Entwurf** trägt oben den Hinweis „ENTWURF“ und hat keine Belegnummer. Er ist keine gültige Rechnung.
 - Ein **festgeschriebener** Beleg zeigt Absender und Empfänger so, wie sie beim Festschreiben gespeichert wurden. Spätere Änderungen an Kunde oder Firmendaten erscheinen nicht.
 - Das PDF zeigt immer den **gespeicherten** Stand. Speichern Sie Änderungen zuerst.
-- Das PDF wird bei jedem Öffnen neu erzeugt, nicht abgelegt. Jedes Öffnen steht im Änderungsprotokoll. Logo und Markenfarbe stammen aus den heutigen Einstellungen.
+- Ein **Entwurf** wird bei jedem Öffnen frisch erzeugt (mit den heutigen Einstellungen für Logo und Markenfarbe).
+- Beim **Festschreiben** (und beim Storno) entsteht das PDF **einmal** und wird sicher abgelegt. Jedes spätere Öffnen zeigt genau diese Datei, nie eine neu erzeugte. Änderungen an Logo, Markenfarbe, Firmendaten oder Kunde ändern sie nicht. Sie wird nie gelöscht, auch nicht, wenn der Kunde später anonymisiert wird.
+- Eine **Prüfsumme** erkennt, wenn die abgelegte Datei beschädigt oder verändert wurde. Dann erscheint eine Fehlermeldung statt eines PDFs. Bitte melden Sie das der Verwaltung, die Sicherung enthält die Datei.
+- Scheitert die PDF-Erzeugung beim Festschreiben, bleibt der Beleg ein Entwurf und es wird **keine Nummer verbraucht**. Versuchen Sie es später erneut.
+- Belege, die vor Einführung des Archivs festgeschrieben wurden, werden beim ersten Öffnen einmalig erzeugt und dann ebenfalls abgelegt. Logo und Markenfarbe stammen bei ihnen aus den Einstellungen dieses Tages.
+- Jedes Öffnen steht im Änderungsprotokoll.
 
-> Für eine revisionssichere Ablage (GoBD) bewahren Sie die versandten PDFs selbst auf, bis die Software beim Festschreiben ein Archiv-PDF ablegt. Ob Ihre Rechnung alle Pflichtangaben trägt, klären Sie mit Ihrem Steuerberater.
+> Das Archiv-PDF liegt auf dem Server dieser Firma. Nehmen Sie es in Ihre Datensicherung auf. Ob Ihre Rechnung alle Pflichtangaben trägt, klären Sie mit Ihrem Steuerberater.
 
 ## Folgebelege {#folgebelege}
 

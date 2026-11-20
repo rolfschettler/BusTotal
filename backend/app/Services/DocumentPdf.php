@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\Storage;
  *
  * Festgeschriebene Belege zeigen Absender und Empfänger aus der Kopie, die beim Festschreiben gespeichert wurde, nie die
  * heutigen Stammdaten. Ein Entwurf folgt den Stammdaten und trägt den Hinweis „ENTWURF“.
- * Das PDF wird bei jedem Abruf neu erzeugt und nicht gespeichert. (Offen: Archiv-PDF beim Festschreiben, siehe Fahrplan.)
+ * Diese Klasse erzeugt nur. Festgeschriebene Belege rendert `DocumentArchive` einmal beim Festschreiben und legt das
+ * Ergebnis ab; nur Entwürfe werden bei jedem Abruf frisch erzeugt.
  */
 class DocumentPdf
 {

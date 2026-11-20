@@ -11,6 +11,7 @@ use App\Models\User;
 use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use LogicException;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class DocumentTest extends TestCase
@@ -22,6 +23,7 @@ class DocumentTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Storage::fake('local');
         $this->seed(SettingsSeeder::class);
 
         // Vollständige Firmendaten: Ohne Steuernummer lässt sich keine Rechnung festschreiben.

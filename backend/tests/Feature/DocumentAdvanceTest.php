@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\User;
 use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /** Anzahlungsrechnung und Schlussrechnung mit Abzug der Anzahlungen. */
@@ -20,6 +21,7 @@ class DocumentAdvanceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Storage::fake('local');
         $this->seed(SettingsSeeder::class);
         CompanySetting::current()->update([
             'name' => 'Busreisen Muster GmbH', 'street' => 'Hafenstr. 5', 'postal_code' => '20457',
