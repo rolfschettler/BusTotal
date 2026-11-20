@@ -18,6 +18,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Routing\OpenRouteService::class);
         $this->app->alias(\App\Routing\OpenRouteService::class, \App\Routing\RoutingProvider::class);
         $this->app->alias(\App\Routing\OpenRouteService::class, \App\Routing\GeocodingProvider::class);
+
+        // Preisfindung: Die Anwendung kennt nur die Schnittstelle. Das endgültige Kalkulationsschema wird eine neue Klasse,
+        // die hier statt StandardPriceCalculator eingetragen wird.
+        $this->app->bind(\App\Pricing\PriceCalculator::class, \App\Pricing\StandardPriceCalculator::class);
     }
 
     /**

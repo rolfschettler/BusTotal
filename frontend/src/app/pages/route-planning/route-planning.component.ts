@@ -3,6 +3,8 @@ import { forkJoin } from 'rxjs';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { PricingService } from '../../core/pricing.service';
 import { RouteResult, RouteService } from '../../core/route.service';
 import { httpErrorText } from '../../core/http-error';
 import { VehicleChoice, VehicleService } from '../../core/vehicle.service';
@@ -40,6 +42,8 @@ const DEPOT_KEY = 'bustotal.planung.depot';
 export class RoutePlanningComponent implements OnInit {
   private api = inject(RouteService);
   private vehicleApi = inject(VehicleService);
+  private pricing = inject(PricingService);
+  private router = inject(Router);
   private nextKey = 1;
 
   // ---- Eingabe ----
@@ -70,6 +74,47 @@ export class RoutePlanningComponent implements OnInit {
   stale = signal(false);
 
   readonly format = { duration: formatDuration, km: formatKm, title: eventTitle, time: eventTime };
+
+  // ---- Angebot aus der Tour (Preisfindung) ----
+  /** Zuschlag in Prozent auf die Summe (Wochenende, Feiertag), von Hand gewählt */
+  surcharge = signal<number | null>(null);
+  quoting = signal(false);
+  quoteError = signal<string | null>(null);
+
+  /**
+   * Legt aus dem Ergebnis ein Angebot als Entwurf an und öffnet es. Zum Server gehen nur die Kennzahlen (Kilometer, Lenkzeit,
+   * Tage), nie die Route oder die Orte. Den Kunden wählt man im Beleg.
+   */
+  createQuote() {
+    const r = this.result();
+    if (!r || this.stale()) return;
+    // Betitelt wird mit Von und Nach der Fahrt mit Fahrgästen; Leerfahrten zum Betriebshof gehören nicht in den Betreff.
+    const loaded = r.legs.filter((l) => !l.empty);
+    const label = loaded.length ? `${loaded[0].from.label} – ${loaded[loaded.length - 1].to.label}` : '';
+
+    this.quoting.set(true);
+    this.quoteError.set(null);
+    this.pricing
+      .quoteFromTour({
+        loaded_km: Math.round(r.loaded_distance_m / 100) / 10,
+        empty_km: Math.round(r.empty_distance_m / 100) / 10,
+        drive_s: r.drive_s,
+        days: Math.max(1, r.days),
+        surcharge_percent: this.surcharge() || 0,
+        label,
+        start_at: r.start_at,
+      })
+      .subscribe({
+        next: (doc) => {
+          this.quoting.set(false);
+          this.router.navigate(['/belege', doc.id]);
+        },
+        error: (e: HttpErrorResponse) => {
+          this.quoting.set(false);
+          this.quoteError.set(httpErrorText(e, 'Das Angebot konnte nicht erstellt werden.'));
+        },
+      });
+  }
 
   /** Die Halte in Fahrtreihenfolge (leere Felder fehlen, mit Rückfahrt steht der Start am Ende noch einmal). */
   stops = computed(() => buildStops(this.withResolved(this.start()), this.via().map((w) => this.withResolved(w)), this.withResolved(this.end()), this.roundTrip()));

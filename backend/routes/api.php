@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\DriverAbsenceController;
 use App\Http\Controllers\Api\DriverController;
+use App\Http\Controllers\Api\PricingController;
 use App\Http\Controllers\Api\RouteController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\Superadmin\AuthController as SuperadminAuthController;
@@ -122,6 +123,11 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
     // deshalb begrenzt. Nur Admin und Disponent.
     // Die Ortssuche ist am knappsten (das Kontingent teilen sich alle Firmen): höchstens 30 je Minute und Benutzer.
     // Ein hängender Browser oder ein Skript kann so das gemeinsame Kontingent nicht leeren.
+    // Preisfindung: Angebot (Entwurf) aus den Kennzahlen einer Tour. Preise lesen Admin, Disponent, Buchhaltung; ändern nur Admin.
+    Route::post('/quotes/from-tour', [PricingController::class, 'quoteFromTour'])->middleware('role:admin,disponent');
+    Route::get('/settings/pricing', [PricingController::class, 'show'])->middleware('role:admin,disponent,buchhaltung');
+    Route::put('/settings/pricing', [PricingController::class, 'update'])->middleware('role:admin');
+
     Route::middleware('role:admin,disponent')->group(function () {
         Route::get('/geocode', [RouteController::class, 'geocode'])->middleware('throttle:30,1');
         Route::post('/routes/calculate', [RouteController::class, 'calculate'])->middleware('throttle:60,1');

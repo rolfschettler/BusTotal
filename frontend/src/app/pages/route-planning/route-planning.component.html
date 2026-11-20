@@ -177,6 +177,22 @@
       }
     </div>
 
+    <!-- Preisfindung: aus den Kennzahlen entsteht ein Angebot als Entwurf (Preise unter Einstellungen › Preise). -->
+    <div class="d-flex flex-wrap align-items-end gap-2 mb-3">
+      <div>
+        <label class="form-label small mb-1" for="surcharge">Zuschlag (%)</label>
+        <input id="surcharge" type="number" min="0" max="100" step="1" class="form-control form-control-sm" [ngModel]="surcharge()" (ngModelChange)="surcharge.set($event)" [disabled]="stale()" />
+      </div>
+      <button type="button" class="btn btn-primary" (click)="createQuote()" [disabled]="quoting() || stale()" [attr.title]="stale() ? 'Bitte zuerst neu berechnen' : null">
+        @if (quoting()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+        <i class="bi bi-file-earmark-text me-1" aria-hidden="true"></i>Angebot erstellen
+      </button>
+      <app-help-link topic="strecken" anchor="angebot-aus-tour" label="Angebot aus der Tour" />
+    </div>
+    @if (quoteError(); as qe) {
+      <div class="alert alert-danger py-2 small" role="alert">{{ qe }}</div>
+    }
+
     @for (w of r.warnings; track w.code) {
       <div class="alert alert-warning py-2 small" role="alert"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>{{ w.message }}</div>
     }

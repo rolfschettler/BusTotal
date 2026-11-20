@@ -8,9 +8,10 @@ import { ConfirmService } from '../../core/confirm.service';
 import { httpErrorText } from '../../core/http-error';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { HelpService } from '../../help/help.service';
+import { PricingService, PricingSettings } from '../../core/pricing.service';
 import { NumberRange, SettingsService, TaxRate } from '../../core/settings.service';
 
-type Tab = 'firma' | 'steuern' | 'nummern';
+type Tab = 'firma' | 'steuern' | 'nummern' | 'preise';
 
 const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const LOGO_MAX_BYTES = 1024 * 1024;
@@ -23,6 +24,7 @@ const LOGO_MAX_BYTES = 1024 * 1024;
 })
 export class SettingsComponent implements OnInit {
   private api = inject(SettingsService);
+  private pricingApi = inject(PricingService);
   private fb = inject(FormBuilder);
   private auth = inject(AuthService);
   brand = inject(BrandService);
@@ -66,6 +68,19 @@ export class SettingsComponent implements OnInit {
 
   readonly textOn = textOn;
 
+  /** Preisparameter der Preisfindung (Reiter "Preise"). 0 schaltet einen Bestandteil aus. */
+  pricing = this.fb.nonNullable.group({
+    price_per_km: [0, [Validators.required, Validators.min(0)]],
+    empty_km_percent: [100, [Validators.required, Validators.min(0), Validators.max(100)]],
+    hourly_rate: [0, [Validators.required, Validators.min(0)]],
+    day_rate: [0, [Validators.required, Validators.min(0)]],
+    overnight_rate: [0, [Validators.required, Validators.min(0)]],
+    minimum_price: [0, [Validators.required, Validators.min(0)]],
+    tax_rate: [19, [Validators.required, Validators.min(0), Validators.max(100)]],
+  });
+  pricingSubmitted = signal(false);
+  private pricingSaved: unknown = null;
+
   taxRates = signal<TaxRate[]>([]);
   newTax = { name: '', rate: 0 };
   ranges = signal<NumberRange[]>([]);
@@ -90,6 +105,53 @@ export class SettingsComponent implements OnInit {
     });
     this.loadTaxRates();
     this.loadRanges();
+    this.pricingApi.get().subscribe((p) => {
+      this.pricing.reset(this.pricingToForm(p));
+      this.pricingSaved = this.pricing.getRawValue();
+      if (!this.canEdit()) this.pricing.disable();
+    });
+  }
+
+  private pricingToForm(p: PricingSettings) {
+    return Object.fromEntries(Object.entries(p as unknown as Record<string, string | number>).filter(([k]) => k in this.pricing.controls).map(([k, v]) => [k, Number(v)]));
+  }
+
+  /** Ist im aktuellen Reiter etwas ungespeichert? (Nur Firmendaten und Preise sind Formulare.) */
+  get dirty(): boolean {
+    return this.tab() === 'preise' ? this.pricing.dirty : this.company.dirty;
+  }
+
+  invalidPricing(name: keyof typeof this.pricing.controls): boolean {
+    return (this.pricingSubmitted() && this.pricing.controls[name].invalid) || !!this.fieldErrors()[name];
+  }
+
+  savePricing() {
+    this.pricingSubmitted.set(true);
+    if (this.pricing.invalid) {
+      this.notify(false, 'Bitte die markierten Felder korrigieren.');
+      return;
+    }
+    this.saving.set(true);
+    this.pricingApi.save(this.pricing.getRawValue()).subscribe({
+      next: (p) => {
+        this.saving.set(false);
+        this.pricing.reset(this.pricingToForm(p));
+        this.pricingSaved = this.pricing.getRawValue();
+        this.pricingSubmitted.set(false);
+        this.ok('Preise gespeichert.');
+      },
+      error: (e) => {
+        this.saving.set(false);
+        this.fail(e);
+      },
+    });
+  }
+
+  cancelPricing() {
+    this.pricing.reset(this.pricingSaved as never);
+    this.pricingSubmitted.set(false);
+    this.fieldErrors.set({});
+    this.message.set(null);
   }
 
   private loadTaxRates() {
@@ -102,7 +164,7 @@ export class SettingsComponent implements OnInit {
   show(tab: Tab) {
     this.tab.set(tab);
     // Das Hilfefenster folgt dem Reiter.
-    this.help.setAnchor({ firma: 'firmendaten', steuern: 'steuersaetze', nummern: 'nummernkreise' }[tab]);
+    this.help.setAnchor({ firma: 'firmendaten', steuern: 'steuersaetze', nummern: 'nummernkreise', preise: 'preise' }[tab]);
     this.message.set(null);
     this.fieldErrors.set({});
   }
@@ -114,7 +176,7 @@ export class SettingsComponent implements OnInit {
 
   /** Tastenleiste "Zurück": zur Startseite, bei ungespeicherten Änderungen erst nachfragen. */
   async back() {
-    if (this.company.dirty) {
+    if (this.dirty) {
       const ok = await this.confirm.ask({
         title: 'Änderungen verwerfen',
         message: 'Es gibt ungespeicherte Änderungen. Trotzdem zurück zur Startseite?',

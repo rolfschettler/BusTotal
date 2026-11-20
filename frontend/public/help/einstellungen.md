@@ -72,3 +72,17 @@ Belegnummern müssen nach den Grundsätzen ordnungsmäßiger Buchführung (GoBD)
 - Zwei Benutzer, die gleichzeitig einen Beleg anlegen, erhalten nie dieselbe Nummer.
 
 > Ändern Sie Präfix, Jahr oder Stellen nur zu Beginn eines Geschäftsjahres und bevor Belege dieser Art existieren. Bereits vergebene Nummern ändern sich dadurch nicht.
+
+## Preise {#preise}
+
+Der Reiter **Preise** legt fest, wie die Software beim [Angebot aus der Streckenplanung](/hilfe/strecken#angebot-aus-tour) die Positionen vorschlägt. Alle Preise sind netto, ein Preis von **0** schaltet den Bestandteil aus. Nur der Administrator kann sie ändern.
+
+- **Preis je km:** wird mit den Kilometern der Tour multipliziert.
+- **Leerfahrt (%):** Zu diesem Anteil werden Leerkilometer (Anfahrt und Rückfahrt zum Betriebshof) berechnet. 100 heißt: voll, 0: gar nicht.
+- **Stundensatz:** je Stunde Lenkzeit laut Planung.
+- **Tagespauschale:** je Einsatztag.
+- **Übernachtung:** je Nacht des Fahrers (Einsatztage minus eins).
+- **Mindestpreis:** Liegt die Summe darunter, kommt eine Position „Mindestpreis-Ausgleich“ dazu.
+- **Steuersatz:** Vorbelegung der Positionen. Im Beleg lässt er sich je Position ändern.
+
+> Das ist eine Vorlage zum Ausprobieren, **nicht das endgültige Kalkulationsschema**. Welche Bestandteile Ihr Betrieb abrechnet und mit welchen Sätzen, stimmen Sie mit Ihrer Kalkulation und Ihrem Steuerberater ab. Ein Preis, der zu doppelten Positionen führt (zum Beispiel Preis je km und Stundensatz gleichzeitig), ist Ihre Entscheidung.

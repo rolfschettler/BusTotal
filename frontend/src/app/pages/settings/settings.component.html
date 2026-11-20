@@ -8,6 +8,7 @@
   <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'firma'" (click)="show('firma')">Firmendaten</button></li>
   <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'steuern'" (click)="show('steuern')">Steuersätze</button></li>
   <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'nummern'" (click)="show('nummern')">Nummernkreise</button></li>
+  <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'preise'" (click)="show('preise')">Preise</button></li>
 </ul>
 
 @if (message(); as m) {
@@ -251,5 +252,89 @@
     </div>
     @if (fieldErrors()['next_number']) { <p class="text-danger small mt-2">{{ fieldErrors()['next_number'] }}</p> }
     <p class="text-body-secondary small mt-3">Lückenlose Nummern (GoBD): Die nächste Nummer kann nur erhöht werden, nie verkleinert. <app-help-link topic="einstellungen" anchor="nummern-regeln" label="Regeln für lückenlose Nummern" /></p>
+  }
+
+  @case ('preise') {
+    <!-- Formular-Muster, siehe docs/ClaudeCodePatterns/EditFormPattern.md -->
+    <div class="form-page">
+      <form id="pricingForm" class="form-area" [formGroup]="pricing" (ngSubmit)="savePricing()" novalidate>
+        <div class="row g-3">
+
+          <div class="col-12">
+            <div class="form-text mt-0">
+              Mit diesen Preisen schlägt die Software beim Angebot aus der Streckenplanung die Positionen vor. Ein Preis von 0 schaltet den Bestandteil aus.
+              Alle Preise sind netto. <app-help-link topic="einstellungen" anchor="preise" label="Preise der Preisfindung" />
+            </div>
+          </div>
+
+          <div class="col-12"><div class="section-title">Strecke</div></div>
+
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="p_km">Preis je km (€)</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="p_km" formControlName="price_per_km" [class.is-invalid]="invalidPricing('price_per_km')" />
+            <div class="invalid-feedback">{{ fieldErrors()['price_per_km'] || 'Bitte eine Zahl ab 0 angeben.' }}</div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="p_empty">Leerfahrt (%)</label>
+            <input type="number" step="1" min="0" max="100" class="form-control" id="p_empty" formControlName="empty_km_percent" [class.is-invalid]="invalidPricing('empty_km_percent')" />
+            <div class="invalid-feedback">{{ fieldErrors()['empty_km_percent'] || 'Bitte 0 bis 100 angeben.' }}</div>
+            <div class="form-text">Zu diesem Anteil werden Leerkilometer berechnet.</div>
+          </div>
+
+          <div class="col-12"><div class="section-title">Zeit und Pauschalen</div></div>
+
+          <div class="col-12 col-lg-4">
+            <label class="form-label" for="p_hour">Stundensatz (€)</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="p_hour" formControlName="hourly_rate" [class.is-invalid]="invalidPricing('hourly_rate')" />
+            <div class="invalid-feedback">{{ fieldErrors()['hourly_rate'] || 'Bitte eine Zahl ab 0 angeben.' }}</div>
+            <div class="form-text">Je Stunde Lenkzeit.</div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <label class="form-label" for="p_day">Tagespauschale (€)</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="p_day" formControlName="day_rate" [class.is-invalid]="invalidPricing('day_rate')" />
+            <div class="invalid-feedback">{{ fieldErrors()['day_rate'] || 'Bitte eine Zahl ab 0 angeben.' }}</div>
+            <div class="form-text">Je Einsatztag.</div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <label class="form-label" for="p_night">Übernachtung (€)</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="p_night" formControlName="overnight_rate" [class.is-invalid]="invalidPricing('overnight_rate')" />
+            <div class="invalid-feedback">{{ fieldErrors()['overnight_rate'] || 'Bitte eine Zahl ab 0 angeben.' }}</div>
+            <div class="form-text">Je Nacht des Fahrers.</div>
+          </div>
+
+          <div class="col-12"><div class="section-title">Mindestpreis und Steuer</div></div>
+
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="p_min">Mindestpreis (€)</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="p_min" formControlName="minimum_price" [class.is-invalid]="invalidPricing('minimum_price')" />
+            <div class="invalid-feedback">{{ fieldErrors()['minimum_price'] || 'Bitte eine Zahl ab 0 angeben.' }}</div>
+            <div class="form-text">Liegt ein Angebot darunter, wird aufgefüllt.</div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="p_tax">Steuersatz (%)</label>
+            <input type="number" step="0.01" min="0" max="100" class="form-control" id="p_tax" formControlName="tax_rate" [class.is-invalid]="invalidPricing('tax_rate')" />
+            <div class="invalid-feedback">{{ fieldErrors()['tax_rate'] || 'Bitte 0 bis 100 angeben.' }}</div>
+            <div class="form-text">Vorbelegung der Positionen, im Beleg änderbar.</div>
+          </div>
+
+        </div>
+      </form>
+
+      <div class="form-bar">
+        @if (canEdit()) {
+          <button type="submit" form="pricingForm" class="btn btn-primary" [disabled]="saving()">
+            @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+            {{ saving() ? 'Speichert …' : 'Speichern' }}
+          </button>
+        }
+        <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
+        @if (pricing.dirty && canEdit()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
+        @if (canEdit()) {
+          <div class="form-bar-right">
+            <button type="button" class="btn btn-outline-secondary" [disabled]="!pricing.dirty" [attr.title]="pricing.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancelPricing()">Abbrechen</button>
+          </div>
+        }
+      </div>
+    </div>
   }
 }
