@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -26,7 +27,7 @@ interface PickedCustomer {
  */
 @Component({
   selector: 'app-document-form',
-  imports: [ReactiveFormsModule, RouterLink, HelpLinkComponent],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink, HelpLinkComponent],
   templateUrl: './document-form.component.html',
   host: { class: 'form-page' },
 })

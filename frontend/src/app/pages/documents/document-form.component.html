@@ -17,8 +17,10 @@
         <span class="badge text-bg-success">Festgeschrieben</span>
         <app-help-link topic="belege" anchor="entwurf-und-festschreiben" label="Entwurf und Festschreiben" />
       }
-      @if (d.source; as s) { · aus <a [routerLink]="['/belege', s.id]">{{ typeLabel(s.type) }} {{ s.number }}</a> }
-      @if (d.cancels_id) { · Storno zu <a [routerLink]="['/belege', d.cancels_id]">dem Originalbeleg</a> }
+      @if (d.source; as s) {
+        @if (d.cancels_id) { · Storno zu } @else { · aus }
+        <a [routerLink]="['/belege', s.id]">{{ typeLabel(s.type) }} {{ s.number }}</a>
+      }
     </p>
   } @else if (id) {
     <h1 class="h3 mb-0">Beleg</h1>
@@ -231,8 +233,8 @@
       </div>
       <div class="col-12">
         <div class="form-text">
-          So wurden Absender und Empfänger beim Festschreiben am {{ d.finalized_at?.slice(0, 10) }} gespeichert. Spätere Änderungen an den Stammdaten berühren den Beleg nicht.
-          @if (d.due_date) { Fällig am {{ d.due_date }}. }
+          So wurden Absender und Empfänger beim Festschreiben am {{ d.finalized_at | date: 'dd.MM.yyyy' }} gespeichert. Spätere Änderungen an den Stammdaten berühren den Beleg nicht.
+          @if (d.due_date) { Fällig am {{ d.due_date | date: 'dd.MM.yyyy' }}. }
         </div>
       </div>
     }
