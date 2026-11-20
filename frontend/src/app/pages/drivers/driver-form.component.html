@@ -135,7 +135,7 @@
         <div class="col-12"><div class="section-title">Fristen</div></div>
 
         @for (d of deadlineFields; track d.field) {
-          <div class="col-12" [class.col-lg-4]="$index < 3" [class.col-lg-6]="$index >= 3">
+          <div class="col-12 col-lg-4">
             <label class="form-label" [for]="d.field">{{ d.label }}</label>
             <input type="date" class="form-control" [id]="d.field" [formControlName]="d.field" [class.is-invalid]="!!fieldErrors()[d.field]" />
             <div class="invalid-feedback">{{ fieldErrors()[d.field] }}</div>
@@ -168,6 +168,10 @@
       @if (form.dirty && !archived()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
       <div class="form-bar-right">
         @if (id && driver() && !archived()) {
+          <button type="button" class="btn btn-outline-secondary" [disabled]="form.dirty || readingBusy()"
+                  [attr.title]="form.dirty ? 'Bitte zuerst speichern' : 'Trägt heute als Tag des Auslesens ein. Die nächste Frist liegt 28 Tage später.'" (click)="markRead()">
+            <i class="bi bi-check2-circle me-1"></i>Karte ausgelesen
+          </button>
           <button type="button" class="btn btn-outline-secondary" (click)="archive()"><i class="bi bi-archive me-1"></i>Archivieren</button>
         }
         @if (archived() && isAdmin()) {

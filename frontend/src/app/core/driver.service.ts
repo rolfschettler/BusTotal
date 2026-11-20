@@ -36,6 +36,8 @@ export interface Driver {
   license_due_date: string | null;
   pbs_due_date: string | null;
   driver_card_due_date: string | null;
+  /** Bis wann die Fahrerkarte spätestens ausgelesen sein muss (alle 28 Tage) */
+  driver_card_read_due_date: string | null;
   code95_due_date: string | null;
   medical_due_date: string | null;
   notes: string | null;
@@ -89,6 +91,10 @@ export class DriverService {
   }
   restore(id: string) {
     return this.http.post<Driver>(`${this.base}/${id}/restore`, {});
+  }
+  /** Die Fahrerkarte wurde heute ausgelesen: Der Server setzt die nächste Frist (28 Tage). */
+  markCardRead(id: string) {
+    return this.http.post<Driver>(`${this.base}/${id}/card-read`, {});
   }
 
   saveAbsence(driverId: string, a: Absence) {

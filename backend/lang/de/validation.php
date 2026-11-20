@@ -259,6 +259,7 @@ return [
         'hu_due_date' => 'HU fällig',
         'sp_due_date' => 'SP fällig',
         'tachograph_due_date' => 'Fahrtenschreiber fällig',
+        'tachograph_read_due_date' => 'Fahrzeugeinheit auslesen bis',
         'service_due_date' => 'Wartung fällig',
         'deadline' => 'Fristfilter',
 
@@ -275,6 +276,7 @@ return [
         'license_due_date' => 'Führerschein gültig bis',
         'pbs_due_date' => 'P-Schein gültig bis',
         'driver_card_due_date' => 'Fahrerkarte gültig bis',
+        'driver_card_read_due_date' => 'Fahrerkarte auslesen bis',
         'code95_due_date' => 'Code 95 gültig bis',
         'medical_due_date' => 'Untersuchung fällig',
         'start_date' => 'Beginn',

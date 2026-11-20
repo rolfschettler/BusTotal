@@ -10,12 +10,13 @@ use App\Http\Requests\DriverRequest;
 use App\Models\Driver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class DriverController extends Controller
 {
     /** Die früheste der Fristen. Leere Fristen zählen nicht (LEAST liefert sonst NULL, sobald eine Spalte leer ist). */
-    private const NEXT_DEADLINE = "NULLIF(LEAST(COALESCE(license_due_date, '9999-12-31'), COALESCE(pbs_due_date, '9999-12-31'), COALESCE(driver_card_due_date, '9999-12-31'), COALESCE(code95_due_date, '9999-12-31'), COALESCE(medical_due_date, '9999-12-31')), '9999-12-31')";
+    private const NEXT_DEADLINE = "NULLIF(LEAST(COALESCE(license_due_date, '9999-12-31'), COALESCE(pbs_due_date, '9999-12-31'), COALESCE(driver_card_due_date, '9999-12-31'), COALESCE(driver_card_read_due_date, '9999-12-31'), COALESCE(code95_due_date, '9999-12-31'), COALESCE(medical_due_date, '9999-12-31')), '9999-12-31')";
 
     /** Erlaubte Sortierungen (siehe CustomerController::SORTS): Die Anfrage wählt nur einen Eintrag der festen Liste. */
     private const SORTS = [
@@ -48,13 +49,14 @@ class DriverController extends Controller
             $query->where('employment_type', $type);
         }
 
-        // Fristfilter: mindestens eine Frist ist abgelaufen bzw. läuft in WARN_DAYS Tagen oder früher ab.
+        // Fristfilter: mindestens eine Frist ist abgelaufen bzw. läuft innerhalb ihrer Vorwarnzeit (meist 30 Tage,
+        // „Fahrerkarte auslesen“ 7 Tage) oder früher ab.
         if ($deadline = $request->query('deadline')) {
-            $limit = $deadline === 'overdue' ? now()->toDateString() : now()->addDays(Driver::WARN_DAYS)->toDateString();
-            $op = $deadline === 'overdue' ? '<' : '<=';
-            $query->where(function ($w) use ($limit, $op) {
+            $query->where(function ($w) use ($deadline) {
                 foreach (array_keys(Driver::DEADLINES) as $col) {
-                    $w->orWhere($col, $op, $limit);
+                    $deadline === 'overdue'
+                        ? $w->orWhere($col, '<', now()->toDateString())
+                        : $w->orWhere($col, '<=', now()->addDays(Driver::warnDaysOf($col))->toDateString());
                 }
             });
         }
@@ -100,6 +102,16 @@ class DriverController extends Controller
     }
 
     /** "Löschen" bedeutet Archivieren (Austritt): Der Fahrer bleibt für vergangene Fahrten und Belege erhalten. */
+    public function markCardRead(Request $request, Driver $driver): JsonResponse
+    {
+        $data = $request->validate(['date' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today']]);
+        $readOn = Carbon::parse($data['date'] ?? now()->toDateString());
+
+        $driver->update(['driver_card_read_due_date' => $readOn->copy()->addDays(Driver::CARD_READ_EVERY_DAYS)->toDateString()]);
+
+        return response()->json($driver->fresh());
+    }
+
     public function destroy(Driver $driver): JsonResponse
     {
         $driver->delete();

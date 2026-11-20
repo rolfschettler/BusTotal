@@ -33,14 +33,25 @@ Für jeden Fahrer tragen Sie ein, **bis wann** ein Nachweis gilt:
 | Führerschein | Ablauf der Fahrerlaubnis |
 | P-Schein | Führerschein zur Fahrgastbeförderung |
 | Fahrerkarte | Karte für den digitalen Tacho |
+| Auslesen | Fahrerkarte auslesen, [alle 28 Tage](#karte-auslesen) |
 | Code 95 | Berufskraftfahrer-Weiterbildung |
 | Untersuchung | ärztliche Untersuchung |
 
-Unter jedem Datum zeigt die Software, wie viel Zeit bleibt („in 12 Tagen“). Eine Frist gilt als **abgelaufen**, wenn das Datum vor heute liegt, als **bald fällig** in den nächsten **30 Tagen** und sonst als **in Ordnung**.
+Unter jedem Datum zeigt die Software, wie viel Zeit bleibt („in 12 Tagen“). Eine Frist gilt als **abgelaufen**, wenn das Datum vor heute liegt, als **bald fällig** in den nächsten **30 Tagen** (beim [Auslesen der Fahrerkarte](#karte-auslesen) in den nächsten 7 Tagen) und sonst als **in Ordnung**.
 
 Auf der [Startseite](/hilfe/start#startseite) zeigt die Kachel „Fällige Fristen beim Personal“ alle abgelaufenen und bald fälligen Fristen, die dringendsten zuerst. Ohne fällige Fristen erscheint sie nicht. Nach einer erneuerten Karte oder bestandenen Prüfung tragen Sie einfach das neue Datum ein.
 
 > Die Software **erinnert** an Fristen, ersetzt aber nicht Ihre eigene Überwachung. Welche Nachweise und Fristen für Ihre Fahrer tatsächlich gelten, klären Sie bitte fachlich ab (Entwurf zur Prüfung durch den Auftraggeber).
+
+## Fahrerkarte auslesen {#karte-auslesen}
+
+Die Fahrerkarte muss nach den Sozialvorschriften **spätestens alle 28 Tage** ausgelesen werden, sonst können ältere Daten überschrieben werden. Die Software **liest die Karte nicht aus**, sie erinnert nur:
+
+- Tragen Sie im Feld **Auslesen bis** ein, bis wann spätestens ausgelesen sein muss.
+- Mit **Karte ausgelesen** (Tastenleiste, rechts) tragen Sie **heute** als Tag des Auslesens ein. Die nächste Frist liegt dann 28 Tage später. Die Taste ist erst nach dem Speichern aktiv.
+- Die Frist erscheint auf der Startseite, sobald nur noch **7 Tage** bleiben.
+
+> Ob die Pflicht für Ihre Fahrer und Einsatzarten gilt und wie lange die Daten aufzubewahren sind, klären Sie mit Ihrem Verband oder der Gewerbeaufsicht.
 
 ## Abwesenheiten {#abwesenheiten}
 

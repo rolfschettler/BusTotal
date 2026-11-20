@@ -25,16 +25,29 @@ trait HasDeadlines
                 continue;
             }
             $days = (int) $today->diffInDays($date->copy()->startOfDay(), false);
+            $warn = static::warnDaysOf($column);
             $out[] = [
                 'kind' => str_replace('_due_date', '', $column),
                 'label' => $label,
                 'date' => $date->format('Y-m-d'),
                 'days' => $days,
-                'status' => $days < 0 ? 'overdue' : ($days <= self::WARN_DAYS ? 'soon' : 'ok'),
+                'warn_days' => $warn,
+                'status' => $days < 0 ? 'overdue' : ($days <= $warn ? 'soon' : 'ok'),
             ];
         }
 
         return $out;
+    }
+
+    /**
+     * Ab wie vielen Tagen vor Ablauf eine Frist als "bald fällig" gilt. Ein Modell kann je Spalte einen kürzeren Zeitraum
+     * festlegen (Konstante WARN_DAYS_OVERRIDE): Eine Frist von 28 Tagen wäre sonst gleich nach dem Auslesen "bald fällig".
+     */
+    public static function warnDaysOf(string $column): int
+    {
+        $overrides = defined(static::class.'::WARN_DAYS_OVERRIDE') ? static::WARN_DAYS_OVERRIDE : [];
+
+        return $overrides[$column] ?? self::WARN_DAYS;
     }
 
     /** Die früheste Frist, oder null. */

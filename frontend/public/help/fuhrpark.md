@@ -40,17 +40,28 @@ Für jedes Fahrzeug tragen Sie ein, **bis wann** die nächste Prüfung fällig i
 | HU | Hauptuntersuchung |
 | SP | Sicherheitsprüfung |
 | Tacho | Prüfung des Fahrtenschreibers |
+| Auslesen | Fahrzeugeinheit des Fahrtenschreibers auslesen, [alle 90 Tage](#tacho-auslesen) |
 | Wartung | nächste Inspektion |
 
 Unter jedem Datum zeigt die Software, wie viel Zeit bleibt („in 12 Tagen“). Eine Frist gilt als
 
 - **abgelaufen**, wenn das Datum vor heute liegt,
-- **bald fällig**, wenn sie heute oder in den nächsten **30 Tagen** abläuft,
+- **bald fällig**, wenn sie heute oder in den nächsten **30 Tagen** abläuft (beim [Auslesen](#tacho-auslesen) in den nächsten 14 Tagen),
 - **in Ordnung** sonst.
 
 Auf der [Startseite](/hilfe/start#startseite) zeigt die Kachel „Fällige Fristen im Fuhrpark“ für Administrator und Disponent alle abgelaufenen und bald fälligen Fristen, die dringendsten zuerst. Ohne fällige Fristen erscheint die Kachel nicht. Nach einer bestandenen Prüfung tragen Sie einfach das neue Datum ein.
 
 > Die Software **erinnert** an Fristen, ersetzt aber nicht Ihre eigene Überwachung. Prüfen Sie die Angaben fachlich mit Ihrer Werkstatt.
+
+## Fahrzeugeinheit auslesen {#tacho-auslesen}
+
+Der Massenspeicher der Fahrzeugeinheit des digitalen Fahrtenschreibers muss nach den Sozialvorschriften **spätestens alle 90 Tage** ausgelesen werden, die Daten sind im Betrieb ein Jahr aufzubewahren. Die Software **liest den Fahrtenschreiber nicht aus**, sie erinnert nur:
+
+- Tragen Sie im Feld **Auslesen bis** ein, bis wann spätestens ausgelesen sein muss.
+- Mit **Einheit ausgelesen** (Tastenleiste, rechts) tragen Sie **heute** als Tag des Auslesens ein. Die nächste Frist liegt dann 90 Tage später. Die Taste ist erst nach dem Speichern aktiv, damit keine Eingaben verloren gehen.
+- Die Frist erscheint auf der Startseite, sobald nur noch **14 Tage** bleiben.
+
+> Welche Fahrzeuge einen Fahrtenschreiber brauchen und wie lange Daten aufzubewahren sind, klären Sie mit Ihrem Verband oder der Gewerbeaufsicht.
 
 ## Fahrzeug archivieren {#archivieren}
 

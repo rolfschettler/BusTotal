@@ -256,7 +256,7 @@ class VehicleTest extends TestCase
         $r = $this->as(Role::Disponent)->getJson('/api/vehicles/options')->assertOk();
         $this->assertContains('reisebus', collect($r->json('types'))->pluck('value')->all());
         $this->assertContains('klima', collect($r->json('equipment'))->pluck('value')->all());
-        $this->assertSame(4, count($r->json('deadlines')));
+        $this->assertSame(5, count($r->json('deadlines')));
     }
 
     public function test_auswahlliste_zeigt_alle_aktiven_fahrzeuge_ohne_seiten(): void

@@ -13,8 +13,9 @@ export function daysUntil(iso: string, today: Date = new Date()): number {
   return Math.round((due - now) / DAY);
 }
 
-export function deadlineState(days: number): DeadlineState {
-  return days < 0 ? 'overdue' : days <= WARN_DAYS ? 'soon' : 'ok';
+/** Mit `warnDays` hat eine Frist eine eigene Vorwarnzeit (z. B. 7 Tage bei „Fahrerkarte auslesen“), sonst 30 Tage. */
+export function deadlineState(days: number, warnDays: number = WARN_DAYS): DeadlineState {
+  return days < 0 ? 'overdue' : days <= warnDays ? 'soon' : 'ok';
 }
 
 /** "abgelaufen seit 3 Tagen", "heute fällig", "in 12 Tagen". */

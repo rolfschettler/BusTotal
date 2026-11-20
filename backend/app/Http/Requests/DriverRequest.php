@@ -41,6 +41,7 @@ class DriverRequest extends FormRequest
             'license_due_date' => ['nullable', 'date_format:Y-m-d'],
             'pbs_due_date' => ['nullable', 'date_format:Y-m-d'],
             'driver_card_due_date' => ['nullable', 'date_format:Y-m-d'],
+            'driver_card_read_due_date' => ['nullable', 'date_format:Y-m-d'],
             'code95_due_date' => ['nullable', 'date_format:Y-m-d'],
             'medical_due_date' => ['nullable', 'date_format:Y-m-d'],
             'notes' => ['nullable', 'string', 'max:10000'],

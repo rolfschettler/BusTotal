@@ -53,6 +53,7 @@ class VehicleRequest extends FormRequest
             'hu_due_date' => ['nullable', 'date_format:Y-m-d'],
             'sp_due_date' => ['nullable', 'date_format:Y-m-d'],
             'tachograph_due_date' => ['nullable', 'date_format:Y-m-d'],
+            'tachograph_read_due_date' => ['nullable', 'date_format:Y-m-d'],
             'service_due_date' => ['nullable', 'date_format:Y-m-d'],
             'notes' => ['nullable', 'string', 'max:10000'],
         ];

@@ -98,6 +98,7 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
     Route::middleware('role:admin,disponent')->prefix('vehicles')->group(function () {
         Route::post('/', [VehicleController::class, 'store']);
         Route::put('/{vehicle}', [VehicleController::class, 'update']);
+        Route::post('/{vehicle}/tachograph-read', [VehicleController::class, 'markTachographRead']);
         Route::delete('/{vehicle}', [VehicleController::class, 'destroy']);
     });
     Route::get('/dashboard/vehicle-deadlines', [DashboardController::class, 'vehicleDeadlines'])
@@ -111,6 +112,7 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
         Route::get('/options', [DriverController::class, 'options']);
         Route::get('/{driver}', [DriverController::class, 'show'])->withTrashed();
         Route::put('/{driver}', [DriverController::class, 'update']);
+        Route::post('/{driver}/card-read', [DriverController::class, 'markCardRead']);
         Route::delete('/{driver}', [DriverController::class, 'destroy']);
 
         Route::post('/{driver}/absences', [DriverAbsenceController::class, 'store']);

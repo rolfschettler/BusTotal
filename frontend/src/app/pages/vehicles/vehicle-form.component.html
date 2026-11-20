@@ -157,6 +157,10 @@
     @if (form.dirty && !readOnly()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
     <div class="form-bar-right">
       @if (id && vehicle() && !readOnly()) {
+        <button type="button" class="btn btn-outline-secondary" [disabled]="form.dirty || readingBusy()"
+                [attr.title]="form.dirty ? 'Bitte zuerst speichern' : 'Trägt heute als Tag des Auslesens ein. Die nächste Frist liegt 90 Tage später.'" (click)="markRead()">
+          <i class="bi bi-check2-circle me-1"></i>Einheit ausgelesen
+        </button>
         <button type="button" class="btn btn-outline-secondary" (click)="archive()"><i class="bi bi-archive me-1"></i>Archivieren</button>
       }
       @if (archived() && isAdmin()) {

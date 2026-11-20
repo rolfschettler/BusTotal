@@ -12,6 +12,8 @@ export interface Deadline {
   date: string;
   /** Tage bis zur Frist, negativ = abgelaufen */
   days: number;
+  /** Vorwarnzeit dieser Frist in Tagen (sonst 30) */
+  warn_days?: number;
   status: DeadlineStatus;
 }
 
@@ -35,6 +37,8 @@ export interface Vehicle {
   hu_due_date: string | null;
   sp_due_date: string | null;
   tachograph_due_date: string | null;
+  /** Bis wann die Fahrzeugeinheit (Massenspeicher des Fahrtenschreibers) spätestens ausgelesen sein muss (alle 90 Tage) */
+  tachograph_read_due_date: string | null;
   service_due_date: string | null;
   notes: string | null;
   deadlines: Deadline[];
@@ -101,5 +105,9 @@ export class VehicleService {
   }
   restore(id: string) {
     return this.http.post<Vehicle>(`${this.base}/${id}/restore`, {});
+  }
+  /** Die Fahrzeugeinheit wurde heute ausgelesen: Der Server setzt die nächste Frist (90 Tage). */
+  markTachographRead(id: string) {
+    return this.http.post<Vehicle>(`${this.base}/${id}/tachograph-read`, {});
   }
 }

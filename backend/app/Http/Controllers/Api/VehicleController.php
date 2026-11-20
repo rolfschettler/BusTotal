@@ -9,12 +9,13 @@ use App\Http\Requests\VehicleRequest;
 use App\Models\Vehicle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class VehicleController extends Controller
 {
     /** Die früheste der vier Fristen. Leere Fristen zählen nicht (LEAST liefert sonst NULL, sobald eine Spalte leer ist). */
-    private const NEXT_DEADLINE = "NULLIF(LEAST(COALESCE(hu_due_date, '9999-12-31'), COALESCE(sp_due_date, '9999-12-31'), COALESCE(tachograph_due_date, '9999-12-31'), COALESCE(service_due_date, '9999-12-31')), '9999-12-31')";
+    private const NEXT_DEADLINE = "NULLIF(LEAST(COALESCE(hu_due_date, '9999-12-31'), COALESCE(sp_due_date, '9999-12-31'), COALESCE(tachograph_due_date, '9999-12-31'), COALESCE(tachograph_read_due_date, '9999-12-31'), COALESCE(service_due_date, '9999-12-31')), '9999-12-31')";
 
     /**
      * Erlaubte Sortierungen (siehe CustomerController::SORTS): Die Anfrage wählt nur einen Eintrag der festen Liste.
@@ -50,13 +51,14 @@ class VehicleController extends Controller
             $query->where('type', $type);
         }
 
-        // Fristfilter: mindestens eine Frist ist abgelaufen bzw. läuft in WARN_DAYS Tagen oder früher ab.
+        // Fristfilter: mindestens eine Frist ist abgelaufen bzw. läuft innerhalb ihrer Vorwarnzeit (meist 30 Tage,
+        // „Fahrzeugeinheit auslesen“ 14 Tage) oder früher ab.
         if ($deadline = $request->query('deadline')) {
-            $limit = $deadline === 'overdue' ? now()->toDateString() : now()->addDays(Vehicle::WARN_DAYS)->toDateString();
-            $op = $deadline === 'overdue' ? '<' : '<=';
-            $query->where(function ($w) use ($limit, $op) {
+            $query->where(function ($w) use ($deadline) {
                 foreach (array_keys(Vehicle::DEADLINES) as $col) {
-                    $w->orWhere($col, $op, $limit);
+                    $deadline === 'overdue'
+                        ? $w->orWhere($col, '<', now()->toDateString())
+                        : $w->orWhere($col, '<=', now()->addDays(Vehicle::warnDaysOf($col))->toDateString());
                 }
             });
         }
@@ -95,6 +97,20 @@ class VehicleController extends Controller
     public function update(VehicleRequest $request, Vehicle $vehicle): JsonResponse
     {
         $vehicle->update($request->validated());
+
+        return response()->json($vehicle->fresh());
+    }
+
+    /**
+     * Die Fahrzeugeinheit wurde ausgelesen (Massenspeicher des Fahrtenschreibers): Die nächste Frist ist das Datum plus 90 Tage.
+     * Ohne Angabe gilt heute. Die Software liest den Fahrtenschreiber nicht selbst aus, sie merkt sich nur das Datum.
+     */
+    public function markTachographRead(Request $request, Vehicle $vehicle): JsonResponse
+    {
+        $data = $request->validate(['date' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:today']]);
+        $readOn = Carbon::parse($data['date'] ?? now()->toDateString());
+
+        $vehicle->update(['tachograph_read_due_date' => $readOn->copy()->addDays(Vehicle::TACHOGRAPH_READ_EVERY_DAYS)->toDateString()]);
 
         return response()->json($vehicle->fresh());
     }

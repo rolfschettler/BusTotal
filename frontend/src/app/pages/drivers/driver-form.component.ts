@@ -56,6 +56,7 @@ export class DriverFormComponent implements OnInit {
     { field: 'license_due_date', label: 'Führerschein bis', hint: 'Ablauf der Fahrerlaubnis' },
     { field: 'pbs_due_date', label: 'P-Schein bis', hint: 'Führerschein zur Fahrgastbeförderung' },
     { field: 'driver_card_due_date', label: 'Fahrerkarte bis', hint: 'Karte für den digitalen Tacho' },
+    { field: 'driver_card_read_due_date', label: 'Auslesen bis', hint: 'Fahrerkarte, alle 28 Tage', warn: 7 },
     { field: 'code95_due_date', label: 'Code 95 bis', hint: 'Berufskraftfahrer-Weiterbildung' },
     { field: 'medical_due_date', label: 'Untersuchung fällig', hint: 'ärztliche Untersuchung' },
   ] as const;
@@ -80,6 +81,7 @@ export class DriverFormComponent implements OnInit {
     license_due_date: [''],
     pbs_due_date: [''],
     driver_card_due_date: [''],
+    driver_card_read_due_date: [''],
     code95_due_date: [''],
     medical_due_date: [''],
     notes: [''],
@@ -146,7 +148,7 @@ export class DriverFormComponent implements OnInit {
     const iso = (this.form.getRawValue() as Record<string, unknown>)[field];
     if (typeof iso !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
     const days = daysUntil(iso);
-    const state = deadlineState(days);
+    const state = deadlineState(days, (this.deadlineFields.find((d) => d.field === field) as { warn?: number } | undefined)?.warn);
     return { text: deadlineText(days), cls: state === 'overdue' ? 'text-danger' : state === 'soon' ? 'text-warning-emphasis' : 'text-body-secondary' };
   }
 
@@ -217,6 +219,26 @@ export class DriverFormComponent implements OnInit {
       confirmLabel: 'Archivieren',
     });
     if (ok) this.api.archive(this.id).subscribe(() => this.router.navigate(['/fahrer']));
+  }
+
+  /** Trägt „heute ausgelesen“ ein; der Server setzt die nächste Frist (28 Tage). Nur bei gespeichertem Formular, sonst gingen Eingaben verloren. */
+  readingBusy = signal(false);
+  markRead() {
+    if (!this.id || this.form.dirty) return;
+    this.readingBusy.set(true);
+    this.api.markCardRead(this.id).subscribe({
+      next: (d) => {
+        this.readingBusy.set(false);
+        this.driver.set(d);
+        this.form.patchValue(this.toFormValue(d), { emitEvent: false });
+        this.form.markAsPristine();
+        this.notify(true, `Fahrerkarte als heute ausgelesen eingetragen. Nächste Frist: ${germanDate(d.driver_card_read_due_date)}.`);
+      },
+      error: (e) => {
+        this.readingBusy.set(false);
+        this.notify(false, httpErrorText(e, 'Das Eintragen hat nicht geklappt.'));
+      },
+    });
   }
 
   restore() {

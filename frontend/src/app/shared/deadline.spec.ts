@@ -20,6 +20,14 @@ describe('Fristen', () => {
     expect(deadlineState(31)).toBe('ok');
   });
 
+  it('kennt Fristen mit eigener Vorwarnzeit', () => {
+    expect(deadlineState(7, 7)).toBe('soon');
+    expect(deadlineState(8, 7)).toBe('ok');
+    expect(deadlineState(-1, 7)).toBe('overdue');
+    expect(deadlineState(14, 14)).toBe('soon');
+    expect(deadlineState(15, 14)).toBe('ok');
+  });
+
   it('schreibt Fristen verständlich', () => {
     expect(deadlineText(-1)).toBe('seit 1 Tag abgelaufen');
     expect(deadlineText(-5)).toBe('seit 5 Tagen abgelaufen');

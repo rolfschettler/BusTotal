@@ -109,6 +109,8 @@ class DemoFleetGenerator
             'hu_due_date' => $this->deadline($r, $index % 10 === 3 ? -20 : null),
             'sp_due_date' => $this->deadline($r, $index % 10 === 4 ? 12 : null),
             'tachograph_due_date' => $this->deadline($r, $index % 10 === 9 ? 25 : null),
+            // Auslesen der Fahrzeugeinheit (alle 90 Tage): ohne Zufall, nur bei ohnehin auffälligen Fahrzeugen (Nr. 3 überfällig, Nr. 4 bald fällig).
+            'tachograph_read_due_date' => $this->today->addDays(match ($index % 10) { 3 => -3, 4 => 9, default => 35 + ($index % 6) * 10 })->toDateString(),
             'service_due_date' => $this->deadline($r, $index % 10 === 7 ? 6 : null),
             'notes' => $index % 7 === 0 ? 'Bevorzugt für Mehrtagesfahrten.' : null,
             'created_at' => $this->today->subDays($r->getInt(60, 700)),
@@ -166,6 +168,8 @@ class DemoFleetGenerator
             'license_due_date' => $this->deadline($r, null, 365 * 8),
             'pbs_due_date' => $this->deadline($r, null, 365 * 3),
             'driver_card_due_date' => $this->deadline($r, $index % 8 === 2 ? -9 : null, 365 * 2),
+            // Auslesen der Fahrerkarte (alle 28 Tage): ohne Zufall; Nr. 2 überfällig, Nr. 4 bald fällig, alle anderen mit reichlich Zeit.
+            'driver_card_read_due_date' => $this->today->addDays(match ($index % 8) { 2 => -2, 4 => 4, default => 10 + ($index % 6) * 3 })->toDateString(),
             'code95_due_date' => $this->deadline($r, $index % 8 === 4 ? 21 : null, 365 * 3),
             'medical_due_date' => $this->deadline($r, $index % 8 === 6 ? 14 : null, 365 * 2),
             'notes' => $index % 9 === 0 ? 'Fährt bevorzugt Schulfahrten.' : null,

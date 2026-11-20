@@ -23,9 +23,16 @@ class Driver extends Model
         'license_due_date' => 'Führerschein',
         'pbs_due_date' => 'Fahrgastbeförderung (P-Schein)',
         'driver_card_due_date' => 'Fahrerkarte',
+        'driver_card_read_due_date' => 'Fahrerkarte auslesen',
         'code95_due_date' => 'Code 95 (Weiterbildung)',
         'medical_due_date' => 'Ärztliche Untersuchung',
     ];
+
+    /** Die Fahrerkarte muss spätestens alle 28 Tage ausgelesen werden (VO 561/2006). */
+    public const CARD_READ_EVERY_DAYS = 28;
+
+    /** Kürzere Vorwarnzeit als die üblichen 30 Tage (die Frist selbst dauert nur 28 Tage). */
+    public const WARN_DAYS_OVERRIDE = ['driver_card_read_due_date' => 7];
 
     protected $guarded = ['id'];
 
@@ -42,6 +49,7 @@ class Driver extends Model
             'license_due_date' => 'date:Y-m-d',
             'pbs_due_date' => 'date:Y-m-d',
             'driver_card_due_date' => 'date:Y-m-d',
+            'driver_card_read_due_date' => 'date:Y-m-d',
             'code95_due_date' => 'date:Y-m-d',
             'medical_due_date' => 'date:Y-m-d',
         ];

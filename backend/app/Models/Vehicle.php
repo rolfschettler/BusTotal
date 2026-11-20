@@ -21,8 +21,15 @@ class Vehicle extends Model
         'hu_due_date' => 'Hauptuntersuchung (HU)',
         'sp_due_date' => 'Sicherheitsprüfung (SP)',
         'tachograph_due_date' => 'Fahrtenschreiber',
+        'tachograph_read_due_date' => 'Fahrzeugeinheit auslesen',
         'service_due_date' => 'Wartung',
     ];
+
+    /** Der Massenspeicher der Fahrzeugeinheit muss spätestens alle 90 Tage ausgelesen werden (VO 561/2006). */
+    public const TACHOGRAPH_READ_EVERY_DAYS = 90;
+
+    /** Kürzere Vorwarnzeit als die üblichen 30 Tage (die Frist dauert nur 90 Tage). */
+    public const WARN_DAYS_OVERRIDE = ['tachograph_read_due_date' => 14];
 
     protected $guarded = ['id'];
 
@@ -44,6 +51,7 @@ class Vehicle extends Model
             'hu_due_date' => 'date:Y-m-d',
             'sp_due_date' => 'date:Y-m-d',
             'tachograph_due_date' => 'date:Y-m-d',
+            'tachograph_read_due_date' => 'date:Y-m-d',
             'service_due_date' => 'date:Y-m-d',
         ];
     }

@@ -288,6 +288,6 @@ class DriverTest extends TestCase
         $this->assertContains('DE', collect($r->json('license_classes'))->pluck('value')->all());
         $this->assertContains('urlaub', collect($r->json('absence_types'))->pluck('value')->all());
         $this->assertContains('vollzeit', collect($r->json('employment_types'))->pluck('value')->all());
-        $this->assertSame(5, count($r->json('deadlines')));
+        $this->assertSame(6, count($r->json('deadlines')));
     }
 }

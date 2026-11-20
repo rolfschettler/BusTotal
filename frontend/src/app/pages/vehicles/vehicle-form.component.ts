@@ -6,7 +6,7 @@ import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { httpErrorText } from '../../core/http-error';
 import { Option, Vehicle, VehicleInput, VehicleOptions, VehicleService } from '../../core/vehicle.service';
-import { daysUntil, deadlineState, deadlineText } from '../../shared/deadline';
+import { daysUntil, deadlineState, deadlineText, germanDate } from '../../shared/deadline';
 
 /**
  * Fahrzeugformular nach dem Formular-Muster (docs/ClaudeCodePatterns/EditFormPattern.md), Vorbild: Kundenformular.
@@ -48,6 +48,7 @@ export class VehicleFormComponent implements OnInit {
     { field: 'hu_due_date', label: 'HU fällig', hint: 'Hauptuntersuchung' },
     { field: 'sp_due_date', label: 'SP fällig', hint: 'Sicherheitsprüfung' },
     { field: 'tachograph_due_date', label: 'Tacho fällig', hint: 'Fahrtenschreiber' },
+    { field: 'tachograph_read_due_date', label: 'Auslesen bis', hint: 'Fahrzeugeinheit, alle 90 Tage', warn: 14 },
     { field: 'service_due_date', label: 'Wartung fällig', hint: 'nächste Inspektion' },
   ] as const;
 
@@ -69,6 +70,7 @@ export class VehicleFormComponent implements OnInit {
     hu_due_date: [''],
     sp_due_date: [''],
     tachograph_due_date: [''],
+    tachograph_read_due_date: [''],
     service_due_date: [''],
     notes: [''],
   });
@@ -126,7 +128,7 @@ export class VehicleFormComponent implements OnInit {
     const iso = (this.form.getRawValue() as Record<string, unknown>)[field];
     if (typeof iso !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
     const days = daysUntil(iso);
-    const state = deadlineState(days);
+    const state = deadlineState(days, (this.deadlineFields.find((d) => d.field === field) as { warn?: number } | undefined)?.warn);
     return { text: deadlineText(days), cls: state === 'overdue' ? 'text-danger' : state === 'soon' ? 'text-warning-emphasis' : 'text-body-secondary' };
   }
 
@@ -199,6 +201,26 @@ export class VehicleFormComponent implements OnInit {
       confirmLabel: 'Archivieren',
     });
     if (ok) this.api.archive(this.id).subscribe(() => this.router.navigate(['/fahrzeuge']));
+  }
+
+  /** Trägt „heute ausgelesen“ ein; der Server setzt die nächste Frist (90 Tage). Nur bei gespeichertem Formular, sonst gingen Eingaben verloren. */
+  readingBusy = signal(false);
+  markRead() {
+    if (!this.id || this.form.dirty) return;
+    this.readingBusy.set(true);
+    this.api.markTachographRead(this.id).subscribe({
+      next: (v) => {
+        this.readingBusy.set(false);
+        this.vehicle.set(v);
+        this.form.patchValue(this.toFormValue(v), { emitEvent: false });
+        this.form.markAsPristine();
+        this.notify(true, `Fahrzeugeinheit als heute ausgelesen eingetragen. Nächste Frist: ${germanDate(v.tachograph_read_due_date)}.`);
+      },
+      error: (e) => {
+        this.readingBusy.set(false);
+        this.notify(false, httpErrorText(e, 'Das Eintragen hat nicht geklappt.'));
+      },
+    });
   }
 
   restore() {
