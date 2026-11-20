@@ -20,6 +20,8 @@
       @if (d.source; as s) { · aus <a [routerLink]="['/belege', s.id]">{{ typeLabel(s.type) }} {{ s.number }}</a> }
       @if (d.cancels_id) { · Storno zu <a [routerLink]="['/belege', d.cancels_id]">dem Originalbeleg</a> }
     </p>
+  } @else if (id) {
+    <h1 class="h3 mb-0">Beleg</h1>
   } @else {
     <h1 class="h3 mb-0">Neuer Beleg</h1>
   }
@@ -60,7 +62,7 @@
       <label class="form-label" for="customerSearch">Kunde <span class="text-danger">*</span></label>
       @if (customer(); as c) {
         <div class="input-group">
-          <input class="form-control" id="customerSearch" [value]="c.display_name + ' (' + c.customer_number + ')'" readonly />
+          <input class="form-control" id="customerSearch" [value]="c.display_name + ' (' + c.customer_number + ')'" readonly [disabled]="readonly()" />
           @if (!readonly()) {
             <button type="button" class="btn btn-outline-secondary" (click)="clearCustomer()">Ändern</button>
           }

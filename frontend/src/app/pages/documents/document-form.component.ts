@@ -136,16 +136,34 @@ export class DocumentFormComponent implements OnInit {
       this.typeValue.set(this.form.controls.type.value);
     });
 
-    const idParam = this.route.snapshot.paramMap.get('id');
-    this.id = idParam ?? null;
-    if (this.id) {
-      this.load(this.id);
-    } else {
-      const type = this.route.snapshot.queryParamMap.get('type') as DocumentTypeValue | null;
-      if (type) this.form.controls.type.setValue(type);
-      this.addLine();
-      this.form.markAsPristine();
+    // Aus einem Beleg wird ein anderer (Folgebeleg, Storno): Die Adresse wechselt, die Seite bleibt dieselbe
+    // Komponente. Deshalb auf die Adresse hören, nicht nur beim Start laden.
+    this.route.paramMap.subscribe((p) => this.open(p.get('id')));
+  }
+
+  /** Beleg `id` laden, oder ein leeres Formular für einen neuen Beleg zeigen. */
+  private open(id: string | null) {
+    this.id = id;
+    this.message.set(null);
+    this.formSubmitted.set(false);
+    this.doc.set(null);
+    this.customer.set(null);
+    this.customerQuery.set('');
+    this.customerHits.set([]);
+    this.form.enable({ emitEvent: false });
+    this.form.reset(undefined, { emitEvent: false });
+    this.lines.clear({ emitEvent: false });
+
+    if (id) {
+      this.load(id);
+      return;
     }
+    const type = this.route.snapshot.queryParamMap.get('type') as DocumentTypeValue | null;
+    if (type) this.form.controls.type.setValue(type, { emitEvent: false });
+    this.typeValue.set(this.form.controls.type.value);
+    this.addLine();
+    this.form.markAsPristine();
+    this.tick.update((n) => n + 1);
   }
 
   // ---------- Laden ----------
