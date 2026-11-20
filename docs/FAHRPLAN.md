@@ -11,7 +11,7 @@ Entwickler hat noch keine Erfahrung mit Laravel und Docker → Claude begleitet 
 Getroffene Entscheidungen:
 - Mandantenzugriff über **Subdomain** (`firma.bustotal.de`) → Mandant wird aus dem Host-Header ermittelt
 - Hosting: vorhandener **Mittwald Agentur-Server (altes Kundencenter)** → klassisches PHP/MySQL-Hosting, **kein Docker**
-  - **Update 2026-11-19 (Mittwald-Ticket #6077836):** Die App ist auf dem Agentur-Server machbar, dort gilt aber ein **PHP-Memory-Limit von 1024M**. Mittwald rät zu einem **mStudio Managed vServer** (nur gebuchte Ressourcen als Grenze; 1 vCPU / 2 GB RAM reichen für Start und Entwicklung, später skalierbar; 10 Tage Testzeitraum). **Entscheidung offen** – Details unter „Offene Klärungen mit Mittwald“.
+  - **Update 2026-11-19 (Mittwald-Ticket #6077836):** Die App ist auf dem Agentur-Server machbar, dort gilt aber ein **PHP-Memory-Limit von 1024M**. Mittwald rät zu einem **mStudio Managed vServer** (nur gebuchte Ressourcen als Grenze; 1 vCPU / 2 GB RAM reichen für Start und Entwicklung, später skalierbar; Testzeitraum inzwischen 30 Tage). **Entscheidung offen** – Details unter „Offene Klärungen mit Mittwald“.
 - DATEV: **Buchungsstapel-Export (EXTF-CSV)** + GoBD-konforme Rechnungen
 - PHP-Framework: **Laravel (Empfehlung)** – bitte bestätigen
 
@@ -111,6 +111,50 @@ Antwort von Mittwald (Ticket #6077836, 2026-11-19): „Kann sowohl im Agentur-Se
 - [ ] **Entscheidung:** Agentur-Server oder mStudio-Managed-vServer? **Tendenz vServer** (Wildcard-Zertifikat automatisch, Queue-Worker, kein `html/`-Zwang erwartet – im Test prüfen). Bei vServer entfallen Teile der Hosting-Folgen oben (eigener Queue-Worker statt Cron, `CREATE DATABASE` evtl. möglich, Docker ggf. möglich) – dann Tabelle „Folgen aus dem Mittwald-Hosting“ und Phase 8 anpassen.
 - **Ergebnis Test-Deploy Agentur-Server (2026-11-19, Details `DEPLOY-TEST.md`):** SSH, PHP 8.5, Composer (als Datei), alle Erweiterungen, ausgehendes HTTPS, beliebig viele Datenbanken, Backend + zentrale Datenbank + Betreiber-Konto laufen. **Wichtigste Erkenntnis:** Webserver bedient **nur `html/`** (Ziele unter `files/` → Fehler 500). Lösung: Code in `files/…/backend`, öffentlicher Teil in `html/bt-test` (siehe `DEPLOY-TEST.md`). **Läuft (2026-11-20):** Betreiber-Anmeldung, Firma anlegen, Firmen-Anmeldung. **Nachteile des Agentur-Servers:** Wildcard-Subdomain erzeugt **keinen** DNS-Eintrag (Subdomains nur einzeln), Let's Encrypt nur pro Host, Wildcard-Zertifikat kostenpflichtig → je Firma Handarbeit. Der Routing-Dienst war vom Web-PHP aus erreichbar, lieferte aber zeitweise 503 (Ausfall beim kostenlosen Dienst, nicht beim Hosting). Tendenz **vServer**, sobald Mittwald die Fragen (Wildcard-SSL, Root, Worker) beantwortet hat.
 - [ ] Testzeitraum (**30 Tage**, einmalig je Kundennummer – erst starten, wenn der Deploy vorbereitet ist) mit einem **Test-Deploy** nutzen: Wildcard, Cron/Queue, Composer, PHP-Version, Memory-Limit der Streckenplanung prüfen.
+
+### Eignungsprüfung mStudio (Stand 2026-11-20, Schreibtischprüfung ohne Testzugang)
+Quellen: Mittwald-Antworten (Ticket #6077836) und [Mittwald-Entwicklerdoku: PHP-Anwendungen](https://developer.mittwald.de/docs/v2/platform/workloads/php/), [Container](https://developer.mittwald.de/docs/v2/platform/workloads/containers/), [Deployer](https://developer.mittwald.de/docs/v2/guides/deployment/deployer/).
+
+| Anforderung | Stand | Bewertung |
+|---|---|---|
+| PHP ≥ 8.3, Composer, SSH | PHP 8.3/8.4/8.5, Composer als App-Software, SSH-Schlüssel | **erfüllt** |
+| Wildcard `*.domain` auf eine App + SSL | ja, Wildcard-Zertifikat automatisch | **erfüllt** (Vorteil gegenüber Agentur-Server) |
+| Document Root `public/` statt `html/`-Zwang | Doku: Document Root pro App frei wählbar (auch `/current/public` bei Deployer) | **erfüllt, im Test bestätigen** – dann entfällt die `html/bt-test`-Aufteilung |
+| Cron minütlich | ja | **erfüllt** (`schedule:run`) |
+| Queue-Worker dauerhaft | Container möglich (eigenes Image nötig) | **machbar, mehr Aufwand**. Einfache Lösung: Cron minütlich `queue:work --stop-when-empty`; Container-Worker erst bei Bedarf |
+| Memory-Limit (Streckenplanung) | nur gebuchte Ressourcen (z. B. 2 GB), kein fester PHP-Deckel genannt | **im Test prüfen** (`memory_limit`, `max_execution_time`) |
+| MySQL, viele Datenbanken | unbegrenzt | **erfüllt** |
+| Datenbank per Programm anlegen | per API derzeit nicht möglich | **Handarbeit** bleibt (Firma anlegen = DB im mStudio anlegen) |
+| Root-Rechte | keine | unkritisch, solange alles über App/Container läuft |
+| Ausgehendes HTTPS (Routing-Dienst) | beim Agentur-Server ja, vServer nicht ausdrücklich bestätigt | **im Test prüfen** |
+| Mailversand (SMTP) | nicht geklärt | **offen**: Mail-Dienst/SMTP-Zugang für Systemmails klären |
+| DNS der Domain | vermutlich muss die Domain bei Mittwald liegen | **offen** (Wildcard-DNS-Eintrag nötig) |
+| Backups | 30 Tage bis 12 Monate | **Wiederherstellung (Datenbanken je Firma) im Test probieren** |
+| Kosten | 1 vCPU / 2 GB: 21 € mtl. zzgl. USt., skalierbar, Kündigung 30 Tage | akzeptabel |
+
+**Fazit:** Keine Hürde gegen mStudio gefunden, es ist dem Agentur-Server überlegen (Wildcard-SSL, freier Document Root, Ressourcen frei wählbar). **Entscheidung für mStudio-vServer**, vorbehaltlich der Punkte „im Test prüfen“.
+**Testprogramm für die 30 Tage (am Stück abarbeiten):** 1. App mit Document Root `public/` anlegen, 2. Wildcard-Domain + Zertifikat, 3. Deploy mit Skript, 4. Betreiber + zwei Firmen, je eigene Datenbank, 5. Cron/Queue, 6. Streckenplanung (Speicher, Laufzeit, Routing-Dienst), 7. Systemmail, 8. Backup/Wiederherstellung, 9. Last mit realistischen Datenmengen.
+**Lasttest (Schritt 9 präzisieren):** Szenario A „große Firma“: z. B. 50.000 Aufträge, 200 Touren pro Monat, mehrere Jahre Belege; gemessen werden Listen, Suche, PDF-Erzeugung, DATEV-Export, Streckenplanung. Szenario B „viele kleine Firmen“: z. B. 20 Firmen mit je 2.000 Aufträgen, gleichzeitig angemeldet. Szenario C: A und B gleichzeitig (Nachbar-Effekt). Messwerte: Antwortzeiten, Speicher, CPU, Queue-Rückstand, Datenbankgröße. Ergebnis fürs Angebot: welche Firmengröße auf welche Ressourcen (vCPU/RAM) passt.
+**Agentur-Server** bleibt als **Staging** mit Demodaten (keine echten Kundendaten); Deploy-Skript dafür auf mehrere Ziele (`staging`, `produktiv`) erweitern.
+
+## Architekturabwägung: eine Installation für alle Firmen oder eine Instanz je Firma (2026-11-20)
+**Stand:** Entwicklungs- und Angebotsphase, die Kundenstruktur des Auftraggebers ist offen (wenige sehr große oder viele kleine Firmen). **Entscheidung: nichts umbauen**, beide Betriebsarten offen halten.
+| | Eine Installation, viele Firmen (jetzt) | Eine Instanz je Firma |
+|---|---|---|
+| Code | komplexer (Mandant aus Subdomain, Datenbankwechsel, Betreiberportal) | einfacher |
+| Neue Firma | im Portal, Datenbank bleibt Handarbeit | neue App, Datenbank, Domain; skriptbar |
+| Updates | einmal ausrollen | N-mal; Versionsstände können auseinanderlaufen |
+| Ressourcen | gemeinsam, günstig | je Instanz Grundverbrauch, teurer |
+| Isolation | Trennung über Datenbanken; Last-Spitzen treffen alle | physisch getrennt, kein Nachbar-Effekt |
+| Überblick | zentral im Portal | fehlt, eigenes Monitoring nötig |
+**Faustregel:** bis ca. 5–10 Firmen sind getrennte Instanzen einfacher, ab ca. 15–20 oder bei Aufnahme neuer Firmen ohne Handarbeit lohnt die mandantenfähige Installation. Eigenbetrieb durch die Firmen oder Kundenanpassungen sprechen für getrennte Instanzen.
+**Zielbild (Hybrid):** viele kleine Firmen auf einem gemeinsamen Server (mandantenfähig), wenige sehr große Firmen auf eigenem vServer im **Einzelinstanz-Modus** (derselbe Code, Konfigurationsschalter, Betreiberportal aus). Als Preisstufen „Shared“ und „Dedicated“ anbietbar.
+**Folgerungen:**
+- Im Code **keine Annahme**, dass es immer mehrere Firmen gibt (Einzelinstanz-Modus muss möglich bleiben). Der Schalter selbst wird erst bei Bedarf gebaut.
+- **MySQL ist geeignet** (Datenmengen eines Busbetriebs sind klein, Indizes beachten). Engpässe eher bei PDF-Erzeugung, DATEV-Export, Routing-Dienst und langen Auswertungen auf der Live-Datenbank. Eine große Firma kann später auf einen eigenen Datenbankserver umziehen, der Code ist DB-neutral.
+- **mStudio-vServer** ist am Start kein Engpass (vCPU/RAM/Speicher einstellbar), wächst aber nur nach oben. Getrennte Instanzen bringen Isolation, nicht automatisch mehr Leistung.
+- Belastbare Aussagen erst nach dem **Lasttest** (Testprogramm mStudio, Schritt 9).
+- [ ] **Offene Fragen an den Auftraggeber:** erwartete Firmenzahl im ersten Jahr, Betrieb durch uns (SaaS) oder durch die Firmen, Bedeutung der physischen Datentrennung.
 
 ## Nächster konkreter Schritt
 **Erledigt (2026-11-17):**
