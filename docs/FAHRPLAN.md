@@ -37,6 +37,18 @@ Getroffene Entscheidungen:
 - **E-Rechnung** (XRechnung/ZUGFeRD) ab 2027/2028 Pflicht → Architektur jetzt vorsehen
 - **DATEV-Daten** vom Steuerberater: SKR03/04, Erlöskonten, Berater-/Mandantennummer, Debitorenkreis
 
+### Offene Fragen aus der Belegwesen-Recherche (2026-11-23, Quellen und Einordnung in `docs/fachlich/belegwesen.md`)
+Diese Fragen blockieren nichts, die Software ist so gebaut, dass die Antworten nur Einstellungen oder kleine Änderungen auslösen. Bis zur Antwort gelten die Annahmen in Klammern.
+**An den Steuerberater:**
+1. Steuersatz je Fahrtart (Charter, Transfer, Schulbus, Linie, Ausflug), insbesondere die 50-km-Regel nach § 12 Abs. 2 Nr. 10 UStG. (Satz je Position einstellbar, Vorbelegung 19 %; bei 0 % ist ein Steuerhinweis Pflicht.)
+2. Grenzüberschreitende Fahrten: Streckenanteile je Land und Steuersatz nach § 3b UStG, nötige Nachweise. (Nicht umgesetzt; die Streckenplanung könnte später den Anteil je Land liefern.)
+3. Pauschalreisen: Muss die Software die Margenbesteuerung nach § 25 UStG abbilden? (Nicht umgesetzt; ändert Rechnung und Steuerausweis grundlegend, deshalb **zuerst beim Auftraggeber klären, ob es das gibt**.)
+4. Gutschriften, Stornos, Korrekturen: gleicher oder eigener Nummernkreis? Zahlungseingang und Steuerentstehung bei Anzahlungen (§ 13 UStG). (Eigener Kreis `gutschrift`; jede festgeschriebene Anzahlung gilt als erhalten.)
+5. Aufbewahrung von Angeboten und Auftragsbestätigungen: 6 Jahre? (Rechnungen 8 Jahre seit 2025 laut Quellen; noch **keine Löschsperre** gebaut.)
+6. Steuer je Satz aus der Nettosumme statt je Position. (So gerechnet.)
+7. Umsatzgrenze und Beginn der E-Rechnungspflicht (2027 über 800.000 € Vorjahresumsatz, 2028 alle B2B; Quellen widersprechen sich bei den BMF-Schreiben, am Original prüfen). (Rechnung liegt als strukturierte Daten vor; XRechnung/ZUGFeRD noch nicht gebaut.)
+**An den Auftraggeber:** Kommen Pauschalreisen vor? Welche Belegarten braucht der Alltag (Mahnung?)? Format der Belegnummern je Firma? Wie viele Rechnungen pro Monat (für den Lasttest)? Darf der Disponent Angebote freigeben? (Bisher nur Admin und Buchhaltung.)
+
 ### Technisch
 - **Lokale Entwicklungsumgebung ohne Docker** (passt zum Mittwald-Ziel, weniger Lernaufwand):
   vorhandenes PHP 8.4 + Node 24, dazu Composer, MySQL (lokal), Git, VS Code/PhpStorm, Angular CLI.
