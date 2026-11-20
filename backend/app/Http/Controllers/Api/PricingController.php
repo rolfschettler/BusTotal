@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Enums\GermanState;
 use App\Enums\VehicleType;
+use App\Models\CompanySetting;
 use App\Models\PricingSetting;
 use App\Models\PricingVehicleRate;
 use App\Services\QuoteService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -25,6 +28,8 @@ class PricingController extends Controller
         $own = PricingVehicleRate::all()->keyBy(fn ($r) => $r->vehicle_type->value);
 
         return $settings->toArray() + [
+            // Vorbelegung der Feiertage in der Streckenplanung
+            'company_state' => CompanySetting::current()->state,
             'vehicle_types' => array_map(fn (VehicleType $t) => ['value' => $t->value, 'label' => $t->label()], VehicleType::cases()),
             'vehicle_rates' => collect(VehicleType::cases())->mapWithKeys(fn (VehicleType $t) => [
                 $t->value => collect(PricingVehicleRate::FIELDS)->mapWithKeys(fn ($f) => [$f => $own->get($t->value)?->{$f}])->all(),
@@ -49,6 +54,9 @@ class PricingController extends Controller
             'overnight_rate' => ['required', 'numeric', 'min:0', 'max:9999'],
             'minimum_price' => ['required', 'numeric', 'min:0', 'max:99999'],
             'tax_rate' => ['required', 'numeric', 'between:0,100'],
+            'surcharge_saturday_percent' => ['sometimes', 'required', 'numeric', 'between:0,300'],
+            'surcharge_sunday_percent' => ['sometimes', 'required', 'numeric', 'between:0,300'],
+            'surcharge_holiday_percent' => ['sometimes', 'required', 'numeric', 'between:0,300'],
         ]);
 
         $settings = PricingSetting::current();
@@ -89,6 +97,8 @@ class PricingController extends Controller
             'surcharge_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'label' => ['nullable', 'string', 'max:240'],
             'start_at' => ['nullable', 'date'],
+            'end_at' => ['nullable', 'date'],
+            'state' => ['nullable', Rule::enum(GermanState::class)],
             'customer_id' => ['nullable', 'uuid', 'exists:customers,id'],
             'vehicle_id' => ['nullable', 'uuid', 'exists:vehicles,id'],
         ]);

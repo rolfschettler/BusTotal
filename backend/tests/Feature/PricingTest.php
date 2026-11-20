@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Enums\GermanState;
 use App\Enums\Role;
 use App\Enums\VehicleType;
+use App\Models\CompanySetting;
 use App\Models\Customer;
 use App\Models\PricingSetting;
 use App\Models\PricingVehicleRate;
@@ -11,7 +13,9 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Pricing\PriceCalculator;
 use App\Pricing\StandardPriceCalculator;
+use App\Pricing\TourDay;
 use App\Pricing\TourFigures;
+use Carbon\Carbon;
 use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -110,6 +114,148 @@ class PricingTest extends TestCase
 
         $this->assertSame('Zuschlag 10 %', $lines[1]['title']);
         $this->assertSame('100.00', $lines[1]['unit_price']);
+    }
+
+    // ---------- Zuschläge für Samstag, Sonntag und Feiertag ----------
+
+    private function day(string $date, ?string $holiday = null): TourDay
+    {
+        $d = Carbon::parse($date);
+
+        return new TourDay($date, $d->isSaturday(), $d->isSunday(), $holiday);
+    }
+
+    private function dayRates(int $sat, int $sun, int $holiday): void
+    {
+        $this->prices(['price_per_km' => 2, 'empty_km_percent' => 100, 'surcharge_saturday_percent' => $sat,
+            'surcharge_sunday_percent' => $sun, 'surcharge_holiday_percent' => $holiday]);
+    }
+
+    public function test_tageszuschlaege_auf_den_anteil_des_tages(): void
+    {
+        $this->dayRates(25, 50, 100);
+        // Fr 30.04., Sa 01.05. (Tag der Arbeit), So 02.05.: 1000 € auf 3 Tage
+        $days = [$this->day('2027-04-30'), $this->day('2027-05-01', 'Tag der Arbeit'), $this->day('2027-05-02')];
+        $lines = collect(app(StandardPriceCalculator::class)->quote(new TourFigures(500, 0, 0, 3, 0, null, $days)))->keyBy('title');
+
+        $this->assertSame('333.33', $lines['Zuschlag Feiertag']['unit_price']);   // 1000 / 3 × 100 %
+        $this->assertSame('166.67', $lines['Zuschlag Sonntag']['unit_price']);    // 1000 / 3 × 50 %
+        $this->assertFalse($lines->has('Zuschlag Samstag'));                      // der Samstag ist zugleich Feiertag: nur der höhere Satz
+        $this->assertStringContainsString('1 von 3 Tagen (Tag der Arbeit 01.05.), 100 %', $lines['Zuschlag Feiertag']['description']);
+    }
+
+    public function test_bei_zwei_zutreffenden_saetzen_gilt_nur_der_hoechste(): void
+    {
+        $this->dayRates(0, 50, 20);
+        // 1. Weihnachtstag 2022 fiel auf einen Sonntag: Sonntag 50 % schlägt Feiertag 20 %
+        $lines = app(StandardPriceCalculator::class)->quote(new TourFigures(500, 0, 0, 1, 0, null, [$this->day('2022-12-25', '1. Weihnachtstag')]));
+
+        $this->assertSame(['Fahrstrecke', 'Zuschlag Sonntag'], array_column($lines, 'title'));
+        $this->assertSame('500.00', $lines[1]['unit_price']);
+    }
+
+    public function test_satz_null_und_werktage_ergeben_keinen_zuschlag(): void
+    {
+        $this->dayRates(0, 0, 0);
+        $days = [$this->day('2027-05-01', 'Tag der Arbeit'), $this->day('2027-05-02')];
+        $this->assertCount(1, app(StandardPriceCalculator::class)->quote(new TourFigures(500, 0, 0, 2, 0, null, $days)));
+
+        $this->dayRates(25, 50, 100);
+        $this->assertCount(1, app(StandardPriceCalculator::class)->quote(new TourFigures(500, 0, 0, 1, 0, null, [$this->day('2027-05-04')])));
+        $this->assertCount(1, app(StandardPriceCalculator::class)->quote(new TourFigures(500, 0, 0, 1)));   // ohne Kalendertage
+    }
+
+    public function test_handzuschlag_rechnet_auf_die_summe_ohne_tageszuschlag(): void
+    {
+        $this->dayRates(0, 50, 0);
+        $lines = collect(app(StandardPriceCalculator::class)->quote(new TourFigures(500, 0, 0, 1, 10, null, [$this->day('2027-05-02')])))->keyBy('title');
+
+        $this->assertSame('500.00', $lines['Zuschlag Sonntag']['unit_price']);
+        $this->assertSame('100.00', $lines['Zuschlag 10 %']['unit_price']);   // 10 % von 1000, nicht von 1500
+    }
+
+    public function test_angebot_aus_tour_erkennt_feiertag_nach_bundesland(): void
+    {
+        $this->dayRates(0, 0, 50);
+        CompanySetting::current()->update(['state' => 'NI']);
+        $tour = $this->tour(['empty_km' => 0, 'loaded_km' => 500, 'start_at' => '2027-11-01T08:00:00+01:00']);   // Allerheiligen: Mo
+
+        // Betriebssitz Niedersachsen: kein Feiertag
+        $this->as(Role::Disponent)->postJson('/api/quotes/from-tour', $tour)->assertCreated()->assertJsonPath('net_total', '1000.00');
+        // für diese Tour Bayern gewählt: Allerheiligen, 50 % auf 1000 €
+        $this->as(Role::Disponent)->postJson('/api/quotes/from-tour', $tour + ['state' => 'BY'])->assertCreated()
+            ->assertJsonPath('net_total', '1500.00')
+            ->assertJsonPath('lines.1.title', 'Zuschlag Feiertag');
+    }
+
+    public function test_betriebssitz_ist_die_vorbelegung_und_ohne_bundesland_zaehlen_nur_wochenenden(): void
+    {
+        $this->dayRates(0, 50, 50);
+        $tour = $this->tour(['empty_km' => 0, 'loaded_km' => 500, 'start_at' => '2027-11-01T08:00:00+01:00']);
+
+        $this->as(Role::Admin)->postJson('/api/quotes/from-tour', $tour)->assertCreated()->assertJsonPath('net_total', '1000.00');
+
+        CompanySetting::current()->update(['state' => 'BY']);
+        $this->as(Role::Admin)->postJson('/api/quotes/from-tour', $tour)->assertCreated()->assertJsonPath('net_total', '1500.00');
+    }
+
+    public function test_der_tag_zaehlt_in_deutscher_zeit(): void
+    {
+        $this->dayRates(0, 0, 50);
+        CompanySetting::current()->update(['state' => 'BY']);
+
+        // 23:30 Uhr UTC am 31.10. ist in Deutschland bereits der 1.11. (Allerheiligen)
+        $this->as(Role::Admin)->postJson('/api/quotes/from-tour', $this->tour(['empty_km' => 0, 'loaded_km' => 500, 'start_at' => '2027-10-31T23:30:00Z']))
+            ->assertCreated()->assertJsonPath('service_date_from', '2027-11-01')->assertJsonPath('net_total', '1500.00');
+    }
+
+    public function test_mehrtagestour_zaehlt_die_tage_bis_zum_ende(): void
+    {
+        $this->dayRates(0, 0, 100);
+        CompanySetting::current()->update(['state' => 'BY']);
+
+        // Fr 29.10. bis Mo 01.11. (4 Kalendertage): nur der 01.11. ist Feiertag, also 1/4 der Summe
+        $this->as(Role::Admin)->postJson('/api/quotes/from-tour', $this->tour([
+            'empty_km' => 0, 'loaded_km' => 500, 'days' => 4, 'start_at' => '2027-10-29T08:00:00+02:00', 'end_at' => '2027-11-01T18:00:00+01:00',
+        ]))->assertCreated()->assertJsonPath('net_total', '1250.00');
+    }
+
+    public function test_bundesland_und_zuschlagssaetze_speichern_und_pruefen(): void
+    {
+        $this->as(Role::Admin)->putJson('/api/settings/company', ['name' => 'Test Reisen', 'country' => 'DE', 'payment_term_days' => 14, 'state' => 'BY'])
+            ->assertOk()->assertJsonPath('state', 'BY');
+        $this->as(Role::Admin)->putJson('/api/settings/company', ['name' => 'Test Reisen', 'country' => 'DE', 'payment_term_days' => 14, 'state' => 'XX'])
+            ->assertUnprocessable()->assertJsonValidationErrors(['state']);
+
+        $body = ['price_per_km' => 1, 'empty_km_percent' => 100, 'hourly_rate' => 0, 'day_rate' => 0, 'overnight_rate' => 0, 'minimum_price' => 0, 'tax_rate' => 19];
+        $this->as(Role::Admin)->putJson('/api/settings/pricing', $body + ['surcharge_saturday_percent' => 10, 'surcharge_sunday_percent' => 25.5, 'surcharge_holiday_percent' => 50])
+            ->assertOk()->assertJsonPath('surcharge_sunday_percent', '25.50')->assertJsonPath('company_state', 'BY');
+        $this->as(Role::Admin)->putJson('/api/settings/pricing', $body + ['surcharge_holiday_percent' => -5])
+            ->assertUnprocessable()->assertJsonValidationErrors(['surcharge_holiday_percent']);
+
+        $this->as(Role::Disponent)->getJson('/api/settings/pricing')->assertOk()->assertJsonPath('company_state', 'BY');
+    }
+
+    public function test_bundeslaenderliste_im_frontend_passt_zum_enum(): void
+    {
+        // Die Auswahl im Frontend ist fest eingebaut (damit sie nie von einer Abfrage abhängt): Beide Listen müssen übereinstimmen.
+        $ts = file_get_contents(base_path('../frontend/src/app/core/german-states.ts'));
+        preg_match_all("/value: '([A-Z]{2})', label: '([^']+)'/", $ts, $m, PREG_SET_ORDER);
+        $frontend = array_column($m, 2, 1);
+
+        $backend = [];
+        foreach (GermanState::cases() as $s) {
+            $backend[$s->value] = $s->label();
+        }
+
+        $this->assertSame($backend, $frontend);
+    }
+
+    public function test_ungueltiges_bundesland_in_der_tour_wird_abgelehnt(): void
+    {
+        $this->prices();
+        $this->as(Role::Admin)->postJson('/api/quotes/from-tour', $this->tour(['state' => 'XX']))
+            ->assertUnprocessable()->assertJsonValidationErrors(['state']);
     }
 
     // ---------- Preise je Fahrzeugtyp ----------

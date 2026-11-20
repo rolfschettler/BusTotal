@@ -4,6 +4,7 @@ import { AbstractControl, FormBuilder, FormControl, FormGroup, FormsModule, Reac
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { BrandService, textOn } from '../../core/brand.service';
+import { GERMAN_STATES } from '../../core/german-states';
 import { ConfirmService } from '../../core/confirm.service';
 import { httpErrorText } from '../../core/http-error';
 import { HelpLinkComponent } from '../../help/help-link.component';
@@ -50,6 +51,7 @@ export class SettingsComponent implements OnInit {
     postal_code: [''],
     city: [''],
     country: ['DE', [Validators.required, Validators.minLength(2), Validators.maxLength(2)]],
+    state: [''],
     phone: [''],
     email: ['', Validators.email],
     website: [''],
@@ -77,10 +79,15 @@ export class SettingsComponent implements OnInit {
     overnight_rate: [0, [Validators.required, Validators.min(0)]],
     minimum_price: [0, [Validators.required, Validators.min(0)]],
     tax_rate: [19, [Validators.required, Validators.min(0), Validators.max(100)]],
+    surcharge_saturday_percent: [0, [Validators.required, Validators.min(0), Validators.max(300)]],
+    surcharge_sunday_percent: [0, [Validators.required, Validators.min(0), Validators.max(300)]],
+    surcharge_holiday_percent: [0, [Validators.required, Validators.min(0), Validators.max(300)]],
     // Preise je Fahrzeugtyp: je Typ eine Gruppe, entsteht beim Laden aus der Typenliste des Servers. Leer = Standardpreis.
     vehicle_rates: this.fb.group<Record<string, FormGroup>>({}),
   });
   vehicleTypes = signal<{ value: string; label: string }[]>([]);
+  /** Bundesländer für die Auswahl in den Firmendaten */
+  readonly states = signal(GERMAN_STATES);
   readonly rateFields: { key: VehicleRateField; label: string; step: string }[] = [
     { key: 'price_per_km', label: 'Preis je km (€)', step: '0.01' },
     { key: 'hourly_rate', label: 'Stundensatz (€)', step: '0.01' },
@@ -115,9 +122,13 @@ export class SettingsComponent implements OnInit {
     });
     this.loadTaxRates();
     this.loadRanges();
-    this.pricingApi.get().subscribe((p) => {
-      this.applyPricing(p);
-      if (!this.canEdit()) this.pricing.disable();
+    this.pricingApi.get().subscribe({
+      next: (p) => {
+        this.applyPricing(p);
+        if (!this.canEdit()) this.pricing.disable();
+      },
+      // Ohne geladene Preise darf der Reiter nicht still leer bleiben: sonst sieht es aus, als gäbe es keine Preise.
+      error: (e) => this.notify(false, httpErrorText(e, 'Die Preise konnten nicht geladen werden.')),
     });
   }
 

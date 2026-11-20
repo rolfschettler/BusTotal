@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\GermanState;
 use App\Http\Controllers\Controller;
 use App\Models\CompanySetting;
 use App\Models\NumberRange;
@@ -30,6 +31,8 @@ class SettingsController extends Controller
             'postal_code' => ['nullable', 'string', 'max:10'],
             'city' => ['nullable', 'string', 'max:255'],
             'country' => ['required', 'string', 'size:2'],
+            // Bundesland des Betriebssitzes: bestimmt die Feiertage der Preisfindung
+            'state' => ['nullable', Rule::enum(GermanState::class)],
             'phone' => ['nullable', 'string', 'max:50'],
             'email' => ['nullable', 'email', 'max:255'],
             'website' => ['nullable', 'string', 'max:255'],

@@ -11,6 +11,12 @@ export interface PricingSettings {
   overnight_rate: string;
   minimum_price: string;
   tax_rate: string;
+  /** Zuschläge in Prozent auf den Anteil des Tages (0 = keiner) */
+  surcharge_saturday_percent: string;
+  surcharge_sunday_percent: string;
+  surcharge_holiday_percent: string;
+  /** Bundesland des Betriebssitzes (Kürzel), Vorbelegung der Feiertage in der Streckenplanung */
+  company_state: string | null;
   /** Fahrzeugtypen für die Oberfläche (Wert und Bezeichnung) */
   vehicle_types: { value: string; label: string }[];
   /** Preise je Fahrzeugtyp, Schlüssel = Typ. Leeres Feld (null) = Standardpreis gilt. */
@@ -28,6 +34,10 @@ export interface TourFigures {
   surcharge_percent?: number;
   label?: string;
   start_at?: string | null;
+  /** Ende der Tour: bestimmt mit dem Start die Kalendertage für Samstag, Sonntag und Feiertag */
+  end_at?: string | null;
+  /** Bundesland der Feiertage; leer = Bundesland des Betriebssitzes */
+  state?: string | null;
   /** Eingeplantes Fahrzeug: der Server nimmt nur dessen Typ, um die Preise des Typs zu wählen. */
   vehicle_id?: string | null;
 }

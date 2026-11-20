@@ -7,6 +7,7 @@ import { Router } from '@angular/router';
 import { PricingService } from '../../core/pricing.service';
 import { RouteResult, RouteService } from '../../core/route.service';
 import { httpErrorText } from '../../core/http-error';
+import { GERMAN_STATES } from '../../core/german-states';
 import { VehicleChoice, VehicleService } from '../../core/vehicle.service';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { MapComponent, MapMarker } from '../../shared/map.component';
@@ -78,6 +79,12 @@ export class RoutePlanningComponent implements OnInit {
   // ---- Angebot aus der Tour (Preisfindung) ----
   /** Zuschlag in Prozent auf die Summe (Wochenende, Feiertag), von Hand gewählt */
   surcharge = signal<number | null>(null);
+  /** Bundesland der Feiertage für diese Tour; leer = Betriebssitz */
+  holidayState = signal('');
+  readonly states = signal(GERMAN_STATES);
+  companyState = signal<string | null>(null);
+  defaultsError = signal<string | null>(null);
+  companyStateLabel = computed(() => this.states().find((s) => s.value === this.companyState())?.label ?? null);
   quoting = signal(false);
   quoteError = signal<string | null>(null);
 
@@ -105,6 +112,8 @@ export class RoutePlanningComponent implements OnInit {
         surcharge_percent: this.surcharge() || 0,
         label,
         start_at: r.start_at,
+        end_at: r.end_at,
+        state: this.holidayState() || null,
         vehicle_id: this.vehicleId() || null,
       })
       .subscribe({
@@ -157,6 +166,13 @@ export class RoutePlanningComponent implements OnInit {
     this.vehicleApi.choices().subscribe({
       next: (v) => this.vehicles.set(v),
       error: (err) => this.vehiclesError.set(httpErrorText(err, 'Die Fahrzeugliste konnte nicht geladen werden.')),
+    });
+    // Bundesländer und das des Betriebssitzes für die Feiertage. Ohne diese Angaben bleibt das Angebot trotzdem möglich.
+    this.pricing.get().subscribe({
+      next: (p) => {
+        this.companyState.set(p.company_state);
+      },
+      error: (e) => this.defaultsError.set(httpErrorText(e, 'Das Bundesland des Betriebssitzes konnte nicht geladen werden.')),
     });
   }
 

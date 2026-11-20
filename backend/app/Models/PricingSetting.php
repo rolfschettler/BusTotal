@@ -23,6 +23,9 @@ class PricingSetting extends Model
             'overnight_rate' => 'decimal:2',
             'minimum_price' => 'decimal:2',
             'tax_rate' => 'decimal:2',
+            'surcharge_saturday_percent' => 'decimal:2',
+            'surcharge_sunday_percent' => 'decimal:2',
+            'surcharge_holiday_percent' => 'decimal:2',
             'empty_km_percent' => 'integer',
         ];
     }

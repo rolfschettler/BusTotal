@@ -183,6 +183,15 @@
         <label class="form-label small mb-1" for="surcharge">Zuschlag (%)</label>
         <input id="surcharge" type="number" min="0" max="100" step="1" class="form-control form-control-sm" [ngModel]="surcharge()" (ngModelChange)="surcharge.set($event)" [disabled]="stale()" />
       </div>
+      <div>
+        <label class="form-label small mb-1" for="holidayState">Feiertage in</label>
+        <select id="holidayState" class="form-select form-select-sm" [ngModel]="holidayState()" (ngModelChange)="holidayState.set($event)" [disabled]="stale()">
+          <option value="">{{ companyStateLabel() ? 'Betriebssitz (' + companyStateLabel() + ')' : 'Kein Bundesland' }}</option>
+          @for (s of states(); track s.value) {
+            <option [value]="s.value">{{ s.label }}</option>
+          }
+        </select>
+      </div>
       <button type="button" class="btn btn-primary" (click)="createQuote()" [disabled]="quoting() || stale()" [attr.title]="stale() ? 'Bitte zuerst neu berechnen' : null">
         @if (quoting()) { <span class="spinner-border spinner-border-sm me-2"></span> }
         <i class="bi bi-file-earmark-text me-1" aria-hidden="true"></i>Angebot erstellen
@@ -194,6 +203,12 @@
         Es gelten die Preise des Fahrzeugtyps von {{ sv.display_name }}, wo für den Typ welche hinterlegt sind.
       } @else {
         Ohne gewähltes Fahrzeug gelten die Standardpreise.
+      }
+      Zuschläge für Samstag, Sonntag und Feiertag ergeben sich aus den Tagen der Tour, wenn ein Starttermin gesetzt ist.
+      @if (defaultsError(); as de) {
+        <span class="text-danger">{{ de }}</span>
+      } @else if (!holidayState() && !companyState()) {
+        <span class="text-warning-emphasis">Ohne Bundesland (Firmendaten oder Auswahl „Feiertage in“) werden Feiertage nicht erkannt.</span>
       }
     </div>
     @if (quoteError(); as qe) {

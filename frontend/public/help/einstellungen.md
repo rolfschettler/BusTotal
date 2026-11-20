@@ -8,6 +8,7 @@ Auf dem Reiter **Firmendaten** pflegen Sie Name, Rechtsform, Geschäftsführer, 
 
 Weitere Angaben:
 
+- **Bundesland:** Das Land Ihres Betriebssitzes. Es bestimmt, welche Feiertage die [Preisfindung](/hilfe/einstellungen#preise-zuschlaege) erkennt, denn Feiertage gelten nicht in jedem Land. Ohne Angabe werden nur Samstag und Sonntag erkannt.
 - **Zahlungsziel (Tage):** Der Standard für alle Kunden, die kein eigenes Zahlungsziel haben (Voreinstellung 14 Tage).
 - **Briefkopf und Fußzeile:** Freie Texte für Belege, zum Beispiel Hinweise oder Geschäftsbedingungen.
 - **USt-IdNr.:** zwei Großbuchstaben als Länderkürzel, danach Ziffern oder Buchstaben, zum Beispiel `DE123456789`.
@@ -84,6 +85,18 @@ Der Reiter **Preise** legt fest, wie die Software beim [Angebot aus der Strecken
 - **Übernachtung:** je Nacht des Fahrers (Einsatztage minus eins).
 - **Mindestpreis:** Liegt die Summe darunter, kommt eine Position „Mindestpreis-Ausgleich“ dazu.
 - **Steuersatz:** Vorbelegung der Positionen. Im Beleg lässt er sich je Position ändern.
+
+### Zuschläge für Wochenende und Feiertage {#preise-zuschlaege}
+
+Unter **Zuschläge für Wochenende und Feiertage** tragen Sie je einen Prozentsatz für **Samstag**, **Sonntag** und **Feiertag** ein. Beim [Angebot aus der Streckenplanung](/hilfe/strecken#angebot-aus-tour) setzt die Software die Zuschläge selbst, sobald die Tour einen Starttermin hat.
+
+- **So wird gerechnet:** Die Summe der Positionen wird gleichmäßig auf die Kalendertage der Tour verteilt (vom Starttag bis zum Endtag). Jeder Samstag, Sonntag oder Feiertag bekommt seinen Satz auf diesen Tagesanteil. Beispiel: 1.000 € auf drei Tage, ein Sonntag mit 50 % ergibt 166,67 € Zuschlag.
+- **Je Art eine Position:** „Zuschlag Samstag“, „Zuschlag Sonntag“ und „Zuschlag Feiertag“ mit den betroffenen Tagen in der Beschreibung.
+- **Nie doppelt:** Trifft auf einen Tag mehr als ein Satz zu (ein Feiertag auf einem Sonntag), gilt nur der höchste.
+- **Feiertage nach Bundesland:** Sie gelten je Land verschieden (zum Beispiel Fronleichnam, Allerheiligen oder der Reformationstag). Maßgeblich ist das Bundesland aus den [Firmendaten](/hilfe/einstellungen#firmendaten). In der Streckenplanung können Sie es für eine Tour ändern, etwa bei einer Fahrt, die in einem anderen Land liegt.
+- **Nicht erkannt:** Feiertage, die nur in Teilen eines Landes gelten (zum Beispiel Mariä Himmelfahrt in Bayern oder das Augsburger Friedensfest). Tragen Sie dafür den Zuschlag von Hand ein.
+- **Zusammen mit dem Zuschlag von Hand:** Der Prozentzuschlag aus der Streckenplanung rechnet auf die Summe vor den Tageszuschlägen und kommt zusätzlich.
+- **Tag in deutscher Zeit:** Maßgeblich ist der Kalendertag in Deutschland, nicht der in UTC.
 
 ### Preise je Fahrzeugtyp {#preise-fahrzeugtyp}
 

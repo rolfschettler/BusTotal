@@ -3,10 +3,14 @@
 namespace App\Services;
 
 use App\Enums\DocumentType;
+use App\Enums\GermanState;
+use App\Models\CompanySetting;
 use App\Models\Document;
 use App\Models\PricingSetting;
 use App\Models\Vehicle;
+use App\Pricing\GermanHolidays;
 use App\Pricing\PriceCalculator;
+use App\Pricing\TourDay;
 use App\Pricing\TourFigures;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
@@ -23,7 +27,7 @@ class QuoteService
     ) {}
 
     /**
-     * @param  array{loaded_km: float, empty_km: float, drive_s: int, days: int, surcharge_percent?: float, label?: ?string, start_at?: ?string, vehicle_id?: ?string}  $tour
+     * @param  array{loaded_km: float, empty_km: float, drive_s: int, days: int, surcharge_percent?: float, label?: ?string, start_at?: ?string, end_at?: ?string, state?: ?string, vehicle_id?: ?string}  $tour
      */
     public function draftFromTour(array $tour, ?string $customerId = null): Document
     {
@@ -41,6 +45,7 @@ class QuoteService
             days: max(1, (int) $tour['days']),
             surchargePercent: (float) ($tour['surcharge_percent'] ?? 0),
             vehicleType: $vehicleType,
+            calendarDays: $this->calendarDays($tour),
         ));
 
         if ($lines === []) {
@@ -52,7 +57,42 @@ class QuoteService
         return $this->documents->createDraft(DocumentType::Angebot, [
             'customer_id' => $customerId,
             'subject' => $label !== '' ? mb_substr('Busfahrt '.$label, 0, 255) : 'Busfahrt',
-            'service_date_from' => ! empty($tour['start_at']) ? Carbon::parse($tour['start_at'])->toDateString() : null,
+            'service_date_from' => ! empty($tour['start_at']) ? $this->localDay($tour['start_at'])->toDateString() : null,
         ], $lines);
+    }
+
+    /** Der Kalendertag eines Zeitpunkts in deutscher Zeit (der Browser sendet UTC: 00:30 Uhr hier ist dort noch der Vortag). */
+    private function localDay(string $at): Carbon
+    {
+        return Carbon::parse($at)->setTimezone('Europe/Berlin')->startOfDay();
+    }
+
+    /**
+     * Die Kalendertage der Tour vom Start- bis zum Endtag mit Samstag, Sonntag und Feiertag. Ohne Starttermin gibt es keine Tage.
+     * Das Bundesland der Feiertage kommt aus der Tour, sonst vom Betriebssitz; ohne beides zählen nur Samstag und Sonntag.
+     *
+     * @return list<TourDay>
+     */
+    private function calendarDays(array $tour): array
+    {
+        if (empty($tour['start_at'])) {
+            return [];
+        }
+
+        $first = $this->localDay($tour['start_at']);
+        // Ohne Endzeit rechnen wir mit den Einsatztagen; ein Ende vor dem Start zählt nicht.
+        $last = ! empty($tour['end_at']) ? $this->localDay($tour['end_at']) : $first->copy()->addDays(max(1, (int) $tour['days']) - 1);
+        if ($last->lt($first)) {
+            $last = $first->copy();
+        }
+
+        $state = GermanState::tryFrom((string) ($tour['state'] ?? '')) ?? GermanState::tryFrom((string) CompanySetting::current()->state);
+
+        $days = [];
+        for ($d = $first->copy(); $d->lte($last) && count($days) < 62; $d->addDay()) {
+            $days[] = new TourDay($d->toDateString(), $d->isSaturday(), $d->isSunday(), $state ? GermanHolidays::name($d, $state) : null);
+        }
+
+        return $days;
     }
 }

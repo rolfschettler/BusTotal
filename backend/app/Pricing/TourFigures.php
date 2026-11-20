@@ -23,6 +23,13 @@ final readonly class TourFigures
         public float $surchargePercent = 0.0,
         /** Typ des eingeplanten Fahrzeugs; bestimmt, ob Preise des Typs gelten. Ohne Fahrzeug null (Standardpreise). */
         public ?VehicleType $vehicleType = null,
+        /**
+         * Kalendertage der Tour (vom Starttag bis zum Endtag), aus denen die Zuschläge für Samstag, Sonntag und Feiertag folgen.
+         * Leer, wenn die Tour keinen Starttermin hat: dann gibt es keine automatischen Zuschläge.
+         *
+         * @var list<TourDay>
+         */
+        public array $calendarDays = [],
     ) {}
 
     /** Übernachtungen des Fahrers: je Einsatztag nach dem ersten eine. */

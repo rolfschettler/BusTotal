@@ -13,6 +13,7 @@ use App\Services\DocumentCalculator;
  *   Tagespauschale Einsatztage × Pauschale
  *   Übernachtung   Nächte × Satz
  *   Mindestpreis   fehlt die Summe zum Mindestpreis, kommt eine Ausgleichsposition dazu
+ *   Tageszuschlag  Samstag, Sonntag, Feiertag (automatisch aus den Kalendertagen): Satz auf den Tagesanteil der Summe
  *   Zuschlag       Prozent auf die Summe (von Hand gewählt)
  *
  * Je Fahrzeugtyp können Preis je km, Stundensatz, Tagespauschale, Übernachtung und Mindestpreis abweichen
@@ -64,10 +65,77 @@ class StandardPriceCalculator implements PriceCalculator
             $lines[] = $this->line('Pauschalpreis', 'Mindestpreis', 1, 'pauschal', $p->minimum_price, $rate);
         }
 
+        // Beide Zuschläge rechnen auf die Summe vor den Zuschlägen, damit sie sich nicht gegenseitig aufschaukeln.
+        $base = $this->sumCents($lines);
+
+        if ($lines !== []) {
+            array_push($lines, ...$this->daySurcharges($tour, $settings, $base, $rate));
+        }
+
         if ($tour->surchargePercent > 0 && $lines !== []) {
-            $base = $this->sumCents($lines);
             $surcharge = intdiv($base * (int) round($tour->surchargePercent * 100) + 5000, 10000);
             $lines[] = $this->line('Zuschlag '.$this->num($tour->surchargePercent).' %', null, 1, 'pauschal', $this->cents($surcharge), $rate);
+        }
+
+        return $lines;
+    }
+
+    /**
+     * Zuschläge für Samstag, Sonntag und Feiertag. Die Summe wird gleichmäßig auf die Kalendertage verteilt, jeder betroffene Tag
+     * bekommt den Satz auf seinen Anteil. Trifft mehr als ein Satz auf einen Tag zu (Feiertag auf einen Sonntag), gilt nur der höchste.
+     *
+     * @return list<array>
+     */
+    private function daySurcharges(TourFigures $tour, PricingSetting $p, int $baseCents, string $taxRate): array
+    {
+        $days = count($tour->calendarDays);
+        if ($days === 0 || $baseCents <= 0) {
+            return [];
+        }
+
+        // Je Art: Satz in Hundertstel Prozent und die betroffenen Tage (Bezeichnung)
+        $kinds = [
+            'Feiertag' => ['rate' => (int) round((float) $p->surcharge_holiday_percent * 100), 'days' => []],
+            'Sonntag' => ['rate' => (int) round((float) $p->surcharge_sunday_percent * 100), 'days' => []],
+            'Samstag' => ['rate' => (int) round((float) $p->surcharge_saturday_percent * 100), 'days' => []],
+        ];
+
+        foreach ($tour->calendarDays as $day) {
+            $short = date('d.m.', strtotime($day->date));
+            $applies = array_filter([
+                'Feiertag' => $day->holiday !== null ? "{$day->holiday} $short" : null,
+                'Sonntag' => $day->sunday ? "So $short" : null,
+                'Samstag' => $day->saturday ? "Sa $short" : null,
+            ], fn ($label) => $label !== null);
+
+            $best = null;
+            foreach ($applies as $kind => $label) {
+                if ($kinds[$kind]['rate'] > 0 && ($best === null || $kinds[$kind]['rate'] > $kinds[$best]['rate'])) {
+                    $best = $kind;   // bei gleichem Satz gewinnt die frühere Art (Feiertag vor Sonntag vor Samstag)
+                }
+            }
+            if ($best !== null) {
+                $kinds[$best]['days'][] = $applies[$best];
+            }
+        }
+
+        $lines = [];
+        foreach ($kinds as $kind => $info) {
+            $count = count($info['days']);
+            if ($count === 0) {
+                continue;
+            }
+            // Summe × betroffene Tage / Kalendertage × Satz, kaufmännisch auf ganze Cent gerundet
+            $den = $days * 10000;
+            $cents = intdiv(2 * $baseCents * $count * $info['rate'] + $den, 2 * $den);
+            if ($cents <= 0) {
+                continue;
+            }
+            $lines[] = $this->line(
+                'Zuschlag '.$kind,
+                sprintf('%d von %d Tagen (%s), %s %% auf den Tagesanteil', $count, $days, implode(', ', $info['days']), $this->num($info['rate'] / 100)),
+                1, 'pauschal', $this->cents($cents), $taxRate,
+            );
         }
 
         return $lines;

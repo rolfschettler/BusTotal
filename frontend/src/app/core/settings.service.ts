@@ -8,6 +8,8 @@ export interface Company {
   postal_code: string | null;
   city: string | null;
   country: string;
+  /** Bundesland des Betriebssitzes (Kürzel, z. B. BY): bestimmt die Feiertage der Preisfindung */
+  state: string | null;
   phone: string | null;
   email: string | null;
   website: string | null;

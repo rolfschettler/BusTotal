@@ -65,6 +65,17 @@
             <div class="form-text">2 Buchstaben, z. B. DE</div>
           </div>
           <div class="col-12 col-lg-6">
+            <label class="form-label" for="s_state">Bundesland</label>
+            <select class="form-select" id="s_state" formControlName="state" [class.is-invalid]="invalid('state')">
+              <option value="">Nicht angegeben</option>
+              @for (s of states(); track s.value) {
+                <option [value]="s.value">{{ s.label }}</option>
+              }
+            </select>
+            <div class="invalid-feedback">{{ fieldErrors()['state'] || 'Ungültiges Bundesland.' }}</div>
+            <div class="form-text">Bestimmt die Feiertage bei der Preisfindung.</div>
+          </div>
+          <div class="col-12 col-lg-6">
             <label class="form-label" for="s_phone">Telefon</label>
             <input class="form-control" id="s_phone" formControlName="phone" />
           </div>
@@ -315,6 +326,27 @@
             <input type="number" step="0.01" min="0" max="100" class="form-control" id="p_tax" formControlName="tax_rate" [class.is-invalid]="invalidPricing('tax_rate')" />
             <div class="invalid-feedback">{{ fieldErrors()['tax_rate'] || 'Bitte 0 bis 100 angeben.' }}</div>
             <div class="form-text">Vorbelegung der Positionen, im Beleg änderbar.</div>
+          </div>
+
+          <div class="col-12"><div class="section-title">Zuschläge für Wochenende und Feiertage <app-help-link topic="einstellungen" anchor="preise-zuschlaege" label="Zuschläge für Wochenende und Feiertage" /></div></div>
+
+          <div class="col-12 col-lg-4">
+            <label class="form-label" for="p_sat">Samstag (%)</label>
+            <input type="number" step="0.5" min="0" max="300" class="form-control" id="p_sat" formControlName="surcharge_saturday_percent" [class.is-invalid]="invalidPricing('surcharge_saturday_percent')" />
+            <div class="invalid-feedback">{{ fieldErrors()['surcharge_saturday_percent'] || 'Bitte 0 bis 300 angeben.' }}</div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <label class="form-label" for="p_sun">Sonntag (%)</label>
+            <input type="number" step="0.5" min="0" max="300" class="form-control" id="p_sun" formControlName="surcharge_sunday_percent" [class.is-invalid]="invalidPricing('surcharge_sunday_percent')" />
+            <div class="invalid-feedback">{{ fieldErrors()['surcharge_sunday_percent'] || 'Bitte 0 bis 300 angeben.' }}</div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <label class="form-label" for="p_hol">Feiertag (%)</label>
+            <input type="number" step="0.5" min="0" max="300" class="form-control" id="p_hol" formControlName="surcharge_holiday_percent" [class.is-invalid]="invalidPricing('surcharge_holiday_percent')" />
+            <div class="invalid-feedback">{{ fieldErrors()['surcharge_holiday_percent'] || 'Bitte 0 bis 300 angeben.' }}</div>
+          </div>
+          <div class="col-12">
+            <div class="form-text mt-0">Aufschlag auf den Tagesanteil der Summe, für jeden betroffenen Tag der Tour. 0 schaltet den Zuschlag aus.</div>
           </div>
 
           <div class="col-12"><div class="section-title">Preise je Fahrzeugtyp <app-help-link topic="einstellungen" anchor="preise-fahrzeugtyp" label="Preise je Fahrzeugtyp" /></div></div>
