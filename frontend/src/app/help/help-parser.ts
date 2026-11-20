@@ -1,6 +1,15 @@
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 
+// Quellenangaben (Gesetze, Merkblätter) öffnen in einem neuen Tab, damit die Anwendung mit ihren Eingaben offen bleibt.
+// Das Ziel wird NACH dem Bereinigen gesetzt; "noopener" verhindert, dass die fremde Seite Zugriff auf die Anwendung bekommt.
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  if (node.tagName === 'A' && /^https?:\/\//i.test(node.getAttribute('href') ?? '')) {
+    node.setAttribute('target', '_blank');
+    node.setAttribute('rel', 'noopener noreferrer');
+  }
+});
+
 export interface HelpSection {
   /** Stabile Sprungmarke, z. B. "nummernkreise" */
   anchor: string;

@@ -79,12 +79,8 @@ export class HelpViewerComponent {
     const href = a?.getAttribute('href');
     if (!href) return;
 
-    // Quellenangaben (Gesetze, Merkblätter) öffnen in einem neuen Tab, damit die Anwendung mit ihren Eingaben offen bleibt.
-    if (/^https?:\/\//i.test(href)) {
-      event.preventDefault();
-      window.open(href, '_blank', 'noopener,noreferrer');
-      return;
-    }
+    // Externe Quellenangaben trägt der Parser mit target="_blank" aus (help-parser.ts): Der Browser öffnet sie selbst.
+    if (/^https?:\/\//i.test(href)) return;
 
     const m = /^(?:\/hilfe\/([a-z0-9-]+))?(?:#([a-z0-9-]+))?$/.exec(href);
     if (!m || (!m[1] && !m[2])) return;
