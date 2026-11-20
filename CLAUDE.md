@@ -9,4 +9,5 @@
 - „BusTotal“ ist nur ein **Arbeitsname**. Produktnamen nie fest in Texte schreiben: Frontend `APP_NAME` (`core/app-info.ts`), Hilfetexte `{{app}}`,
   Backend `config('app.name')`. Umbenennung: `docs/UMBENENNUNG.md`.
 - Fahrplan und Stand: `docs/FAHRPLAN.md`.
+- **Neue oder geänderte Migrationen führt Claude selbst aus**, sofort nach dem Schreiben und vor Tests und Build: `php artisan migrate` im Ordner `backend`. Der Befehl ist ersetzt (`app/Console/Commands/Migrate.php`) und baut zentrale Datenbank und alle Firmen auf, siehe `docs/MANDANTEN.md`. Das Ergebnis („N Firma(en) migriert, 0 mit Fehler“) im Abschluss nennen. Der Nutzer migriert nie von Hand.
 - Fehlermeldungen von Server-Anfragen immer über `httpErrorText(err, 'Ersatztext')` aus `core/http-error.ts`. Es trennt „Server nicht erreichbar“ (keine Antwort, Proxy- oder Gateway-Fehler) von Eingabefehlern, Rechten (403), Sperre (429) und Serverfehlern. Nie eigene `err.error?.message ?? '…'`-Ketten schreiben.

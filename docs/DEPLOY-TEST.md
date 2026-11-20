@@ -68,7 +68,7 @@ TENANT_BASE_DOMAIN=bt-test.konzeptdata.de
 SUPERADMIN_SUBDOMAIN=admin
 ORS_API_KEY=<Schlüssel>
 ```
-**Nie** `php artisan migrate` ohne Angaben ausführen: Das legt Firmen-Tabellen in der zentralen Datenbank an (siehe `MANDANTEN.md`). Ist es passiert: `php artisan db:wipe --database=central --force` (nur bei leerer Test-Datenbank!) und neu aufbauen.
+`php artisan migrate` ohne Angaben ist in diesem Projekt ersetzt und baut zentrale Datenbank und alle Firmen auf (siehe `MANDANTEN.md`). Nur mit ausdrücklichem `--database` oder `--path` verhält es sich wie das Original.
 
 Dann:
 ```bash
