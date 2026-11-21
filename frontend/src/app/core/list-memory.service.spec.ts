@@ -36,4 +36,13 @@ describe('ListMemory', () => {
     m.forget('belege', 'a');
     expect(m.current('belege')).toBeNull();
   });
+
+  it('follow mit keepParams behält Suche, Ansicht und Seite und verschiebt nur die Markierung', () => {
+    const m = new ListMemory();
+    m.select('belege', 'auftrag');
+    m.saveParams('belege', { q: 'mainz', order: 'chain', page: 2 });
+    m.follow('belege', 'rechnung', true);
+    expect(m.current('belege')).toBe('rechnung');
+    expect(m.params('belege')).toEqual({ q: 'mainz', order: 'chain', page: 2 });
+  });
 });

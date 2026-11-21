@@ -72,4 +72,27 @@ class DocumentChainOrderTest extends TestCase
         $this->getJson("/api/documents?order=chain&customer_id={$b->id}&type=angebot")->assertOk()->assertJsonCount(1, 'data');
         $this->getJson('/api/documents?order=quatsch')->assertStatus(422);
     }
+
+    public function test_locate_liefert_die_seite_mit_dem_beleg_in_der_gewaehlten_ansicht(): void
+    {
+        $c = Customer::factory()->create(['company_name' => 'Alpha Tours']);
+        $first = $this->angebot($c);
+        for ($i = 0; $i < 24; $i++) {
+            $this->angebot($c);
+        }
+        // Folgebeleg des ersten: steht in der Kettenansicht direkt unter dem ersten, also auf Seite 1
+        $this->postJson("/api/documents/{$first}/finalize")->assertOk();
+        $folge = $this->folge($first, 'auftragsbestaetigung');
+
+        $this->getJson("/api/documents?order=chain&locate={$folge}")->assertOk()
+            ->assertJsonPath('current_page', 1)->assertJsonPath('total', 26);
+
+        // Nach Datum (neueste zuerst) steht der älteste Beleg auf Seite 2, das gibt locate zurück
+        $res = $this->getJson("/api/documents?locate={$first}")->assertOk()->assertJsonPath('current_page', 2);
+        $this->assertContains($first, collect($res->json('data'))->pluck('id')->all());
+
+        // Unbekannter Beleg: die angefragte Seite bleibt
+        $this->getJson('/api/documents?page=2&locate='.(string) \Illuminate\Support\Str::uuid())->assertOk()->assertJsonPath('current_page', 2);
+        $this->getJson('/api/documents?locate=kein-uuid')->assertStatus(422);
+    }
 }

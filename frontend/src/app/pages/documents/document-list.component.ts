@@ -56,6 +56,7 @@ export class DocumentListComponent implements OnInit {
 
   readonly amount = formatAmount;
 
+  private locate: string | null = null;
   private requestNo = 0;
   private timer?: ReturnType<typeof setTimeout>;
 
@@ -70,6 +71,7 @@ export class DocumentListComponent implements OnInit {
     this.sortCol.set(saved?.sortCol ?? 'date');
     this.sortDir.set(saved?.sortDir ?? 'desc');
     this.page.set(saved?.page ?? 1);
+    this.locate = this.currentId();
     this.api.types().subscribe((t) => this.types.set(t));
     this.load();
   }
@@ -168,9 +170,14 @@ export class DocumentListComponent implements OnInit {
     const query = this.q.trim();
     const request = ++this.requestNo;
 
-    this.api.list({ q: query, type: this.type, status: this.status, page: this.page(), order: this.order, sort: this.sortCol(), dir: this.sortDir() }).subscribe({
+    // Beim ersten Laden fragt die Liste nach der Seite, auf der die aktuelle Zeile steht (Rücksprung aus einem Beleg, auch aus
+    // einem Folgebeleg, der erst jetzt in die Liste kam). Danach blättert wieder der Nutzer.
+    const locate = this.locate;
+    this.api.list({ q: query, type: this.type, status: this.status, page: this.page(), order: this.order, sort: this.sortCol(), dir: this.sortDir(), locate }).subscribe({
       next: (p) => {
         if (request !== this.requestNo) return;
+        this.locate = null;
+        this.page.set(p.current_page);
         this.rows.set(p.data);
         this.shownQuery.set(query);
         this.memory.saveParams(KEY, { q: query, type: this.type, status: this.status, page: this.page(), order: this.order, sortCol: this.sortCol(), sortDir: this.sortDir() } satisfies DocListParams);

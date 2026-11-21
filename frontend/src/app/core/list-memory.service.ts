@@ -14,8 +14,8 @@ interface Remembered {
  * und im sichtbaren Bereich (`RevealCurrentDirective`).
  *
  * Ein Formular meldet mit `follow`, welchen Datensatz es gerade zeigt. Ist das ein anderer als der gemerkte (neu angelegt,
- * Folgebeleg, Storno), gelten die gemerkten Einstellungen nicht mehr: Die Liste beginnt auf Seite 1 ohne Filter, damit der
- * neue Datensatz sicher zu sehen ist.
+ * Folgebeleg, Storno), gelten die gemerkten Einstellungen nicht mehr (Seite 1, kein Filter), damit der neue Datensatz sicher
+ * zu sehen ist. Ausnahme `keepParams`: siehe `follow`.
  *
  * Nur im Arbeitsspeicher: Nach „Seite neu laden“ beginnt jede Liste wieder von vorn.
  */
@@ -43,10 +43,16 @@ export class ListMemory {
     this.entry(key).params = params;
   }
 
-  /** Ein Formular zeigt den Datensatz `id`. Ein anderer als der gemerkte setzt die Liste zurück (siehe oben). */
-  follow(key: string, id: string) {
+  /**
+   * Ein Formular zeigt den Datensatz `id`. Ein anderer als der gemerkte setzt die Liste zurück (siehe oben), außer
+   * `keepParams`: Dann bleiben Seite, Suche, Filter und Sortierung, und nur die Markierung wandert. Das nutzt eine Liste,
+   * die die neue Zeile selbst findet (Belege: der Server liefert mit `locate` die Seite, auf der sie steht).
+   */
+  follow(key: string, id: string, keepParams = false) {
     const e = this.entry(key);
-    if (e.id !== id) this.lists.set(key, { id, params: null });
+    if (e.id === id) return;
+    if (keepParams) e.id = id;
+    else this.lists.set(key, { id, params: null });
   }
 
   /** Der Datensatz ist weg (gelöscht): nichts mehr markieren. */

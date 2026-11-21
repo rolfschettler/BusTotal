@@ -43,6 +43,7 @@ class DocumentController extends Controller
             'type' => ['nullable', Rule::enum(DocumentType::class)],
             'status' => ['nullable', Rule::enum(DocumentStatus::class)],
             'customer_id' => ['nullable', 'uuid'],
+            'locate' => ['nullable', 'uuid'],
             'order' => ['nullable', Rule::in(['column', 'chain'])],
             'sort' => ['nullable', Rule::in(array_keys(self::SORTS))],
             'dir' => ['nullable', Rule::in(['asc', 'desc'])],
@@ -83,7 +84,17 @@ class DocumentController extends Controller
             $this->orderByColumn($query, $request->query('sort') ?: 'date', $request->query('dir') === 'asc' ? 'asc' : 'desc');
         }
 
-        return response()->json($query->paginate(20)->withQueryString());
+        // locate: die Seite, auf der dieser Beleg bei der gewählten Suche, Filterung und Sortierung steht (Rücksprung aus einem
+        // Beleg). Steht er nicht in der Liste, gilt die angefragte Seite.
+        $page = max(1, (int) $request->query('page', 1));
+        if ($locate = $request->query('locate')) {
+            $position = (clone $query)->select('documents.id')->pluck('id')->search($locate);
+            if ($position !== false) {
+                $page = intdiv($position, 20) + 1;
+            }
+        }
+
+        return response()->json($query->paginate(20, ['*'], 'page', $page)->withQueryString());
     }
 
     /**

@@ -113,11 +113,12 @@ export class DocumentService {
   private http = inject(HttpClient);
   private base = '/api/documents';
 
-  list(opts: { q: string; type: string; status: string; page: number; order?: 'column' | 'chain'; sort?: string; dir?: 'asc' | 'desc' }) {
+  list(opts: { q: string; type: string; status: string; page: number; order?: 'column' | 'chain'; sort?: string; dir?: 'asc' | 'desc'; locate?: string | null }) {
     let params = new HttpParams().set('page', opts.page);
     if (opts.q) params = params.set('q', opts.q);
     if (opts.type) params = params.set('type', opts.type);
     if (opts.status) params = params.set('status', opts.status);
+    if (opts.locate) params = params.set('locate', opts.locate);
     if (opts.order === 'chain') params = params.set('order', 'chain');
     else if (opts.sort) params = params.set('sort', opts.sort).set('dir', opts.dir ?? 'desc');
     return this.http.get<Page<BusDocument>>(this.base, { params });

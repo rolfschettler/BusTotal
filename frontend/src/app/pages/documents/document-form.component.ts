@@ -175,7 +175,7 @@ export class DocumentFormComponent implements OnInit {
 
     if (id) {
       // Der Rücksprung zur Liste landet auf diesem Beleg (Folgebeleg und Storno wechseln die Adresse, also folgt die Markierung).
-      this.memory.follow('belege', id);
+      this.memory.follow('belege', id, true);
       this.load(id);
       return;
     }
