@@ -1,4 +1,4 @@
-import { Component, ElementRef, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { PrintPreviewService } from '../core/print-preview.service';
 
 /** Breite, in der die Seiten für Vorschau und Druck gerendert werden: A4 bei ca. 150 dpi. */
@@ -14,7 +14,10 @@ const RENDER_WIDTH_PX = 1240;
   host: { '(document:keydown)': 'onKey($event)' },
   template: `
     @if (preview.state() !== 'closed') {
-      <div class="pp-overlay" role="dialog" aria-modal="true" [attr.aria-label]="preview.title()">
+      @if (hiddenDirect()) {
+        <div class="pp-toast" role="status"><span class="spinner-border spinner-border-sm me-2"></span>Druck wird vorbereitet …</div>
+      }
+      <div class="pp-overlay" [class.pp-direct]="hiddenDirect()" role="dialog" aria-modal="true" [attr.aria-label]="preview.title()">
         <div class="pp-bar">
           <span class="pp-title text-truncate">{{ preview.title() }}</span>
           <button type="button" class="btn btn-sm btn-primary" (click)="print()" [disabled]="!printable()">
@@ -45,6 +48,9 @@ export class PrintPreviewComponent {
   /** Erst drucken, wenn alle Seiten fertig gerendert sind (sonst käme ein halbes PDF aufs Papier). */
   printable = signal(false);
 
+  /** Direktdruck läuft unsichtbar. Bei einem Fehler erscheint doch die Vorschau mit Meldung und „Herunterladen“. */
+  hiddenDirect = computed(() => this.preview.direct() && this.preview.state() !== 'error');
+
   private pages = viewChild<ElementRef<HTMLElement>>('pages');
   private run = 0;
 
@@ -62,6 +68,12 @@ export class PrintPreviewComponent {
   }
 
   print() {
+    window.print();
+  }
+
+  /** Direktdruck: Druckvorschau des Browsers öffnen, danach die (unsichtbare) Vorschau schließen. */
+  private printDirect() {
+    window.addEventListener('afterprint', () => this.preview.close(), { once: true });
     window.print();
   }
 
@@ -103,6 +115,7 @@ export class PrintPreviewComponent {
       if (run !== this.run) return;
       this.progress.set(null);
       this.printable.set(true);
+      if (this.preview.direct()) this.printDirect();
     } catch {
       if (run !== this.run) return;
       container.replaceChildren();

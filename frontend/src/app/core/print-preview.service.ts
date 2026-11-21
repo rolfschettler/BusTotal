@@ -12,6 +12,19 @@ export interface PrintPreviewRequest {
   load: () => Observable<Blob>;
 }
 
+/**
+ * Direktdruck am PC: Statt der Vorschau in der App öffnet sich gleich die Druckvorschau des Browsers. Auf Tablets und Handys
+ * (Touch, Android, iOS) bleibt die Vorschau in der App. Ausprobieren: auf `false` setzen, dann gilt überall die Vorschau in der App.
+ */
+export const DIRECT_PRINT_ON_DESKTOP = true;
+
+/** PC mit Maus (Windows, macOS, Linux). Ein iPad mit Tastatur meldet sich als Mac, zählt aber als Tablet. */
+export function isDesktopDevice(): boolean {
+  if (typeof matchMedia !== 'function') return false;
+  const iPadAsMac = /Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1;
+  return matchMedia('(pointer: fine) and (hover: hover)').matches && !iPadAsMac;
+}
+
 export type PrintPreviewState = 'closed' | 'loading' | 'ready' | 'error';
 
 /**
@@ -30,6 +43,8 @@ export class PrintPreviewService {
   filename = signal('beleg.pdf');
   blob = signal<Blob | null>(null);
   error = signal<string | null>(null);
+  /** Direktdruck: Die Seiten werden unsichtbar aufgebaut und gleich gedruckt, die Vorschau in der App bleibt zu. */
+  direct = signal(false);
 
   private sub?: Subscription;
 
@@ -39,6 +54,7 @@ export class PrintPreviewService {
     this.filename.set(req.filename);
     this.blob.set(null);
     this.error.set(null);
+    this.direct.set(DIRECT_PRINT_ON_DESKTOP && isDesktopDevice());
     this.state.set('loading');
 
     this.sub = req.load().subscribe({
@@ -62,6 +78,7 @@ export class PrintPreviewService {
   close() {
     this.sub?.unsubscribe();
     this.state.set('closed');
+    this.direct.set(false);
     this.blob.set(null);
     this.error.set(null);
   }

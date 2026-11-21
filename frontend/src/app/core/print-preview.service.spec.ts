@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Subject, of, throwError } from 'rxjs';
-import { PrintPreviewService } from './print-preview.service';
+import { DIRECT_PRINT_ON_DESKTOP, PrintPreviewService, isDesktopDevice } from './print-preview.service';
 
 describe('PrintPreviewService', () => {
 
@@ -50,5 +50,13 @@ describe('PrintPreviewService', () => {
     s.fail('Vorschau nicht möglich');
     expect(s.state()).toBe('error');
     expect(s.blob()).not.toBeNull();
+  });
+
+  it('Direktdruck gilt nur am PC und endet beim Schließen', () => {
+    const s = new PrintPreviewService();
+    s.open({ title: 'x', filename: 'x.pdf', load: () => of(new Blob(['%PDF-1.4'])) });
+    expect(s.direct()).toBe(DIRECT_PRINT_ON_DESKTOP && isDesktopDevice());
+    s.close();
+    expect(s.direct()).toBe(false);
   });
 });
