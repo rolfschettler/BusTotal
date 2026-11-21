@@ -14,10 +14,25 @@ use App\Services\DocumentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class DocumentController extends Controller
 {
+    /**
+     * Sortierbare Spalten der Liste: Die Anfrage wählt nur einen Eintrag aus dieser festen Liste, nie einen Spaltennamen
+     * (siehe docs/ClaudeCodePatterns/TableViewPattern.md). `date` ist Sonderfall, siehe orderByColumn().
+     */
+    private const SORTS = [
+        'number' => 'documents.number',
+        // Reihenfolge des Geschäftsgangs statt Alphabet: Angebot → Auftragsbestätigung → Anzahlung → Rechnung → Gutschrift
+        'type' => "FIELD(documents.type, 'angebot', 'auftragsbestaetigung', 'anzahlung', 'rechnung', 'gutschrift')",
+        'customer' => "COALESCE(NULLIF(c.company_name, ''), c.last_name, c.customer_number)",
+        'date' => 'documents.document_date',
+        'gross' => 'documents.gross_total',
+        'status' => 'documents.status',
+    ];
+
     public function __construct(private readonly DocumentService $documents) {}
 
     /** Liste mit Filter nach Art, Status und Kunde, Suche nach Nummer und Kunde, Seiten à 20. */
@@ -28,13 +43,19 @@ class DocumentController extends Controller
             'type' => ['nullable', Rule::enum(DocumentType::class)],
             'status' => ['nullable', Rule::enum(DocumentStatus::class)],
             'customer_id' => ['nullable', 'uuid'],
+            'order' => ['nullable', Rule::in(['column', 'chain'])],
+            'sort' => ['nullable', Rule::in(array_keys(self::SORTS))],
+            'dir' => ['nullable', Rule::in(['asc', 'desc'])],
         ]);
 
-        $query = Document::query()->with('customer:id,customer_number,company_name,first_name,last_name');
+        $query = Document::query()
+            ->with(['customer:id,customer_number,company_name,first_name,last_name', 'source:id,type,number'])
+            ->select('documents.*')
+            ->leftJoin('customers as c', 'c.id', '=', 'documents.customer_id');
 
         foreach (['type', 'status', 'customer_id'] as $filter) {
             if ($value = $request->query($filter)) {
-                $query->where($filter, $value);
+                $query->where('documents.'.$filter, $value);
             }
         }
 
@@ -42,8 +63,8 @@ class DocumentController extends Controller
             // % und _ sind in LIKE Platzhalter – hier wörtlich gemeint.
             $like = '%'.addcslashes($q, '%_\\').'%';
             $query->where(function ($w) use ($like) {
-                $w->where('number', 'like', $like)
-                    ->orWhere('subject', 'like', $like)
+                $w->where('documents.number', 'like', $like)
+                    ->orWhere('documents.subject', 'like', $like)
                     // Die Spalten in eine eigene Klammer: Ein orWhere direkt in whereHas würde die Bedingung
                     // "gehört zu diesem Beleg" aushebeln, und jeder Beleg träfe, sobald irgendein Kunde passt.
                     ->orWhereHas('customer', function ($c) use ($like) {
@@ -56,17 +77,60 @@ class DocumentController extends Controller
             });
         }
 
-        // Neueste zuerst; Entwürfe (ohne Datum) vor datierten Belegen. Die ID entscheidet bei Gleichstand,
-        // sonst könnte ein Beleg beim Blättern doppelt erscheinen oder fehlen.
-        $page = $query
-            ->orderByRaw('document_date IS NULL DESC')
-            ->orderByDesc('document_date')
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->paginate(20)
-            ->withQueryString();
+        if ($request->query('order') === 'chain') {
+            $this->orderByCustomerChain($query);
+        } else {
+            $this->orderByColumn($query, $request->query('sort') ?: 'date', $request->query('dir') === 'asc' ? 'asc' : 'desc');
+        }
 
-        return response()->json($page);
+        return response()->json($query->paginate(20)->withQueryString());
+    }
+
+    /**
+     * Standard: Datum, neueste zuerst. Leere Werte stehen am Ende, nur beim Datum nicht: Ein Entwurf hat noch kein Datum
+     * und gilt als der neueste Beleg (steht bei „absteigend“ oben, bei „aufsteigend“ unten). Bei Gleichstand entscheiden
+     * Anlegezeit und ID, sonst könnte ein Beleg beim Blättern doppelt erscheinen oder fehlen.
+     */
+    private function orderByColumn($query, string $sort, string $dir): void
+    {
+        $expression = self::SORTS[$sort];
+
+        if ($sort === 'date') {
+            $query->orderByRaw('documents.document_date IS NULL '.($dir === 'desc' ? 'DESC' : 'ASC'));
+        } else {
+            $query->orderByRaw("({$expression}) IS NULL");
+        }
+
+        $query->orderByRaw("{$expression} {$dir}")
+            ->orderByDesc('documents.created_at')
+            ->orderByDesc('documents.id');
+    }
+
+    /**
+     * Je Kunde untereinander, darin die Belegketten (Angebot → Auftragsbestätigung → Rechnung → Storno) in der Reihenfolge
+     * ihrer Entstehung. Die Kette folgt `source_id` rekursiv bis zum Ursprungsbeleg; `chain_depth` ist die Stufe darin
+     * (0 = Ursprung). Die ID entscheidet bei Gleichstand (stabiles Blättern).
+     */
+    private function orderByCustomerChain($query): void
+    {
+        $chain = <<<'SQL'
+            (WITH RECURSIVE chain (id, root_id, depth) AS (
+                SELECT id, id, 0 FROM documents WHERE source_id IS NULL
+                UNION ALL
+                SELECT d.id, c.root_id, c.depth + 1 FROM documents d JOIN chain c ON d.source_id = c.id
+            ) SELECT id, root_id, depth FROM chain)
+            SQL;
+
+        $query->addSelect('chain.depth as chain_depth')
+            ->join(DB::raw($chain.' AS chain'), 'chain.id', '=', 'documents.id')
+            ->join('documents as root', 'root.id', '=', 'chain.root_id')
+            ->orderByRaw('c.id IS NULL')
+            ->orderByRaw("COALESCE(NULLIF(c.company_name, ''), c.last_name, c.customer_number)")
+            ->orderBy('c.id')
+            ->orderBy('root.created_at')
+            ->orderBy('root.id')
+            ->orderBy('documents.created_at')
+            ->orderBy('documents.id');
     }
 
     public function show(Document $document): JsonResponse

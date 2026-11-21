@@ -104,8 +104,8 @@
 
       <tbody>
         @for (d of rows(); track d.id) {
-          <tr (click)="currentId.set(d.id)" [class.row-current]="d.id === currentId()">
-            <td class="col-actions" (click)="$event.stopPropagation()">
+          <tr (click)="select(d.id)" [class.row-current]="d.id === currentId()" [appRevealCurrent]="d.id === currentId()">
+            <td class="col-actions">
               <a class="btn-action edit" [routerLink]="['/fahrer', d.id]" title="Öffnen und bearbeiten" [attr.aria-label]="d.display_name + ' öffnen'">
                 <i class="bi bi-pencil"></i>
               </a>

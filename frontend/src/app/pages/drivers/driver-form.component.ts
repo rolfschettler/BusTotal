@@ -4,6 +4,7 @@ import { FormBuilder, FormsModule, NgForm, ReactiveFormsModule, Validators } fro
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
+import { ListMemory } from '../../core/list-memory.service';
 import { httpErrorText } from '../../core/http-error';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { Absence, Driver, DriverInput, DriverOptions, DriverService } from '../../core/driver.service';
@@ -32,6 +33,7 @@ export class DriverFormComponent implements OnInit {
   private router = inject(Router);
   private auth = inject(AuthService);
   private confirm = inject(ConfirmService);
+  private memory = inject(ListMemory);
   private help = inject(HelpService);
 
   isAdmin = computed(() => this.auth.user()?.role === 'admin');
@@ -91,7 +93,10 @@ export class DriverFormComponent implements OnInit {
   ngOnInit() {
     this.api.options().subscribe((o) => this.options.set(o));
     this.id = this.route.snapshot.paramMap.get('id');
-    if (this.id) this.load(this.id);
+    if (this.id) {
+      this.memory.follow('fahrer', this.id); // der Rücksprung zur Liste landet auf diesem Fahrer
+      this.load(this.id);
+    }
   }
 
   invalid(name: keyof typeof this.form.controls): boolean {

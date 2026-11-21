@@ -21,6 +21,20 @@ Eine neue Liste kopiert die Referenz und passt Spalten und Daten an. **Kein eige
 - **Dimmen statt Spinner** beim Nachladen: Die Tabelle springt nicht.
 - **Treffer markiert** über `<app-highlight>` (Regel für alle Suchen), mit Hinweis „Treffer in …“ bei unsichtbaren Feldern.
 
+## Aktuelle Zeile („currentId“) und Rücksprung
+
+Ein Klick auf eine Zeile (auch auf eine Aktion in der Aktionsspalte, dort **kein** `stopPropagation`) macht sie zur aktuellen Zeile.
+Springt man weg und kommt zurück, steht die Liste wieder wie vorher (Seite, Suche, Filter, Sortierung), die Zeile ist markiert
+und scrollt in den sichtbaren Bereich. Bausteine:
+
+- `core/list-memory.service.ts` (`ListMemory`): merkt je Liste (`'belege'`, `'kunden'` …) Zeile und Einstellungen, nur im Arbeitsspeicher.
+- `shared/reveal-current.directive.ts`: `[appRevealCurrent]="x.id === currentId()"` am `<tr>` scrollt die Zeile beim Entstehen ins Bild.
+- **Liste**: `currentId = signal(memory.current(KEY))`, in `ngOnInit` `memory.params(KEY)` zurückladen (eine Suche per `?q=` hat Vorrang),
+  nach jedem erfolgreichen Laden `memory.saveParams(KEY, …)`, Zeilenklick `memory.select(KEY, id)`. Vorbild: `customer-list.component.ts`.
+- **Formular**: beim Laden eines Datensatzes `memory.follow(KEY, id)`. Ein anderer als der gemerkte Datensatz (neu angelegt, Folgebeleg, Storno)
+  setzt die Liste auf Seite 1 ohne Filter zurück, damit er sicher zu sehen ist. Nach dem Löschen `memory.forget(KEY, id)`.
+- Bei Belegen folgt die Markierung der Beleg-Kette: Angebot → Auftragsbestätigung → …, „Zurück“ landet immer auf dem zuletzt gezeigten Beleg.
+
 ## Wann dieses Muster, wann nicht
 
 | Menge | Vorgehen |

@@ -100,9 +100,9 @@
 
       <tbody>
         @for (c of rows(); track c.id) {
-          <tr (click)="currentId.set(c.id)" [class.row-current]="c.id === currentId()">
-            <!-- Aktionen: stopPropagation, damit der Zeilenklick nicht mitfeuert -->
-            <td class="col-actions" (click)="$event.stopPropagation()">
+          <tr (click)="select(c.id)" [class.row-current]="c.id === currentId()" [appRevealCurrent]="c.id === currentId()">
+            <!-- Auch ein Klick auf eine Aktion macht die Zeile zur aktuellen Zeile (ListMemory) -->
+            <td class="col-actions">
               <a class="btn-action edit" [routerLink]="['/kunden', c.id]" title="Öffnen und bearbeiten" [attr.aria-label]="c.display_name + ' öffnen'">
                 <i class="bi bi-pencil"></i>
               </a>

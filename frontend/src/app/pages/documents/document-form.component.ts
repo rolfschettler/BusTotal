@@ -5,6 +5,7 @@ import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } fr
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
+import { ListMemory } from '../../core/list-memory.service';
 import { CustomerService } from '../../core/customer.service';
 import { BusDocument, DocumentInput, DocumentService, DocumentTypeInfo, DocumentTypeValue } from '../../core/document.service';
 import { fieldErrors, httpErrorText } from '../../core/http-error';
@@ -42,6 +43,7 @@ export class DocumentFormComponent implements OnInit {
   private router = inject(Router);
   private auth = inject(AuthService);
   private confirm = inject(ConfirmService);
+  private memory = inject(ListMemory);
 
   /** Festschreiben und Stornieren: nur Administrator und Buchhaltung (der Server prüft zusätzlich). */
   canFinalize = computed(() => ['admin', 'buchhaltung'].includes(this.auth.user()?.role ?? ''));
@@ -171,6 +173,8 @@ export class DocumentFormComponent implements OnInit {
     this.lines.clear({ emitEvent: false });
 
     if (id) {
+      // Der Rücksprung zur Liste landet auf diesem Beleg (Folgebeleg und Storno wechseln die Adresse, also folgt die Markierung).
+      this.memory.follow('belege', id);
       this.load(id);
       return;
     }
@@ -426,7 +430,16 @@ export class DocumentFormComponent implements OnInit {
       confirmLabel: 'Löschen',
       danger: true,
     });
-    if (ok) this.api.remove(this.id).subscribe({ next: () => this.router.navigate(['/belege']), error: (e) => this.fail(e, 'Löschen fehlgeschlagen.') });
+    const id = this.id;
+    if (ok) {
+      this.api.remove(id).subscribe({
+        next: () => {
+          this.memory.forget('belege', id);
+          this.router.navigate(['/belege']);
+        },
+        error: (e) => this.fail(e, 'Löschen fehlgeschlagen.'),
+      });
+    }
   }
 
   async cancelDocument() {

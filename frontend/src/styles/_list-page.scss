@@ -159,6 +159,10 @@
     border-bottom: 2px solid var(--bs-primary);
   }
 
+  // Gruppenwechsel (z. B. neuer Kunde bei den Belegen): kräftigere Trennlinie über der ersten Zeile der Gruppe
+  tbody tr.group-start td { border-top: 2px solid var(--bs-border-color); }
+  tbody tr.group-start:first-child td { border-top: none; }
+
   td.dim { color: var(--bs-secondary-color); }
 }
 

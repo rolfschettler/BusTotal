@@ -6,6 +6,7 @@ import { debounceTime } from 'rxjs';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { httpErrorText } from '../../core/http-error';
+import { ListMemory } from '../../core/list-memory.service';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { HelpService } from '../../help/help.service';
 import {
@@ -44,6 +45,7 @@ export class CustomerFormComponent implements OnInit {
   private auth = inject(AuthService);
   private confirm = inject(ConfirmService);
   private help = inject(HelpService);
+  private memory = inject(ListMemory);
 
   isAdmin = computed(() => this.auth.user()?.role === 'admin');
   /** DSGVO-Löschung: Administrator und Buchhaltung (der Server prüft zusätzlich). */
@@ -95,7 +97,10 @@ export class CustomerFormComponent implements OnInit {
 
     const idParam = this.route.snapshot.paramMap.get('id');
     this.id = idParam ?? null;
-    if (this.id) this.load(this.id);
+    if (this.id) {
+      this.memory.follow('kunden', this.id); // der Rücksprung zur Liste landet auf diesem Kunden
+      this.load(this.id);
+    }
 
     this.form.controls.type.valueChanges.subscribe((v) => {
       this.typeValue.set(v);

@@ -88,6 +88,8 @@ export interface BusDocument {
   finalized_at: string | null;
   lines?: DocumentLine[];
   customer?: { id: string; customer_number: string; display_name: string } | null;
+  /** Stufe in der Belegkette (0 = Ursprung), nur in der Ansicht „je Kunde“ */
+  chain_depth?: number;
   source?: { id: string; type: DocumentTypeValue; number: string | null } | null;
   cancelled_by?: { id: string; number: string | null } | null;
 }
@@ -111,11 +113,13 @@ export class DocumentService {
   private http = inject(HttpClient);
   private base = '/api/documents';
 
-  list(opts: { q: string; type: string; status: string; page: number }) {
+  list(opts: { q: string; type: string; status: string; page: number; order?: 'column' | 'chain'; sort?: string; dir?: 'asc' | 'desc' }) {
     let params = new HttpParams().set('page', opts.page);
     if (opts.q) params = params.set('q', opts.q);
     if (opts.type) params = params.set('type', opts.type);
     if (opts.status) params = params.set('status', opts.status);
+    if (opts.order === 'chain') params = params.set('order', 'chain');
+    else if (opts.sort) params = params.set('sort', opts.sort).set('dir', opts.dir ?? 'desc');
     return this.http.get<Page<BusDocument>>(this.base, { params });
   }
 

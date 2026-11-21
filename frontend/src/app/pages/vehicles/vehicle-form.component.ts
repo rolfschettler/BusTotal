@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
+import { ListMemory } from '../../core/list-memory.service';
 import { httpErrorText } from '../../core/http-error';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { Option, Vehicle, VehicleInput, VehicleOptions, VehicleService } from '../../core/vehicle.service';
@@ -27,6 +28,7 @@ export class VehicleFormComponent implements OnInit {
   private router = inject(Router);
   private auth = inject(AuthService);
   private confirm = inject(ConfirmService);
+  private memory = inject(ListMemory);
 
   isAdmin = computed(() => this.auth.user()?.role === 'admin');
   canEdit = computed(() => ['admin', 'disponent'].includes(this.auth.user()?.role ?? ''));
@@ -79,7 +81,10 @@ export class VehicleFormComponent implements OnInit {
   ngOnInit() {
     this.api.options().subscribe((o) => this.options.set(o));
     this.id = this.route.snapshot.paramMap.get('id');
-    if (this.id) this.load(this.id);
+    if (this.id) {
+      this.memory.follow('fahrzeuge', this.id); // der Rücksprung zur Liste landet auf diesem Fahrzeug
+      this.load(this.id);
+    }
     else if (!this.canEdit()) this.router.navigate(['/fahrzeuge']);
   }
 

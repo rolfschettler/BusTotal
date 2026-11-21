@@ -4,10 +4,11 @@ Hier erstellen Sie Angebote, Auftragsbestätigungen und Rechnungen. Der Bereich 
 
 ## Belegliste {#belegliste}
 
-Die Liste zeigt 20 Belege pro Seite, die neuesten zuerst. Entwürfe stehen oben.
+Die Liste zeigt 20 Belege pro Seite. Ein Klick auf eine Spaltenüberschrift sortiert danach, ein zweiter Klick kehrt die Richtung um. Ohne Wahl stehen die neuesten zuerst, Entwürfe oben (ein Entwurf hat noch kein Datum und gilt als der neueste). Leere Werte stehen immer am Ende. Die Belegart sortiert in der Reihenfolge des Geschäftsgangs (Angebot bis Gutschrift).
 
 - **Suche:** Das Suchfeld durchsucht die Belegnummer, den Betreff und den Kunden (Name und Kundennummer). Treffer sind gelb markiert. Steckt der Treffer in einem Feld, das die Liste nicht zeigt (die Kundennummer), erscheint unter dem Namen der Hinweis „Treffer in Kundennr.“.
 - **Belegart und Stand:** Die Filter zeigen zum Beispiel nur Rechnungen oder nur Entwürfe.
+- **Anordnung:** „Je Kunde mit Entstehungskette“ (statt „Nach Spalte sortiert“) stellt die Belege eines Kunden untereinander, alphabetisch nach Kunde. Darin stehen die Belegketten in der Reihenfolge ihrer Entstehung, zum Beispiel Angebot, darunter eingerückt die Auftragsbestätigung, darunter die Rechnung und ein eventueller Storno. So lässt sich nachvollziehen, woraus ein Beleg entstanden ist. Unter der Belegart steht außerdem immer „aus Angebot AN-…“, sobald ein Beleg aus einem anderen entstanden ist. Die Wahl bleibt beim Wechsel in einen Beleg und zurück erhalten.
 - **Stand:** *Entwurf* ist noch änderbar und hat keine Nummer. *Festgeschrieben* hat eine Nummer und ist gesperrt. *Storniert* ist ein festgeschriebener Beleg, der durch einen Storno-Beleg ausgeglichen wurde.
 
 ## Beleg anlegen {#beleg-anlegen}

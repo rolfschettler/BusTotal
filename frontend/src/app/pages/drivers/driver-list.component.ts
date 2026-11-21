@@ -11,6 +11,11 @@ import { deadlineText, germanDate } from '../../shared/deadline';
 import { hasHit } from '../../shared/highlight';
 import { HighlightComponent } from '../../shared/highlight.component';
 import { StickyFilterBarDirective } from '../../shared/sticky-filter-bar.directive';
+import { RevealCurrentDirective } from '../../shared/reveal-current.directive';
+import { ListMemory } from '../../core/list-memory.service';
+
+const KEY = 'fahrer';
+type ListParams = { q: string; employment: string; deadline: string; archived: boolean; sortCol: string; sortDir: 'asc' | 'desc'; page: number };
 
 /**
  * Fahrerliste nach dem Tabellen-Muster (docs/ClaudeCodePatterns/TableViewPattern.md), Vorbild: Fahrzeugliste.
@@ -18,13 +23,14 @@ import { StickyFilterBarDirective } from '../../shared/sticky-filter-bar.directi
  */
 @Component({
   selector: 'app-driver-list',
-  imports: [FormsModule, RouterLink, HighlightComponent, StickyFilterBarDirective],
+  imports: [FormsModule, RouterLink, HighlightComponent, StickyFilterBarDirective, RevealCurrentDirective],
   templateUrl: './driver-list.component.html',
   host: { class: 'list-page', style: '--sheet-w: 1074px' },
 })
 export class DriverListComponent implements OnInit {
   private api = inject(DriverService);
   private confirm = inject(ConfirmService);
+  private memory = inject(ListMemory);
   auth = inject(AuthService);
 
   q = '';
@@ -40,7 +46,7 @@ export class DriverListComponent implements OnInit {
 
   rows = signal<Driver[]>([]);
   employmentTypes = signal<Option[]>([]);
-  currentId = signal<string | null>(null);
+  currentId = signal<string | null>(this.memory.current(KEY));
   loaded = signal(false);
   loading = signal(false);
   error = signal<string | null>(null);
@@ -55,8 +61,22 @@ export class DriverListComponent implements OnInit {
   private timer?: ReturnType<typeof setTimeout>;
 
   ngOnInit() {
+    // Stand vor dem Absprung wiederherstellen (ListMemory)
+    const saved = this.memory.params<ListParams>(KEY);
+    this.q = saved?.q ?? '';
+    this.employment = saved?.employment ?? '';
+    this.deadline = saved?.deadline ?? '';
+    this.archived = saved?.archived ?? false;
+    this.sortCol.set(saved?.sortCol ?? 'name');
+    this.sortDir.set(saved?.sortDir ?? 'asc');
+    this.page.set(saved?.page ?? 1);
     this.api.options().subscribe((o) => this.employmentTypes.set(o.employment_types));
     this.load();
+  }
+
+  select(id: string) {
+    this.currentId.set(id);
+    this.memory.select(KEY, id);
   }
 
   onSearch() {
@@ -161,6 +181,10 @@ export class DriverListComponent implements OnInit {
 
           this.rows.set(p.data);
           this.shownQuery.set(query);
+          this.memory.saveParams(KEY, {
+            q: query, employment: this.employment, deadline: this.deadline, archived: this.archived,
+            sortCol: this.sortCol(), sortDir: this.sortDir(), page: this.page(),
+          } satisfies ListParams);
           this.lastPage.set(p.last_page);
           this.total.set(p.total);
           this.loaded.set(true);

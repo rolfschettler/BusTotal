@@ -9,6 +9,11 @@ import { Customer, CustomerService, CustomerType } from '../../core/customer.ser
 import { hasHit } from '../../shared/highlight';
 import { HighlightComponent } from '../../shared/highlight.component';
 import { StickyFilterBarDirective } from '../../shared/sticky-filter-bar.directive';
+import { RevealCurrentDirective } from '../../shared/reveal-current.directive';
+import { ListMemory } from '../../core/list-memory.service';
+
+const KEY = 'kunden';
+type ListParams = { q: string; type: string; archived: boolean; sortCol: string; sortDir: 'asc' | 'desc'; page: number };
 
 /**
  * Kundenliste. Lebende Referenz des Tabellen-Musters (docs/ClaudeCodePatterns/TableViewPattern.md):
@@ -17,7 +22,7 @@ import { StickyFilterBarDirective } from '../../shared/sticky-filter-bar.directi
  */
 @Component({
   selector: 'app-customer-list',
-  imports: [FormsModule, RouterLink, HighlightComponent, StickyFilterBarDirective],
+  imports: [FormsModule, RouterLink, HighlightComponent, StickyFilterBarDirective, RevealCurrentDirective],
   templateUrl: './customer-list.component.html',
   // list-page: aktiviert das globale Listenlayout. --sheet-w: Breite des Blattes (Summe der Spalten in <colgroup>).
   host: { class: 'list-page', style: '--sheet-w: 1084px' },
@@ -26,6 +31,7 @@ export class CustomerListComponent implements OnInit {
   private api = inject(CustomerService);
   private route = inject(ActivatedRoute);
   private confirm = inject(ConfirmService);
+  private memory = inject(ListMemory);
   auth = inject(AuthService);
 
   // Filter (mit der Eingabe verbunden)
@@ -42,8 +48,8 @@ export class CustomerListComponent implements OnInit {
 
   rows = signal<Customer[]>([]);
   types = signal<CustomerType[]>([]);
-  /** Die in der Liste markierte Zeile (nur optisch, wie im Muster) */
-  currentId = signal<string | null>(null);
+  /** Die markierte Zeile; bleibt über Formular und Rücksprung erhalten (ListMemory). */
+  currentId = signal<string | null>(this.memory.current(KEY));
   loaded = signal(false);
   loading = signal(false);
   error = signal<string | null>(null);
@@ -55,10 +61,22 @@ export class CustomerListComponent implements OnInit {
   private timer?: ReturnType<typeof setTimeout>;
 
   ngOnInit() {
-    // Die Suche von der Startseite kommt als ?q=… an.
-    this.q = this.route.snapshot.queryParamMap.get('q') ?? '';
+    // Die Suche von der Startseite kommt als ?q=… an und hat Vorrang. Sonst gilt der Stand vor dem Absprung (ListMemory).
+    const fromUrl = this.route.snapshot.queryParamMap.get('q');
+    const saved = fromUrl === null ? this.memory.params<ListParams>(KEY) : null;
+    this.q = fromUrl ?? saved?.q ?? '';
+    this.type = saved?.type ?? '';
+    this.archived = saved?.archived ?? false;
+    this.sortCol.set(saved?.sortCol ?? 'name');
+    this.sortDir.set(saved?.sortDir ?? 'asc');
+    this.page.set(saved?.page ?? 1);
     this.api.types().subscribe((t) => this.types.set(t));
     this.load();
+  }
+
+  select(id: string) {
+    this.currentId.set(id);
+    this.memory.select(KEY, id);
   }
 
   // ---------- Bedienung ----------
@@ -179,6 +197,9 @@ export class CustomerListComponent implements OnInit {
           this.rows.set(p.data);
           // Markiert wird der Begriff, der diese Liste erzeugt hat, nicht der inzwischen weiter getippte.
           this.shownQuery.set(query);
+          this.memory.saveParams(KEY, {
+            q: query, type: this.type, archived: this.archived, sortCol: this.sortCol(), sortDir: this.sortDir(), page: this.page(),
+          } satisfies ListParams);
           this.lastPage.set(p.last_page);
           this.total.set(p.total);
           this.loaded.set(true);

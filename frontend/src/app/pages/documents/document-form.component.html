@@ -271,7 +271,7 @@
     @if (id) {
       <button type="button" class="btn btn-outline-secondary" [disabled]="pdfBusy()"
               [attr.title]="form.dirty ? 'Zeigt den gespeicherten Stand. Ungespeicherte Änderungen bitte zuerst speichern.' : 'PDF in einem neuen Tab öffnen'" (click)="openPdf()">
-        @if (pdfBusy()) { <span class="spinner-border spinner-border-sm me-1"></span> } @else { <i class="bi bi-file-earmark-pdf me-1"></i> }PDF
+        @if (pdfBusy()) { <span class="spinner-border spinner-border-sm me-1"></span> } @else { <i class="bi bi-printer me-1"></i> }PDF
       </button>
     }
     @if (readonly()) {

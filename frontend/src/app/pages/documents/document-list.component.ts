@@ -9,25 +9,36 @@ import { hasHit } from '../../shared/highlight';
 import { openPdfWindow, showPdf } from '../../shared/pdf-open';
 import { HighlightComponent } from '../../shared/highlight.component';
 import { StickyFilterBarDirective } from '../../shared/sticky-filter-bar.directive';
+import { RevealCurrentDirective } from '../../shared/reveal-current.directive';
+import { ListMemory } from '../../core/list-memory.service';
 import { formatAmount } from './document-calc';
+
+const KEY = 'belege';
+type DocListParams = {
+  q: string; type: string; status: string; page: number; order: 'column' | 'chain'; sortCol: string; sortDir: 'asc' | 'desc';
+};
 
 /**
  * Belegliste nach dem Tabellen-Muster (docs/ClaudeCodePatterns/TableViewPattern.md). Der SERVER filtert und blättert.
- * Abweichung vom Muster: keine sortierbaren Spaltenköpfe, die Liste steht fest nach Datum (neueste zuerst, Entwürfe oben).
  */
 @Component({
   selector: 'app-document-list',
-  imports: [DatePipe, FormsModule, RouterLink, HighlightComponent, StickyFilterBarDirective],
+  imports: [DatePipe, FormsModule, RouterLink, HighlightComponent, StickyFilterBarDirective, RevealCurrentDirective],
   templateUrl: './document-list.component.html',
   host: { class: 'list-page', style: '--sheet-w: 964px' },
 })
 export class DocumentListComponent implements OnInit {
   private api = inject(DocumentService);
   private route = inject(ActivatedRoute);
+  private memory = inject(ListMemory);
 
   q = '';
   type = '';
   status = '';
+  /** „column“: nach der gewählten Spalte. „chain“: je Kunde untereinander, darin die Belegketten (Entstehungsgeschichte). */
+  order: 'column' | 'chain' = 'column';
+  sortCol = signal('date');
+  sortDir = signal<'asc' | 'desc'>('desc');
 
   page = signal(1);
   lastPage = signal(1);
@@ -35,7 +46,7 @@ export class DocumentListComponent implements OnInit {
 
   rows = signal<BusDocument[]>([]);
   types = signal<DocumentTypeInfo[]>([]);
-  currentId = signal<string | null>(null);
+  currentId = signal<string | null>(this.memory.current(KEY));
   loaded = signal(false);
   loading = signal(false);
   error = signal<string | null>(null);
@@ -48,9 +59,23 @@ export class DocumentListComponent implements OnInit {
   private timer?: ReturnType<typeof setTimeout>;
 
   ngOnInit() {
-    this.q = this.route.snapshot.queryParamMap.get('q') ?? '';
+    // Rücksprung aus einem Beleg: Seite und Filter wie vorher (siehe ListMemory). Eine Suche von außen (?q=) hat Vorrang.
+    const fromUrl = this.route.snapshot.queryParamMap.get('q');
+    const saved = fromUrl === null ? this.memory.params<DocListParams>(KEY) : null;
+    this.q = fromUrl ?? saved?.q ?? '';
+    this.type = saved?.type ?? '';
+    this.status = saved?.status ?? '';
+    this.order = saved?.order ?? 'column';
+    this.sortCol.set(saved?.sortCol ?? 'date');
+    this.sortDir.set(saved?.sortDir ?? 'desc');
+    this.page.set(saved?.page ?? 1);
     this.api.types().subscribe((t) => this.types.set(t));
     this.load();
+  }
+
+  select(id: string) {
+    this.currentId.set(id);
+    this.memory.select(KEY, id);
   }
 
   onSearch() {
@@ -90,6 +115,45 @@ export class DocumentListComponent implements OnInit {
     });
   }
 
+  /**
+   * Klick auf einen Spaltenkopf: neue Spalte zuerst absteigend bei Datum und Betrag (neueste/größte zuerst), sonst aufsteigend;
+   * dieselbe Spalte wechselt die Richtung. Verlässt die Kettenansicht.
+   */
+  sort(col: string) {
+    if (this.order === 'column' && this.sortCol() === col) {
+      this.sortDir.update((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      this.sortCol.set(col);
+      this.sortDir.set(col === 'date' || col === 'gross' ? 'desc' : 'asc');
+    }
+    this.order = 'column';
+    this.filterChanged();
+  }
+
+  private sorted(col: string): boolean {
+    return this.order === 'column' && this.sortCol() === col;
+  }
+
+  sortIcon(col: string): string {
+    if (!this.sorted(col)) return 'bi-chevron-expand';
+    return this.sortDir() === 'asc' ? 'bi-chevron-up' : 'bi-chevron-down';
+  }
+
+  ariaSort(col: string): 'ascending' | 'descending' | 'none' {
+    if (!this.sorted(col)) return 'none';
+    return this.sortDir() === 'asc' ? 'ascending' : 'descending';
+  }
+
+  isSorted(col: string): boolean {
+    return this.sorted(col);
+  }
+
+  /** Erste Zeile eines neuen Kunden (nur in der Ansicht „je Kunde“): bekommt eine kräftigere Trennlinie. */
+  groupStart(i: number): boolean {
+    if (this.order !== 'chain' || i === 0) return false;
+    return this.rows()[i].customer_id !== this.rows()[i - 1].customer_id;
+  }
+
   typeLabel(value: string) {
     return this.types().find((t) => t.value === value)?.label ?? value;
   }
@@ -112,11 +176,12 @@ export class DocumentListComponent implements OnInit {
     const query = this.q.trim();
     const request = ++this.requestNo;
 
-    this.api.list({ q: query, type: this.type, status: this.status, page: this.page() }).subscribe({
+    this.api.list({ q: query, type: this.type, status: this.status, page: this.page(), order: this.order, sort: this.sortCol(), dir: this.sortDir() }).subscribe({
       next: (p) => {
         if (request !== this.requestNo) return;
         this.rows.set(p.data);
         this.shownQuery.set(query);
+        this.memory.saveParams(KEY, { q: query, type: this.type, status: this.status, page: this.page(), order: this.order, sortCol: this.sortCol(), sortDir: this.sortDir() } satisfies DocListParams);
         this.lastPage.set(p.last_page);
         this.total.set(p.total);
         this.loaded.set(true);
