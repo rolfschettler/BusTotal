@@ -105,7 +105,7 @@
               <a class="btn-action edit" [routerLink]="['/belege', d.id]" title="Öffnen" [attr.aria-label]="typeLabel(d.type) + ' öffnen'">
                 <i class="bi bi-pencil"></i>
               </a>
-              <button type="button" class="btn-action edit" (click)="openPdf(d)" [disabled]="pdfBusyId() === d.id" title="Drucken (PDF öffnen)" [attr.aria-label]="'PDF von ' + typeLabel(d.type) + ' öffnen'">
+              <button type="button" class="btn-action edit" (click)="openPdf(d)" title="Drucken" [attr.aria-label]="typeLabel(d.type) + ' drucken'">
                 <i class="bi bi-printer"></i>
               </button>
             </td>

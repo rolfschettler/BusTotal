@@ -10,7 +10,7 @@ import { CustomerService } from '../../core/customer.service';
 import { BusDocument, DocumentInput, DocumentService, DocumentTypeInfo, DocumentTypeValue } from '../../core/document.service';
 import { fieldErrors, httpErrorText } from '../../core/http-error';
 import { SettingsService, TaxRate } from '../../core/settings.service';
-import { openPdfWindow, showPdf } from '../../shared/pdf-open';
+import { PrintPreviewService } from '../../core/print-preview.service';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { CalcLine, formatAmount, formatCents, summarize } from './document-calc';
 
@@ -44,6 +44,7 @@ export class DocumentFormComponent implements OnInit {
   private auth = inject(AuthService);
   private confirm = inject(ConfirmService);
   private memory = inject(ListMemory);
+  private printPreview = inject(PrintPreviewService);
 
   /** Festschreiben und Stornieren: nur Administrator und Buchhaltung (der Server prüft zusätzlich). */
   canFinalize = computed(() => ['admin', 'buchhaltung'].includes(this.auth.user()?.role ?? ''));
@@ -482,22 +483,14 @@ export class DocumentFormComponent implements OnInit {
     });
   }
 
-  /** PDF in einem neuen Tab. Zeigt den gespeicherten Stand (bei ungespeicherten Änderungen erst speichern). */
-  pdfBusy = signal(false);
+  /** Druckvorschau. Zeigt den gespeicherten Stand (bei ungespeicherten Änderungen erst speichern). */
   openPdf() {
+    const d = this.doc();
     if (!this.id) return;
-    const target = openPdfWindow();
-    this.pdfBusy.set(true);
-    this.api.pdf(this.id).subscribe({
-      next: (blob) => {
-        this.pdfBusy.set(false);
-        showPdf(blob, target, `${this.doc()?.number ?? 'Entwurf'}.pdf`);
-      },
-      error: (e: HttpErrorResponse) => {
-        this.pdfBusy.set(false);
-        target?.close();
-        this.fail(e, 'Das PDF konnte nicht erstellt werden.');
-      },
+    this.printPreview.open({
+      title: `${this.typeLabel(d?.type)} ${d?.number ?? '(Entwurf)'}`,
+      filename: `${d?.number ?? 'Entwurf'}.pdf`,
+      load: () => this.api.pdf(this.id!),
     });
   }
 

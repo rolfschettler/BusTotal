@@ -156,5 +156,8 @@ mark {
 // Listenseiten (Tabellen-Muster, siehe docs/ClaudeCodePatterns/TableViewPattern.md)
 @import 'styles/list-page';
 
+// Druckvorschau für PDFs (PrintPreviewService)
+@import 'styles/print-preview';
+
 // Formularseiten (Formular-Muster, siehe docs/ClaudeCodePatterns/EditFormPattern.md)
 @import 'styles/edit-form';

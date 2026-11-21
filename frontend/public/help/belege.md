@@ -48,7 +48,7 @@ Ein Beleg lässt sich nur einmal stornieren. Entwürfe werden nicht storniert, s
 
 ## PDF {#pdf}
 
-Mit **PDF** (in der Tastenleiste des Belegs und als Symbol in der Liste) öffnet sich der Beleg als PDF in einem neuen Tab. Von dort drucken oder speichern Sie ihn.
+Mit **Drucken** (in der Tastenleiste des Belegs und als Druckersymbol in der Liste) öffnet sich die **Druckvorschau** direkt in {{app}}, ohne neuen Tab. Sie zeigt alle Seiten des Belegs. Mit **Drucken** darin öffnet sich der Druckdialog Ihres Geräts (am PC der Browser-Dialog, auf Android der Druckdienst, auf dem iPad AirPrint). **Herunterladen** speichert das PDF als Datei, **Schließen** (oder die Esc-Taste) beendet die Vorschau. Das gilt auf PC, Android- und iOS-Tablets gleich. Gedruckt wird ein Bild der Seiten; wer das PDF selbst braucht (zum Beispiel für eine E-Mail), nutzt „Herunterladen“.
 
 - Das PDF enthält Briefkopf mit Logo, Empfängeranschrift, Belegnummer, Datum, Leistungszeitpunkt, die Positionen, die Summen (mit Steuer je Satz, bei einer Schlussrechnung mit abgezogenen Anzahlungen und „Zu zahlen“), Steuerhinweise als Fußnoten, bei Rechnungen den Zahlungshinweis mit Fälligkeit und Bankverbindung und die Fußzeile mit den Firmenangaben. Briefkopf-Zusatz und Fußzeile stellen Sie unter [Firmendaten](/hilfe/einstellungen#firmendaten) ein.
 - Ein **Entwurf** trägt oben den Hinweis „ENTWURF“ und hat keine Belegnummer. Er ist keine gültige Rechnung.
