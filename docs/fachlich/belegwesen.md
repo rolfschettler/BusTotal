@@ -56,6 +56,8 @@ Vor dem Produktiveinsatz muss der Steuerberater die Umsetzung prüfen.
 - **[offen]** Gutschriften und Rechnungskorrekturen (§ 14c UStG: unrichtiger Steuerausweis) wurden nicht recherchiert.
 - **[offen]** Rechnung an Privatpersonen: Kleinbetragsrechnungen (bis 250 €) haben erleichterte Pflichtangaben, sind aber von der E-Rechnungspflicht ausgenommen. Die App nutzt der Einfachheit halber immer die volle Rechnung.
 
+**Erweiterter Ablauf (festgehalten 2026-11-21):** Zwischen Auftragsbestätigung und Rechnung steht der **Fahrtauftrag** (je Bus einer) mit Rückerfassung. Die Rechnung entsteht aus den zurückerfassten Fahrtaufträgen, entweder als Gesamtrechnung je **Reisevorhaben** oder als Sammelrechnung über beliebige Fahrtaufträge. Ausführlich in `docs/fachlich/workflow-reisevorhaben.md`.
+
 ## 6. E-Rechnung
 - **[belegt]** Format: Norm **EN 16931** (z. B. XRechnung, ZUGFeRD). Rechnungen **empfangen** müssen alle Unternehmen seit 1.1.2025 können.
 - **[belegt]** **Ausstellungspflicht** im inländischen B2B-Verkehr: ab **1.1.2027** für Unternehmen mit Vorjahresumsatz **> 800.000 €**, ab **1.1.2028** für alle. Bis dahin sind sonstige Rechnungen (Papier, PDF) erlaubt. EDI-Rechnungen sind mit Zustimmung des Empfängers erlaubt ([IHK Stuttgart](https://www.ihk.de/stuttgart/fuer-unternehmen/recht-und-steuern/steuerrecht/steuermeldungen/e-rechnungen-5864496), [Grant Thornton](https://www.grantthornton.de/themen/2026/e-rechnungspflicht-2027-die-wichtigsten-fragen-und-antworten-zur-e-rechnung/)).
