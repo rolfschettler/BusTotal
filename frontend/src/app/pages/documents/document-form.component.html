@@ -15,6 +15,7 @@
         @if (d.cancelled_by; as c) { durch <a [routerLink]="['/belege', c.id]">{{ c.number }}</a> }
       } @else {
         <span class="badge text-bg-success">Festgeschrieben</span>
+        @if (d.einvoice_format) { <span class="badge text-bg-info">E-Rechnung</span> }
         <app-help-link topic="belege" anchor="entwurf-und-festschreiben" label="Entwurf und Festschreiben" />
       }
       @if (d.source; as s) {
@@ -308,6 +309,12 @@
       <button type="button" class="btn btn-outline-secondary"
               [attr.title]="form.dirty ? 'Zeigt den gespeicherten Stand. Ungespeicherte Änderungen bitte zuerst speichern.' : 'Druckvorschau öffnen'" (click)="openPdf()">
         <i class="bi bi-printer me-1"></i>Drucken
+      </button>
+    }
+    @if (readonly() && typeInfo()?.invoice) {
+      <button type="button" class="btn btn-outline-secondary" [disabled]="working()" (click)="downloadEInvoice()"
+              title="XRechnung (XML) herunterladen. Gibt es noch keine, entsteht sie jetzt einmal.">
+        <i class="bi bi-file-earmark-code me-1"></i>E-Rechnung (XML)
       </button>
     }
     @if (readonly()) {

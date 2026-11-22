@@ -23,6 +23,7 @@ class DocumentService
         private readonly NumberRangeService $numbers,
         private readonly DocumentCalculator $calculator,
         private readonly DocumentArchive $archive,
+        private readonly EInvoiceService $einvoice,
     ) {}
 
     /**
@@ -289,6 +290,7 @@ class DocumentService
             return $this->issue($document);
         } catch (\Throwable $e) {
             $this->archive->discard($document);
+            $this->einvoice->discard($document);
             if ($e instanceof ValidationException) {
                 throw $e;
             }
@@ -312,6 +314,10 @@ class DocumentService
             'finalized_by' => auth()->id(),
         ]);
         $this->archive->store($document);
+        // E-Rechnung: Wünscht der Empfänger sie, entsteht die XML im selben Zug (und scheitert das Festschreiben mit).
+        if ($this->einvoice->wanted($document->type, (array) $document->recipient)) {
+            $this->einvoice->archive($document);
+        }
         $document->save();
 
         AuditLog::record('finalized', $document, null, ['number' => $number, 'type' => $document->type->value]);
@@ -385,6 +391,11 @@ class DocumentService
                 .number_format((float) $document->gross_total, 2, ',', '.').' €). Bitte die Positionen prüfen.';
         }
 
+        // E-Rechnung: Fehlt etwas, das die XRechnung verlangt, wird nicht festgeschrieben (keine Nummer verbraucht).
+        if ($isInvoice && $customer !== null && $customer->einvoice) {
+            array_push($errors, ...$this->einvoice->problems($document, $this->sellerSnapshot($company), $this->recipientSnapshot($customer)));
+        }
+
         if ($isInvoice) {
             if (blank($company->name) || blank($company->street) || blank($company->postal_code) || blank($company->city)) {
                 $errors[] = 'In den Firmendaten fehlen Name oder Anschrift.';
@@ -419,7 +430,7 @@ class DocumentService
         return array_merge(
             $customer->only([
                 'customer_number', 'debitor_number', 'type', 'company_name', 'salutation', 'first_name', 'last_name',
-                'street', 'postal_code', 'city', 'country', 'vat_id', 'email',
+                'street', 'postal_code', 'city', 'country', 'vat_id', 'email', 'buyer_reference', 'einvoice',
             ]),
             ['name' => $customer->display_name, 'type' => $customer->type->value],
         );

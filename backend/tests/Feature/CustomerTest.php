@@ -105,6 +105,16 @@ class CustomerTest extends TestCase
         $this->as(Role::Admin)->getJson('/api/customers?q=%25')->assertJsonPath('total', 0); // "%" ist kein Platzhalter
     }
 
+    public function test_suche_findet_vollstaendigen_namen_in_beiden_reihenfolgen(): void
+    {
+        Customer::factory()->privat()->create(['first_name' => 'Anna', 'last_name' => 'Alpenrose']);
+        Customer::factory()->privat()->create(['first_name' => 'Bernd', 'last_name' => 'Nordmann']);
+
+        $this->as(Role::Admin)->getJson('/api/customers?q=Anna Alpenrose')->assertJsonPath('total', 1);
+        $this->as(Role::Admin)->getJson('/api/customers?q=Alpenrose Anna')->assertJsonPath('total', 1);
+        $this->as(Role::Admin)->getJson('/api/customers?q=Anna Nordmann')->assertJsonPath('total', 0);
+    }
+
     // ---------- Dubletten ----------
 
     public function test_dublette_per_email_und_firmenname(): void
@@ -207,6 +217,42 @@ class CustomerTest extends TestCase
             ->assertJsonPath('ansprechpartner.0.last_name', 'Kontakt');
 
         $this->assertDatabaseHas('audit_logs', ['event' => 'exported', 'auditable_id' => $c->id]);
+    }
+
+    // ---------- E-Rechnung (Kennzeichen und Leitweg-ID) ----------
+
+    public function test_e_rechnung_kennzeichen_und_leitweg_id_werden_gespeichert(): void
+    {
+        $id = $this->as(Role::Disponent)->postJson('/api/customers', $this->firma([
+            'einvoice' => true, 'buyer_reference' => '04011000-1234512345-06',
+        ]))->assertCreated()->assertJsonPath('einvoice', true)->assertJsonPath('buyer_reference', '04011000-1234512345-06')->json('id');
+
+        $this->as(Role::Disponent)->putJson("/api/customers/{$id}", $this->firma(['einvoice' => false, 'buyer_reference' => null]))
+            ->assertOk()->assertJsonPath('einvoice', false)->assertJsonPath('buyer_reference', null);
+    }
+
+    public function test_e_rechnung_ist_standardmaessig_aus(): void
+    {
+        $this->as(Role::Disponent)->postJson('/api/customers', $this->firma())->assertCreated()->assertJsonPath('einvoice', false);
+    }
+
+    public function test_leitweg_id_prueft_laenge_und_zeichen(): void
+    {
+        $this->as(Role::Disponent)->postJson('/api/customers', $this->firma(['buyer_reference' => str_repeat('1', 47)]))
+            ->assertUnprocessable()->assertJsonValidationErrors('buyer_reference');
+        $this->as(Role::Disponent)->postJson('/api/customers', $this->firma(['buyer_reference' => 'Referenz <script>']))
+            ->assertUnprocessable()->assertJsonValidationErrors('buyer_reference');
+    }
+
+    public function test_anonymisieren_loescht_auch_die_leitweg_id(): void
+    {
+        $c = Customer::factory()->create(['einvoice' => true, 'buyer_reference' => '04011000-1234512345-06']);
+
+        $this->as(Role::Buchhaltung)->postJson("/api/customers/{$c->id}/anonymize")->assertOk();
+
+        $c = Customer::withTrashed()->find($c->id);
+        $this->assertNull($c->buyer_reference);
+        $this->assertFalse($c->einvoice);
     }
 
     public function test_anonymisieren_nur_admin_und_buchhaltung_und_nummern_bleiben(): void

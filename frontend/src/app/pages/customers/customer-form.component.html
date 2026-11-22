@@ -134,6 +134,19 @@
           <input type="number" min="0" class="form-control" id="payment_term_days" formControlName="payment_term_days" />
           <div class="form-text">Leer = Standard der Firma.</div>
         </div>
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="buyer_reference">Leitweg-ID / Käuferreferenz</label>
+          <input class="form-control" id="buyer_reference" maxlength="46" formControlName="buyer_reference" [class.is-invalid]="invalid('buyer_reference')" />
+          <div class="invalid-feedback">{{ fieldErrors()['buyer_reference'] || 'Ungültige Zeichen.' }}</div>
+          <div class="form-text">Pflicht bei öffentlichen Auftraggebern, z. B. 04011000-1234512345-06.</div>
+        </div>
+        <div class="col-12 col-lg-6 d-flex align-items-end">
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="einvoice" formControlName="einvoice" />
+            <label class="form-check-label" for="einvoice">E-Rechnung statt PDF</label>
+            <app-help-link topic="kunden" anchor="e-rechnung" label="E-Rechnung beim Kunden" />
+          </div>
+        </div>
 
         <div class="col-12"><div class="section-title">Notizen (intern)</div></div>
 

@@ -85,6 +85,8 @@ export class CustomerFormComponent implements OnInit {
     city: [''],
     country: ['DE', [Validators.required, Validators.minLength(2), Validators.maxLength(2)]],
     payment_term_days: [null as number | null],
+    einvoice: [false],
+    buyer_reference: [''],
     notes: [''],
   });
 

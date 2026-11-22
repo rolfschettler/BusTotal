@@ -60,6 +60,19 @@ Auf dem Reiter **Stammdaten** pflegen Sie:
 
 Speichern Sie mit **Speichern**. Änderungen werden im [Änderungsprotokoll](/hilfe/datenschutz#protokoll) mit altem und neuem Wert festgehalten.
 
+## E-Rechnung beim Kunden {#e-rechnung}
+
+Unter **Rechnung** gibt es zwei Angaben für die E-Rechnung:
+
+- **E-Rechnung statt PDF:** Kennzeichnet Kunden, die ihre Rechnungen elektronisch im Format **XRechnung** erhalten. Das gilt für Firmenkunden und öffentliche Auftraggeber (Schulträger, Kommunen, Behörden). Privatkunden brauchen es nicht.
+- **Leitweg-ID / Käuferreferenz:** Öffentliche Auftraggeber nennen sie in ihrer Bestellung oder im Vertrag (Beispiel `04011000-1234512345-06`). Sie ist dort Pflicht, sonst nimmt das Rechnungsportal die Rechnung nicht an. Bei Firmenkunden tragen Sie eine Bestell- oder Referenznummer ein, wenn der Kunde eine verlangt. Erlaubt sind Buchstaben, Ziffern und die Zeichen `. _ / -`, höchstens 46 Zeichen.
+
+Ist **E-Rechnung statt PDF** gesetzt, entsteht beim Festschreiben jeder Rechnung dieses Kunden zusätzlich die **XRechnung** (XML). Sie hängt am Beleg und lässt sich dort herunterladen, siehe [E-Rechnung](/hilfe/belege#e-rechnung).
+
+**Was beim Kunden vorhanden sein muss:** Name und Anschrift (Straße, PLZ, Ort, Land) und entweder eine **E-Mail-Adresse** oder eine **Leitweg-ID**. Fehlt das, wird die Rechnung nicht festgeschrieben, und die Meldung nennt, was fehlt.
+
+**Ältere Rechnungen:** Stellen Sie einen Kunden erst später auf E-Rechnung um, entsteht die XML seiner bereits festgeschriebenen Rechnungen beim ersten Klick auf **E-Rechnung (XML)** im Beleg, einmal und danach unverändert.
+
 ## Ansprechpartner {#ansprechpartner}
 
 Beim Kunden können Sie mehrere Ansprechpartner hinterlegen, zum Beispiel die Sekretärin und den Reiseleiter eines Vereins.

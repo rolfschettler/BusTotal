@@ -154,6 +154,7 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
         Route::post('/', [DocumentController::class, 'store']);
         Route::get('/{document}', [DocumentController::class, 'show']);
         Route::get('/{document}/pdf', [DocumentController::class, 'pdf']);
+        Route::get('/{document}/einvoice', [DocumentController::class, 'einvoice']);
         Route::put('/{document}', [DocumentController::class, 'update']);
         Route::delete('/{document}', [DocumentController::class, 'destroy']);
         Route::post('/{document}/convert', [DocumentController::class, 'convert']);

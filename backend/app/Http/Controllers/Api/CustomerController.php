@@ -58,6 +58,10 @@ class CustomerController extends Controller
                     $w->orWhere($col, 'like', $like);
                 }
                 $w->orWhere('debitor_number', 'like', $like);
+                // Vollständiger Name in beiden Reihenfolgen („Max Müller“ und „Müller Max“),
+                // sonst findet die Suche nur Vor- oder Nachnamen einzeln.
+                $w->orWhereRaw("CONCAT_WS(' ', first_name, last_name) like ? escape '\\\\'", [$like]);
+                $w->orWhereRaw("CONCAT_WS(' ', last_name, first_name) like ? escape '\\\\'", [$like]);
             });
         }
 
@@ -188,6 +192,7 @@ class CustomerController extends Controller
                 'last_name' => $customer->company_name ? null : 'Anonymisiert',
                 'email' => null, 'phone' => null, 'mobile' => null, 'website' => null, 'vat_id' => null,
                 'street' => null, 'postal_code' => null, 'city' => null,
+                'einvoice' => false, 'buyer_reference' => null,
                 'notes' => null,
             ])->saveQuietly();
             $customer->delete();

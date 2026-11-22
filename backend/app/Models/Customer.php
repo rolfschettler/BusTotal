@@ -20,14 +20,14 @@ class Customer extends Model
     protected $guarded = ['id', 'customer_number', 'debitor_number', 'is_demo'];
 
     // Dieselben Standardwerte wie in der Datenbank, damit auch ein frisch angelegtes Objekt sie kennt.
-    protected $attributes = ['is_demo' => false];
+    protected $attributes = ['is_demo' => false, 'einvoice' => false];
 
     // Wird bei jeder JSON-Ausgabe mitgeschickt.
     protected $appends = ['display_name'];
 
     protected function casts(): array
     {
-        return ['type' => CustomerType::class, 'is_demo' => 'boolean'];
+        return ['type' => CustomerType::class, 'is_demo' => 'boolean', 'einvoice' => 'boolean'];
     }
 
     /** Anzeigename: Firmenname oder "Vorname Nachname". */

@@ -135,6 +135,8 @@ export interface BusDocument {
   warnings?: string[];
   /** Zahlstand; nur bei festgeschriebenen Rechnungen und Anzahlungsrechnungen, sonst null */
   payment?: PaymentSummary | null;
+  /** E-Rechnung: Format der archivierten XML (`xrechnung`), null solange es keine gibt */
+  einvoice_format?: string | null;
   customer?: { id: string; customer_number: string; display_name: string } | null;
   /** Stufe in der Belegkette (0 = Ursprung), nur in der Ansicht „je Kunde“ */
   chain_depth?: number;
@@ -187,6 +189,10 @@ export class DocumentService {
   /** PDF des Belegs (wird bei jedem Abruf neu erzeugt) */
   pdf(id: string) {
     return this.http.get(`${this.base}/${id}/pdf`, { responseType: 'blob' });
+  }
+  /** E-Rechnung (XRechnung-XML) eines festgeschriebenen Belegs; entsteht beim ersten Abruf, falls es noch keine gibt. */
+  einvoice(id: string) {
+    return this.http.get(`${this.base}/${id}/einvoice`, { responseType: 'blob' });
   }
   remove(id: string) {
     return this.http.delete(`${this.base}/${id}`);

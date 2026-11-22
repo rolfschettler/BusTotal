@@ -37,6 +37,9 @@ class CustomerRequest extends FormRequest
             'city' => ['nullable', 'string', 'max:255'],
             'country' => ['required', 'string', 'size:2'],
             'payment_term_days' => ['nullable', 'integer', 'min:0', 'max:365'],
+            // E-Rechnung: Rechnungen dieses Kunden entstehen zusätzlich als XRechnung (XML). Käuferreferenz = Leitweg-ID (bis 46 Zeichen).
+            'einvoice' => ['sometimes', 'boolean'],
+            'buyer_reference' => ['nullable', 'string', 'max:46', 'regex:/^[A-Za-z0-9._\\/ -]+$/'],
             'notes' => ['nullable', 'string', 'max:10000'],
         ];
     }
@@ -46,6 +49,7 @@ class CustomerRequest extends FormRequest
         return [
             'company_name.required' => 'Bitte einen Firmennamen angeben.',
             'last_name.required' => 'Bitte einen Nachnamen angeben.',
+            'buyer_reference.regex' => 'Die Käuferreferenz darf nur Buchstaben, Ziffern und die Zeichen . _ / - enthalten (Leitweg-ID z. B. 04011000-1234512345-06).',
         ];
     }
 }

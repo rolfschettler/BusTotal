@@ -21,7 +21,7 @@ Bevor Sie das erste Angebot schreiben, richtet der **Administrator** diese Dinge
    Die beiden ermäßigten Sätze gelten nur innerhalb einer Gemeinde oder bis 50 km. Die Sätze sind die **Vorbelegung**: Wählt später jemand im Beleg die Fahrtart, stellt sich der passende Satz ein. Siehe [Steuersatz je Fahrtart](/hilfe/einstellungen#preise-steuersatz) und [Fahrtart und Steuersatz](/hilfe/belege#fahrtart).
 4. **Zuschläge** für Samstag, Sonntag und Feiertag (ebenfalls unter Preise) und bei Bedarf **Preise je Fahrzeugtyp**.
 5. **Betriebshof** (Einstellungen › Betriebshöfe), damit die Streckenplanung Leerfahrten rechnet.
-6. **Fahrzeuge** mit Maßen und Gewicht, **Fahrer** und **Kunden** anlegen.
+6. **Fahrzeuge** mit Maßen und Gewicht, **Fahrer** und **Kunden** anlegen. Bei Kunden, die E-Rechnungen erhalten, setzen Sie **E-Rechnung statt PDF** und tragen bei öffentlichen Auftraggebern die **Leitweg-ID** ein ([Kunde](/hilfe/kunden#e-rechnung)). Für die E-Rechnung braucht die Firma außerdem **Telefon, E-Mail und IBAN** in den Firmendaten.
 7. **Nummernkreise** prüfen (Einstellungen › Nummernkreise): So sehen die Nummern der Rechnungen aus.
 
 **Wie Sie sehen, ob es passt:** Die Einrichtungs-Checkliste auf der Startseite zeigt, was noch fehlt. Sie verschwindet, wenn alles erledigt ist.
@@ -131,6 +131,7 @@ Das neue Angebot weist oben darauf hin, dass Sie es von Hand anlegen, und verlin
 3. Gab es eine **Anzahlung**, zieht die Schlussrechnung sie **automatisch ab**: Sie zeigt die volle Leistung, die Anzahlung mit Steuer und **„Zu zahlen“**.
 4. **Festschreiben:** Die Software prüft die Pflichtangaben und nennt, was fehlt. Danach bekommt die Rechnung ihre Nummer. Fehlt etwas, wird keine Nummer verbraucht.
 5. **Drucken** oder als PDF an den Kunden.
+6. **Hat der Kunde E-Rechnung statt PDF**, steht nach dem Festschreiben in der Tastenleiste **E-Rechnung (XML)**: Das ist die Datei, die Sie dem Kunden schicken (E-Mail oder Rechnungsportal). Was dafür beim Kunden und in den Firmendaten stehen muss, steht unter [E-Rechnung](/hilfe/belege#e-rechnung). Fehlt etwas, wird nicht festgeschrieben und die Meldung nennt es.
 
 **Bald:** Die Rechnung entsteht dann aus den zurückerfassten Fahrtaufträgen, als **Gesamtrechnung je Reise** oder als **Sammelrechnung** über mehrere Fahrten (zum Beispiel Werksverkehr am Monatsende).
 

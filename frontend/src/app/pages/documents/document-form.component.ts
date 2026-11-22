@@ -275,7 +275,7 @@ export class DocumentFormComponent implements OnInit {
   refreshPayment() {
     const id = this.id;
     if (!id) return;
-    this.api.get(id).subscribe((d) => this.doc.update((cur) => (cur ? { ...cur, payment: d.payment } : cur)));
+    this.api.get(id).subscribe((d) => this.doc.update((cur) => (cur ? { ...cur, payment: d.payment, einvoice_format: d.einvoice_format } : cur)));
   }
 
   // ---------- Kunde ----------
@@ -528,6 +528,44 @@ export class DocumentFormComponent implements OnInit {
       filename: `${d?.number ?? 'Entwurf'}.pdf`,
       load: () => this.api.pdf(this.id!),
     });
+  }
+
+  /**
+   * E-Rechnung (XRechnung-XML) herunterladen. Hat der Beleg noch keine, entsteht sie jetzt einmal (ältere Rechnung, Kunde erst
+   * später auf E-Rechnung umgestellt). Fehlen dafür Angaben, nennt die Meldung sie.
+   */
+  downloadEInvoice() {
+    const d = this.doc();
+    if (!this.id || !d) return;
+    this.working.set(true);
+    this.api.einvoice(this.id).subscribe({
+      next: (blob) => {
+        this.working.set(false);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${d.number ?? 'e-rechnung'}.xml`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.refreshPayment();   // holt auch das Kennzeichen „E-Rechnung“ des Belegs
+      },
+      error: async (e: HttpErrorResponse) => {
+        this.working.set(false);
+        this.fail(await this.readBlobError(e), 'Die E-Rechnung konnte nicht erzeugt werden.');
+      },
+    });
+  }
+
+  /** Eine Fehlerantwort, die als Blob ankam (weil die Anfrage eine Datei erwartete), wieder in ihr JSON verwandeln. */
+  private async readBlobError(err: HttpErrorResponse): Promise<HttpErrorResponse> {
+    if (err.error instanceof Blob) {
+      try {
+        return new HttpErrorResponse({ error: JSON.parse(await err.error.text()), status: err.status, statusText: err.statusText });
+      } catch {
+        return err;
+      }
+    }
+    return err;
   }
 
   typeLabel(value: string | null | undefined): string {

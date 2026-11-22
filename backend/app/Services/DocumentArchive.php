@@ -60,6 +60,7 @@ class DocumentArchive
     {
         Storage::disk('local')->delete($this->pathFor($document));
     }
+    // Die E-Rechnung (XML) hat ihr eigenes Archiv: siehe EInvoiceService.
 
     /**
      * Die abgelegte Datei, nach Prüfung der Prüfsumme. Ältere festgeschriebene Belege ohne Archiv-PDF

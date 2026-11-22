@@ -11,6 +11,7 @@ use App\Models\Document;
 use App\Services\DocumentArchive;
 use App\Services\DocumentPdf;
 use App\Services\DocumentService;
+use App\Services\EInvoiceService;
 use App\Services\PaymentService;
 use App\Services\TaxHints;
 use Illuminate\Http\JsonResponse;
@@ -248,6 +249,32 @@ class DocumentController extends Controller
         return response($binary, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="'.$name.'"',
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
+    /**
+     * E-Rechnung (XRechnung-XML) eines festgeschriebenen Belegs, als Download. Die Datei kommt aus dem Archiv (nach Prüfsumme),
+     * nie neu erzeugt. Hat der Beleg noch keine (ältere Rechnung, Kunde erst später auf E-Rechnung umgestellt), entsteht sie beim
+     * ersten Abruf einmal; fehlen dafür Angaben, nennt die Antwort sie (422). Der Abruf steht im Änderungsprotokoll.
+     */
+    public function einvoice(Document $document, EInvoiceService $einvoice): Response|JsonResponse
+    {
+        if ($document->isDraft() || ! $document->type->isInvoice()) {
+            return response()->json(['message' => 'Eine E-Rechnung gibt es nur zu festgeschriebenen Rechnungen, Anzahlungsrechnungen und Stornorechnungen.'], 422);
+        }
+
+        try {
+            $xml = $einvoice->read($document);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage().' Bitte die Verwaltung informieren, die Sicherung enthält die Datei.'], 500);
+        }
+        AuditLog::record('einvoice_downloaded', $document, null, ['number' => $document->number]);
+
+        return response($xml, 200, [
+            'Content-Type' => 'application/xml; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="'.$document->number.'.xml"',
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, no-store',
         ]);

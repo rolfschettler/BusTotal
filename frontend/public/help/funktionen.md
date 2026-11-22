@@ -23,7 +23,8 @@ Diese Seite zeigt, was {{app}} für Ihr Busunternehmen leistet: **von der Streck
 | Auslandsanteil bei Fahrten über die Grenze | Inlandsanteil nach Streckenlänge, Grenzstände als Grundlage | In Planung |
 | Reiseleistungen nach § 25 UStG | Marge, Eigenleistung, Drittland und Rechnungstext berechnet | In Planung |
 | Sammelrechnung für Werksverkehr | Eine Monatsrechnung mit Fahrtenliste als Anlage | In Planung |
-| E-Rechnung | XRechnung und ZUGFeRD aus demselben Beleg | In Planung |
+| E-Rechnung (XRechnung) | Rechnung als XML für Firmenkunden und öffentliche Auftraggeber, archiviert und geprüft | Verfügbar |
+| E-Rechnung (ZUGFeRD) | PDF mit eingebettetem XML | In Planung |
 | Zahlungseingang erfassen | Zahlstand je Rechnung, offene und überfällige Posten in der Belegliste | Verfügbar |
 | Voranmeldungsbericht | Umsätze nach Zahlungseingang, getrennt nach Steuersatz | In Planung |
 | Anleitung für den Alltag | Schritt für Schritt von der Tour bis zur bezahlten Rechnung | [Verfügbar](/hilfe/fahrten) |
@@ -100,14 +101,19 @@ Verkaufen Sie Reisen mit eingekauften Leistungen (Hotel, Eintritte, Fremdbus inn
 
 ## E-Rechnung {#e-rechnung}
 
-**In Planung**
-
 Die Pflicht zur E-Rechnung an inländische Unternehmer beginnt für Aussteller mit mehr als 800.000 € Vorjahresumsatz mit Umsätzen ab 2027, für alle anderen ab 2028 (§ 14 Abs. 2 und § 27 Abs. 38 UStG). Ausgenommen sind unter anderem Privatkunden, Kleinbetragsrechnungen und Fahrausweise.
 
-- **XRechnung und ZUGFeRD** nach der europäischen Norm EN 16931, erzeugt aus demselben Beleg wie das PDF.
-- **Originalformat archiviert**, zusätzlich zum PDF.
-- **Kundenmerkmale:** Leitweg-ID für öffentliche Auftraggeber, Zustimmung zum Versand.
-- **Einstellung „E-Rechnungspflicht ab …“** je Firma.
+**Verfügbar**
+- **XRechnung** (XML nach der europäischen Norm EN 16931, Syntax CII) für Rechnungen, Anzahlungsrechnungen und Stornorechnungen. Sie entsteht beim Festschreiben, wenn beim Kunden **„E-Rechnung statt PDF“** gesetzt ist. Siehe [E-Rechnung](/hilfe/belege#e-rechnung).
+- **Originalformat archiviert:** Die XML wird einmal erzeugt, mit Prüfsumme abgelegt und nie neu erzeugt, neben dem Archiv-PDF.
+- **Prüfung vor dem Festschreiben:** Fehlt etwas, das die XRechnung verlangt (zum Beispiel die E-Mail-Adresse, die IBAN oder die Leitweg-ID), wird nicht festgeschrieben, und die Meldung nennt, was fehlt. Es wird keine Nummer verbraucht.
+- **Kundenmerkmale:** Leitweg-ID für öffentliche Auftraggeber und das Kennzeichen „E-Rechnung statt PDF“. Siehe [E-Rechnung beim Kunden](/hilfe/kunden#e-rechnung).
+- **Download am Beleg** mit der Taste **E-Rechnung (XML)**.
+
+**In Planung**
+- **ZUGFeRD** (PDF mit eingebettetem XML).
+- **Anlage mit Fahrtenliste** bei der Sammelrechnung, **§ 25-Rechnungen** und der Auslandsanteil als E-Rechnung.
+- **Versand per E-Mail** aus der Software.
 
 ## Buchhaltung und Finanzamt {#buchhaltung}
 

@@ -45,6 +45,10 @@ export interface Customer {
   city: string | null;
   country: string;
   payment_term_days: number | null;
+  /** E-Rechnung: Rechnungen dieses Kunden entstehen zusätzlich als XRechnung (XML) */
+  einvoice: boolean;
+  /** Käuferreferenz der Rechnung (BT-10), bei öffentlichen Auftraggebern die Leitweg-ID */
+  buyer_reference: string | null;
   notes: string | null;
   /** true bei Demo-Datensätzen (Schulung, Messe, Tests) */
   is_demo: boolean;

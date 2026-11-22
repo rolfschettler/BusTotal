@@ -12,6 +12,7 @@ Weitere Angaben:
 - **Zahlungsziel (Tage):** Der Standard für alle Kunden, die kein eigenes Zahlungsziel haben (Voreinstellung 14 Tage).
 - **Briefkopf und Fußzeile:** Freie Texte für Belege, zum Beispiel Hinweise oder Geschäftsbedingungen.
 - **USt-IdNr.:** zwei Großbuchstaben als Länderkürzel, danach Ziffern oder Buchstaben, zum Beispiel `DE123456789`.
+- **Für die E-Rechnung** brauchen Sie in den Firmendaten zusätzlich **Telefon**, **E-Mail**, **IBAN** und entweder die USt-IdNr. oder die Steuernummer. Die XRechnung nennt Telefon und E-Mail als Kontakt des Rechnungsstellers. Fehlt eines davon, wird eine Rechnung an einen E-Rechnungs-Kunden nicht festgeschrieben, die Meldung nennt das Fehlende. Siehe [E-Rechnung](/hilfe/belege#e-rechnung).
 
 Speichern Sie mit **Speichern** am Ende der Seite. Bei einem Fehler markiert die Seite das betroffene Feld rot.
 

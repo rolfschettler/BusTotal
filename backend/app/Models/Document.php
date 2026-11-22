@@ -26,10 +26,13 @@ class Document extends Model
     ];
 
     /** Felder, die auch nach dem Festschreiben noch gesetzt werden dürfen. */
-    private const MUTABLE_AFTER_FINALIZE = ['cancelled_by_id', 'updated_at', 'archive_path', 'archive_sha256', 'archived_at'];
+    private const MUTABLE_AFTER_FINALIZE = [
+        'cancelled_by_id', 'updated_at', 'archive_path', 'archive_sha256', 'archived_at',
+        'einvoice_path', 'einvoice_sha256', 'einvoice_format', 'einvoice_at',
+    ];
 
     /** Archiv-Angaben: Pfad und Prüfsumme gehören nicht in die Schnittstelle. */
-    protected $hidden = ['archive_path', 'archive_sha256'];
+    protected $hidden = ['archive_path', 'archive_sha256', 'einvoice_path', 'einvoice_sha256'];
 
     protected function casts(): array
     {
@@ -46,6 +49,7 @@ class Document extends Model
             'due_date' => 'date:Y-m-d',
             'finalized_at' => 'datetime',
             'archived_at' => 'datetime',
+            'einvoice_at' => 'datetime',
         ];
     }
 
@@ -60,6 +64,11 @@ class Document extends Model
             if ($document->getRawOriginal('archive_path') !== null
                 && array_intersect(array_keys($document->getDirty()), ['archive_path', 'archive_sha256', 'archived_at']) !== []) {
                 $forbidden[] = 'archive_path';
+            }
+            // Ebenso die E-Rechnung: einmal gesetzt, nie überschrieben.
+            if ($document->getRawOriginal('einvoice_path') !== null
+                && array_intersect(array_keys($document->getDirty()), ['einvoice_path', 'einvoice_sha256', 'einvoice_format', 'einvoice_at']) !== []) {
+                $forbidden[] = 'einvoice_path';
             }
             if ($forbidden !== []) {
                 throw new LogicException('Ein festgeschriebener Beleg ist unveränderlich (GoBD). Bitte stornieren und neu erstellen.');

@@ -102,6 +102,24 @@ Zu jeder **festgeschriebenen Rechnung** und **Anzahlungsrechnung** gehört der Z
 - **Wer darf was:** Ansehen dürfen Administrator, Disponent und Buchhaltung. **Buchen und Stornieren** dürfen nur Administrator und Buchhaltung.
 - **Warum das wichtig ist:** Die Umsatzsteuer auf Anzahlungen und ihre Berichtigung hängen am tatsächlichen Zahlungsfluss (§ 13 UStG, Anwendungserlass 13.5 und 17.1). Eine spätere Auswertung für die Umsatzsteuer-Voranmeldung baut darauf auf.
 
+## E-Rechnung {#e-rechnung}
+
+Für Kunden mit dem Kennzeichen **E-Rechnung statt PDF** ([Kunde](/hilfe/kunden#e-rechnung)) entsteht beim **Festschreiben** einer Rechnung, Anzahlungsrechnung oder Stornorechnung zusätzlich die **XRechnung**: eine XML-Datei nach der europäischen Norm EN 16931 (Format XRechnung 3.0).
+
+- **Download:** In der festgeschriebenen Rechnung steht in der Tastenleiste **E-Rechnung (XML)**. Neben dem Status zeigt die Marke **E-Rechnung**, dass es eine Datei gibt. Sie schicken die XML selbst an den Kunden (E-Mail oder Rechnungsportal). Das PDF bleibt daneben als Archiv-PDF und Ansicht bestehen.
+- **Einmal erzeugt, nie geändert:** Die XML wird beim Festschreiben erzeugt, mit einer Prüfsumme abgelegt und nie neu erzeugt. Spätere Änderungen an Kunde oder Firmendaten ändern sie nicht. Stimmt die Prüfsumme nicht mehr, meldet das Programm es, statt still eine neue zu erzeugen.
+- **Prüfung vor dem Festschreiben:** Fehlt etwas, das die XRechnung verlangt, wird **nicht festgeschrieben** und keine Nummer verbraucht. Die Meldung nennt jede fehlende Angabe, zum Beispiel „Beim Kunden fehlt die E-Mail-Adresse oder eine Leitweg-ID“ oder „In den Firmendaten fehlt die IBAN“. Tragen Sie sie nach und schreiben Sie erneut fest.
+- **Ältere Rechnungen:** Klicken Sie bei einer festgeschriebenen Rechnung ohne XML auf **E-Rechnung (XML)**, entsteht sie jetzt einmal aus den Daten, die beim Festschreiben gespeichert wurden. Eine Leitweg-ID, die erst später beim Kunden eingetragen wurde, wird dafür übernommen.
+- **Stornorechnung:** Sie geht als **Gutschriftsanzeige** mit **positiven** Beträgen hinaus und verweist auf die stornierte Rechnung. Im Beleg selbst stehen die Beträge negativ.
+- **Schlussrechnung:** Die Anzahlungen stehen als **vorausgezahlter Betrag**, die Anzahlungsrechnungen werden namentlich genannt.
+- **Steuerfrei und nicht steuerbar:** Positionen mit 0 % Steuer übernehmen den **Steuerhinweis** als Grund. Steht dort „nicht steuerbar“, „Ausland“ oder „außerhalb“, gilt die Position als nicht steuerbar, sonst als steuerbefreit.
+- **Einheiten:** km, Tag, Nacht, Std und alles andere (Fahrt, pauschal, Stück) werden in die Einheiten der Norm umgesetzt.
+- **Leitweg-ID:** Beim Kunden eingetragen, geht sie als Käuferreferenz und elektronische Adresse in die Datei, sonst die Kundennummer und die E-Mail-Adresse.
+- **Prüfung der Datei:** {{app}} prüft die erzeugte XML gegen das Schema der Norm. Die fachlichen Regeln der Rechnungsportale (zum Beispiel des Bundes) prüft ein eigenes Werkzeug, der KoSIT-Validator. Prüfen Sie eine erste Beispieldatei damit, bevor Sie sie an einen Kunden schicken.
+- **Wer darf:** Alle, die Belege sehen (Administrator, Disponent, Buchhaltung). Festschreiben dürfen Administrator und Buchhaltung.
+
+> **Noch nicht:** ZUGFeRD (PDF mit eingebetteter XML), Anlagen wie die Fahrtenliste einer Sammelrechnung und der Versand per E-Mail aus der Software.
+
 ## Folgebelege {#folgebelege}
 
 Aus einem **festgeschriebenen** Beleg erstellen Sie den nächsten Schritt der Belegkette:
