@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\DocumentType;
 use App\Enums\GermanState;
+use App\Enums\TripKind;
 use App\Models\CompanySetting;
 use App\Models\Document;
 use App\Models\PricingSetting;
@@ -27,7 +28,7 @@ class QuoteService
     ) {}
 
     /**
-     * @param  array{loaded_km: float, empty_km: float, drive_s: int, days: int, surcharge_percent?: float, label?: ?string, start_at?: ?string, end_at?: ?string, state?: ?string, vehicle_id?: ?string}  $tour
+     * @param  array{loaded_km: float, empty_km: float, drive_s: int, days: int, surcharge_percent?: float, label?: ?string, start_at?: ?string, end_at?: ?string, state?: ?string, vehicle_id?: ?string, trip_kind?: ?string}  $tour
      */
     public function draftFromTour(array $tour, ?string $customerId = null): Document
     {
@@ -46,6 +47,8 @@ class QuoteService
             surchargePercent: (float) ($tour['surcharge_percent'] ?? 0),
             vehicleType: $vehicleType,
             calendarDays: $this->calendarDays($tour),
+            // Ohne Angabe: Gelegenheitsverkehr (Regelsatz). Linienverkehr und Schülerfahrt müssen gewählt werden.
+            tripKind: TripKind::tryFrom((string) ($tour['trip_kind'] ?? '')) ?? TripKind::Gelegenheit,
         ));
 
         if ($lines === []) {

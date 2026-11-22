@@ -1,6 +1,6 @@
 # Erste Schritte {#erste-schritte}
 
-Willkommen bei {{app}}, der Verwaltung für Ihr Busunternehmen. Diese Hilfe erklärt, was die Software heute kann. Neue Funktionen werden hier ergänzt, sobald es sie gibt. Einen Überblick über alles, was die Software kann und was geplant ist, finden Sie unter [Funktionen und Vorteile](/hilfe/funktionen).
+Willkommen bei {{app}}, der Verwaltung für Ihr Busunternehmen. Diese Hilfe erklärt, was die Software heute kann. Neue Funktionen werden hier ergänzt, sobald es sie gibt. Wie Sie eine Fahrt vom Angebot bis zur bezahlten Rechnung bearbeiten, zeigt [Fahrten anlegen, durchführen und abrechnen](/hilfe/fahrten). Einen Überblick über alles, was die Software kann und was geplant ist, finden Sie unter [Funktionen und Vorteile](/hilfe/funktionen).
 
 ## Die Startseite {#startseite}
 
@@ -30,7 +30,7 @@ Offene Punkte sind Verweise: Ein Klick führt Sie an die richtige Stelle, das Fr
 ## Aufbau der Oberfläche {#aufbau}
 
 - **Kopfleiste (oben):** Sie bleibt immer sichtbar. Links steht der Firmenname, rechts das Fragezeichen für die Hilfe und Ihr Benutzermenü mit **Abmelden**.
-- **Seitenleiste (links):** Von hier erreichen Sie alle Bereiche. Welche Einträge Sie sehen, hängt von Ihrer [Rolle](/hilfe/anmeldung#rollen) ab.
+- **Seitenleiste (links):** Von hier erreichen Sie alle Bereiche. Sie ist nach dem Arbeitsablauf in Gruppen geordnet: **Fahrten und Abrechnung** (Streckenplanung, Belege), **Stammdaten** (Kunden, Fahrzeuge, Fahrer) und **Verwaltung** (Benutzer, Einstellungen). **Start** und **Hilfe** stehen außerhalb der Gruppen. Welche Einträge Sie sehen, hängt von Ihrer [Rolle](/hilfe/anmeldung#rollen) ab.
 - **Arbeitsbereich (rechts):** Hier erscheint die gewählte Seite. Nur dieser Bereich scrollt.
 
 Die Farbe der Oberfläche und das Logo stellt der Administrator unter [Einstellungen](/hilfe/einstellungen#erscheinungsbild) ein.

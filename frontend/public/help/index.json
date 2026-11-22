@@ -1,5 +1,6 @@
 [
   { "id": "start", "title": "Erste Schritte", "summary": "Aufbau der Oberfläche, Startseite und wie man die Hilfe benutzt." },
+  { "id": "fahrten", "title": "Fahrten anlegen, durchführen und abrechnen", "summary": "Schritt für Schritt von der Streckenplanung über Angebot, Auftrag und Rechnung bis zur bezahlten Rechnung." },
   { "id": "funktionen", "title": "Funktionen und Vorteile", "summary": "Was die Software kann, welche Vorteile sie bringt und was geplant ist: von der Strecke bis zur Abrechnung für das Finanzamt." },
   { "id": "anmeldung", "title": "Anmeldung und Rollen", "summary": "Anmelden, Abmelden und wer was darf." },
   { "id": "benutzer", "title": "Benutzer und Passwörter", "summary": "Benutzer anlegen, sperren, Passwörter zurücksetzen und ändern." },

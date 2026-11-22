@@ -44,6 +44,24 @@
   </div>
 }
 
+@if (!id && typeValue() === 'angebot' && canPlan()) {
+  <div class="alert alert-info py-2 small" role="note">
+    Sie legen dieses Angebot <strong>von Hand</strong> an. Für eine Fahrt mit Strecke und Preisvorschlag planen Sie die Tour zuerst in der
+    <a routerLink="/streckenplanung">Streckenplanung</a> und klicken dort auf <strong>Angebot erstellen</strong>.
+    <app-help-link topic="fahrten" anchor="angebot" label="Zwei Wege zum Angebot" />
+  </div>
+}
+
+@if (doc()?.warnings?.length) {
+  <div class="alert alert-warning py-2 small" role="status">
+    <strong>Bitte prüfen:</strong>
+    <app-help-link topic="belege" anchor="fahrtart" label="Fahrtart und Steuersatz" />
+    <ul class="mb-0 mt-1">
+      @for (w of doc()!.warnings; track w) { <li>{{ w }}</li> }
+    </ul>
+  </div>
+}
+
 <form id="belegForm" class="form-area" [formGroup]="form" (ngSubmit)="save()" novalidate>
   <div class="row g-3">
 
@@ -129,22 +147,23 @@
               }
             </div>
 
-            <div class="col-12 col-lg-6">
+            <!-- Drittelraster (Regel „Ein Formular, ein Raster“, EditFormPattern.md): Felder sind ein Drittel (4) oder die ganze Breite (12). -->
+            <div class="col-12">
               <label class="form-label" [for]="'title' + i">Bezeichnung <span class="text-danger">*</span></label>
               <input class="form-control" [id]="'title' + i" formControlName="title" [class.is-invalid]="lineInvalid(i, 'title')" />
               <div class="invalid-feedback">Bitte bezeichnen.</div>
             </div>
-            <div class="col-12 col-lg-2">
+            <div class="col-12 col-lg-4">
               <label class="form-label" [for]="'quantity' + i">Menge</label>
               <input type="number" step="any" class="form-control" [id]="'quantity' + i" formControlName="quantity" [class.is-invalid]="lineInvalid(i, 'quantity')" />
               <div class="invalid-feedback">Nicht 0.</div>
             </div>
-            <div class="col-12 col-lg-2">
+            <div class="col-12 col-lg-4">
               <label class="form-label" [for]="'unit' + i">Einheit</label>
               <input class="form-control" [id]="'unit' + i" formControlName="unit" />
             </div>
-            <div class="col-12 col-lg-2">
-              <label class="form-label" [for]="'price' + i">Einzelpreis</label>
+            <div class="col-12 col-lg-4">
+              <label class="form-label" [for]="'price' + i">Einzelpreis (netto)</label>
               <input type="number" step="0.01" class="form-control" [id]="'price' + i" formControlName="unit_price" [class.is-invalid]="lineInvalid(i, 'unit_price')" />
               <div class="invalid-feedback">Pflicht.</div>
             </div>
@@ -154,22 +173,30 @@
               <textarea class="form-control" rows="2" [id]="'desc' + i" formControlName="description"></textarea>
             </div>
 
-            <div class="col-12 col-lg-3">
+            <div class="col-12 col-lg-4">
+              <label class="form-label" [for]="'kind' + i">Fahrtart</label>
+              <select class="form-select" [id]="'kind' + i" formControlName="trip_kind" (change)="onKindChange(g)">
+                <option [ngValue]="null">Keine Angabe</option>
+                @for (k of tripKinds(); track k.value) { <option [ngValue]="k.value">{{ k.label }}</option> }
+              </select>
+              <div class="form-text">Charter, Ausflug, Gruppe = Gelegenheitsverkehr.</div>
+            </div>
+            <div class="col-12 col-lg-4">
               <label class="form-label" [for]="'tax' + i">Steuersatz</label>
               <select class="form-select" [id]="'tax' + i" formControlName="tax_rate">
                 @for (o of taxOptions(g.value.tax_rate); track o.rate) { <option [ngValue]="o.rate">{{ o.label }}</option> }
               </select>
             </div>
-            <div class="col-12 col-lg-6">
+            <div class="col-12 col-lg-4">
+              <label class="form-label" [for]="'net' + i">Netto</label>
+              <input class="form-control text-end" [id]="'net' + i" [value]="formatCents(lineNet(i))" readonly tabindex="-1" />
+            </div>
+            <div class="col-12">
               <label class="form-label" [for]="'note' + i">Steuerhinweis</label>
               <input class="form-control" [id]="'note' + i" formControlName="tax_note" />
               @if (isZeroRate(g) && isInvoiceType()) {
                 <div class="form-text text-danger">Bei 0 % Steuer ist ein Grund Pflicht, z. B. steuerfrei oder Ausland.</div>
               }
-            </div>
-            <div class="col-12 col-lg-3">
-              <label class="form-label" [for]="'net' + i">Netto</label>
-              <input class="form-control text-end" [id]="'net' + i" [value]="formatCents(lineNet(i))" readonly tabindex="-1" />
             </div>
           </div>
         </div>
@@ -255,6 +282,15 @@
 
   </div>
 </form>
+
+@if (doc(); as d) {
+  @if (d.payment && readonly()) {
+    <!-- Zahlungen: nur bei festgeschriebenen Rechnungen und Anzahlungsrechnungen (der Server liefert dann den Zahlstand). -->
+    <div class="mt-4">
+      <app-document-payments [documentId]="d.id" [canBook]="canFinalize()" (changed)="refreshPayment()" />
+    </div>
+  }
+}
 
 <!-- Tastenleiste (Muster): links Speichern, Zurück; rechts seltene Aktionen, Abbrechen. Klebt unten. -->
 <div class="form-bar">

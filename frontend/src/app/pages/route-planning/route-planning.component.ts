@@ -3,7 +3,8 @@ import { forkJoin } from 'rxjs';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { TripKindValue } from '../../core/document.service';
 import { PricingService } from '../../core/pricing.service';
 import { RouteResult, RouteService } from '../../core/route.service';
 import { httpErrorText } from '../../core/http-error';
@@ -36,7 +37,7 @@ import {
  */
 @Component({
   selector: 'app-route-planning',
-  imports: [FormsModule, DatePipe, DecimalPipe, HelpLinkComponent, MapComponent, PlaceFieldComponent],
+  imports: [FormsModule, DatePipe, DecimalPipe, RouterLink, HelpLinkComponent, MapComponent, PlaceFieldComponent],
   templateUrl: './route-planning.component.html',
 })
 export class RoutePlanningComponent implements OnInit {
@@ -93,6 +94,16 @@ export class RoutePlanningComponent implements OnInit {
   quoting = signal(false);
   quoteError = signal<string | null>(null);
 
+  /** Fahrtart des Angebots: bestimmt den Steuersatz. Vorbelegt mit Gelegenheitsverkehr (Charter, Ausflug, Gruppenfahrt). */
+  tripKind = signal<TripKindValue>('gelegenheit');
+  tripKinds = signal<{ value: TripKindValue; label: string; may_be_reduced: boolean }[]>([]);
+  /** Linienverkehr und Schülerfahrten sind nur bis 50 km Beförderungsstrecke ermäßigt; bei längeren Fahrten ein Hinweis (kein Verbot). */
+  reducedTooLong = computed(() => {
+    const r = this.result();
+    const kind = this.tripKinds().find((k) => k.value === this.tripKind());
+    return !!r && !!kind?.may_be_reduced && r.loaded_distance_m > 50_000;
+  });
+
   /**
    * Legt aus dem Ergebnis ein Angebot als Entwurf an und öffnet es. Zum Server gehen nur die Kennzahlen (Kilometer, Lenkzeit,
    * Tage), nie die Route oder die Orte. Den Kunden wählt man im Beleg.
@@ -120,6 +131,7 @@ export class RoutePlanningComponent implements OnInit {
         end_at: r.end_at,
         state: this.holidayState() || null,
         vehicle_id: this.vehicleId() || null,
+        trip_kind: this.tripKind(),
       })
       .subscribe({
         next: (doc) => {
@@ -182,6 +194,7 @@ export class RoutePlanningComponent implements OnInit {
     this.pricing.get().subscribe({
       next: (p) => {
         this.companyState.set(p.company_state);
+        this.tripKinds.set(p.trip_kinds.filter((k) => k.value !== 'sonstig'));
       },
       error: (e) => this.defaultsError.set(httpErrorText(e, 'Das Bundesland des Betriebssitzes konnte nicht geladen werden.')),
     });

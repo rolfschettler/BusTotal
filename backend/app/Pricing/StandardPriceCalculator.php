@@ -29,7 +29,8 @@ class StandardPriceCalculator implements PriceCalculator
     public function quote(TourFigures $tour): array
     {
         $settings = PricingSetting::current();
-        $rate = (string) $settings->tax_rate;
+        // Der Steuersatz folgt der Fahrtart (Regelsatz, Linienverkehr, Schülerfahrt), siehe PricingSetting::taxRateFor().
+        $rate = $settings->taxRateFor($tour->tripKind);
         $lines = [];
 
         // Preise des Fahrzeugtyps, wo ausgefüllt, sonst die Standardpreise. Leerfahrt-Prozent und Steuer gelten für alle.
@@ -77,7 +78,8 @@ class StandardPriceCalculator implements PriceCalculator
             $lines[] = $this->line('Zuschlag '.$this->num($tour->surchargePercent).' %', null, 1, 'pauschal', $this->cents($surcharge), $rate);
         }
 
-        return $lines;
+        // Alle Positionen des Angebots tragen die Fahrtart der Tour (Zuschläge folgen der Hauptleistung).
+        return array_map(fn (array $l) => $l + ['trip_kind' => $tour->tripKind?->value], $lines);
     }
 
     /**

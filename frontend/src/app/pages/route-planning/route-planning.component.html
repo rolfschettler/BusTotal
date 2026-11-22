@@ -4,6 +4,10 @@
     Von, über, nach eingeben und Strecke, Fahrzeit sowie Pausen und Ruhezeiten berechnen. Es wird nichts gespeichert.
     <app-help-link topic="strecken" anchor="streckenplanung" label="Streckenplanung" />
   </p>
+  <p class="mb-0 small text-body-secondary">
+    Aus dem Ergebnis erstellen Sie mit <strong>Angebot erstellen</strong> ein Angebot mit Preisvorschlag.
+    Ein Angebot <strong>ohne</strong> Tour legen Sie unter <a routerLink="/belege/neu">Belege › Neuer Beleg</a> an.
+  </p>
 </div>
 
 <div class="row g-3">
@@ -199,6 +203,13 @@
     <!-- Preisfindung: aus den Kennzahlen entsteht ein Angebot als Entwurf (Preise unter Einstellungen › Preise). -->
     <div class="d-flex flex-wrap align-items-end gap-2 mb-3">
       <div>
+        <label class="form-label small mb-1" for="tripKind">Fahrtart</label>
+        <select id="tripKind" class="form-select form-select-sm" [ngModel]="tripKind()" (ngModelChange)="tripKind.set($event)" [disabled]="stale()">
+          @for (k of tripKinds(); track k.value) { <option [value]="k.value">{{ k.label }}</option> }
+          @if (!tripKinds().length) { <option value="gelegenheit">Gelegenheitsverkehr</option> }
+        </select>
+      </div>
+      <div>
         <label class="form-label small mb-1" for="surcharge">Zuschlag (%)</label>
         <input id="surcharge" type="number" min="0" max="100" step="1" class="form-control form-control-sm" [ngModel]="surcharge()" (ngModelChange)="surcharge.set($event)" [disabled]="stale()" />
       </div>
@@ -217,6 +228,12 @@
       </button>
       <app-help-link topic="strecken" anchor="angebot-aus-tour" label="Angebot aus der Tour" />
     </div>
+    @if (reducedTooLong()) {
+      <div class="alert alert-warning py-2 small" role="status">
+        Diese Fahrt ist länger als 50 km. Der ermäßigte Steuersatz gilt nur innerhalb einer Gemeinde oder bis 50 km Beförderungsstrecke
+        (bei Fahrten ins Ausland zählt nur der Inlandsteil). Bitte die Fahrtart und den Steuersatz im Angebot prüfen.
+      </div>
+    }
     <div class="form-text mb-3">
       @if (selectedVehicle(); as sv) {
         Es gelten die Preise des Fahrzeugtyps von {{ sv.display_name }}, wo für den Typ welche hinterlegt sind.

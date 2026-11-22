@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\TripKind;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,7 +15,13 @@ class DocumentLine extends Model
     // Protokoll fluten. Der Beleg selbst (Anlegen, Festschreiben, Storno) ist protokolliert.
     use HasUuids;
 
-    protected $fillable = ['title', 'description', 'quantity', 'unit', 'unit_price', 'tax_rate', 'tax_note'];
+    protected $fillable = ['title', 'description', 'quantity', 'unit', 'trip_kind', 'unit_price', 'tax_rate', 'tax_note'];
+
+    protected function casts(): array
+    {
+        // Fahrtart: bestimmt den Steuersatz der Beförderung (siehe TripKind). Leer bei Positionen ohne Fahrt.
+        return ['trip_kind' => TripKind::class];
+    }
 
     protected static function booted(): void
     {

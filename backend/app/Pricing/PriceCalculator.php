@@ -9,7 +9,7 @@ namespace App\Pricing;
 interface PriceCalculator
 {
     /**
-     * Positionen im Format des DocumentService (title, description, quantity, unit, unit_price, tax_rate, tax_note).
+     * Positionen im Format des DocumentService (title, description, quantity, unit, unit_price, tax_rate, tax_note, trip_kind).
      * Leer, wenn nichts berechnet werden kann.
      *
      * @return list<array<string, string|null>>

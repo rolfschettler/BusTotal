@@ -19,12 +19,14 @@ Diese Seite zeigt, was {{app}} für Ihr Busunternehmen leistet: **von der Streck
 | Belege nach GoBD | Unveränderbare Rechnungen, lückenlose Nummern, Storno statt Löschen | Verfügbar |
 | Archiv-PDF mit Prüfsumme | Jede festgeschriebene Rechnung wird einmal gesichert, nie neu erzeugt | Verfügbar |
 | Anzahlung und Schlussrechnung | Anzahlung, Abzug mit Steuer, Restbetrag automatisch | Verfügbar |
-| Richtiger Steuersatz je Fahrtart | Charter, Linie, Schulfahrt: Satz und Entfernungsprüfung aus der Fahrtart | In Planung |
+| Richtiger Steuersatz je Fahrtart | Charter, Linie, Schulfahrt: Satz aus der Fahrtart, Hinweis bei Abweichung und bei mehr als 50 km | Verfügbar |
 | Auslandsanteil bei Fahrten über die Grenze | Inlandsanteil nach Streckenlänge, Grenzstände als Grundlage | In Planung |
 | Reiseleistungen nach § 25 UStG | Marge, Eigenleistung, Drittland und Rechnungstext berechnet | In Planung |
 | Sammelrechnung für Werksverkehr | Eine Monatsrechnung mit Fahrtenliste als Anlage | In Planung |
 | E-Rechnung | XRechnung und ZUGFeRD aus demselben Beleg | In Planung |
-| Zahlungseingang und Voranmeldungsbericht | Umsätze nach Zahlungseingang, getrennt nach Steuersatz | In Planung |
+| Zahlungseingang erfassen | Zahlstand je Rechnung, offene und überfällige Posten in der Belegliste | Verfügbar |
+| Voranmeldungsbericht | Umsätze nach Zahlungseingang, getrennt nach Steuersatz | In Planung |
+| Anleitung für den Alltag | Schritt für Schritt von der Tour bis zur bezahlten Rechnung | [Verfügbar](/hilfe/fahrten) |
 | Aufbewahrung und Datenschutz | Fristen im Blick, Löschung nach Fristende, Anonymisierung | Teils verfügbar |
 | Fristen für Fahrzeuge und Fahrer | HU, SP, Fahrerkarte und Co. werden gemeldet, bevor sie ablaufen | Verfügbar |
 | Mehrere Firmen, eigenes Erscheinungsbild | Logo und Farbe je Firma, Daten sauber getrennt | Verfügbar |
@@ -57,7 +59,8 @@ Diese Seite zeigt, was {{app}} für Ihr Busunternehmen leistet: **von der Streck
 **Verfügbar**
 - **Belegkette:** Angebot, Auftragsbestätigung, Anzahlungsrechnung, Schlussrechnung und Storno, jeweils aus dem vorigen Beleg erzeugt. Siehe [Belege](/hilfe/belege#entwurf-und-festschreiben).
 - **Festschreiben:** Eine Rechnung bekommt ihre Nummer erst beim Festschreiben, danach ist sie gesperrt (GoBD). Fehler verbrauchen keine Nummer. Nummernkreise sind lückenlos.
-- **Storno statt Löschen:** Ein Storno ist ein eigener Beleg, der die Rechnung spiegelt.
+- **Storno statt Löschen:** Eine Stornorechnung ist ein eigener Beleg, der die Rechnung spiegelt und auf sie verweist.
+- **Zahlungseingang:** Teilzahlungen, Rückzahlungen, überfällige Rechnungen. Buchungen werden nie gelöscht, nur mit Grund storniert. Die Rechnung selbst bleibt unverändert. Siehe [Zahlungen](/hilfe/belege#zahlungen).
 - **Anzahlung und Schlussrechnung:** Die Anzahlungsrechnung schlägt 30 % vor. Die Schlussrechnung zeigt die volle Leistung, zieht Entgelt und Steuer der Anzahlungen getrennt ab und nennt den Restbetrag.
 - **Pflichtangaben-Prüfung** vor dem Festschreiben: Anschriften, Steuernummer oder USt-IdNr., Leistungszeitpunkt, Positionen.
 - **PDF der Belege und Drucken:** Briefkopf mit Logo und Markenfarbe, Steuerhinweise, Zahlungshinweis, Bankverbindung. Drucken geht direkt aus dem Beleg: am PC über die Druckvorschau des Browsers, auf Tablets über die Vorschau in der App.
@@ -67,13 +70,14 @@ Diese Seite zeigt, was {{app}} für Ihr Busunternehmen leistet: **von der Streck
 - **Rechnung aus der Rückerfassung:** Die Auftragsbestätigung trägt einen *vorläufigen* Preis, die Rechnung ersetzt ihn durch die tatsächlichen Werte. Anzahlungen werden abgezogen.
 - **Gesamtrechnung je Reisevorhaben** (nach Hinfahrt, vor Ort und Rückfahrt gruppiert) **oder Sammelrechnung** über beliebige Fahrtaufträge eines Kunden, zum Beispiel **tägliche Werksfahrten, abgerechnet am Monatsende**. Zur Rechnung gehört eine **Anlage mit der Fahrtenliste** (Datum, Strecke), auf die die Rechnung ausdrücklich verweist, und der Leistungszeitraum.
 - **Abrechnungsstatus:** Jeder Fahrtauftrag zeigt, ob und mit welcher Rechnung er abgerechnet ist. Nichts wird doppelt oder vergessen.
-- **Korrekturen nach Regel:** Stornorechnung und Rechnungskorrektur mit negativen Beträgen und Verweis auf die Ursprungsrechnung.
-- **Zahlungseingang:** Anzahlungen und Rückzahlungen wirken in dem Zeitraum, in dem das Geld fließt (Grundlage für den Voranmeldungsbericht).
+- **Teilgutschrift und Rechnungskorrektur** mit negativen Beträgen und Verweis auf die Ursprungsrechnung.
 
 ## Der richtige Steuersatz, auch im Ausland {#steuer-befoerderung}
 
+**Verfügbar**
+- **Fahrtart bestimmt den Satz:** Charter, Ausflug, Gruppenfahrt und Mietbus mit Fahrer werden mit 19 % abgerechnet. 7 % gelten nur für genehmigten Linienverkehr und Schülerfahrten (Wohnung–Schule, Schulträger) innerhalb einer Gemeinde oder bis **50 km**. Die Software stellt den Satz passend ein und **warnt**, wenn ein Satz nicht zur Fahrtart passt, oder wenn die Fahrt in der Streckenplanung länger als 50 km ist. Siehe [Fahrtart und Steuersatz](/hilfe/belege#fahrtart).
+
 **In Planung**
-- **Fahrtart bestimmt den Satz:** Charter, Ausflug, Gruppenfahrt und Mietbus mit Fahrer werden mit 19 % abgerechnet. 7 % gelten nur für genehmigten Linienverkehr und Schülerfahrten (Wohnung–Schule, Schulträger) innerhalb einer Gemeinde oder bis **50 km**. Die Software prüft die Entfernung und **warnt**, wenn ein Satz nicht zur Fahrt passt. Die Genehmigung hinterlegen Sie einmal je Firma.
 - **Auslandsanteil bei Fahrten über die Grenze (§ 3b UStG):** Nur der **Inlandsanteil** ist steuerbar. Die Software teilt den Preis im Verhältnis der Streckenlängen auf. Grundlage sind die **Kilometerstände an der Grenze** aus dem Fahrtauftrag. Fahrten vom und zum Betriebshof ohne Fahrgäste zählen nicht mit. Die Rechnung zeigt den Inlandsanteil mit Steuer und den Auslandsanteil als „nicht steuerbar“.
 - **Barzahlung vor Ort:** Der Fahrer kassiert eine Zusatzfahrt bar, der Kunde erhält eine Quittung (Kleinbetragsrechnung), die Schlussrechnung zeigt sie als „bereits bezahlt“.
 - **Hinweis zur Auslandssteuer:** Bei Fahrten ins Ausland erinnert die Software daran, dass im Zielland **ausländische Umsatzsteuer** anfallen kann. Gerechnet wird sie nicht.

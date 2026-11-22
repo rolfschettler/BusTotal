@@ -11,6 +11,8 @@ use App\Models\Document;
 use App\Services\DocumentArchive;
 use App\Services\DocumentPdf;
 use App\Services\DocumentService;
+use App\Services\PaymentService;
+use App\Services\TaxHints;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -33,7 +35,25 @@ class DocumentController extends Controller
         'status' => 'documents.status',
     ];
 
-    public function __construct(private readonly DocumentService $documents) {}
+    public function __construct(
+        private readonly DocumentService $documents,
+        private readonly TaxHints $hints,
+        private readonly PaymentService $payments,
+    ) {}
+
+    /**
+     * Angaben, die nicht in der Tabelle stehen, an die Antwort hängen: Hinweise zum Steuersatz (`warnings`, nur Warnungen,
+     * siehe TaxHints) und den Zahlstand (`payment`, null bei Belegen ohne Zahlungen). Beides wird nie gespeichert.
+     * JEDE Antwort mit einem einzelnen Beleg geht hier durch: Die Oberfläche übernimmt die Antwort als neuen Stand des Belegs
+     * und blendet danach z. B. den Abschnitt „Zahlungen“ ein. Fehlte `payment` nach dem Festschreiben, erschiene er erst nach F5.
+     */
+    private function withHints(Document $document): Document
+    {
+        $document->loadMissing('lines');
+        $document->setAttribute('payment', $this->payments->summary($document));
+
+        return $document->setAttribute('warnings', $this->hints->forDocument($document));
+    }
 
     /** Liste mit Filter nach Art, Status und Kunde, Suche nach Nummer und Kunde, Seiten à 20. */
     public function index(Request $request): JsonResponse
@@ -94,7 +114,13 @@ class DocumentController extends Controller
             }
         }
 
-        return response()->json($query->paginate(20, ['*'], 'page', $page)->withQueryString());
+        $result = $query->paginate(20, ['*'], 'page', $page)->withQueryString();
+
+        // Zahlstand je Zeile (Rechnungen und Anzahlungen): die Summen für die ganze Seite mit EINER Abfrage holen.
+        $totals = $this->payments->paidTotals($result->getCollection()->pluck('id')->all());
+        $result->getCollection()->each(fn (Document $d) => $d->setAttribute('payment', $this->payments->summary($d, $totals[$d->id] ?? 0)));
+
+        return response()->json($result);
     }
 
     /**
@@ -146,7 +172,7 @@ class DocumentController extends Controller
 
     public function show(Document $document): JsonResponse
     {
-        return response()->json($document->load(['lines', 'customer', 'source:id,type,number', 'cancelledBy:id,number']));
+        return response()->json($this->withHints($document->load(['lines', 'customer', 'source:id,type,number', 'cancelledBy:id,number'])));
     }
 
     public function store(DocumentRequest $request): JsonResponse
@@ -154,14 +180,14 @@ class DocumentController extends Controller
         $data = $request->validated();
         $document = $this->documents->createDraft(DocumentType::from($data['type']), $data, $data['lines']);
 
-        return response()->json($document, 201);
+        return response()->json($this->withHints($document), 201);
     }
 
     public function update(DocumentRequest $request, Document $document): JsonResponse
     {
         $data = $request->validated();
 
-        return response()->json($this->documents->updateDraft($document, $data, $data['lines']));
+        return response()->json($this->withHints($this->documents->updateDraft($document, $data, $data['lines'])));
     }
 
     public function destroy(Document $document): JsonResponse
@@ -174,13 +200,13 @@ class DocumentController extends Controller
     /** Festschreiben: vergibt die Nummer und sperrt den Beleg. */
     public function finalize(Document $document): JsonResponse
     {
-        return response()->json($this->documents->finalize($document)->load(['lines', 'customer']));
+        return response()->json($this->withHints($this->documents->finalize($document)->load(['lines', 'customer'])));
     }
 
-    /** Stornieren: erzeugt den Storno-Beleg (Gutschrift) und gibt ihn zurück. */
+    /** Stornieren: erzeugt die Stornorechnung und gibt sie zurück. */
     public function cancel(Document $document): JsonResponse
     {
-        return response()->json($this->documents->cancel($document), 201);
+        return response()->json($this->withHints($this->documents->cancel($document)), 201);
     }
 
     /** Folgebeleg als Entwurf (Angebot → Auftragsbestätigung → Rechnung). */
@@ -192,11 +218,11 @@ class DocumentController extends Controller
             'percent' => ['nullable', 'numeric', 'gt:0', 'max:100'],
         ]);
 
-        return response()->json($this->documents->convert(
+        return response()->json($this->withHints($this->documents->convert(
             $document,
             DocumentType::from($data['type']),
             isset($data['percent']) ? (float) $data['percent'] : null,
-        ), 201);
+        )), 201);
     }
 
     /**

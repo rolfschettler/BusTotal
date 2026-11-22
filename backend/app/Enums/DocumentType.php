@@ -18,7 +18,9 @@ enum DocumentType: string
             self::Auftragsbestaetigung => 'Auftragsbestätigung',
             self::Anzahlung => 'Anzahlungsrechnung',
             self::Rechnung => 'Rechnung',
-            self::Gutschrift => 'Gutschrift / Storno',
+            // „Gutschrift“ heißt im Steuerrecht die Abrechnung des Leistungsempfängers (UStAE 14.3 Abs. 2 S. 5). Ein Storno ist eine
+            // Stornorechnung. Der Wert 'gutschrift' bleibt als technischer Schlüssel (Datenbank, Nummernkreis, Schnittstelle).
+            self::Gutschrift => 'Stornorechnung',
         };
     }
 

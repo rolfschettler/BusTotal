@@ -24,36 +24,44 @@
 <div class="body">
   @if (!forced()) {
     <aside class="sidebar">
+      <!--
+        Aufbau nach dem Arbeitsablauf: Fahrten und Abrechnung (Tour planen → Angebot → Rechnung), dann Stammdaten, dann Verwaltung.
+        Gruppenüberschriften sind klein, grau und durch eine Linie abgesetzt, Einträge tragen ein Symbol und sind eingerückt.
+        Gruppen ohne Einträge für die Rolle erscheinen nicht.
+      -->
       <nav class="nav flex-column" aria-label="Hauptmenü">
-        <a class="nav-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Start</a>
+        <a class="nav-link top" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <i class="bi bi-house" aria-hidden="true"></i>Start
+        </a>
 
-        @if (auth.user()?.role !== 'fahrer') {
-          <div class="group">Stammdaten</div>
-          <a class="nav-link" routerLink="/kunden" routerLinkActive="active">Kunden</a>
-          <a class="nav-link" routerLink="/fahrzeuge" routerLinkActive="active">Fahrzeuge</a>
-          @if (auth.user()?.role === 'admin' || auth.user()?.role === 'disponent') {
-            <a class="nav-link" routerLink="/fahrer" routerLinkActive="active">Fahrer</a>
+        @if (isStaff()) {
+          <div class="group">Fahrten und Abrechnung</div>
+          @if (canPlan()) {
+            <a class="nav-link" routerLink="/streckenplanung" routerLinkActive="active">
+              <i class="bi bi-signpost-split" aria-hidden="true"></i>Streckenplanung
+            </a>
           }
+          <a class="nav-link" routerLink="/belege" routerLinkActive="active">
+            <i class="bi bi-file-earmark-text" aria-hidden="true"></i>Belege
+          </a>
+
+          <div class="group">Stammdaten</div>
+          <a class="nav-link" routerLink="/kunden" routerLinkActive="active"><i class="bi bi-people" aria-hidden="true"></i>Kunden</a>
+          <a class="nav-link" routerLink="/fahrzeuge" routerLinkActive="active"><i class="bi bi-bus-front" aria-hidden="true"></i>Fahrzeuge</a>
+          @if (canPlan()) {
+            <a class="nav-link" routerLink="/fahrer" routerLinkActive="active"><i class="bi bi-person-vcard" aria-hidden="true"></i>Fahrer</a>
+          }
+
+          <div class="group">Verwaltung</div>
+          @if (isAdmin()) {
+            <a class="nav-link" routerLink="/benutzer" routerLinkActive="active"><i class="bi bi-person-gear" aria-hidden="true"></i>Benutzer</a>
+          }
+          <a class="nav-link" routerLink="/einstellungen" routerLinkActive="active"><i class="bi bi-gear" aria-hidden="true"></i>Einstellungen</a>
         }
 
-        @if (auth.user()?.role !== 'fahrer') {
-          <div class="group">Verkauf</div>
-          <a class="nav-link" routerLink="/belege" routerLinkActive="active">Belege</a>
-        }
-
-        @if (auth.user()?.role === 'admin' || auth.user()?.role === 'disponent') {
-          <div class="group">Planung</div>
-          <a class="nav-link" routerLink="/streckenplanung" routerLinkActive="active">Streckenplanung</a>
-        }
-
-        <div class="group">System</div>
-        @if (auth.user()?.role === 'admin') {
-          <a class="nav-link" routerLink="/benutzer" routerLinkActive="active">Benutzer</a>
-        }
-        @if (auth.user()?.role !== 'fahrer') {
-          <a class="nav-link" routerLink="/einstellungen" routerLinkActive="active">Einstellungen</a>
-        }
-        <a class="nav-link" routerLink="/hilfe" routerLinkActive="active">Hilfe</a>
+        <a class="nav-link top help-link" routerLink="/hilfe" routerLinkActive="active">
+          <i class="bi bi-question-circle" aria-hidden="true"></i>Hilfe
+        </a>
       </nav>
     </aside>
   }

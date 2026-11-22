@@ -1,0 +1,135 @@
+<!-- Zahlungen zu einer Rechnung oder Anzahlungsrechnung. Formular-Muster: docs/ClaudeCodePatterns/EditFormPattern.md (Inline-Formular). -->
+<div class="form-page mb-3">
+  <div class="section-title">Zahlungen <app-help-link topic="belege" anchor="zahlungen" label="Zahlungen" /></div>
+
+  @if (message(); as m) {
+    <div class="alert py-2 small" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
+  }
+
+  @if (loading()) {
+    <div class="d-flex justify-content-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></div>
+  }
+
+  @if (!loading() && summary(); as s) {
+
+    <!-- Zahlstand -->
+    <div class="row g-2 mb-3">
+      <div class="col-6 col-lg-3"><div class="bg-white border rounded p-2 h-100"><div class="small text-body-secondary">Zu zahlen</div><div class="fs-5 fw-semibold">{{ amountText(s.payable) }}</div></div></div>
+      <div class="col-6 col-lg-3"><div class="bg-white border rounded p-2 h-100"><div class="small text-body-secondary">Bezahlt</div><div class="fs-5 fw-semibold">{{ amountText(s.paid) }}</div></div></div>
+      <div class="col-6 col-lg-3"><div class="bg-white border rounded p-2 h-100"><div class="small text-body-secondary">Offen</div><div class="fs-5 fw-semibold" [class.text-danger]="s.overdue">{{ amountText(s.open) }}</div></div></div>
+      <div class="col-6 col-lg-3">
+        <div class="bg-white border rounded p-2 h-100">
+          <div class="small text-body-secondary">Stand</div>
+          <div class="fs-5">
+            @switch (s.state) {
+              @case ('bezahlt') { <span class="badge text-bg-success">Bezahlt</span> }
+              @case ('teilweise') { <span class="badge text-bg-info">Teilweise bezahlt</span> }
+              @case ('storniert') { <span class="badge text-bg-secondary">Storniert</span> }
+              @default { <span class="badge text-bg-warning">Offen</span> }
+            }
+            @if (s.overdue) { <span class="badge text-bg-danger ms-1">überfällig</span> }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Buchungen -->
+    @if (data()?.payments?.length) {
+      <div class="table-responsive mb-3">
+        <table class="table table-sm align-middle bg-white mb-0">
+          <thead>
+            <tr><th>Datum</th><th>Art</th><th class="text-end">Betrag</th><th>Zahlungsart</th><th>Verwendungszweck</th><th></th></tr>
+          </thead>
+          <tbody>
+            @for (p of data()!.payments; track p.id) {
+              <tr [class.text-body-secondary]="p.cancelled_at" [class.text-decoration-line-through]="p.cancelled_at">
+                <td>{{ p.paid_on | date: 'dd.MM.yyyy' }}</td>
+                <td>{{ kindLabel(p.kind) }}</td>
+                <td class="text-end">{{ signed(p) }}</td>
+                <td>{{ methodLabel(p.method) }}</td>
+                <td>{{ p.reference }} @if (p.note) { <span class="small text-body-secondary">({{ p.note }})</span> }</td>
+                <td class="text-end text-nowrap">
+                  @if (p.cancelled_at) {
+                    <span class="small fst-normal text-body-secondary" style="text-decoration: none">storniert: {{ p.cancel_reason }}</span>
+                  } @else if (canBook() && cancelling() !== p.id) {
+                    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="startCancel(p)">Stornieren</button>
+                  }
+                </td>
+              </tr>
+              @if (cancelling() === p.id) {
+                <tr>
+                  <td colspan="6">
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                      <label class="form-label mb-0 small" [for]="'reason' + p.id">Grund</label>
+                      <input class="form-control form-control-sm w-auto flex-grow-1" [id]="'reason' + p.id" [value]="cancelReason()" (input)="cancelReason.set($any($event.target).value)" maxlength="255" (keydown.enter)="confirmCancel(p)" />
+                      <button type="button" class="btn btn-sm btn-primary" (click)="confirmCancel(p)">Buchung stornieren</button>
+                      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="cancelling.set(null)">Abbrechen</button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p class="small text-body-secondary">Noch keine Zahlung gebucht.</p>
+    }
+
+    <!-- Zahlung erfassen -->
+    @if (canBook() && !formOpen()) {
+      <button type="button" class="btn btn-outline-secondary" (click)="openForm()"><i class="bi bi-plus-lg me-1"></i>Zahlung erfassen</button>
+    }
+
+    @if (formOpen()) {
+      <form id="paymentForm" class="form-area" [formGroup]="form" (ngSubmit)="save()" novalidate>
+        <div class="row g-3">
+          <div class="col-12"><div class="section-title">Zahlung erfassen</div></div>
+
+          <div class="col-12 col-lg-4">
+            <label class="form-label" for="pay_kind">Art</label>
+            <select class="form-select" id="pay_kind" formControlName="kind" (change)="onKindChange()">
+              @for (k of data()?.kinds ?? []; track k.value) { <option [value]="k.value">{{ k.label }}</option> }
+            </select>
+          </div>
+          <div class="col-12 col-lg-4">
+            <label class="form-label" for="pay_date">Datum <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="pay_date" formControlName="paid_on" [class.is-invalid]="invalid('paid_on')" />
+            <div class="invalid-feedback">{{ fieldError()['paid_on'] || 'Bitte das Datum angeben.' }}</div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <label class="form-label" for="pay_amount">Betrag (€) <span class="text-danger">*</span></label>
+            <input type="number" step="0.01" min="0.01" class="form-control text-end" id="pay_amount" formControlName="amount" [class.is-invalid]="invalid('amount')" />
+            <div class="invalid-feedback">{{ fieldError()['amount'] || 'Bitte einen Betrag über 0 angeben.' }}</div>
+          </div>
+
+          <div class="col-12 col-lg-4">
+            <label class="form-label" for="pay_method">Zahlungsart</label>
+            <select class="form-select" id="pay_method" formControlName="method">
+              @for (m of data()?.methods ?? []; track m.value) { <option [value]="m.value">{{ m.label }}</option> }
+            </select>
+          </div>
+          <div class="col-12 col-lg-8">
+            <label class="form-label" for="pay_ref">Verwendungszweck</label>
+            <input class="form-control" id="pay_ref" formControlName="reference" maxlength="100" />
+            <div class="form-text">Zum Beispiel die Rechnungsnummer auf dem Kontoauszug.</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="pay_note">Notiz</label>
+            <input class="form-control" id="pay_note" formControlName="note" maxlength="255" />
+          </div>
+        </div>
+      </form>
+
+      <div class="form-bar form-bar-static">
+        <button type="submit" form="paymentForm" class="btn btn-primary" [disabled]="saving()">
+          @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+          {{ saving() ? 'Bucht …' : 'Buchen' }}
+        </button>
+        <div class="form-bar-right">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeForm()">Abbrechen</button>
+        </div>
+      </div>
+    }
+  }
+</div>

@@ -7,12 +7,14 @@ import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { ListMemory } from '../../core/list-memory.service';
 import { CustomerService } from '../../core/customer.service';
-import { BusDocument, DocumentInput, DocumentService, DocumentTypeInfo, DocumentTypeValue } from '../../core/document.service';
+import { BusDocument, DocumentInput, DocumentService, DocumentTypeInfo, DocumentTypeValue, TripKindValue } from '../../core/document.service';
 import { fieldErrors, httpErrorText } from '../../core/http-error';
+import { PricingService, PricingSettings } from '../../core/pricing.service';
 import { SettingsService, TaxRate } from '../../core/settings.service';
 import { PrintPreviewService } from '../../core/print-preview.service';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { CalcLine, formatAmount, formatCents, summarize } from './document-calc';
+import { DocumentPaymentsComponent } from './document-payments.component';
 
 interface PickedCustomer {
   id: string;
@@ -29,7 +31,7 @@ interface PickedCustomer {
  */
 @Component({
   selector: 'app-document-form',
-  imports: [DatePipe, ReactiveFormsModule, RouterLink, HelpLinkComponent],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink, HelpLinkComponent, DocumentPaymentsComponent],
   templateUrl: './document-form.component.html',
   host: { class: 'form-page' },
 })
@@ -38,6 +40,7 @@ export class DocumentFormComponent implements OnInit {
   private api = inject(DocumentService);
   private customers = inject(CustomerService);
   private settings = inject(SettingsService);
+  private pricingApi = inject(PricingService);
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -48,11 +51,16 @@ export class DocumentFormComponent implements OnInit {
 
   /** Festschreiben und Stornieren: nur Administrator und Buchhaltung (der Server prüft zusätzlich). */
   canFinalize = computed(() => ['admin', 'buchhaltung'].includes(this.auth.user()?.role ?? ''));
+  /** Die Streckenplanung sehen nur Administrator und Disponent: Nur ihnen zeigt das neue Angebot den Hinweis darauf. */
+  canPlan = computed(() => ['admin', 'disponent'].includes(this.auth.user()?.role ?? ''));
 
   id: string | null = null;
   doc = signal<BusDocument | null>(null);
   types = signal<DocumentTypeInfo[]>([]);
   taxRates = signal<TaxRate[]>([]);
+  /** Preiseinstellungen: liefern die Fahrtarten und den Steuersatz je Fahrtart. Fehlen sie (kein Recht, Fehler), bleibt der Satz Handarbeit. */
+  pricing = signal<PricingSettings | null>(null);
+  tripKinds = computed(() => this.pricing()?.trip_kinds ?? []);
   message = signal<{ ok: boolean; text: string; list?: string[] } | null>(null);
   loading = signal(false);
   saving = signal(false);
@@ -129,16 +137,34 @@ export class DocumentFormComponent implements OnInit {
     return this.form.controls.lines;
   }
 
-  newLine(defaults?: Partial<{ title: string; description: string; quantity: number; unit: string; unit_price: number; tax_rate: number; tax_note: string }>) {
+  newLine(defaults?: Partial<{ title: string; description: string; quantity: number; unit: string; trip_kind: TripKindValue | null; unit_price: number; tax_rate: number; tax_note: string }>) {
     return this.fb.nonNullable.group({
       title: [defaults?.title ?? '', Validators.required],
       description: [defaults?.description ?? ''],
       quantity: [defaults?.quantity ?? 1, [Validators.required, (c: { value: unknown }) => (Number(c.value) === 0 ? { zero: true } : null)]],
       unit: [defaults?.unit ?? 'Stk'],
+      trip_kind: [(defaults?.trip_kind ?? null) as TripKindValue | null],
       unit_price: [defaults?.unit_price ?? 0, Validators.required],
       tax_rate: [defaults?.tax_rate ?? this.defaultRate(), Validators.required],
       tax_note: [defaults?.tax_note ?? ''],
     });
+  }
+
+  /** Der Steuersatz, den die Einstellungen für eine Fahrtart vorsehen (Regelsatz, Linie, Schule). Null, wenn sie nicht geladen sind. */
+  private rateForKind(kind: TripKindValue | null): number | null {
+    const p = this.pricing();
+    if (!p) return null;
+    return Number(kind === 'linie' ? p.tax_rate_line : kind === 'schule' ? p.tax_rate_school : p.tax_rate);
+  }
+
+  /**
+   * Die Fahrtart wurde gewählt: Der Steuersatz folgt ihr (Gelegenheitsverkehr Regelsatz, Linie und Schule ihr Satz).
+   * „Keine Angabe“ lässt den Satz unverändert. Der Satz bleibt danach von Hand änderbar; abweichende Sätze zeigt der Server als Hinweis.
+   */
+  onKindChange(g: FormGroup) {
+    const kind = g.value.trip_kind as TripKindValue | null;
+    const rate = kind === null || kind === 'sonstig' ? null : this.rateForKind(kind);
+    if (rate !== null && !Number.isNaN(rate)) g.patchValue({ tax_rate: rate });
   }
 
   private defaultRate(): number {
@@ -149,6 +175,8 @@ export class DocumentFormComponent implements OnInit {
   ngOnInit() {
     this.api.types().subscribe((t) => this.types.set(t));
     this.settings.getTaxRates().subscribe((r) => this.taxRates.set(r));
+    // Fahrtarten und Sätze je Fahrtart; ohne Zugriff (oder bei einem Fehler) bleibt die Auswahl leer und der Satz Handarbeit.
+    this.pricingApi.get().subscribe({ next: (p) => this.pricing.set(p), error: () => this.pricing.set(null) });
 
     this.form.valueChanges.subscribe(() => {
       this.tick.update((n) => n + 1);
@@ -211,7 +239,7 @@ export class DocumentFormComponent implements OnInit {
     for (const l of d.lines ?? []) {
       this.lines.push(
         this.newLine({
-          title: l.title, description: l.description ?? '', quantity: Number(l.quantity), unit: l.unit,
+          title: l.title, description: l.description ?? '', quantity: Number(l.quantity), unit: l.unit, trip_kind: l.trip_kind ?? null,
           unit_price: Number(l.unit_price), tax_rate: Number(l.tax_rate), tax_note: l.tax_note ?? '',
         }),
         { emitEvent: false },
@@ -241,6 +269,13 @@ export class DocumentFormComponent implements OnInit {
     }
     this.form.markAsPristine();
     this.tick.update((n) => n + 1);
+  }
+
+  /** Nach einer Zahlungsbuchung: Zahlstand des Belegs neu holen (nur dieser Teil, das Formular bleibt unberührt). */
+  refreshPayment() {
+    const id = this.id;
+    if (!id) return;
+    this.api.get(id).subscribe((d) => this.doc.update((cur) => (cur ? { ...cur, payment: d.payment } : cur)));
   }
 
   // ---------- Kunde ----------
@@ -323,11 +358,12 @@ export class DocumentFormComponent implements OnInit {
       service_date_from: empty(v.service_date_from),
       service_date_to: empty(v.service_date_to),
       payment_term_days: v.payment_term_days === null || (v.payment_term_days as unknown) === '' ? null : Number(v.payment_term_days),
-      lines: (v.lines as Record<string, string | number>[]).map((l) => ({
+      lines: (v.lines as Record<string, string | number | null>[]).map((l) => ({
         title: String(l['title']),
         description: l['description'] === '' ? null : String(l['description']),
         quantity: Number(l['quantity']),
         unit: String(l['unit'] || 'Stk'),
+        trip_kind: (l['trip_kind'] || null) as TripKindValue | null,
         unit_price: Number(l['unit_price']),
         tax_rate: Number(l['tax_rate']),
         tax_note: l['tax_note'] === '' ? null : String(l['tax_note']),
@@ -449,7 +485,7 @@ export class DocumentFormComponent implements OnInit {
     const ok = await this.confirm.ask({
       title: 'Beleg stornieren',
       message:
-        `${d?.number} wird durch einen Storno-Beleg (Gutschrift) mit negativen Beträgen ausgeglichen.\n` +
+        `${d?.number} wird durch eine Stornorechnung mit negativen Beträgen ausgeglichen.\n` +
         'Der Beleg selbst bleibt unverändert erhalten. Das lässt sich nicht rückgängig machen.',
       confirmLabel: 'Stornieren',
       danger: true,

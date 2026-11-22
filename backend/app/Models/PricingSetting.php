@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\TripKind;
 use App\Enums\VehicleType;
 use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -23,6 +24,8 @@ class PricingSetting extends Model
             'overnight_rate' => 'decimal:2',
             'minimum_price' => 'decimal:2',
             'tax_rate' => 'decimal:2',
+            'tax_rate_line' => 'decimal:2',
+            'tax_rate_school' => 'decimal:2',
             'surcharge_saturday_percent' => 'decimal:2',
             'surcharge_sunday_percent' => 'decimal:2',
             'surcharge_holiday_percent' => 'decimal:2',
@@ -34,6 +37,19 @@ class PricingSetting extends Model
     public static function current(): self
     {
         return static::first() ?? static::create([])->fresh();
+    }
+
+    /**
+     * Der Steuersatz einer Fahrtart. Gelegenheitsverkehr, Sonstiges und „keine Angabe“ nehmen den Regelsatz (tax_rate),
+     * Linienverkehr und Schülerfahrten ihre eigenen Sätze (Standard 7 %, gilt nur bis 50 km, siehe TripKind).
+     */
+    public function taxRateFor(?TripKind $kind): string
+    {
+        return (string) match ($kind) {
+            TripKind::Linie => $this->tax_rate_line,
+            TripKind::Schule => $this->tax_rate_school,
+            default => $this->tax_rate,
+        };
     }
 
     /**

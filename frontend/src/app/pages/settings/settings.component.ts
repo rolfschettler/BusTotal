@@ -92,6 +92,8 @@ export class SettingsComponent implements OnInit {
     overnight_rate: [0, [Validators.required, Validators.min(0)]],
     minimum_price: [0, [Validators.required, Validators.min(0)]],
     tax_rate: [19, [Validators.required, Validators.min(0), Validators.max(100)]],
+    tax_rate_line: [7, [Validators.required, Validators.min(0), Validators.max(100)]],
+    tax_rate_school: [7, [Validators.required, Validators.min(0), Validators.max(100)]],
     surcharge_saturday_percent: [0, [Validators.required, Validators.min(0), Validators.max(300)]],
     surcharge_sunday_percent: [0, [Validators.required, Validators.min(0), Validators.max(300)]],
     surcharge_holiday_percent: [0, [Validators.required, Validators.min(0), Validators.max(300)]],

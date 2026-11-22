@@ -2,6 +2,7 @@
 
 namespace App\Pricing;
 
+use App\Enums\TripKind;
 use App\Enums\VehicleType;
 
 /**
@@ -30,6 +31,8 @@ final readonly class TourFigures
          * @var list<TourDay>
          */
         public array $calendarDays = [],
+        /** Fahrtart aller Positionen des Angebots; bestimmt den Steuersatz. Ohne Angabe gilt der Regelsatz und die Positionen tragen keine Fahrtart. */
+        public ?TripKind $tripKind = null,
     ) {}
 
     /** Übernachtungen des Fahrers: je Einsatztag nach dem ersten eine. */

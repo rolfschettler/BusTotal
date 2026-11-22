@@ -44,6 +44,13 @@ export class LayoutComponent {
     return full;
   }
 
+  // Wer welche Menüpunkte sieht (die Routen und der Server prüfen die Rolle zusätzlich).
+  /** Alle außer Fahrer: Fahrer sehen nur Start und Hilfe. */
+  isStaff = computed(() => this.auth.user()?.role !== 'fahrer');
+  /** Streckenplanung und Fahrer: Administrator und Disponent. */
+  canPlan = computed(() => ['admin', 'disponent'].includes(this.auth.user()?.role ?? ''));
+  isAdmin = computed(() => this.auth.user()?.role === 'admin');
+
   /** Solange das vorläufige Passwort gilt, gibt es kein Menü, nur die Passwortänderung. */
   forced = computed(() => this.auth.user()?.must_change_password === true);
 

@@ -83,6 +83,12 @@ class Document extends Model
         return $this->hasMany(DocumentLine::class)->orderBy('position');
     }
 
+    /** Zahlungsbuchungen (nur bei Rechnungen und Anzahlungsrechnungen), siehe PaymentService. */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(DocumentPayment::class)->orderBy('paid_on')->orderBy('created_at');
+    }
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class)->withTrashed();

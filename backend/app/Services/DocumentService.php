@@ -141,6 +141,7 @@ class DocumentService
                 'description' => $line->description,
                 'quantity' => $this->negate((string) $line->quantity),
                 'unit' => $line->unit,
+                'trip_kind' => $line->trip_kind?->value,
                 'unit_price' => (string) $line->unit_price,
                 'tax_rate' => (string) $line->tax_rate,
                 'tax_note' => $line->tax_note,
@@ -192,7 +193,7 @@ class DocumentService
                 ? $this->advanceLines($source, $percent ?? self::DEFAULT_ADVANCE_PERCENT)
                 : $source->lines->map(fn ($l) => [
                     'title' => $l->title, 'description' => $l->description, 'quantity' => (string) $l->quantity,
-                    'unit' => $l->unit, 'unit_price' => (string) $l->unit_price,
+                    'unit' => $l->unit, 'trip_kind' => $l->trip_kind?->value, 'unit_price' => (string) $l->unit_price,
                     'tax_rate' => (string) $l->tax_rate, 'tax_note' => $l->tax_note,
                 ])->all();
             $this->replaceLines($document, $lines);
@@ -334,7 +335,7 @@ class DocumentService
         $document->lines()->delete();
         foreach (array_values($lines) as $i => $line) {
             $row = $document->lines()->make(array_intersect_key($line, array_flip([
-                'title', 'description', 'quantity', 'unit', 'unit_price', 'tax_rate', 'tax_note',
+                'title', 'description', 'quantity', 'unit', 'trip_kind', 'unit_price', 'tax_rate', 'tax_note',
             ])));
             $row->unit = $row->unit ?: 'Stk';
             $row->position = $i + 1;

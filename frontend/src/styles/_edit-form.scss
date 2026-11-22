@@ -76,8 +76,12 @@
     min-width: 6.5rem;
     font-weight: 500;
   }
+}
 
-  // Sekundär: weiß mit dunklem Rand, auch ohne Farbe als Taste erkennbar.
+// ---- Sekundäre Tasten: überall in einer Formularseite, nicht nur in der Tastenleiste ----
+// Weiß mit dunklem Rand, auch ohne Farbe als Taste erkennbar. Ohne diese Regel sähe eine Taste im Formular selbst
+// („Position hinzufügen“, „Zahlung erfassen“, „Stornieren“) in der blassen Bootstrap-Optik aus wie eine deaktivierte.
+.form-page {
   .btn-outline-secondary {
     --bs-btn-color: #212529;
     --bs-btn-bg: #fff;

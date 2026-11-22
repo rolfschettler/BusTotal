@@ -12,12 +12,17 @@ export interface DocumentTypeInfo {
   convertible_to: DocumentTypeValue[];
 }
 
+/** Fahrtart einer Position: bestimmt den Steuersatz der Beförderung (Gelegenheitsverkehr 19 %, Linie und Schule ermäßigt bis 50 km). */
+export type TripKindValue = 'gelegenheit' | 'linie' | 'schule' | 'sonstig';
+
 export interface DocumentLine {
   id?: string;
   title: string;
   description: string | null;
   quantity: number | string;
   unit: string;
+  /** leer bei Positionen, die keine Fahrt sind, und bei alten Belegen */
+  trip_kind?: TripKindValue | null;
   unit_price: number | string;
   tax_rate: number | string;
   tax_note: string | null;
@@ -51,6 +56,45 @@ export interface DocumentDeduction {
   net: string;
   tax: string;
   gross: string;
+}
+
+/** Zahlstand einer Rechnung oder Anzahlungsrechnung (aus den Zahlungsbuchungen, der Beleg selbst bleibt unverändert). */
+export interface PaymentSummary {
+  /** Zu zahlen (Brutto minus Anzahlungen) */
+  payable: string;
+  paid: string;
+  open: string;
+  state: 'offen' | 'teilweise' | 'bezahlt' | 'storniert';
+  /** noch etwas offen und die Fälligkeit liegt vor heute */
+  overdue: boolean;
+}
+
+export interface Payment {
+  id: string;
+  kind: 'eingang' | 'rueckzahlung';
+  paid_on: string;
+  amount: string;
+  method: string;
+  reference: string | null;
+  note: string | null;
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+}
+
+export interface PaymentsResponse {
+  payments: Payment[];
+  summary: PaymentSummary | null;
+  kinds: { value: Payment['kind']; label: string }[];
+  methods: { value: string; label: string }[];
+}
+
+export interface PaymentInput {
+  kind?: Payment['kind'];
+  paid_on: string;
+  amount: number;
+  method?: string;
+  reference?: string | null;
+  note?: string | null;
 }
 
 export interface BusDocument {
@@ -87,6 +131,10 @@ export interface BusDocument {
   payable_total: string;
   finalized_at: string | null;
   lines?: DocumentLine[];
+  /** Prüfhinweise zum Steuersatz (nur Warnungen, vom Server bei Anzeige und Speichern berechnet) */
+  warnings?: string[];
+  /** Zahlstand; nur bei festgeschriebenen Rechnungen und Anzahlungsrechnungen, sonst null */
+  payment?: PaymentSummary | null;
   customer?: { id: string; customer_number: string; display_name: string } | null;
   /** Stufe in der Belegkette (0 = Ursprung), nur in der Ansicht „je Kunde“ */
   chain_depth?: number;
@@ -152,5 +200,18 @@ export class DocumentService {
   /** `percent` gilt nur für die Anzahlungsrechnung (Anteil am Auftrag, Vorbelegung 30). */
   convert(id: string, type: DocumentTypeValue, percent?: number) {
     return this.http.post<BusDocument>(`${this.base}/${id}/convert`, percent ? { type, percent } : { type });
+  }
+
+  // ---------- Zahlungen (Rechnungen und Anzahlungsrechnungen) ----------
+
+  payments(id: string) {
+    return this.http.get<PaymentsResponse>(`${this.base}/${id}/payments`);
+  }
+  addPayment(id: string, data: PaymentInput) {
+    return this.http.post<PaymentsResponse>(`${this.base}/${id}/payments`, data);
+  }
+  /** Buchung stornieren (nie löschen); der Grund ist Pflicht. */
+  cancelPayment(id: string, paymentId: string, reason: string) {
+    return this.http.post<PaymentsResponse>(`${this.base}/${id}/payments/${paymentId}/cancel`, { reason });
   }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Enums\GermanState;
+use App\Enums\TripKind;
 use App\Enums\VehicleType;
 use App\Models\CompanySetting;
 use App\Models\PricingSetting;
@@ -30,6 +31,8 @@ class PricingController extends Controller
         return $settings->toArray() + [
             // Vorbelegung der Feiertage in der Streckenplanung
             'company_state' => CompanySetting::current()->state,
+            // Fahrtarten für die Auswahl; der Steuersatz je Fahrtart steht in tax_rate (Regelsatz), tax_rate_line und tax_rate_school
+            'trip_kinds' => TripKind::options(),
             'vehicle_types' => array_map(fn (VehicleType $t) => ['value' => $t->value, 'label' => $t->label()], VehicleType::cases()),
             'vehicle_rates' => collect(VehicleType::cases())->mapWithKeys(fn (VehicleType $t) => [
                 $t->value => collect(PricingVehicleRate::FIELDS)->mapWithKeys(fn ($f) => [$f => $own->get($t->value)?->{$f}])->all(),
@@ -54,6 +57,9 @@ class PricingController extends Controller
             'overnight_rate' => ['required', 'numeric', 'min:0', 'max:9999'],
             'minimum_price' => ['required', 'numeric', 'min:0', 'max:99999'],
             'tax_rate' => ['required', 'numeric', 'between:0,100'],
+            // Neu: Sätze für Linienverkehr und Schülerfahrten. „sometimes“, damit ältere Aufrufer weiter funktionieren.
+            'tax_rate_line' => ['sometimes', 'required', 'numeric', 'between:0,100'],
+            'tax_rate_school' => ['sometimes', 'required', 'numeric', 'between:0,100'],
             'surcharge_saturday_percent' => ['sometimes', 'required', 'numeric', 'between:0,300'],
             'surcharge_sunday_percent' => ['sometimes', 'required', 'numeric', 'between:0,300'],
             'surcharge_holiday_percent' => ['sometimes', 'required', 'numeric', 'between:0,300'],
@@ -101,6 +107,8 @@ class PricingController extends Controller
             'state' => ['nullable', Rule::enum(GermanState::class)],
             'customer_id' => ['nullable', 'uuid', 'exists:customers,id'],
             'vehicle_id' => ['nullable', 'uuid', 'exists:vehicles,id'],
+            // Fahrtart des Angebots; ohne Angabe gilt Gelegenheitsverkehr (Charter, Ausflug, Gruppenfahrt)
+            'trip_kind' => ['nullable', Rule::enum(TripKind::class)],
         ]);
 
         $document = $quotes->draftFromTour($data, $data['customer_id'] ?? null);

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\DocumentType;
+use App\Enums\TripKind;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -35,6 +36,7 @@ class DocumentRequest extends FormRequest
             'lines.*.description' => ['nullable', 'string', 'max:5000'],
             'lines.*.quantity' => ['required', 'numeric', 'not_in:0', 'between:-9999999,9999999'],
             'lines.*.unit' => ['nullable', 'string', 'max:20'],
+            'lines.*.trip_kind' => ['nullable', Rule::enum(TripKind::class)],
             'lines.*.unit_price' => ['required', 'numeric', 'between:-9999999,9999999'],
             'lines.*.tax_rate' => ['required', 'numeric', 'between:0,100'],
             'lines.*.tax_note' => ['nullable', 'string', 'max:255'],
@@ -51,6 +53,7 @@ class DocumentRequest extends FormRequest
             'lines.*.quantity.not_in' => 'Die Menge darf nicht 0 sein.',
             'lines.*.unit_price.required' => 'Bitte einen Einzelpreis angeben.',
             'lines.*.tax_rate.required' => 'Bitte einen Steuersatz angeben.',
+            'lines.*.trip_kind.enum' => 'Unbekannte Fahrtart.',
         ];
     }
 }

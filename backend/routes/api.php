@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\CustomerChildController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DocumentController;
+use App\Http\Controllers\Api\DocumentPaymentController;
 use App\Http\Controllers\Api\DriverAbsenceController;
 use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\DepotController;
@@ -156,10 +157,14 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
         Route::put('/{document}', [DocumentController::class, 'update']);
         Route::delete('/{document}', [DocumentController::class, 'destroy']);
         Route::post('/{document}/convert', [DocumentController::class, 'convert']);
+        Route::get('/{document}/payments', [DocumentPaymentController::class, 'index']);
     });
     Route::middleware('role:admin,buchhaltung')->prefix('documents')->group(function () {
         Route::post('/{document}/finalize', [DocumentController::class, 'finalize']);
         Route::post('/{document}/cancel', [DocumentController::class, 'cancel']);
+        // Zahlungseingang und Rückzahlung buchen, Buchung stornieren (nie löschen)
+        Route::post('/{document}/payments', [DocumentPaymentController::class, 'store']);
+        Route::post('/{document}/payments/{payment}/cancel', [DocumentPaymentController::class, 'cancel']);
     });
 
     // DSGVO-Löschung (unwiderruflich): Administrator und Buchhaltung.

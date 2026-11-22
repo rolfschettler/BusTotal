@@ -44,8 +44,11 @@ Der **Zeitplan** zeigt jeden Abschnitt: Fahrt, Pause, Halt und Ruhezeit, geglied
 
 ## Angebot aus der Tour {#angebot-aus-tour}
 
+Dies ist **einer von zwei Wegen** zu einem Angebot. Ein Angebot **ohne** Strecke legen Sie unter **Belege › Neuer Beleg** an, siehe [Angebot erstellen](/hilfe/fahrten#angebot).
+
 Unter dem Ergebnis legt **Angebot erstellen** aus der berechneten Tour ein Angebot als [Entwurf](/hilfe/belege#entwurf-und-festschreiben) an und öffnet es. Die Positionen schlägt die Software aus den [Preisen](/hilfe/einstellungen#preise) vor: Fahrstrecke, Fahrerzeit, Tagespauschale, Übernachtung und, falls nötig, ein Ausgleich auf den Mindestpreis.
 
+- **Fahrtart:** Vor dem Erstellen wählen Sie die **Fahrtart**. Vorbelegt ist Gelegenheitsverkehr (Charter, Ausflug, Gruppenfahrt) mit dem Regelsatz. Bei **Linienverkehr** oder **Schülerfahrt** gilt der ermäßigte Satz aus den [Einstellungen](/hilfe/einstellungen#preise-steuersatz), aber nur bis 50 km. Ist die Fahrt länger, erscheint ein Hinweis (bei Fahrten ins Ausland zählt nur der Inlandsteil). Alle Positionen des Angebots tragen die Fahrtart, auch die Zuschläge. Mehr unter [Fahrtart und Steuersatz](/hilfe/belege#fahrtart).
 - **Wochenende und Feiertag:** Hat die Tour einen Starttermin, setzt die Software die [Zuschläge](/hilfe/einstellungen#preise-zuschlaege) für Samstag, Sonntag und Feiertag selbst, je Tag nach den Sätzen in den Einstellungen. **Feiertage in** wählt das Bundesland, nach dem die Feiertage gelten. Vorbelegt ist das Bundesland Ihres Betriebssitzes. Ändern Sie es, wenn die Fahrt in einem anderen Land liegt. Ohne Starttermin gibt es keine automatischen Zuschläge.
 - **Zuschlag (%):** Hier tragen Sie von Hand einen weiteren Zuschlag auf die Summe ein, zum Beispiel für Besonderheiten. Er erscheint als eigene Position und kommt zu den automatischen Zuschlägen hinzu.
 - **Fahrzeug:** Ist oben ein Fahrzeug gewählt, gelten die [Preise seines Fahrzeugtyps](/hilfe/einstellungen#preise-fahrzeugtyp), soweit für den Typ welche hinterlegt sind, sonst die Standardpreise. Ohne Fahrzeug gelten immer die Standardpreise.

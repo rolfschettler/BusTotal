@@ -74,10 +74,10 @@
         <col style="width:76px">   <!-- Aktionen -->
         <col style="width:130px">  <!-- Nr. -->
         <col style="width:170px">  <!-- Art -->
-        <col style="width:258px">  <!-- Kunde -->
+        <col style="width:228px">  <!-- Kunde -->
         <col style="width:100px">  <!-- Datum -->
         <col style="width:110px">  <!-- Brutto -->
-        <col style="width:120px">  <!-- Status -->
+        <col style="width:150px">  <!-- Status und Zahlstand -->
       </colgroup>
 
       <thead>
@@ -141,6 +141,17 @@
                 <span class="badge text-bg-secondary">Storniert</span>
               } @else {
                 <span class="badge text-bg-success">Festgeschrieben</span>
+              }
+              @if (d.payment; as p) {
+                <div class="small mt-1">
+                  @if (p.state === 'bezahlt') {
+                    <span class="text-success"><i class="bi bi-check-circle"></i> bezahlt</span>
+                  } @else if (p.state !== 'storniert') {
+                    <span [class.text-danger]="p.overdue" [class.text-body-secondary]="!p.overdue">
+                      {{ p.overdue ? 'überfällig' : p.state === 'teilweise' ? 'teilweise bezahlt' : 'offen' }} {{ amount(p.open) }}
+                    </span>
+                  }
+                </div>
               }
             </td>
           </tr>

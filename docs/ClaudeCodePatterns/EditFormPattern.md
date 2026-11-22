@@ -16,7 +16,7 @@ Claude baut daraus das Formular so:
 
 1. `EditFormTemplate.html` kopieren, Feldnamen und Texte ersetzen. Kein eigenes CSS, keine eigenen Farben oder Breiten.
 2. Komponente nach der Referenz anlegen (Bausteine siehe unten), `host: { class: 'form-page' }`.
-3. Jedes Feld einer Breite aus der Tabelle zuordnen, Zeilen auf 12 Spalten auffüllen, Reihenfolge nach Lesefluss und in Abschnitte gliedern.
+3. **Ein Raster wählen** (Drittel oder Viertel, siehe „Ein Formular, ein Raster“), jedes Feld einer Breite dieses Rasters zuordnen, Reihenfolge nach Lesefluss und in Abschnitte gliedern.
 4. Labels kurz halten (ein Wort bis wenige Wörter), Hinweise als `form-text` darunter, Pflichtfelder mit rotem `*`.
 5. Tastenleiste unverändert aus der Vorlage übernehmen (Speichern, Zurück | Archivieren, Abbrechen).
 6. `ng build` muss laufen. Der Nutzer sieht das Formular nur noch inhaltlich an (stimmen Felder, Pflichtfelder, Texte), nicht mehr das Design.
@@ -51,8 +51,16 @@ mit `form="id"` darauf (so liegt sie in der Leiste, löst aber das Formular aus;
   | lang, Rest einer Zeile | `col-lg-8` oder `col-lg-6` neben zwei kurzen | Ort neben PLZ und Land |
   | sehr lang, mehrzeilig | `col-12` | Straße, Notizen (`rows="4"`) |
 
-  Zeilen füllen sich ganz (3+6+3, 4+4+4, 6+6). Bleibt ein Feld allein, steht es mit passender Breite allein, kein Platzhalter daneben.
   Zusammengehörige Felder stehen in einer Zeile (PLZ, Ort, Land), die Reihenfolge folgt dem Lesefluss.
+- **Ein Formular, ein Raster (Regel seit 2026-11-22):** Die Kanten der Felder müssen **über alle Zeilen fluchten**. Darum wählt jedes Formular **eines**
+  von zwei Rastern und bleibt dabei:
+  - **Drittelraster:** Felder sind `col-lg-4` (ein Drittel), lange Felder `col-lg-8` (zwei Drittel) oder `col-12`.
+  - **Viertelraster:** Felder sind `col-lg-3` (ein Viertel), mittlere `col-lg-6` (die Hälfte), lange `col-lg-9` oder `col-12`.
+  - **Nie mischen:** `col-lg-4` und `col-lg-6` im selben Formular (3+3+6 neben 4+4+4) ergeben Spalten, die nicht untereinander stehen.
+  - **Zeilen müssen nicht voll sein:** Eine Zeile mit zwei Feldern im Drittelraster bleibt rechts leer. Die Felder werden **nicht** auf 6+6 gestreckt,
+    nur um die Zeile zu füllen. Gleichartige Felder sind überall gleich breit (zum Beispiel alle Preisfelder ein Drittel).
+  - Im Zweifel gilt das **Drittelraster** für Einstellungen und Zahlenfelder, das **Viertelraster** für Adressen (PLZ 3, Ort 6, Land 3).
+  - **Bestand:** Formulare, die beide Raster mischen, werden bei Gelegenheit angeglichen (Liste in `docs/FAHRPLAN.md`). Zuerst angeglichen: Einstellungen › Preise.
 - **Drei Helligkeitsstufen:** Seite nahezu weiß (`$body-bg` #fbfcfd), Formularfläche `.form-area` dezent grau (#f1f3f5, Rand #dee2e6), Felder weiß mit Rand #adb5bd.
   Ursache früherer Grau-in-Grau-Felder: Bootstrap leitet `$input-bg` von `$body-bg` ab, deshalb steht `$input-bg: #fff` in `styles.scss`.
 - **Optik = Bootstrap.** Felder, Labels, Checkboxen werden nicht per CSS überschrieben, nur über Bootstrap-Variablen in `styles.scss`
@@ -80,7 +88,9 @@ Klebt am unteren Rand des Sichtbereichs (`position: sticky`) in Formularbreite, 
 
 - Teil-Formulare (Ansprechpartner, Adressen): Leiste nur mit **Speichern** links und **Abbrechen** rechts (Abbrechen schließt das Teil-Formular).
 - Archivierte Datensätze: Formular gesperrt (`form.disable()`), kein Speichern, kein Abbrechen; nur Zurück und Wiederherstellen.
-- **Sekundäre Tasten** sind weiß mit dunklem Rand (`#6c757d`), damit sie auch ohne Farbe als Taste erkennbar sind.
+- **Sekundäre Tasten** sind weiß mit dunklem Rand (`#6c757d`), damit sie auch ohne Farbe als Taste erkennbar sind. Das gilt in der **ganzen Formularseite**
+  (`.form-page`), nicht nur in der Tastenleiste: Auch „Position hinzufügen“ oder „Zahlung erfassen“ im Formular sehen so aus. (Fehler beim Testen
+  2026-11-22: Die Regel galt nur in `.form-bar`, eine Taste im Formular sah in der blassen Bootstrap-Optik deaktiviert aus.)
 - **Deaktiviert** (`[disabled]`) = graue Fläche, gestrichelter Rand, Mauszeiger „verboten“, `title` mit dem Grund. Wo möglich
   bleibt eine Taste aktiv und meldet das Problem erst beim Klick (Speichern ist nie deaktiviert, außer während des Speicherns).
 

@@ -4,7 +4,7 @@ Hier erstellen Sie Angebote, Auftragsbestätigungen und Rechnungen. Der Bereich 
 
 ## Belegliste {#belegliste}
 
-Die Liste zeigt 20 Belege pro Seite. Ein Klick auf eine Spaltenüberschrift sortiert danach, ein zweiter Klick kehrt die Richtung um. Ohne Wahl stehen die neuesten zuerst, Entwürfe oben (ein Entwurf hat noch kein Datum und gilt als der neueste). Leere Werte stehen immer am Ende. Die Belegart sortiert in der Reihenfolge des Geschäftsgangs (Angebot bis Gutschrift).
+Die Liste zeigt 20 Belege pro Seite. Ein Klick auf eine Spaltenüberschrift sortiert danach, ein zweiter Klick kehrt die Richtung um. Ohne Wahl stehen die neuesten zuerst, Entwürfe oben (ein Entwurf hat noch kein Datum und gilt als der neueste). Leere Werte stehen immer am Ende. Die Belegart sortiert in der Reihenfolge des Geschäftsgangs (Angebot bis Stornorechnung).
 
 - **Suche:** Das Suchfeld durchsucht die Belegnummer, den Betreff und den Kunden (Name und Kundennummer). Treffer sind gelb markiert. Steckt der Treffer in einem Feld, das die Liste nicht zeigt (die Kundennummer), erscheint unter dem Namen der Hinweis „Treffer in Kundennr.“.
 - **Belegart und Stand:** Die Filter zeigen zum Beispiel nur Rechnungen oder nur Entwürfe.
@@ -13,20 +13,42 @@ Die Liste zeigt 20 Belege pro Seite. Ein Klick auf eine Spaltenüberschrift sort
 
 ## Beleg anlegen {#beleg-anlegen}
 
+Ein **Angebot** entsteht auf zwei Wegen: **mit Strecke** über die [Streckenplanung](/hilfe/strecken#angebot-aus-tour) (Knopf **Angebot erstellen**, die Positionen schlägt die Software aus Ihren Preisen vor) oder **ohne Strecke** hier unter **Belege › Neuer Beleg** (Sie tragen die Positionen selbst ein). Beide Wege ergeben denselben Beleg. Der Weg im Einzelnen: [Angebot erstellen](/hilfe/fahrten#angebot).
+
 Wählen Sie **Neuer Beleg**, dann die Belegart und den Kunden. Die Belegarten:
 
 - **Angebot** und **Auftragsbestätigung**
 - **Anzahlungsrechnung**: für eine Anzahlung vor der Fahrt
 - **Rechnung**
-- **Gutschrift / Storno** legen Sie nicht selbst an, sie entsteht beim [Stornieren](#stornieren).
+- **Stornorechnung** legen Sie nicht selbst an, sie entsteht beim [Stornieren](#stornieren). Sie heißt bewusst nicht „Gutschrift“: Im Steuerrecht ist eine Gutschrift die Abrechnung des Leistungsempfängers, eine Stornierung ist eine Stornorechnung.
 
 Die Belegart lässt sich nach dem Anlegen nicht mehr ändern. Jeder Beleg besteht aus Kopfdaten, Positionen und Texten:
 
 - **Positionen:** Bezeichnung, Menge, Einheit, Einzelpreis (netto) und Steuersatz. Die Summen darunter sind eine Vorschau, maßgeblich ist die Berechnung beim Speichern. Die Steuer wird je Steuersatz aus der Nettosumme gerechnet.
-- **Steuersatz:** Zur Auswahl stehen die Sätze aus den Einstellungen. Bei 0 % verlangt eine Rechnung einen Grund im **Steuerhinweis**, zum Beispiel „steuerfrei“ oder „Ausland“. Welcher Satz für welche Fahrt gilt, ist eine Frage an den Steuerberater: Er hängt von der Art der Fahrt und der Strecke ab.
+- **Fahrtart und Steuersatz:** Wählen Sie je Position die **Fahrtart**, dann stellt sich der Steuersatz passend ein. Mehr unter [Fahrtart und Steuersatz](#fahrtart).
+- **Steuersatz:** Zur Auswahl stehen die Sätze aus den Einstellungen. Bei 0 % verlangt eine Rechnung einen Grund im **Steuerhinweis**, zum Beispiel „steuerfrei“ oder „Ausland“.
 - **Leistung von / bis:** Das Fahrtdatum. Bei Rechnungen ist **Leistung von** Pflicht, bei Anzahlungsrechnungen nicht.
 - **Belegdatum:** Bleibt es leer, gilt der Tag des Festschreibens.
 - **Zahlungsziel:** Bleibt es leer, gilt das Ziel des Kunden, sonst das der Firma (siehe [Einstellungen](/hilfe/einstellungen)).
+
+## Fahrtart und Steuersatz {#fahrtart}
+
+Jede Position kann eine **Fahrtart** tragen. Sie bestimmt den Steuersatz der Beförderung:
+
+| Fahrtart | Steuersatz | Wann |
+|---|---|---|
+| **Gelegenheitsverkehr** (Charter, Ausflug, Gruppenfahrt, Mietbus mit Fahrer) | Regelsatz | immer, **auch bei kurzen Strecken** |
+| **Genehmigter Linienverkehr** | ermäßigt | nur innerhalb einer Gemeinde oder bis **50 km** Beförderungsstrecke |
+| **Schüler- und Schulträgerfahrt** | ermäßigt | wie Linienverkehr: Wohnung–Schule und Fahrten für Schulträger, nicht Klassenfahrten |
+| **Sonstiges** | von Hand | Maut, Zuschläge und alles, was keine Fahrt ist |
+| **Keine Angabe** | von Hand | bei älteren Belegen und Positionen ohne Fahrt |
+
+- **Der Satz stellt sich ein:** Wählen Sie die Fahrtart, setzt die Software den Satz aus den [Einstellungen](/hilfe/einstellungen#preise-steuersatz). Sie können ihn danach von Hand ändern.
+- **Hinweise statt Sperren:** Passt ein Satz nicht zur Fahrtart, zeigt der Beleg oben **„Bitte prüfen“**. Zum Beispiel bei Gelegenheitsverkehr mit ermäßigtem Satz, oder bei ermäßigtem Satz auf Linienverkehr mit dem Hinweis auf die 50 km. Die Software kennt die Strecke einer Position nicht und sperrt deshalb nichts. Der Hinweis hindert das Festschreiben nicht.
+- **Bei Fahrten ins Ausland** zählt für die 50 km nur die Strecke im Inland.
+- **Angebot aus der Streckenplanung:** Dort wählen Sie die Fahrtart vor dem Erstellen. Alle Positionen des Angebots tragen sie, auch die Zuschläge. Siehe [Angebot aus der Tour](/hilfe/strecken#angebot-aus-tour).
+- **Folgebelege und Storno** übernehmen die Fahrtart.
+- **Rechtsgrundlage:** § 12 Abs. 2 Nr. 10 UStG, Anwendungserlass Abschnitte 12.13 und 12.14. Die Texte sind ein Entwurf zur Prüfung durch Ihren Steuerberater.
 
 ## Entwurf und Festschreiben {#entwurf-und-festschreiben}
 
@@ -42,7 +64,7 @@ Ein festgeschriebener Beleg lässt sich nicht mehr ändern oder löschen, weder 
 
 ## Stornieren {#stornieren}
 
-Rechnungen und Anzahlungsrechnungen lassen sich stornieren (Administrator und Buchhaltung). Die Software erzeugt dabei einen eigenen, sofort festgeschriebenen **Storno-Beleg** (Gutschrift) mit negativen Beträgen und eigener Nummer. Der ursprüngliche Beleg bleibt unverändert erhalten und zeigt nur noch den Hinweis „Storniert“.
+Rechnungen und Anzahlungsrechnungen lassen sich stornieren (Administrator und Buchhaltung). Die Software erzeugt dabei eine eigene, sofort festgeschriebene **Stornorechnung** mit negativen Beträgen, eigener Nummer und dem Verweis auf die stornierte Rechnung. Der ursprüngliche Beleg bleibt unverändert erhalten und zeigt nur noch den Hinweis „Storniert“.
 
 Ein Beleg lässt sich nur einmal stornieren. Entwürfe werden nicht storniert, sondern gelöscht. Angebote und Auftragsbestätigungen werden nicht storniert.
 
@@ -65,6 +87,20 @@ Mit **Drucken** (in der Tastenleiste des Belegs und als Druckersymbol in der Lis
 - Jedes Öffnen steht im Änderungsprotokoll.
 
 > Das Archiv-PDF liegt auf dem Server dieser Firma. Nehmen Sie es in Ihre Datensicherung auf. Ob Ihre Rechnung alle Pflichtangaben trägt, klären Sie mit Ihrem Steuerberater.
+
+## Zahlungen {#zahlungen}
+
+Zu jeder **festgeschriebenen Rechnung** und **Anzahlungsrechnung** gehört der Zahlstand. Im Beleg steht dafür unter dem Formular der Abschnitt **Zahlungen**; in der Liste zeigt die Spalte **Stand** unter „Festgeschrieben“, ob der Beleg bezahlt, teilweise bezahlt, offen oder überfällig ist.
+
+- **Zahlung erfassen:** **Zahlung erfassen**, dann Datum, Betrag, Zahlungsart und Verwendungszweck eintragen. Der Betrag ist mit dem offenen Betrag vorbelegt. Mehr als der offene Betrag lässt sich nicht buchen, ein Datum in der Zukunft auch nicht. Ist der Beleg vollständig bezahlt, steht er auf **Bezahlt**.
+- **Teilzahlungen** sind möglich: Der Beleg steht dann auf **Teilweise bezahlt**, der Rest bleibt offen.
+- **Rückzahlung:** Wählen Sie bei **Art** „Rückzahlung“, wenn Sie Geld zurückgeben (Kulanz, Storno). Es lässt sich nie mehr zurückzahlen, als bezahlt wurde. Bei einem stornierten Beleg sind nur noch Rückzahlungen möglich.
+- **Überfällig** heißt: Es ist noch etwas offen und das Fälligkeitsdatum liegt vor heute.
+- **Falsch gebucht?** Eine Buchung wird nie gelöscht, sondern **storniert**, mit einem Grund. Sie bleibt grau durchgestrichen stehen und zählt nicht mehr. So ist jeder Zahlungsverlauf nachvollziehbar.
+- **Der Beleg selbst ändert sich nie.** Er bleibt festgeschrieben, auch das Archiv-PDF. Der Zahlstand ergibt sich nur aus den Buchungen.
+- **Schlussrechnung:** Gezahlt wird der Betrag **nach Abzug der Anzahlungen** („Zu zahlen“). Die Anzahlungsrechnung hat ihren eigenen Zahlstand.
+- **Wer darf was:** Ansehen dürfen Administrator, Disponent und Buchhaltung. **Buchen und Stornieren** dürfen nur Administrator und Buchhaltung.
+- **Warum das wichtig ist:** Die Umsatzsteuer auf Anzahlungen und ihre Berichtigung hängen am tatsächlichen Zahlungsfluss (§ 13 UStG, Anwendungserlass 13.5 und 17.1). Eine spätere Auswertung für die Umsatzsteuer-Voranmeldung baut darauf auf.
 
 ## Folgebelege {#folgebelege}
 

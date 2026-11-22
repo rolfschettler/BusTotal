@@ -93,7 +93,17 @@ Der Reiter **Preise** legt fest, wie die Software beim [Angebot aus der Strecken
 - **Tagespauschale:** je Einsatztag.
 - **Übernachtung:** je Nacht des Fahrers (Einsatztage minus eins).
 - **Mindestpreis:** Liegt die Summe darunter, kommt eine Position „Mindestpreis-Ausgleich“ dazu.
-- **Steuersatz:** Vorbelegung der Positionen. Im Beleg lässt er sich je Position ändern.
+- **Steuersatz je Fahrtart:** siehe unten.
+
+### Steuersatz je Fahrtart {#preise-steuersatz}
+
+Unter **Steuersatz je Fahrtart** stehen drei Sätze. Welche Fahrtart welchen Satz bekommt, erklärt [Fahrtart und Steuersatz](/hilfe/belege#fahrtart).
+
+- **Regelsatz (%):** für Gelegenheitsverkehr (Charter, Ausflug, Gruppenfahrt, Mietbus) und Sonstiges. Standard 19.
+- **Linienverkehr (%):** für genehmigten Linienverkehr, nur bis 50 km. Standard 7.
+- **Schulfahrten (%):** für Schüler- und Schulträgerfahrten, nur bis 50 km. Standard 7.
+
+Die Sätze sind die **Vorbelegung**: Wählt jemand im Beleg die Fahrtart, stellt sich der Satz ein. Im Beleg lässt er sich je Position ändern. Gerechnet wird mit dem Satz der Position, nicht mit dieser Einstellung. Rechnungen behalten den Satz, der bei der Rechnung galt.
 
 ### Zuschläge für Wochenende und Feiertage {#preise-zuschlaege}
 
@@ -113,7 +123,7 @@ Ein Doppeldecker kostet mehr als ein Minibus. Darum können Sie unter **Preise j
 
 - **Leeres Feld:** Es gilt der Standardpreis darüber. Er steht grau im Feld („Standard: 1.80“).
 - **0:** schaltet den Bestandteil für diesen Typ aus, auch wenn der Standardpreis etwas anderes sagt.
-- **Leerfahrt (%) und Steuersatz** gelten für alle Typen gleich.
+- **Leerfahrt (%) und die Steuersätze je Fahrtart** gelten für alle Typen gleich.
 - Welcher Typ gilt, richtet sich nach dem Fahrzeug, das in der Streckenplanung gewählt ist. **Ohne Fahrzeug** gelten die Standardpreise.
 - Ein Typ, bei dem alle Felder leer sind, hat keine eigenen Preise. Das Kennzeichen „eigene Preise“ an der Überschrift zeigt, welche Typen abweichen.
 

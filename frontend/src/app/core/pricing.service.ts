@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { BusDocument } from './document.service';
+import { BusDocument, TripKindValue } from './document.service';
 
 /** Preisparameter der Firma (alle Preise netto in Euro, 0 = Bestandteil aus). */
 export interface PricingSettings {
@@ -10,7 +10,14 @@ export interface PricingSettings {
   day_rate: string;
   overnight_rate: string;
   minimum_price: string;
+  /** Regelsatz: gilt für Gelegenheitsverkehr (Charter, Ausflug, Gruppe) und Sonstiges */
   tax_rate: string;
+  /** Satz für genehmigten Linienverkehr (nur bis 50 km) */
+  tax_rate_line: string;
+  /** Satz für Schüler- und Schulträgerfahrten (nur bis 50 km) */
+  tax_rate_school: string;
+  /** Fahrtarten für die Auswahl */
+  trip_kinds: { value: TripKindValue; label: string; may_be_reduced: boolean }[];
   /** Zuschläge in Prozent auf den Anteil des Tages (0 = keiner) */
   surcharge_saturday_percent: string;
   surcharge_sunday_percent: string;
@@ -40,6 +47,8 @@ export interface TourFigures {
   state?: string | null;
   /** Eingeplantes Fahrzeug: der Server nimmt nur dessen Typ, um die Preise des Typs zu wählen. */
   vehicle_id?: string | null;
+  /** Fahrtart des Angebots (bestimmt den Steuersatz); der Server nimmt ohne Angabe Gelegenheitsverkehr. */
+  trip_kind?: TripKindValue | null;
 }
 
 @Injectable({ providedIn: 'root' })

@@ -56,25 +56,37 @@
   border-right: 1px solid #dee2e6;
   overflow-y: auto;
 
+  // Gruppenüberschrift: klein, grau, Großbuchstaben, durch eine Linie von der vorigen Gruppe abgesetzt. Kein Link, kein Symbol.
   .group {
+    margin-top: 14px;
     padding: 14px 20px 4px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
+    border-top: 1px solid #e3e6ea;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
-    color: #6c757d;
+    color: #8a929a;
+    user-select: none;
   }
 
+  // Eintrag: Symbol und Text, eingerückt unter der Gruppenüberschrift. „Start“ und „Hilfe“ stehen außerhalb der Gruppen.
   .nav-link {
-    padding: 8px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 20px 8px 28px;
     color: #343a40;
     border-left: 3px solid transparent;
+    .bi { flex: none; width: 1.1rem; font-size: 1.05rem; color: #6c757d; text-align: center; }
+    &.top { padding-left: 20px; font-weight: 500; }
+    &.help-link { margin-top: 14px; border-top: 1px solid #e3e6ea; padding-top: 14px; }
     &:hover { background: #f2f4f7; }
     &.active {
       color: var(--brand);
       font-weight: 600;
       border-left-color: var(--brand);
       background: rgba(var(--brand-rgb), 0.08);
+      .bi { color: var(--brand); }
     }
   }
 }
