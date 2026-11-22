@@ -3,7 +3,7 @@
 Stand: 2026-11-22. **XRechnung gebaut (Backend und Frontend) und im Browser getestet. Die Beispiel-XML einer Rechnung wurde am 2026-11-22 vom Nutzer mit dem Online-Prüfdienst erechnungsvalidator.service-bw.de fachlich geprüft und für in Ordnung befunden. Die Stornorechnung (Typ 381) ist noch nicht extern geprüft.** Anlass: Der Kunde fordert E-Rechnungen zwingend. Die gesetzliche Pflicht zur Ausstellung an inländische Unternehmer beginnt mit Umsätzen **ab 1.1.2027** für Aussteller mit mehr als 800.000 € Vorjahresumsatz, sonst ab 2028 (`docs/fachlich/aufbewahrung-erechnung-ergebnisse.md`, Frage 24).
 
 ## 1. Entscheidungen (mit dem Auftraggeber, 2026-11-22)
-- **Format zuerst: XRechnung** (reine XML-Datei nach EN 16931, Syntax **UN/CEFACT CII**). ZUGFeRD (PDF mit eingebettetem XML) folgt danach.
+- **Format zuerst: XRechnung** (reine XML-Datei nach EN 16931, Syntax **UN/CEFACT CII**). ZUGFeRD (PDF mit eingebettetem XML) folgt danach (2026-11-22 umgesetzt: dieselbe XML, Profil XRechnung, wird mit `ZugferdDocumentPdfMerger` in das archivierte Beleg-PDF eingebettet; Route `GET /api/documents/{id}/zugferd`, nicht gespeichert, bei jedem Abruf zusammengesetzt; die strenge PDF/A-3-Prüfung, zum Beispiel mit veraPDF oder dem Online-Dienst, steht noch aus).
 - **Empfänger:** Firmenkunden (B2B) **und** öffentliche Auftraggeber (Schulträger, Kommunen, Behörden). Öffentliche Auftraggeber brauchen die **Leitweg-ID** als Käuferreferenz.
 - **Privatkunden** bleiben bei der PDF-Rechnung (keine Pflicht, § 14 Abs. 2 UStG).
 - **Belegarten:** Rechnung, Anzahlungsrechnung, Stornorechnung. Angebot und Auftragsbestätigung sind keine Rechnungen.

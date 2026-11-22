@@ -535,16 +535,25 @@ export class DocumentFormComponent implements OnInit {
    * später auf E-Rechnung umgestellt). Fehlen dafür Angaben, nennt die Meldung sie.
    */
   downloadEInvoice() {
+    this.downloadEInvoiceFile('xml');
+  }
+
+  /** ZUGFeRD-Fassung: das archivierte PDF mit eingebetteter XRechnung. */
+  downloadZugferd() {
+    this.downloadEInvoiceFile('zugferd');
+  }
+
+  private downloadEInvoiceFile(kind: 'xml' | 'zugferd') {
     const d = this.doc();
     if (!this.id || !d) return;
     this.working.set(true);
-    this.api.einvoice(this.id).subscribe({
+    (kind === 'xml' ? this.api.einvoice(this.id) : this.api.zugferd(this.id)).subscribe({
       next: (blob) => {
         this.working.set(false);
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${d.number ?? 'e-rechnung'}.xml`;
+        a.download = `${d.number ?? 'e-rechnung'}${kind === 'xml' ? '.xml' : '-zugferd.pdf'}`;
         a.click();
         URL.revokeObjectURL(url);
         this.refreshPayment();   // holt auch das Kennzeichen „E-Rechnung“ des Belegs

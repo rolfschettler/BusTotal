@@ -6,6 +6,7 @@ use App\Enums\DocumentType;
 use App\Models\AuditLog;
 use App\Models\Document;
 use horstoeko\zugferd\ZugferdDocumentBuilder;
+use horstoeko\zugferd\ZugferdDocumentPdfMerger;
 use horstoeko\zugferd\ZugferdProfiles;
 use horstoeko\zugferd\ZugferdXsdValidator;
 use Illuminate\Support\Carbon;
@@ -125,7 +126,13 @@ class EInvoiceService
 
         // ---- Verkäufer (BG-4) ----
         $contact = $seller['managing_director'] ?? null ?: $seller['name'];
-        $b->setDocumentSeller((string) $seller['name']);
+        // BT-33 „weitere rechtliche Informationen“: Registerangabe und Geschäftsführung, wie in der Fußzeile des PDFs
+        // (Pflicht auf Geschäftsbriefen der GmbH, § 35a GmbHG).
+        $legal = array_filter([
+            filled($seller['commercial_register'] ?? null) ? trim((string) $seller['commercial_register']) : null,
+            filled($seller['managing_director'] ?? null) ? 'Geschäftsführung: '.trim((string) $seller['managing_director']) : null,
+        ]);
+        $b->setDocumentSeller((string) $seller['name'], null, $legal === [] ? null : implode(', ', $legal));
         $b->setDocumentSellerAddress($seller['street'] ?? null, null, null, $seller['postal_code'] ?? null, $seller['city'] ?? null, $seller['country'] ?? 'DE');
         $b->setDocumentSellerContact((string) $contact, null, $seller['phone'] ?? null, null, $seller['email'] ?? null);
         $b->setDocumentSellerCommunication('EM', (string) ($seller['email'] ?? ''));
@@ -286,6 +293,24 @@ class EInvoiceService
         }
 
         return $xml;
+    }
+
+    /**
+     * ZUGFeRD-Fassung (hybride Rechnung): das archivierte Beleg-PDF mit der archivierten XRechnung-XML als Anhang. Das Profil
+     * XRechnung ist auch in ZUGFeRD zulässig, es braucht also keine zweite XML. Beide Quellen kommen nach Prüfsumme aus dem Archiv;
+     * die Datei selbst wird nicht abgelegt, sondern bei jedem Abruf aus ihnen zusammengesetzt.
+     *
+     * @throws RuntimeException wenn eine der Quellen fehlt oder nicht zur Prüfsumme passt
+     */
+    public function hybridPdf(Document $document, DocumentArchive $archive): string
+    {
+        $xml = $this->read($document);
+        $pdf = $archive->read($document);
+
+        $merger = new ZugferdDocumentPdfMerger($xml, $pdf);
+        $merger->generateDocument();
+
+        return $merger->downloadString();
     }
 
     private function backfill(Document $document): void

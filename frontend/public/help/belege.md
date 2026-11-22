@@ -118,7 +118,9 @@ Für Kunden mit dem Kennzeichen **E-Rechnung statt PDF** ([Kunde](/hilfe/kunden#
 - **Prüfung der Datei:** {{app}} prüft die erzeugte XML gegen das Schema der Norm. Die fachlichen Regeln der Rechnungsportale (zum Beispiel des Bundes) prüft ein eigenes Werkzeug, der KoSIT-Validator. Prüfen Sie eine erste Beispieldatei damit, bevor Sie sie an einen Kunden schicken.
 - **Wer darf:** Alle, die Belege sehen (Administrator, Disponent, Buchhaltung). Festschreiben dürfen Administrator und Buchhaltung.
 
-> **Noch nicht:** ZUGFeRD (PDF mit eingebetteter XML), Anlagen wie die Fahrtenliste einer Sammelrechnung und der Versand per E-Mail aus der Software.
+- **ZUGFeRD (PDF):** Die Taste **ZUGFeRD (PDF)** liefert das archivierte Beleg-PDF mit der eingebetteten XRechnung, also eine Datei, die ein Mensch lesen und ein Programm einlesen kann. Sie wird bei jedem Abruf aus dem archivierten PDF und der archivierten XML zusammengesetzt, beide nach Prüfsumme. Nutzen Sie sie für Empfänger, die ein lesbares PDF mit Daten wünschen. Für Behörden und Rechnungsportale ist die reine **XML** der sichere Weg.
+
+> **Noch nicht:** Anlagen wie die Fahrtenliste einer Sammelrechnung und der Versand per E-Mail aus der Software. Ob das ZUGFeRD-PDF die strenge PDF/A-3-Prüfung besteht, ist noch nicht mit einem Prüfdienst bestätigt.
 
 ## Folgebelege {#folgebelege}
 

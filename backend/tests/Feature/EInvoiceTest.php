@@ -124,6 +124,19 @@ class EInvoiceTest extends TestCase
         $this->assertSame('19.00', $this->value($xp, '//ram:IncludedSupplyChainTradeLineItem/ram:SpecifiedLineTradeSettlement/ram:ApplicableTradeTax/ram:RateApplicablePercent'));
     }
 
+    public function test_registerangabe_und_geschaeftsfuehrung_stehen_als_rechtliche_information_in_der_xml(): void
+    {
+        CompanySetting::current()->update(['commercial_register' => 'Amtsgericht Hamburg, HRB 12345']);
+        $id = $this->draft();
+        $this->finalize($id)->assertOk();
+
+        $xml = $this->xml($id);
+        $this->assertSame(
+            'Amtsgericht Hamburg, HRB 12345, Geschäftsführung: Erika Muster',
+            $this->value($this->xp($xml), '//ram:SellerTradeParty/ram:Description'),
+        );
+    }
+
     public function test_die_erzeugte_xml_entspricht_dem_schema(): void
     {
         $id = $this->draft('rechnung', [$this->line(), $this->line(['title' => 'Maut', 'quantity' => '2.5', 'unit' => 'km', 'unit_price' => '1.8'])]);
@@ -338,6 +351,40 @@ class EInvoiceTest extends TestCase
         $this->finalize($id)->assertOk();
         $this->as(Role::Fahrer)->getJson("/api/documents/{$id}/einvoice")->assertForbidden();
         $this->as(Role::Disponent)->get("/api/documents/{$id}/einvoice")->assertOk()->assertHeader('Content-Type', 'application/xml; charset=utf-8');
+    }
+
+    public function test_zugferd_pdf_enthaelt_die_archivierte_xml(): void
+    {
+        $id = $this->draft();
+        $this->finalize($id)->assertOk();
+        $xml = $this->xml($id);
+
+        $response = $this->as(Role::Buchhaltung)->get("/api/documents/{$id}/zugferd")->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        $pdf = $response->getContent();
+        $this->assertStringStartsWith('%PDF', $pdf);
+
+        // Die eingebettete XML lässt sich wieder auslesen und ist die archivierte (gleiche Belegnummer und Summe).
+        $embedded = \horstoeko\zugferd\ZugferdDocumentPdfReader::getXmlFromContent($pdf);
+        $this->assertSame(
+            $this->value($this->xp($xml), '//rsm:ExchangedDocument/ram:ID'),
+            $this->value($this->xp($embedded), '//rsm:ExchangedDocument/ram:ID'),
+        );
+        $this->assertSame(Document::find($id)->number, $this->value($this->xp($embedded), '//rsm:ExchangedDocument/ram:ID'));
+        // Metadaten, die Prüfdienste für PDF/A-3 und ZUGFeRD erwarten
+        $this->assertStringContainsString('pdfaid:part>3<', $pdf);
+        $this->assertMatchesRegularExpression('/AFRelationship\s*\/(Data|Alternative|Source)/', $pdf);
+        $this->assertStringContainsString('xrechnung.xml', $pdf);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'zugferd_downloaded']);
+    }
+
+    public function test_zugferd_nur_fuer_festgeschriebene_rechnungen_und_mit_rechten(): void
+    {
+        $draft = $this->draft();
+        $this->as(Role::Buchhaltung)->getJson("/api/documents/{$draft}/zugferd")->assertUnprocessable();
+
+        $id = $this->draft();
+        $this->finalize($id)->assertOk();
+        $this->as(Role::Fahrer)->getJson("/api/documents/{$id}/zugferd")->assertForbidden();
     }
 
     public function test_ohne_anmeldung_kein_zugriff(): void

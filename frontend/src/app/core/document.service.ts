@@ -191,6 +191,10 @@ export class DocumentService {
     return this.http.get(`${this.base}/${id}/pdf`, { responseType: 'blob' });
   }
   /** E-Rechnung (XRechnung-XML) eines festgeschriebenen Belegs; entsteht beim ersten Abruf, falls es noch keine gibt. */
+  zugferd(id: string) {
+    return this.http.get(`${this.base}/${id}/zugferd`, { responseType: 'blob' });
+  }
+
   einvoice(id: string) {
     return this.http.get(`${this.base}/${id}/einvoice`, { responseType: 'blob' });
   }

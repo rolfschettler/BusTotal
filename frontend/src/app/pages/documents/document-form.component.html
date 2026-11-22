@@ -316,6 +316,10 @@
               title="XRechnung (XML) herunterladen. Gibt es noch keine, entsteht sie jetzt einmal.">
         <i class="bi bi-file-earmark-code me-1"></i>E-Rechnung (XML)
       </button>
+      <button type="button" class="btn btn-outline-secondary" [disabled]="working()" (click)="downloadZugferd()"
+              title="ZUGFeRD: das archivierte PDF mit eingebetteter XRechnung. Für Empfänger, die ein lesbares PDF und die Daten in einer Datei möchten.">
+        <i class="bi bi-file-earmark-pdf me-1"></i>ZUGFeRD (PDF)
+      </button>
     }
     @if (readonly()) {
       @for (t of typeInfo()?.convertible_to ?? []; track t) {

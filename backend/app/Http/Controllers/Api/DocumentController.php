@@ -280,6 +280,28 @@ class DocumentController extends Controller
         ]);
     }
 
+    /** ZUGFeRD-Fassung der E-Rechnung: archiviertes PDF mit eingebetteter XRechnung-XML, siehe `EInvoiceService::hybridPdf()`. */
+    public function zugferd(Document $document, EInvoiceService $einvoice, DocumentArchive $archive): Response|JsonResponse
+    {
+        if ($document->isDraft() || ! $document->type->isInvoice()) {
+            return response()->json(['message' => 'Eine E-Rechnung gibt es nur zu festgeschriebenen Rechnungen, Anzahlungsrechnungen und Stornorechnungen.'], 422);
+        }
+
+        try {
+            $pdf = $einvoice->hybridPdf($document, $archive);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage().' Bitte die Verwaltung informieren, die Sicherung enthält die Datei.'], 500);
+        }
+        AuditLog::record('zugferd_downloaded', $document, null, ['number' => $document->number]);
+
+        return response($pdf, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$document->number.'-zugferd.pdf"',
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
     /** Auswahlliste für Formulare. */
     public function types(): JsonResponse
     {
