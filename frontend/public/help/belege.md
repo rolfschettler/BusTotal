@@ -48,7 +48,10 @@ Ein Beleg lässt sich nur einmal stornieren. Entwürfe werden nicht storniert, s
 
 ## PDF {#pdf}
 
-Mit **Drucken** (in der Tastenleiste des Belegs und als Druckersymbol in der Liste) öffnet sich die **Druckvorschau** direkt in {{app}}, ohne neuen Tab. Sie zeigt alle Seiten des Belegs. Mit **Drucken** darin öffnet sich der Druckdialog Ihres Geräts (am PC der Browser-Dialog, auf Android der Druckdienst, auf dem iPad AirPrint). **Herunterladen** speichert das PDF als Datei, **Schließen** (oder die Esc-Taste) beendet die Vorschau. Das gilt auf PC, Android- und iOS-Tablets gleich. Gedruckt wird ein Bild der Seiten; wer das PDF selbst braucht (zum Beispiel für eine E-Mail), nutzt „Herunterladen“.
+Mit **Drucken** (in der Tastenleiste des Belegs und als Druckersymbol in der Liste) wird der Beleg gedruckt, ohne dass ein neuer Tab aufgeht. Was Sie sehen, hängt vom Gerät ab:
+
+- **Am PC (mit Maus):** Es erscheint kurz der Hinweis „Druck wird vorbereitet …“, dann öffnet sich gleich die **Druckvorschau Ihres Browsers** mit allen Seiten des Belegs. Von dort drucken Sie oder speichern als PDF. Eine eigene Vorschau in {{app}} erscheint nur, wenn der Aufbau nicht gelingt: Dann sehen Sie eine Meldung und können das PDF über **Herunterladen** speichern.
+- **Auf Tablets und Handys (Android, iPad):** Die **Druckvorschau öffnet direkt in {{app}}** und zeigt alle Seiten des Belegs. Mit **Drucken** darin öffnet sich der Druckdialog des Geräts (auf Android der Druckdienst, auf dem iPad AirPrint). **Herunterladen** speichert das PDF als Datei, **Schließen** (oder die Esc-Taste) beendet die Vorschau. Gedruckt wird ein Bild der Seiten; wer das PDF selbst braucht (zum Beispiel für eine E-Mail), nutzt „Herunterladen“.
 
 - Das PDF enthält Briefkopf mit Logo, Empfängeranschrift, Belegnummer, Datum, Leistungszeitpunkt, die Positionen, die Summen (mit Steuer je Satz, bei einer Schlussrechnung mit abgezogenen Anzahlungen und „Zu zahlen“), Steuerhinweise als Fußnoten, bei Rechnungen den Zahlungshinweis mit Fälligkeit und Bankverbindung und die Fußzeile mit den Firmenangaben. Briefkopf-Zusatz und Fußzeile stellen Sie unter [Firmendaten](/hilfe/einstellungen#firmendaten) ein.
 - Ein **Entwurf** trägt oben den Hinweis „ENTWURF“ und hat keine Belegnummer. Er ist keine gültige Rechnung.

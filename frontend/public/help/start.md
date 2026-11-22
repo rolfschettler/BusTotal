@@ -1,6 +1,6 @@
 # Erste Schritte {#erste-schritte}
 
-Willkommen bei {{app}}, der Verwaltung für Ihr Busunternehmen. Diese Hilfe erklärt, was die Software heute kann. Neue Funktionen werden hier ergänzt, sobald es sie gibt.
+Willkommen bei {{app}}, der Verwaltung für Ihr Busunternehmen. Diese Hilfe erklärt, was die Software heute kann. Neue Funktionen werden hier ergänzt, sobald es sie gibt. Einen Überblick über alles, was die Software kann und was geplant ist, finden Sie unter [Funktionen und Vorteile](/hilfe/funktionen).
 
 ## Die Startseite {#startseite}
 
