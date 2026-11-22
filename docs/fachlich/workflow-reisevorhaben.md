@@ -83,6 +83,7 @@ Weitere Regeln:
 - **Auslandsanteil** (Kilometer und Zeit je Land aus den Grenzdaten) für die steuerliche Behandlung der Beförderung (Steuerberater-Frage 2).
 - **§ 25-Marge** (Entgelt minus Vorleistungen) für Reiseleistungen, falls es Pauschalreisen gibt (Steuerberater-Frage 3). Voraussetzung: EK-Preis und Leistungsgeber an den Positionen.
 - Auswertung je Zeitraum (PDF/Export).
+- **Recherche und Bauplan zu § 25:** `docs/fachlich/paragraph-25-abrechnung.md`. Korrektur gegenüber Abschnitt 4: Vorleistungen werden je Reisevorhaben in einer eigenen Tabelle (`travel_costs`) erfasst, nicht an den Positionen.
 - **Zu klären:** Die Grenzdaten liefern den Auslandsanteil. Ob und wie sie in die § 25-Rechnung eingehen, muss der Steuerberater bestätigen, bevor gerechnet wird.
 
 ## 4. Vorbild: Fahrtauftrag der Altlösung
