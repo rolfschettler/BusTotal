@@ -59,9 +59,58 @@ class JourneyListTest extends TestCase
             $this->as($role)->getJson('/api/journeys')->assertOk();
             $this->as($role)->getJson('/api/journeys/'.$quote['journey_id'])->assertOk();
         }
-        // nur lesen
+        // Anlegen und Löschen gibt es nicht
         $this->as(Role::Admin)->postJson('/api/journeys', ['title' => 'X'])->assertStatus(405);
         $this->as(Role::Admin)->deleteJson('/api/journeys/'.$quote['journey_id'])->assertStatus(405);
+    }
+
+    public function test_reise_umbenennen(): void
+    {
+        $quote = $this->quote('München – Wien', $this->customer('Reisebüro Sonnenschein'));
+        $id = $quote['journey_id'];
+
+        $this->as(Role::Disponent)->putJson("/api/journeys/$id", ['title' => '  Klassenfahrt Realschule Mai  '])->assertOk()
+            ->assertJsonPath('title', 'Klassenfahrt Realschule Mai')
+            ->assertJsonPath('sections.0.title', 'München – Wien')   // die Strecke behält den Namen der Tour
+            ->assertJsonPath('documents.0.id', $quote['id']);
+
+        // überall derselbe neue Name: Liste, Suche, Beleg
+        $this->as(Role::Buchhaltung)->getJson('/api/journeys')->assertJsonPath('data.0.title', 'Klassenfahrt Realschule Mai');
+        $this->as(Role::Buchhaltung)->getJson('/api/journeys?q=klassen')->assertJsonCount(1, 'data');
+        $this->as(Role::Buchhaltung)->getJson('/api/journeys?q=wien')->assertJsonCount(0, 'data');
+        $this->as(Role::Buchhaltung)->getJson("/api/documents/{$quote['id']}")->assertJsonPath('journey.title', 'Klassenfahrt Realschule Mai');
+    }
+
+    public function test_umbenennen_prueft_den_namen_und_die_rechte(): void
+    {
+        $this->putJson('/api/journeys/3f0e0f6e-7c8b-4c1a-9a53-0d2b1f5b7a11', ['title' => 'X'])->assertUnauthorized();
+        $quote = $this->quote('München – Wien');
+        $id = $quote['journey_id'];
+
+        $this->as(Role::Fahrer)->putJson("/api/journeys/$id", ['title' => 'X'])->assertForbidden();
+        $this->as(Role::Admin)->putJson("/api/journeys/$id", ['title' => ''])->assertUnprocessable()->assertJsonValidationErrors(['title']);
+        $this->as(Role::Admin)->putJson("/api/journeys/$id", ['title' => '   '])->assertUnprocessable()->assertJsonValidationErrors(['title']);
+        $this->as(Role::Admin)->putJson("/api/journeys/$id", ['title' => str_repeat('x', 151)])->assertUnprocessable()->assertJsonValidationErrors(['title']);
+        $this->as(Role::Admin)->putJson("/api/journeys/$id", [])->assertUnprocessable();
+        // andere Felder lassen sich über diese Schnittstelle nicht ändern
+        $this->as(Role::Admin)->putJson("/api/journeys/$id", ['title' => 'Neu', 'customer_id' => null, 'date_from' => '2030-01-01'])->assertOk();
+
+        $journey = \App\Models\Journey::findOrFail($id);
+        $this->assertSame('Neu', $journey->title);
+        $this->assertSame('2027-05-10', $journey->date_from?->toDateString());
+        $this->as(Role::Admin)->putJson('/api/journeys/3f0e0f6e-7c8b-4c1a-9a53-0d2b1f5b7a11', ['title' => 'X'])->assertNotFound();
+    }
+
+    public function test_umbenannte_reise_aendert_festgeschriebene_belege_nicht(): void
+    {
+        $customer = $this->customer('Reisebüro');
+        $quote = $this->quote('München – Wien', $customer);
+        $this->as(Role::Buchhaltung)->postJson("/api/documents/{$quote['id']}/finalize")->assertOk();
+        $before = \App\Models\Document::findOrFail($quote['id'])->only(['subject', 'tour_snapshot', 'net_total']);
+
+        $this->as(Role::Disponent)->putJson('/api/journeys/'.$quote['journey_id'], ['title' => 'Ganz anders'])->assertOk();
+
+        $this->assertEquals($before, \App\Models\Document::findOrFail($quote['id'])->only(['subject', 'tour_snapshot', 'net_total']));
     }
 
     public function test_liste_neueste_zuerst_mit_kunde_stand_und_betrag(): void
@@ -141,6 +190,29 @@ class JourneyListTest extends TestCase
             ->assertJsonPath('amount', '238.00');
 
         $this->as(Role::Disponent)->getJson('/api/journeys/3f0e0f6e-7c8b-4c1a-9a53-0d2b1f5b7a11')->assertNotFound();
+    }
+
+    public function test_detail_zeigt_den_festgehaltenen_stand_nicht_die_geaenderte_tour(): void
+    {
+        $tripBody = fn (float $km, string $to) => [
+            'title' => 'München – Wien', 'trip_kind' => 'gelegenheit', 'vehicle_count' => 1, 'loaded_km' => $km, 'empty_km' => 0, 'drive_s' => 18000, 'elapsed_s' => 30000, 'days' => 1,
+            'stops' => [['label' => 'München', 'lat' => 48.1, 'lon' => 11.5], ['label' => $to, 'lat' => 48.2, 'lon' => 16.3]],
+        ];
+        $tripId = $this->as(Role::Disponent)->postJson('/api/trips', $tripBody(400, 'Wien'))->assertCreated()->json('id');
+        $quote = $this->quote('München – Wien', $this->customer('Reisebüro'), $tripId);
+        $journeyId = $quote['journey_id'];
+
+        // vor dem Festschreiben: der aktuelle Stand der Tour
+        $this->as(Role::Disponent)->getJson("/api/journeys/$journeyId")->assertJsonPath('sections.0.trip.frozen_by', null);
+
+        $number = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$quote['id']}/finalize")->assertOk()->json('number');
+        $this->as(Role::Disponent)->putJson("/api/trips/$tripId", $tripBody(520, 'Graz'))->assertOk();
+
+        $this->as(Role::Disponent)->getJson("/api/journeys/$journeyId")->assertOk()
+            ->assertJsonPath('sections.0.trip.loaded_km', 400)
+            ->assertJsonPath('sections.0.trip.to', 'Wien')
+            ->assertJsonPath('sections.0.trip.frozen_by', $number)
+            ->assertJsonPath('sections.0.trip.id', $tripId);
     }
 
     public function test_tour_archiv_zaehlt_die_verwendung_in_reisen(): void

@@ -7,6 +7,58 @@ Diese Anleitung führt Sie in der Reihenfolge durch den Alltag: **von der Streck
 
 Die Anleitung wächst mit jeder neuen Funktion. Alle Funktionen im Überblick: [Funktionen und Vorteile](/hilfe/funktionen).
 
+## So ist {{app}} aufgebaut {#konzept}
+
+Bevor es an die Schritte geht, hilft ein Bild vom Ganzen. {{app}} kennt **fünf Dinge**, die aufeinander aufbauen:
+
+```
+REISE  (ein Vorgang für einen Kunden)
+ │
+ ├── Strecke 1: Hinfahrt           = Tour aus dem Archiv + Fahrzeuge (Typ × Anzahl)
+ ├── Strecke 2: Fahrten vor Ort    = Tour aus dem Archiv + Fahrzeuge
+ ├── Strecke 3: Rückfahrt          = Tour aus dem Archiv + Fahrzeuge
+ │
+ └── Belege: Angebot → Auftragsbestätigung → (Anzahlung) → Rechnung
+
+TOUR-ARCHIV  (Vorlagen, in beliebig vielen Reisen verwendbar)
+ └── „München – Wien“, „Wien Rundfahrt“, „Wien – München“ …
+```
+
+**Tour, Strecke und Reise unterscheiden sich so:**
+
+- Eine **Tour** ist eine **Vorlage**: ein geplanter Weg von A nach B (mit Halten, Kilometern, Fahrzeit und Karte). Sie gehört niemandem und hat keinen Kunden, keinen Termin und keinen Preis. Sie liegt im **Tour-Archiv**, damit Sie sie immer wieder verwenden können.
+- Eine **Strecke** ist die **Verwendung einer Tour in einer Reise**: Sie sagt, dass diese Tour als *Hinfahrt*, *Fahrt vor Ort* oder *Rückfahrt* gefahren wird, mit **welchen Fahrzeugen** (Typ und Anzahl) und zu **welchem Preis** (die Positionen im Angebot). Dieselbe Tour kann in vielen Reisen als Strecke vorkommen.
+- Eine **Reise** ist der **Vorgang für einen Kunden**: Sie fasst alle Strecken und alle Belege (Angebot, Auftrag, Rechnung) zu einer Fahrt zusammen. Sie hat einen Kunden und einen Zeitraum.
+
+Anders gesagt: Die Tour beantwortet **„Wie fahren wir?“**, die Strecke **„Wie, womit und für wie viel fahren wir es in dieser Reise?“** und die Reise **„Für wen, wann und mit welchen Belegen?“**.
+
+**Ein Beispiel:** Eine Schule bucht eine Klassenfahrt nach Wien.
+
+| | |
+|---|---|
+| **Reise** | für die Realschule, 10. bis 12. Mai. Sie heißt zunächst wie die erste Tour („München – Wien“); Sie nennen sie um in „Klassenfahrt Realschule Mai“. |
+| **Strecke 1: Hinfahrt** | Tour „München – Wien“ aus dem Archiv, **1 Doppeldecker und 2 Kleinbusse** |
+| **Strecke 2: Fahrten vor Ort** | Tour „Wien Rundfahrt“, **1 Kleinbus** |
+| **Strecke 3: Rückfahrt** | Tour „Wien – München“, 1 Doppeldecker und 2 Kleinbusse |
+| **Belege** | Angebot, daraus die Auftragsbestätigung, später die Rechnung. Alle hängen an dieser einen Reise. |
+
+Die Touren „München – Wien“ und „Wien – München“ liegen im Archiv und stehen auch der nächsten Klassenfahrt zur Verfügung. Ändern Sie später eine Tour im Archiv, ändert das **keinen** schon festgeschriebenen Beleg.
+
+| Begriff | Was es ist | Wo Sie es sehen |
+|---|---|---|
+| **Tour** | Vorlage: ein geplanter Weg mit Halten, Kilometern, Zeitplan und Karte. | Streckenplanung, **Tour-Archiv** |
+| **Strecke** | Eine Tour **in einer Reise**, als Hinfahrt, Fahrt vor Ort oder Rückfahrt, mit Fahrzeugen und Preis. | Gruppen im Beleg, Detailseite der Reise |
+| **Reise** | Der Vorgang für einen Kunden mit allen Strecken und Belegen. Sie **entsteht von selbst** mit dem ersten Angebot, Sie legen sie nie an. Ihr Name ist zunächst der Name der Tour; **umbenennen** können Sie sie auf der Detailseite (Stift am Titel). | Seitenleiste **Reisen**, Reise-Leiste oben im Beleg |
+| **Fahrzeuge** | Was auf einer Strecke fährt: **Typ und Anzahl**. Das konkrete Fahrzeug und die Fahrer wählt später der Disponent. | Streckenplanung, Beleg |
+| **Beleg** | Angebot, Auftragsbestätigung, Anzahlungsrechnung, Rechnung (und Storno). Jeder Beleg hängt an der Reise; ein festgeschriebener ist **unveränderlich** und trägt die **Fahrtbeschreibung**, wie sie beim Festschreiben galt. | **Belege**, Reise-Leiste |
+
+**Der rote Faden:** Sie planen eine **Tour** und speichern sie. Daraus machen Sie ein **Angebot**; dabei entsteht die **Reise** mit der ersten **Strecke**. Weitere Strecken und Fahrzeugtypen fügen Sie im Entwurf des Angebots hinzu. Das Angebot wird zur Auftragsbestätigung und zur Rechnung, alles bleibt in **einer** Reise. Die Seite **Reisen** zeigt zu jedem Zeitpunkt, wo die Reise steht und was als Nächstes zu tun ist.
+
+**Gut zu wissen:**
+- Eine Änderung an einer Tour im Archiv ändert **keinen** festgeschriebenen Beleg. Beim Festschreiben wird der Stand im Beleg festgehalten.
+- Belege ohne Strecke (Pauschalpreise, Zusatzleistungen) legen Sie von Hand an. Sie gehören zu keiner Reise.
+- **Noch nicht gebaut:** der **Fahrtauftrag** je Bus (Fahrzeug und Fahrer zuweisen, Fahrer-PDF) und die **Rückerfassung** der Fahrt. Sie kommen später zwischen Auftrag und Rechnung dazu, siehe die Schritte 5 und 6.
+
 ## Vorbereitung: einmal einrichten {#einrichten}
 
 Bevor Sie das erste Angebot schreiben, richtet der **Administrator** diese Dinge einmal ein. Danach brauchen Sie sie im Alltag nicht mehr anzufassen.
@@ -77,8 +129,8 @@ Ein Angebot entsteht auf **zwei Wegen**. Beide führen in dasselbe Beleg-Formula
 4. Wählen Sie im Beleg den **Kunden** (Suchfeld: Name, Nummer oder Ort).
 5. Prüfen Sie die **Positionen**: Preis, Menge, **Fahrtart** und **Steuersatz** lassen sich je Position ändern. Steht oben **„Bitte prüfen“**, passt ein Satz nicht zur Fahrtart. Das ist ein Hinweis und sperrt nichts.
 6. **Mehrere Strecken oder Busse?** Mit **Weitere Strecke hinzufügen** nehmen Sie Hinfahrt, Fahrten vor Ort und Rückfahrt in dasselbe Angebot auf, je Strecke mit einem oder mehreren Fahrzeugtypen. Siehe [Mehrere Strecken und Fahrzeugtypen](/hilfe/belege#mehrere-strecken).
-7. **Speichern**, dann **Festschreiben** (nur Administrator und Buchhaltung). Das Angebot bekommt seine Nummer und ist gesperrt.
-7. **Drucken** öffnet die Druckvorschau. Von dort drucken Sie oder speichern als PDF.
+7. **Speichern**, dann **Festschreiben** (nur Administrator und Buchhaltung). Das Angebot bekommt seine Nummer und ist gesperrt. Dabei hält {{app}} die **Fahrtbeschreibung** der Strecken (Halte, Kilometer, Zeiten, Fahrzeuge) unveränderlich im Beleg fest, siehe [Fahrtbeschreibung](/hilfe/belege#fahrtbeschreibung).
+8. **Drucken** öffnet die Druckvorschau. Von dort drucken Sie oder speichern als PDF.
 
 ### Weg B: ohne Strecke {#angebot-hand}
 
@@ -94,13 +146,13 @@ Das neue Angebot weist oben darauf hin, dass Sie es von Hand anlegen, und verlin
 
 ### Nach beiden Wegen {#angebot-danach}
 
-**Was Sie danach sehen:** In der Belegliste steht das Angebot mit Nummer und dem Stand „Festgeschrieben“. Mehr unter [Belege](/hilfe/belege) und [Fahrtart und Steuersatz](/hilfe/belege#fahrtart).
+**Was Sie danach sehen:** In der Belegliste steht das Angebot mit Nummer und dem Stand „Festgeschrieben“. Bei Weg A steht es außerdem unter **Fahrten und Abrechnung › Reisen**: Dort sehen Sie die Reise mit ihren Strecken, allen Belegen, dem Stand und dem **nächsten Schritt**, siehe [Die Liste der Reisen](/hilfe/belege#reisen). Die gespeicherte Tour finden Sie unter **Tour-Archiv**. Mehr unter [Belege](/hilfe/belege) und [Fahrtart und Steuersatz](/hilfe/belege#fahrtart).
 
 ## Schritt 3: Auftrag bestätigen {#auftrag}
 
 **Wo:** im **festgeschriebenen** Angebot, rechts unten in der Tastenleiste.
 
-1. Klicken Sie **Auftragsbestätigung erstellen**. Es entsteht ein **Entwurf** mit denselben Positionen, Kunde und Fahrtdatum werden übernommen.
+1. Klicken Sie **Auftragsbestätigung erstellen**. Es entsteht ein **Entwurf** mit denselben Positionen, Kunde und Fahrtdatum werden übernommen. Der Beleg bleibt in derselben **Reise** und übernimmt die Strecken samt Fahrtbeschreibung des Angebots.
 2. Prüfen Sie ihn, **speichern** und **festschreiben** Sie ihn.
 
 **Wichtig:** Der Preis ist ein **Vorschlag**. Ihr Ablauf kann einen vorläufigen Preis vorsehen, der nach der Fahrt durch die tatsächlichen Werte ersetzt wird.

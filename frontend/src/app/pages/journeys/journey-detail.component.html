@@ -7,7 +7,33 @@
 } @else if (journey()) {
   @let j = journey()!;
   <div class="mb-3">
-    <h1 class="h3 mb-1">{{ j.title }}</h1>
+    @if (!editing()) {
+      <h1 class="h3 mb-1 d-flex align-items-center gap-2">
+        <span>{{ j.title }}</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="startRename()" title="Reise umbenennen" aria-label="Reise umbenennen">
+          <i class="bi bi-pencil" aria-hidden="true"></i>
+        </button>
+      </h1>
+      @if (renamed()) {
+        <div class="small text-success mb-1" role="status"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Name gespeichert.</div>
+      }
+    } @else {
+      <div class="mb-2" style="max-width: 40rem">
+        <label class="form-label small mb-1" for="journeyTitle">Name der Reise</label>
+        <div class="input-group">
+          <input #titleInput id="journeyTitle" type="text" class="form-control" maxlength="150" autocomplete="off"
+                 [class.is-invalid]="!!renameError()" [ngModel]="draftTitle()" (ngModelChange)="draftTitle.set($event)"
+                 (keydown.enter)="saveRename()" (keydown.escape)="cancelRename()" />
+          <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="saveRename()">
+            @if (saving()) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+            Speichern
+          </button>
+          <button type="button" class="btn btn-outline-secondary" [disabled]="saving()" (click)="cancelRename()">Abbrechen</button>
+        </div>
+        @if (renameError(); as re) { <div class="text-danger small mt-1" role="alert">{{ re }}</div> }
+        <div class="form-text">Zum Beispiel „Klassenfahrt Realschule Mai“. Der Name erscheint in der Liste, in der Suche und oben im Beleg, aber nicht auf Belegen und PDFs.</div>
+      </div>
+    }
     <p class="mb-0 small text-body-secondary">
       @if (j.customer; as c) {
         Kunde: <a [routerLink]="['/kunden', c.id]">{{ c.display_name }}</a>
@@ -47,6 +73,9 @@
                 {{ s.title }}
                 @if (s.trip; as t) {
                   <div class="small text-body-secondary">{{ t.from }} → {{ t.to }}</div>
+                  @if (t.frozen_by) {
+                    <div class="small text-body-secondary"><i class="bi bi-lock me-1" aria-hidden="true"></i>Stand aus {{ t.frozen_by }}</div>
+                  }
                 }
               </td>
               <td>
@@ -61,7 +90,7 @@
         </tbody>
       </table>
     </div>
-    <div class="form-text">Strecken fügen Sie im Entwurf des Angebots hinzu („Weitere Strecke hinzufügen“). Die Touren selbst stehen im <a routerLink="/tour-archiv">Tour-Archiv</a>.</div>
+    <div class="form-text">Bei Strecken mit „Stand aus …“ zeigen Kilometer, Lenkzeit und Tage, was im festgeschriebenen Beleg steht, auch wenn die Tour im Archiv inzwischen geändert wurde. Strecken fügen Sie im Entwurf des Angebots hinzu („Weitere Strecke hinzufügen“). Die Touren selbst stehen im <a routerLink="/tour-archiv">Tour-Archiv</a>.</div>
   </div>
 
   <div class="form-area mb-3">

@@ -47,6 +47,19 @@ class JourneyController extends Controller
         return response()->json($result);
     }
 
+    /** Die Reise umbenennen. Nur der Name ändert sich; er steht auf keinem Beleg (PDF und Fahrtbeschreibung nennen die Strecken). */
+    public function update(Request $request, Journey $journey): JsonResponse
+    {
+        $data = $request->validate(['title' => ['required', 'string', 'max:150']], [
+            'title.required' => 'Bitte einen Namen für die Reise eingeben.',
+            'title.max' => 'Der Name darf höchstens 150 Zeichen lang sein.',
+        ]);
+
+        $journey->update(['title' => trim($data['title'])]);
+
+        return response()->json($this->journeys->detail($journey->fresh()));
+    }
+
     public function show(Journey $journey): JsonResponse
     {
         return response()->json($this->journeys->detail($journey));

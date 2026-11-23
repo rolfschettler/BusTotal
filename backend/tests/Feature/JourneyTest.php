@@ -85,8 +85,19 @@ class JourneyTest extends TestCase
 
         $section = $journey->sections()->firstOrFail();
         $this->assertSame('hinfahrt', $section->kind->value);
+        $this->assertSame('München – Wien', $section->title, 'Die Strecke heißt wie ihre Tour.');
         $this->assertSame(1, $section->position);
         $this->assertSame($tripId, $section->trip_id);
+    }
+
+    public function test_erste_strecke_heisst_wie_die_tour_nicht_wie_das_label(): void
+    {
+        $tripId = $this->trip();
+        $this->quote(['trip_id' => $tripId, 'label' => 'München Hauptbahnhof – Wien Hauptbahnhof']);
+
+        $journey = Journey::firstOrFail();
+        $this->assertSame('München Hauptbahnhof – Wien Hauptbahnhof', $journey->title);
+        $this->assertSame('München – Wien', $journey->sections()->firstOrFail()->title);
     }
 
     public function test_reise_ohne_gespeicherte_tour_hat_eine_hinfahrt_ohne_tour(): void

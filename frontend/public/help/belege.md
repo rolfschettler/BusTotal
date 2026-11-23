@@ -78,8 +78,9 @@ Unter **Fahrten und Abrechnung › Reisen** sehen Sie alle [Reisen](#reise) auf 
 
 - **Die Liste** zeigt je Reise den Namen mit Zahl der Strecken und Belege, den Kunden, den Zeitraum, den **Stand** und den **Betrag brutto**. Die neueste Reise steht oben. Die Suche trifft den Namen der Reise und den Kunden am Wortanfang („Wien“, „Sonnenschein“, „Mustermann,Max“).
 - **Stand und Betrag** sind aus den Belegen abgeleitet und nirgends gespeichert: Es zählt der weitestgehende gültige Beleg (Rechnung vor Auftragsbestätigung vor Angebot, Stornierte zählen nicht). Anzahlungen bestimmen den Stand nicht. Ein Klick auf den Stand öffnet diesen Beleg.
-- **Die Reise öffnen** (Auge-Symbol oder Name) zeigt die **Strecken** mit Fahrzeugen, Kilometern, Lenkzeit und Tagen, alle **Belege** mit Betrag und Stand und oben den **nächsten Schritt** mit einer Taste, die zum richtigen Beleg führt.
-- Bearbeitet wird im Beleg: Kunde, Positionen und weitere Strecken im Entwurf des Angebots. Die Touren stehen im [Tour-Archiv](/hilfe/strecken#tour-archiv-liste).
+- **Die Reise öffnen** (Auge-Symbol oder Name) zeigt die **Strecken** mit Fahrzeugen, Kilometern, Lenkzeit und Tagen (bei Strecken in einem festgeschriebenen Beleg der dort festgehaltene Stand, erkennbar an „Stand aus …“), alle **Belege** mit Betrag und Stand und oben den **nächsten Schritt** mit einer Taste, die zum richtigen Beleg führt.
+- **Umbenennen:** Eine Reise heißt zunächst wie die erste Tour. Mit dem **Stift** neben dem Namen auf der Detailseite geben Sie ihr einen eigenen Namen, zum Beispiel „Klassenfahrt Realschule Mai“ (Enter oder **Speichern**, Esc oder **Abbrechen**). Der Name gilt sofort in der Liste, in der Suche und in der Reise-Leiste im Beleg. Er steht **nicht** auf Belegen und PDFs, deshalb ändert ein neuer Name keinen festgeschriebenen Beleg. Umbenennen dürfen Administrator, Disponent und Buchhaltung.
+- Alles andere bearbeiten Sie im Beleg: Kunde, Positionen und weitere Strecken im Entwurf des Angebots. Die Touren stehen im [Tour-Archiv](/hilfe/strecken#tour-archiv-liste).
 
 ## Mehrere Strecken und Fahrzeugtypen {#mehrere-strecken}
 
@@ -94,7 +95,7 @@ Ein Angebot aus der Streckenplanung enthält zunächst **eine Strecke**. Eine Re
 
 **Gut zu wissen:**
 - Haben Sie ungespeicherte Änderungen am Beleg, werden sie vor dem Hinzufügen gespeichert.
-- **Strecke entfernen** (an der Überschrift) nimmt die Strecke mit allen ihren Fahrzeugtypen und Positionen aus dem Entwurf. Die erste Strecke der Reise bleibt; wollen Sie sie nicht, löschen Sie den Entwurf.
+- **Strecke entfernen** (an der Überschrift) nimmt die Strecke mit allen ihren Fahrzeugtypen und Positionen aus dem Entwurf. Das geht mit jeder Strecke, auch der Hinfahrt, solange eine weitere übrig bleibt. Die letzte Strecke einer Reise bleibt; wollen Sie sie nicht, löschen Sie den Entwurf.
 - Fehlen Preise (Einstellungen › Preise), kommt eine Meldung und es wird nichts angelegt.
 - Auftragsbestätigung, Anzahlung, Rechnung und Storno übernehmen die Gruppen. Festgeschriebene Belege lassen sich nicht mehr ändern.
 - Das Fahrzeug wählt später der Disponent. Hier geht es nur um Typ und Anzahl.

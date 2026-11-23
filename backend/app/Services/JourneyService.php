@@ -27,7 +27,11 @@ class JourneyService
         return DB::transaction(function () use ($title, $customerId, $dateFrom, $dateTo, $tripId, $vehicles) {
             $title = mb_substr(trim($title) !== '' ? trim($title) : 'Reise', 0, 150);
             $journey = Journey::create(['title' => $title, 'customer_id' => $customerId, 'date_from' => $dateFrom, 'date_to' => $dateTo]);
-            $section = $journey->sections()->create(['position' => 1, 'kind' => SectionKind::Hinfahrt, 'title' => $title, 'trip_id' => $tripId]);
+            // Die Strecke heißt wie ihre Tour (wie jede weitere Strecke); ohne gespeicherte Tour wie die Reise.
+            $tripTitle = $tripId ? Trip::whereKey($tripId)->value('title') : null;
+            $section = $journey->sections()->create([
+                'position' => 1, 'kind' => SectionKind::Hinfahrt, 'title' => mb_substr($tripTitle ?? $title, 0, 150), 'trip_id' => $tripId,
+            ]);
             $this->saveVehicles($section, $vehicles);
 
             return $journey;
@@ -42,6 +46,8 @@ class JourneyService
     public function addSection(string $journeyId, SectionKind $kind, Trip $trip, array $vehicles): JourneySection
     {
         return DB::transaction(function () use ($journeyId, $kind, $trip, $vehicles) {
+            // Die Reise sperren: Zwei gleichzeitige Aufrufe bekämen sonst dieselbe Position (eindeutiger Index, Serverfehler).
+            Journey::lockForUpdate()->findOrFail($journeyId);
             $position = (int) JourneySection::where('journey_id', $journeyId)->max('position') + 1;
             $section = JourneySection::create([
                 'journey_id' => $journeyId, 'position' => $position, 'kind' => $kind, 'title' => mb_substr($trip->title, 0, 150), 'trip_id' => $trip->id,
@@ -172,6 +178,20 @@ class JourneyService
         $journey->load(['customer', 'sections.vehicles', 'sections.trip.stops']);
         $documents = Document::where('journey_id', $journey->id)->orderBy('created_at')->orderBy('id')->get();
 
+        // Festgehaltener Stand je Strecke: aus dem neuesten gültigen festgeschriebenen Beleg, der sie beschreibt. So zeigt die Reise
+        // dasselbe wie Beleg und PDF, auch wenn die Tour im Archiv später geändert wurde.
+        $frozen = [];
+        foreach ($documents->sortByDesc('finalized_at') as $d) {
+            if ($d->tour_snapshot === null || $d->cancelled_by_id !== null) {
+                continue;
+            }
+            foreach ($d->tour_snapshot['sections'] ?? [] as $snap) {
+                if (! isset($frozen[$snap['section_id']]) && ! empty($snap['trip'])) {
+                    $frozen[$snap['section_id']] = ['trip' => $snap['trip'], 'number' => $d->number];
+                }
+            }
+        }
+
         return [
             'id' => $journey->id,
             'title' => $journey->title,
@@ -183,11 +203,20 @@ class JourneyService
             'sections' => $journey->sections->map(fn (JourneySection $sec) => [
                 'id' => $sec->id, 'kind' => $sec->kind->value, 'kind_label' => $sec->kind->label(), 'title' => $sec->title,
                 'vehicles' => $sec->vehicles->map(fn ($v) => ['type' => $v->vehicle_type?->value, 'label' => $v->vehicle_type?->label(), 'count' => $v->vehicle_count])->all(),
-                'trip' => $sec->trip ? [
+                'trip' => isset($frozen[$sec->id]) ? [
+                    // Stand beim Festschreiben (Beleg-Nummer in frozen_by); der Verweis auf die Tour bleibt zum Öffnen im Archiv
+                    'id' => $sec->trip_id, 'title' => $frozen[$sec->id]['trip']['title'],
+                    'loaded_km' => $frozen[$sec->id]['trip']['loaded_km'], 'empty_km' => $frozen[$sec->id]['trip']['empty_km'],
+                    'drive_s' => $frozen[$sec->id]['trip']['drive_s'], 'days' => $frozen[$sec->id]['trip']['days'],
+                    'from' => $frozen[$sec->id]['trip']['stops'][0]['label'] ?? null,
+                    'to' => collect($frozen[$sec->id]['trip']['stops'])->last()['label'] ?? null,
+                    'frozen_by' => $frozen[$sec->id]['number'],
+                ] : ($sec->trip ? [
                     'id' => $sec->trip->id, 'title' => $sec->trip->title, 'loaded_km' => $sec->trip->loaded_km, 'empty_km' => $sec->trip->empty_km,
                     'drive_s' => $sec->trip->drive_s, 'days' => $sec->trip->days,
                     'from' => $sec->trip->stops->first()?->label, 'to' => $sec->trip->stops->last()?->label,
-                ] : null,
+                    'frozen_by' => null,
+                ] : null),
             ])->all(),
             'documents' => $documents->map(fn (Document $d) => [
                 'id' => $d->id, 'type' => $d->type->value, 'number' => $d->number, 'status' => $d->status->value, 'cancelled' => $d->cancelled_by_id !== null,

@@ -50,8 +50,10 @@ Diese Seite zeigt, was {{app}} für Ihr Busunternehmen leistet: **von der Streck
 
 ## Reisevorhaben, Fahrtauftrag und Rückerfassung {#reisevorhaben}
 
+**Verfügbar**
+- **Reisevorhaben:** Eine Reise besteht aus **Hinfahrt, Fahrten vor Ort am Reiseziel und Rückfahrt**, je mit einem oder mehreren Fahrzeugtypen. Sie bündelt Angebot, Auftrag, Anzahlung und Rechnung. Sie entsteht automatisch mit dem ersten Angebot aus der Streckenplanung, Sie legen nichts von Hand an. Die Seite **Reisen** zeigt Strecken, Belege, Stand und den nächsten Schritt; die Reise lässt sich **umbenennen**. Einen Überblick über den Aufbau gibt [So ist die Software aufgebaut](/hilfe/fahrten#konzept). Werksverkehr und andere Einzelfahrten gehen auch **ohne** Reise.
+
 **In Planung**
-- **Reisevorhaben:** Eine Reise besteht aus **Hinfahrt, Fahrten vor Ort am Reiseziel und Rückfahrt**, je mit einem oder mehreren Bussen. Das Reisevorhaben bündelt Angebot, Auftrag, Fahrtaufträge und Rechnungen. Es entsteht automatisch mit dem ersten Angebot, Sie legen nichts von Hand an. Werksverkehr und andere Einzelfahrten gehen auch **ohne** Reisevorhaben.
 - **Fahrtauftrag je Bus:** Mit der Auftragsbestätigung entstehen die Fahrtaufträge. Ablauf, Stationen, Zeiten und Fahrzeugtyp kommen aus dem Angebot. Fahrzeug, **Fahrer 1 und Fahrer 2** weist der Disponent zu. Das Fahrer-PDF zeigt keine Preise.
 - **Der Fahrtauftrag ist das Erfassungsblatt:** Der Fahrer notiert Zusatzleistungen (Sonderfahrten vor Ort), unvorhergesehene Kosten (Maut, Parken) und die **Kilometerstände bei Grenzein- und -austritt**.
 - **Rückerfassung:** Das Büro übernimmt die Angaben, die Software prüft sie auf Plausibilität (lückenlose Kilometerstände und Zeiten). Daraus entsteht die Rechnung.

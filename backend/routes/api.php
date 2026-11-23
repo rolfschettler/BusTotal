@@ -143,9 +143,10 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
         Route::delete('/trips/{trip}', [TripController::class, 'destroy']);
     });
 
-    // Reisen: nur lesen (Admin, Disponent, Buchhaltung). Sie entstehen mit dem ersten Angebot aus der Streckenplanung.
+    // Reisen: lesen und umbenennen (Admin, Disponent, Buchhaltung). Sie entstehen mit dem ersten Angebot aus der Streckenplanung.
     Route::get('/journeys', [JourneyController::class, 'index'])->middleware('role:admin,disponent,buchhaltung');
     Route::get('/journeys/{journey}', [JourneyController::class, 'show'])->middleware('role:admin,disponent,buchhaltung');
+    Route::put('/journeys/{journey}', [JourneyController::class, 'update'])->middleware('role:admin,disponent,buchhaltung');
 
     // Betriebshöfe: lesen Admin, Disponent und Buchhaltung, ändern nur Admin.
     Route::get('/depots', [DepotController::class, 'index'])->middleware('role:admin,disponent,buchhaltung');

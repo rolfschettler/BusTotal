@@ -39,7 +39,8 @@ export interface JourneyDetail {
   date_to: string | null;
   customer: { id: string; customer_number: string; display_name: string } | null;
   sections: (Omit<JourneySectionInfo, 'trip_id'> & {
-    trip: { id: string; title: string; loaded_km: number; empty_km: number; drive_s: number; days: number; from: string | null; to: string | null } | null;
+    /** frozen_by: Nummer des festgeschriebenen Belegs, aus dem die Angaben stammen (Stand beim Festschreiben); null = aktuelle Tour im Archiv */
+    trip: { id: string | null; title: string; loaded_km: number; empty_km: number; drive_s: number; days: number; from: string | null; to: string | null; frozen_by: string | null } | null;
   })[];
   documents: {
     id: string;
@@ -70,5 +71,10 @@ export class JourneyService {
 
   get(id: string) {
     return this.http.get<JourneyDetail>(`${this.base}/${id}`);
+  }
+
+  /** Die Reise umbenennen: Nur der Name ändert sich, er steht auf keinem Beleg. */
+  rename(id: string, title: string) {
+    return this.http.put<JourneyDetail>(`${this.base}/${id}`, { title });
   }
 }

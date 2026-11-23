@@ -281,17 +281,24 @@
                 <label class="form-label" for="sectionSearch">Tour aus dem Archiv</label>
                 <input id="sectionSearch" type="search" class="form-control mb-2" autocomplete="off" placeholder="Name oder Ort suchen"
                        [value]="sectionQuery()" (input)="onSectionQuery($any($event.target).value)" />
-                <select id="sectionTrip" class="form-select" size="5" [value]="sectionTripId()" (change)="chooseSectionTrip($any($event.target).value)" aria-label="Tour wählen">
+                <div class="list-group" role="listbox" aria-label="Tour wählen" style="max-height: 15rem; overflow-y: auto">
                   @for (t of sectionTrips(); track t.id) {
-                    <option [value]="t.id" [selected]="t.id === sectionTripId()">{{ t.title }} · {{ km(t.loaded_km + t.empty_km) }} · {{ t.days }} {{ t.days === 1 ? 'Tag' : 'Tage' }}</option>
+                    <button type="button" class="list-group-item list-group-item-action" role="option"
+                            [class.active]="t.id === sectionTripId()" [attr.aria-selected]="t.id === sectionTripId()" (click)="chooseSectionTrip(t.id)">
+                      <span class="fw-semibold"><app-highlight [text]="t.title" [query]="sectionShownQuery()" mode="start" /></span>
+                      <span class="small opacity-75">{{ ' · ' }}{{ km(t.loaded_km + t.empty_km) }} · {{ t.days }} {{ t.days === 1 ? 'Tag' : 'Tage' }}</span>
+                      <div class="small opacity-75">
+                        <app-highlight [text]="t.stops[0].label" [query]="sectionShownQuery()" mode="start" />{{ ' → ' }}<app-highlight [text]="t.stops[t.stops.length - 1].label" [query]="sectionShownQuery()" mode="start" />
+                      </div>
+                    </button>
                   }
-                </select>
+                </div>
                 @if (sectionTripsError(); as te) {
                   <div class="form-text text-danger">{{ te }}</div>
                 } @else if (!sectionTrips().length) {
                   <div class="form-text">Keine Tour gefunden. Planen Sie die Strecke zuerst in der <a routerLink="/streckenplanung">Streckenplanung</a> und speichern Sie sie dort.</div>
                 } @else {
-                  <div class="form-text">Gesucht wird am Wortanfang. Neue Touren planen Sie in der <a routerLink="/streckenplanung">Streckenplanung</a>.</div>
+                  <div class="form-text">Gesucht wird im Namen am Wortanfang, bei Orten am Anfang. Neue Touren planen Sie in der <a routerLink="/streckenplanung">Streckenplanung</a>.</div>
                 }
               </div>
 

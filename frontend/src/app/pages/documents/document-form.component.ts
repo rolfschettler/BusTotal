@@ -14,6 +14,7 @@ import { SettingsService, TaxRate } from '../../core/settings.service';
 import { PrintPreviewService } from '../../core/print-preview.service';
 import { Trip, TripService } from '../../core/trip.service';
 import { CustomerNameComponent } from '../../shared/customer-name.component';
+import { HighlightComponent } from '../../shared/highlight.component';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { formatDuration, formatKm } from '../route-planning/route-planning-view';
 import { CalcLine, formatAmount, formatCents, summarize } from './document-calc';
@@ -39,7 +40,7 @@ interface PickedCustomer {
  */
 @Component({
   selector: 'app-document-form',
-  imports: [DatePipe, ReactiveFormsModule, RouterLink, CustomerNameComponent, HelpLinkComponent, DocumentPaymentsComponent],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink, CustomerNameComponent, HelpLinkComponent, HighlightComponent, DocumentPaymentsComponent],
   templateUrl: './document-form.component.html',
   host: { class: 'form-page' },
 })
@@ -351,6 +352,8 @@ export class DocumentFormComponent implements OnInit {
   sectionDate = signal('');
   sectionVehicles = signal<{ type: string; count: number }[]>([{ type: '', count: 1 }]);
   sectionQuery = signal('');
+  /** Der Suchbegriff, zu dem die angezeigten Touren gehören (Grundlage der Markierung) */
+  sectionShownQuery = signal('');
   sectionTrips = signal<Trip[]>([]);
   sectionTripsError = signal<string | null>(null);
   sectionBusy = signal(false);
@@ -381,6 +384,7 @@ export class DocumentFormComponent implements OnInit {
       next: (page) => {
         if (q !== this.sectionQuery()) return;
         this.sectionTrips.set(page.data);
+        this.sectionShownQuery.set(q);
         this.sectionTripsError.set(null);
       },
       error: (err: HttpErrorResponse) => this.sectionTripsError.set(httpErrorText(err, 'Das Tour-Archiv konnte nicht geladen werden.')),

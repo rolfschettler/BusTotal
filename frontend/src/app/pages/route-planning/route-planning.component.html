@@ -126,7 +126,7 @@
       <div class="row g-3">
         <div class="col-12 col-lg-6">
           <label class="form-label" for="vehicleType">Fahrzeugtyp</label>
-          <select id="vehicleType" class="form-select" [ngModel]="vehicleType()" (ngModelChange)="vehicleType.set($event)">
+          <select id="vehicleType" class="form-select" [ngModel]="vehicleType()" (ngModelChange)="vehicleType.set($event); markTripChanged()">
             <option value="">Kein Typ gewählt</option>
             @for (t of vehicleTypes(); track t.value) {
               <option [value]="t.value">{{ t.label }}</option>
@@ -288,18 +288,21 @@
         <input id="tripTitle" type="text" maxlength="150" class="form-control" [ngModel]="tripTitle()" (ngModelChange)="tripTitle.set($event)" [disabled]="stale()" />
       </div>
       <div class="col-12 col-lg-6 d-flex flex-wrap gap-2">
-        <button type="button" class="btn btn-outline-primary" (click)="saveTrip()" [disabled]="savingTrip() || stale() || !tripTitle().trim()" [attr.title]="stale() ? 'Bitte zuerst neu berechnen' : null">
+        <button type="button" class="btn btn-outline-primary" (click)="saveTrip()" [disabled]="savingTrip() || stale() || !tripTitle().trim() || !canStore()" [attr.title]="stale() ? 'Bitte zuerst neu berechnen' : null">
           @if (savingTrip()) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
           <i class="bi bi-save me-1" aria-hidden="true"></i>{{ currentTrip() ? 'Änderungen speichern' : 'Tour speichern' }}
         </button>
         @if (currentTrip()) {
-          <button type="button" class="btn btn-outline-secondary" (click)="saveTrip(true)" [disabled]="savingTrip() || stale() || !tripTitle().trim()">Als neue Tour speichern</button>
+          <button type="button" class="btn btn-outline-secondary" (click)="saveTrip(true)" [disabled]="savingTrip() || stale() || !tripTitle().trim() || !canStore()">Als neue Tour speichern</button>
         }
       </div>
     </div>
     <div class="form-text mb-3">
       Gespeichert werden die Halte, die berechnete Strecke mit Zeitplan und Linie, Fahrtart sowie Fahrzeugtyp und Anzahl. Nicht gespeichert werden Abfahrtszeit und ein bestimmtes Fahrzeug.
       @if (depotChoice() === 'other') { Ein „anderer Ort“ als Betriebshof wird nicht mitgespeichert. }
+      @if (!canStore()) {
+        <span class="text-warning-emphasis">Diese Tour lässt sich nicht im Archiv speichern: Sie braucht zwei Halte, oder einen Halt und einen Betriebshof der Firma. Ein Angebot können Sie trotzdem erstellen.</span>
+      }
     </div>
     @if (tripMessage(); as tm) {
       <div class="alert alert-success py-2 small" role="status"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>{{ tm }}</div>
@@ -312,7 +315,7 @@
     <div class="d-flex flex-wrap align-items-end gap-2 mb-3">
       <div>
         <label class="form-label small mb-1" for="tripKind">Fahrtart</label>
-        <select id="tripKind" class="form-select form-select-sm" [ngModel]="tripKind()" (ngModelChange)="tripKind.set($event)" [disabled]="stale()">
+        <select id="tripKind" class="form-select form-select-sm" [ngModel]="tripKind()" (ngModelChange)="tripKind.set($event); markTripChanged()" [disabled]="stale()">
           @for (k of tripKinds(); track k.value) { <option [value]="k.value">{{ k.label }}</option> }
           @if (!tripKinds().length) { <option value="gelegenheit">Gelegenheitsverkehr</option> }
         </select>

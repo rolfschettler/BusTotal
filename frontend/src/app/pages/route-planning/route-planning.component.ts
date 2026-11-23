@@ -127,14 +127,15 @@ export class RoutePlanningComponent implements OnInit {
     const r = this.result();
     if (!r || this.stale()) return;
     // Betitelt wird mit Von und Nach der Fahrt mit Fahrgästen; Leerfahrten zum Betriebshof gehören nicht in den Betreff.
-    const label = this.tripTitle().trim() || tourTitle(r.legs);
+    const label = this.tripTitle().trim() || tourTitle(r.legs, this.stops());
 
     this.quoting.set(true);
     this.quoteError.set(null);
     // Die Reise verweist auf die gespeicherte Tour: Ist sie noch nicht im Archiv (oder wurde sie nach dem Laden verändert), legt
     // "Angebot erstellen" sie selbst an. So muss niemand an einen Zwischenschritt denken.
+    // Eine Tour, die das Archiv nicht aufnimmt (ein Halt ohne Betriebshof der Firma), geht ohne Archiv-Verweis ins Angebot.
     const current = this.currentTrip();
-    const trip$ = current && !this.tripDirty() ? of(current.id) : this.storeTrip(true).pipe(map((t) => t.id));
+    const trip$: Observable<string | null> = current && !this.tripDirty() ? of(current.id) : this.canStore() ? this.storeTrip(true).pipe(map((t) => t.id)) : of(null);
     trip$
       .pipe(
         switchMap((tripId) =>
@@ -176,6 +177,20 @@ export class RoutePlanningComponent implements OnInit {
   savingTrip = signal(false);
   /** Die Eingabe wurde seit dem Laden oder Speichern der Tour verändert: Das Archiv hat einen anderen Stand. */
   tripDirty = signal(false);
+  /**
+   * Nimmt das Archiv diese Tour auf? Es braucht zwei Halte, oder einen Halt und einen Betriebshof der Firma (wie die Berechnung;
+   * ein „anderer Ort“ als Betriebshof wird nicht gespeichert).
+   */
+  canStore = computed(() => this.stops().filter((s) => s.key !== -1).length >= 2 || this.depots().some((d) => d.id === this.depotChoice()));
+
+  /**
+   * Fahrtart, Fahrzeugtyp oder Anzahl geändert: Das Ergebnis bleibt gültig (die Route hängt nicht davon ab), aber die Tour im Archiv
+   * hat einen anderen Stand. „Angebot erstellen“ speichert sie deshalb neu.
+   */
+  markTripChanged() {
+    this.tripDirty.set(true);
+    this.tripMessage.set(null);
+  }
   /** „Tour gespeichert“: erscheint direkt bei der Taste, weil man beim Speichern weit unten auf der Seite steht */
   tripMessage = signal<string | null>(null);
   /** „Tour geladen“: erscheint oben auf der Seite, wo man nach dem Laden steht */
@@ -263,13 +278,15 @@ export class RoutePlanningComponent implements OnInit {
   }
 
   private applyTrip(trip: Trip) {
+    // reset() leert auch Abfahrt, lange Tage und Optimierung: Die gespeicherte Tour hat keinen Termin, ein alter Wert gehörte zur vorigen Planung.
     this.reset();
     const place = (s: Trip['stops'][number]): Place => ({ label: s.label, lat: s.place.lat, lon: s.place.lon });
     const waypoint = (s: Trip['stops'][number]): Waypoint => ({ key: this.nextKey++, place: place(s), dwell_minutes: s.dwell_minutes, driver_free: s.driver_free });
 
     const list = trip.stops.map(waypoint);
     this.start.set(list[0]);
-    this.end.set(list[list.length - 1]);
+    // Eine Tour mit nur einem Halt (Betriebshof → Halt → Betriebshof) hat kein eigenes Ziel.
+    this.end.set(list.length > 1 ? list[list.length - 1] : this.blank());
     this.via.set(list.slice(1, -1));
     this.texts.set(Object.fromEntries(list.map((w) => [w.key, w.place!.label])));
     this.roundTrip.set(trip.round_trip);
@@ -294,7 +311,7 @@ export class RoutePlanningComponent implements OnInit {
 
   /** Speichert die berechnete Tour im Archiv: als Änderung der geladenen Tour oder (asNew) als neue Tour. */
   saveTrip(asNew = false) {
-    if (this.stale() || !this.result() || !this.tripTitle().trim()) return;
+    if (this.stale() || !this.result() || !this.tripTitle().trim() || !this.canStore()) return;
     this.savingTrip.set(true);
     this.tripError.set(null);
     this.storeTrip(asNew).subscribe({
@@ -315,7 +332,7 @@ export class RoutePlanningComponent implements OnInit {
     const r = this.result()!;
     const depotId = this.depots().some((d) => d.id === this.depotChoice()) ? this.depotChoice() : null;
     const body: TripInput = {
-      title: this.tripTitle().trim() || tourTitle(r.legs) || 'Tour',
+      title: this.tripTitle().trim() || tourTitle(r.legs, this.stops()) || 'Tour',
       trip_kind: this.tripKind(),
       vehicle_type: this.vehicleType() || null,
       vehicle_count: this.vehicleCount(),
@@ -361,6 +378,7 @@ export class RoutePlanningComponent implements OnInit {
   setVehicleCount(value: unknown) {
     const n = Math.round(Number(value));
     this.vehicleCount.set(Number.isFinite(n) ? Math.min(99, Math.max(1, n)) : 1);
+    this.markTripChanged();
   }
 
   /** Die Halte in Fahrtreihenfolge (leere Felder fehlen, mit Rückfahrt steht der Start am Ende noch einmal). */
@@ -489,6 +507,9 @@ export class RoutePlanningComponent implements OnInit {
     this.texts.set({});
     this.resolved.set({});
     this.roundTrip.set(false);
+    this.startAt.set('');
+    this.extendedDays.set(0);
+    this.optimize.set(false);
     this.result.set(null);
     this.error.set(null);
     this.stale.set(false);
@@ -567,7 +588,7 @@ export class RoutePlanningComponent implements OnInit {
         this.stale.set(false);
         this.calculating.set(false);
         // Name der Tour vorschlagen, solange der Nutzer keinen eigenen eingetragen hat.
-        if (!this.tripTitle().trim()) this.tripTitle.set(tourTitle(r.legs));
+        if (!this.tripTitle().trim()) this.tripTitle.set(tourTitle(r.legs, this.stops()));
       },
       error: (err: HttpErrorResponse) => {
         this.calculating.set(false);

@@ -47,9 +47,9 @@ Der **Zeitplan** zeigt jeden Abschnitt: Fahrt, Pause, Halt und Ruhezeit, geglied
 
 Eine berechnete Tour können Sie im **Tour-Archiv** ablegen und für weitere Angebote wiederverwenden. Das spart die Eingabe und die Berechnung.
 
-**Speichern:** Nach dem Berechnen steht unter dem Ergebnis **Tour speichern**. Der Name ist mit „Von – Nach“ vorgeschlagen, Sie können ihn ändern. Gespeichert werden die Halte (mit Aufenthalt und „Fahrer frei“), die berechnete Strecke mit Zeitplan und **Linie auf der Karte**, die Fahrtart sowie Fahrzeugtyp und Anzahl. **Nicht** gespeichert werden die Abfahrtszeit und ein bestimmtes Fahrzeug, denn beides gehört zur einzelnen Fahrt. Ein „anderer Ort“ als Betriebshof wird ebenfalls nicht mitgespeichert, wohl aber ein Betriebshof Ihrer Firma.
+**Speichern:** Nach dem Berechnen steht unter dem Ergebnis **Tour speichern**. Eine Tour braucht dafür zwei Halte, oder einen Halt und einen Betriebshof der Firma (Betriebshof → Halt → Betriebshof); sonst bleibt die Taste gesperrt, und ein Angebot entsteht ohne Archiv. Der Name ist mit „Von – Nach“ vorgeschlagen, Sie können ihn ändern. Gespeichert werden die Halte (mit Aufenthalt und „Fahrer frei“), die berechnete Strecke mit Zeitplan und **Linie auf der Karte**, die Fahrtart sowie Fahrzeugtyp und Anzahl. **Nicht** gespeichert werden die Abfahrtszeit und ein bestimmtes Fahrzeug, denn beides gehört zur einzelnen Fahrt. Ein „anderer Ort“ als Betriebshof wird ebenfalls nicht mitgespeichert, wohl aber ein Betriebshof Ihrer Firma.
 
-**Laden:** Oben rechts öffnet **Aus Archiv laden** die Liste. Suchen Sie nach dem Namen oder nach einem Ort (am Wortanfang, die Treffer sind markiert) und klicken Sie **Laden**. Die Planung füllt sich mit allen Angaben und zeigt das gespeicherte Ergebnis sofort, **ohne neue Berechnung**. Tragen Sie die neue **Abfahrt** ein und berechnen Sie neu, wenn Sie Uhrzeiten und die Zuschläge für Wochenende und Feiertag brauchen.
+**Laden:** Oben rechts öffnet **Aus Archiv laden** die Liste. Suchen Sie nach dem Namen oder nach einem Ort (am Wortanfang, die Treffer sind markiert) und klicken Sie **Laden**. Die Planung füllt sich mit allen Angaben und zeigt das gespeicherte Ergebnis sofort, **ohne neue Berechnung**. Die Abfahrt ist danach leer, weil eine Tour keinen Termin hat. Tragen Sie die neue **Abfahrt** ein und berechnen Sie neu, wenn Sie Uhrzeiten und die Zuschläge für Wochenende und Feiertag brauchen.
 
 **Ändern:** Haben Sie eine geladene Tour verändert, speichert **Änderungen speichern** sie unter demselben Namen, **Als neue Tour speichern** legt eine zweite an.
 
@@ -59,7 +59,7 @@ Eine berechnete Tour können Sie im **Tour-Archiv** ablegen und für weitere Ang
 
 Alle gespeicherten Touren sehen Sie in der Seitenleiste unter **Fahrten und Abrechnung › Tour-Archiv**. Die Liste zeigt je Tour den Namen, die Strecke (Von → Nach, Zahl der Zwischenhalte, Rückfahrt), Kilometer, Lenkzeit und Tage, Fahrzeuge (Anzahl und Typ), die Fahrtart und in wie vielen [Reisen](/hilfe/belege#reisen) die Tour verwendet wird. Die neueste Änderung steht oben.
 
-- **Suchen:** Das Suchfeld trifft den Namen und die Orte am Wortanfang, die Treffer sind markiert (zum Beispiel „Wien“ oder „Salz“).
+- **Suchen:** Das Suchfeld trifft den Namen am Wortanfang und die Orte am Anfang des Ortsnamens, die Treffer sind markiert (zum Beispiel „Wien“ oder „Salz“).
 - **Öffnen:** Ein Klick auf den Namen oder das Symbol links öffnet die Tour in der Streckenplanung, mit allen Angaben und dem gespeicherten Ergebnis. Dort ändern Sie sie und speichern mit **Änderungen speichern** oder legen mit **Als neue Tour speichern** eine zweite an.
 - **Löschen** (Administrator und Disponent): Das Papierkorb-Symbol entfernt die Tour nach einer Rückfrage. Eine Tour, die in einer Reise verwendet wird, trägt stattdessen ein Schloss und lässt sich nicht löschen. Belege, die eine Tour schon enthalten, bleiben unverändert, weil sie ihre Fahrtbeschreibung selbst tragen.
 - **Neue Tour:** „Neue Tour planen“ führt in die Streckenplanung. Touren entstehen dort, nicht in der Liste.

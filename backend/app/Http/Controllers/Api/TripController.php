@@ -11,6 +11,7 @@ use App\Services\TripService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Tour-Archiv: gespeicherte Touren suchen, lesen, speichern, ändern und löschen. Lesen dürfen Admin, Disponent und Buchhaltung,
@@ -18,7 +19,7 @@ use Illuminate\Validation\Rule;
  */
 class TripController extends Controller
 {
-    /** Liste ohne Zeitplan und Linienzug; die Suche trifft Titel und Orte am Wortanfang. */
+    /** Liste ohne Zeitplan und Linienzug; die Suche trifft den Titel am Wortanfang und die Orte am Anfang (Index, siehe CLAUDE.md). */
     public function index(Request $request): JsonResponse
     {
         $q = trim((string) $request->query('q', ''));
@@ -31,7 +32,7 @@ class TripController extends Controller
                 $like = $this->escapeLike($q);
                 $query->where(function ($w) use ($like) {
                     $w->where('title', 'like', $like.'%')->orWhere('title', 'like', '% '.$like.'%')
-                        ->orWhereHas('stops', fn ($s) => $s->where('label', 'like', $like.'%')->orWhere('label', 'like', '% '.$like.'%'));
+                        ->orWhereHas('stops', fn ($s) => $s->where('label', 'like', $like.'%'));
                 });
             })
             ->orderByDesc('updated_at')
@@ -47,14 +48,14 @@ class TripController extends Controller
 
     public function store(Request $request, TripService $service): JsonResponse
     {
-        $trip = $service->save(new Trip, $request->validate($this->rules()));
+        $trip = $service->save(new Trip, $this->validated($request));
 
         return response()->json($trip->makeVisible(['route', 'geometry']), 201);
     }
 
     public function update(Request $request, Trip $trip, TripService $service): JsonResponse
     {
-        $trip = $service->save($trip, $request->validate($this->rules()));
+        $trip = $service->save($trip, $this->validated($request));
 
         return response()->json($trip->makeVisible(['route', 'geometry']));
     }
@@ -90,13 +91,28 @@ class TripController extends Controller
             'days' => ['required', 'integer', 'min:1', 'max:366'],
             'route' => ['nullable', 'array'],
             'geometry' => ['nullable', 'array', 'max:200000'],
-            'stops' => ['required', 'array', 'min:2', 'max:50'],
+            // Ein Halt genügt, wenn ein Betriebshof dabei ist (Betriebshof → Halt → Betriebshof), sonst zwei (siehe validated()).
+            'stops' => ['required', 'array', 'min:1', 'max:50'],
             'stops.*.label' => ['required', 'string', 'max:255'],
             'stops.*.lat' => ['required', 'numeric', 'between:-90,90'],
             'stops.*.lon' => ['required', 'numeric', 'between:-180,180'],
             'stops.*.dwell_minutes' => ['nullable', 'integer', 'min:0', 'max:10080'],
             'stops.*.driver_free' => ['nullable', 'boolean'],
         ];
+    }
+
+    /** Eingaben prüfen; eine Tour braucht zwei Halte, oder einen Halt und einen Betriebshof (wie die Berechnung). */
+    private function validated(Request $request): array
+    {
+        $data = $request->validate($this->rules(), [
+            'stops.required' => 'Eine Tour braucht mindestens einen Halt.',
+            'stops.min' => 'Eine Tour braucht mindestens einen Halt.',
+        ]);
+        if (count($data['stops']) < 2 && empty($data['depot_id'])) {
+            throw ValidationException::withMessages(['stops' => ['Eine Tour braucht mindestens zwei Halte, oder einen Halt und einen Betriebshof.']]);
+        }
+
+        return $data;
     }
 
     private function escapeLike(string $text): string

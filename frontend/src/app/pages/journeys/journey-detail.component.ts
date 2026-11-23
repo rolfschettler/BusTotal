@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { httpErrorText } from '../../core/http-error';
 import { JourneyDetail, JourneyService } from '../../core/journey.service';
@@ -19,12 +20,13 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 /**
- * Übersicht einer Reise: Strecken mit Fahrzeugen, alle Belege mit Betrag und Stand, und der nächste Schritt. Nur lesen:
- * Bearbeitet wird im Beleg (Strecken im Entwurf des Angebots) und in der Streckenplanung (Touren).
+ * Übersicht einer Reise: Strecken mit Fahrzeugen, alle Belege mit Betrag und Stand, und der nächste Schritt. Nur der Name der
+ * Reise ist hier änderbar (Stift am Titel). Alles andere bearbeitet man im Beleg (Kunde, Positionen, Strecken im Entwurf des
+ * Angebots) und in der Streckenplanung (Touren).
  */
 @Component({
   selector: 'app-journey-detail',
-  imports: [DatePipe, DecimalPipe, RouterLink, HelpLinkComponent],
+  imports: [DatePipe, DecimalPipe, FormsModule, RouterLink, HelpLinkComponent],
   templateUrl: './journey-detail.component.html',
   host: { class: 'form-page' },
 })
@@ -33,6 +35,66 @@ export class JourneyDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
 
   journey = signal<JourneyDetail | null>(null);
+
+  // ---- Umbenennen ----
+  editing = signal(false);
+  draftTitle = signal('');
+  saving = signal(false);
+  renameError = signal<string | null>(null);
+  renamed = signal(false);
+  private titleInput = viewChild<ElementRef<HTMLInputElement>>('titleInput');
+
+  constructor() {
+    // Das Feld entsteht erst nach dem Umschalten: sobald es da ist, bekommt es den Fokus und der Name ist markiert, damit man sofort lostippen kann.
+    effect(() => {
+      const el = this.titleInput()?.nativeElement;
+      if (el && this.editing()) {
+        el.focus();
+        // ngModel schreibt den Wert erst einen Augenblick später ins Feld; erst danach hält die Markierung.
+        setTimeout(() => el.select());
+      }
+    });
+  }
+
+  startRename() {
+    this.draftTitle.set(this.journey()?.title ?? '');
+    this.renameError.set(null);
+    this.renamed.set(false);
+    this.editing.set(true);
+  }
+
+  cancelRename() {
+    this.editing.set(false);
+    this.renameError.set(null);
+  }
+
+  saveRename() {
+    const j = this.journey();
+    const title = this.draftTitle().trim();
+    if (!j || this.saving()) return;
+    if (!title) {
+      this.renameError.set('Bitte einen Namen für die Reise eingeben.');
+      return;
+    }
+    if (title === j.title) {
+      this.cancelRename();
+      return;
+    }
+    this.saving.set(true);
+    this.renameError.set(null);
+    this.api.rename(j.id, title).subscribe({
+      next: (d) => {
+        this.journey.set(d);
+        this.saving.set(false);
+        this.editing.set(false);
+        this.renamed.set(true);
+      },
+      error: (e: HttpErrorResponse) => {
+        this.saving.set(false);
+        this.renameError.set(httpErrorText(e, 'Der Name konnte nicht gespeichert werden.'));
+      },
+    });
+  }
   loading = signal(true);
   error = signal<string | null>(null);
 

@@ -128,6 +128,19 @@ class TripArchiveTest extends TestCase
         $this->assertSame([[48.12346, 11.98765]], $res->json('geometry'));
     }
 
+    public function test_ein_halt_genuegt_mit_betriebshof(): void
+    {
+        $depot = \App\Models\Depot::create(['name' => 'Hof', 'address' => 'Hofweg 1']);
+        $one = [['label' => 'Ulm Hbf', 'lat' => 48.4, 'lon' => 9.98]];
+
+        $this->as(Role::Disponent)->postJson('/api/trips', $this->body(['stops' => $one]))
+            ->assertUnprocessable()->assertJsonValidationErrors(['stops']);
+        $this->as(Role::Disponent)->postJson('/api/trips', $this->body(['stops' => $one, 'depot_id' => $depot->id, 'return_to_depot' => true]))
+            ->assertCreated()->assertJsonCount(1, 'stops');
+        $this->as(Role::Disponent)->postJson('/api/trips', $this->body(['stops' => []]))
+            ->assertUnprocessable()->assertJsonValidationErrors(['stops']);
+    }
+
     public function test_pflichtangaben_und_grenzen(): void
     {
         $this->as(Role::Disponent)->postJson('/api/trips', [])->assertUnprocessable()
@@ -171,7 +184,8 @@ class TripArchiveTest extends TestCase
 
         $this->as(Role::Disponent)->getJson('/api/trips?q=wien')->assertJsonCount(1, 'data')->assertJsonPath('data.0.title', 'München – Wien');
         $this->as(Role::Disponent)->getJson('/api/trips?q=salz')->assertJsonCount(1, 'data')->assertJsonPath('data.0.title', 'Ulm – Salzburg');
-        $this->as(Role::Disponent)->getJson('/api/trips?q=westbahn')->assertJsonCount(1, 'data');   // Wortanfang im Ortsnamen
+        $this->as(Role::Disponent)->getJson('/api/trips?q=salzburg')->assertJsonCount(1, 'data');   // Anfang des Ortsnamens
+        $this->as(Role::Disponent)->getJson('/api/trips?q=westbahn')->assertJsonCount(0, 'data');   // Orte nur am Anfang (Adressfeld, Index)
         $this->as(Role::Disponent)->getJson('/api/trips?q=ünchen')->assertJsonCount(0, 'data');      // nie mitten im Wort
         $this->as(Role::Disponent)->getJson('/api/trips?q=100%25')->assertJsonCount(0, 'data');      // Platzhalter wirken nicht
     }

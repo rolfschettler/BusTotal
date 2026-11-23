@@ -164,10 +164,15 @@ export function cityOf(label: string): string {
   return label.split(',')[0].trim();
 }
 
-/** Vorschlag für den Namen einer Tour und den Betreff eines Angebots: "Von – Nach" der Fahrt mit Fahrgästen (Leerfahrten zählen nicht). */
-export function tourTitle(legs: RouteLeg[]): string {
+/**
+ * Vorschlag für den Namen einer Tour und den Betreff eines Angebots: "Von – Nach" der Fahrt mit Fahrgästen (Leerfahrten zählen
+ * nicht). Gibt es keine Fahrt mit Fahrgästen (Betriebshof → Halt → Betriebshof), nennen die Halte die Tour, zum Beispiel "Ulm".
+ */
+export function tourTitle(legs: RouteLeg[], stops: { label: string }[] = []): string {
   const loaded = legs.filter((l) => !l.empty);
-  return loaded.length ? `${cityOf(loaded[0].from.label)} – ${cityOf(loaded[loaded.length - 1].to.label)}` : '';
+  if (loaded.length) return `${cityOf(loaded[0].from.label)} – ${cityOf(loaded[loaded.length - 1].to.label)}`;
+  const names = stops.map((s) => cityOf(s.label)).filter((n, i, all) => n !== '' && all.indexOf(n) === i);
+  return names.join(' – ');
 }
 
 /**

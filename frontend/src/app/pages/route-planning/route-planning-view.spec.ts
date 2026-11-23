@@ -189,6 +189,13 @@ describe('Streckenplanung: Tour-Archiv', () => {
     expect(tourTitle([{ ...legs[1], from: { label: 'München Hbf, München', lat: 1, lon: 1 } }])).toBe('München Hbf – Bonn');
   });
 
+  it('tourTitle: ohne Fahrt mit Fahrgästen nennen die Halte die Tour (Betriebshof → Halt → Betriebshof)', () => {
+    const onlyEmpty = [legs[0], { ...legs[0], from: legs[0].to, to: legs[0].from }];
+    expect(tourTitle(onlyEmpty, [{ label: 'Ulm, Baden-Württemberg' }])).toBe('Ulm');
+    expect(tourTitle(onlyEmpty, [{ label: 'Ulm' }, { label: 'Ulm' }])).toBe('Ulm');
+    expect(tourTitle(onlyEmpty, [])).toBe('');
+  });
+
   it('storableRoute: ohne Linienzug, Termin und Fahrzeug, die Eingabe bleibt unverändert', () => {
     const s = storableRoute(result);
     expect('geometry' in s).toBeFalse();
