@@ -7,8 +7,10 @@ export interface Segment {
 /**
  * "phrase": Der ganze Suchbegriff muss vorkommen (Kundenliste, entspricht der Datenbanksuche).
  * "words": Jedes Wort für sich, ab 2 Zeichen (Hilfe-Suche).
+ * "start": Jedes Wort (auch durch Komma getrennt, „Mustermann,Max“) nur am Anfang eines Wortes im Text. So sucht der Server in
+ *          Kunden-, Fahrer- und Belegsuche (NameSearch.php im Backend); die Markierung zeigt genau den Treffer, den er meint.
  */
-export type HighlightMode = 'phrase' | 'words';
+export type HighlightMode = 'phrase' | 'words' | 'start';
 
 /**
  * Zeichen vergleichbar machen: Groß-/Kleinschreibung und Akzente spielen keine Rolle
@@ -23,7 +25,9 @@ function fold(ch: string): string {
 function termsOf(query: string | null | undefined, mode: HighlightMode): string[] {
   const q = (query ?? '').trim();
   if (!q) return [];
-  return mode === 'phrase' ? [q] : q.split(/\s+/).filter((t) => t.length >= 2);
+  if (mode === 'phrase') return [q];
+  if (mode === 'start') return q.split(/[\s,]+/).filter((t) => t.length >= 1);
+  return q.split(/\s+/).filter((t) => t.length >= 2);
 }
 
 /**
@@ -43,12 +47,13 @@ export function highlightSegments(
 
   const chars = Array.from(value); // Array.from: auch Sonderzeichen jenseits der Grundzeichen bleiben ganz
   const folded = chars.map(fold);
+  const atStart = mode === 'start';
   const marked = new Array<boolean>(chars.length).fill(false);
 
   for (const term of terms) {
     const t = Array.from(term).map(fold);
     for (let i = 0; i + t.length <= folded.length; i++) {
-      if (t.every((c, k) => folded[i + k] === c)) {
+      if (t.every((c, k) => folded[i + k] === c) && (!atStart || i === 0 || !/[\p{L}\p{N}]/u.test(chars[i - 1]))) {
         for (let k = 0; k < t.length; k++) marked[i + k] = true;
         i += t.length - 1;
       }

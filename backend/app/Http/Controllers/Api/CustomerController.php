@@ -8,6 +8,7 @@ use App\Http\Requests\CustomerRequest;
 use App\Models\AuditLog;
 use App\Models\Customer;
 use App\Services\CustomerService;
+use App\Support\NameSearch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +22,8 @@ class CustomerController extends Controller
      * er gelangt nie selbst in die Abfrage. So kann niemand über die Adresse eigenes SQL einschleusen.
      */
     private const SORTS = [
-        'name' => ["COALESCE(NULLIF(company_name, ''), last_name, customer_number)"],
+        // Wie die Liste anzeigt: zuerst die Person (Nachname, Vorname), nur ohne Person die Firma.
+        'name' => ["COALESCE(NULLIF(last_name, ''), NULLIF(company_name, ''), customer_number)", 'first_name'],
         'number' => ['customer_number'],
         'type' => ['type'],
         'city' => ['city', 'postal_code'],
@@ -51,17 +53,11 @@ class CustomerController extends Controller
         }
 
         if ($q = trim((string) $request->query('q'))) {
-            // % und _ sind in LIKE Platzhalter – hier wörtlich gemeint.
-            $like = '%'.addcslashes($q, '%_\\').'%';
-            $query->where(function ($w) use ($like) {
-                foreach (['company_name', 'first_name', 'last_name', 'customer_number', 'email', 'city', 'postal_code'] as $col) {
-                    $w->orWhere($col, 'like', $like);
+            // Suche am Wortanfang (Index, auch bei Millionen Kunden), siehe NameSearch: „Muster“, „Max Hamburg“, „Mustermann,Max“.
+            NameSearch::apply($query, $q, extra: function ($w, string $token) {
+                if (ctype_digit($token)) {
+                    $w->orWhere('debitor_number', 'like', NameSearch::start($token));
                 }
-                $w->orWhere('debitor_number', 'like', $like);
-                // Vollständiger Name in beiden Reihenfolgen („Max Müller“ und „Müller Max“),
-                // sonst findet die Suche nur Vor- oder Nachnamen einzeln.
-                $w->orWhereRaw("CONCAT_WS(' ', first_name, last_name) like ? escape '\\\\'", [$like]);
-                $w->orWhereRaw("CONCAT_WS(' ', last_name, first_name) like ? escape '\\\\'", [$like]);
             });
         }
 

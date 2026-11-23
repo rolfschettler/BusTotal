@@ -33,6 +33,9 @@ export interface DocumentLine {
 /** Absender oder Empfänger, so wie sie beim Festschreiben kopiert wurden. */
 export interface DocumentParty {
   name: string;
+  company_name?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
   street: string | null;
   postal_code: string | null;
   city: string | null;
@@ -137,7 +140,10 @@ export interface BusDocument {
   payment?: PaymentSummary | null;
   /** E-Rechnung: Format der archivierten XML (`xrechnung`), null solange es keine gibt */
   einvoice_format?: string | null;
-  customer?: { id: string; customer_number: string; display_name: string } | null;
+  customer?: {
+    id: string; customer_number: string; display_name: string;
+    company_name?: string | null; first_name?: string | null; last_name?: string | null; postal_code?: string | null; city?: string | null;
+  } | null;
   /** Stufe in der Belegkette (0 = Ursprung), nur in der Ansicht „je Kunde“ */
   chain_depth?: number;
   source?: { id: string; type: DocumentTypeValue; number: string | null } | null;

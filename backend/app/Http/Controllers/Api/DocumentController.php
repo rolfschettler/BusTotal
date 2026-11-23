@@ -14,6 +14,7 @@ use App\Services\DocumentService;
 use App\Services\EInvoiceService;
 use App\Services\PaymentService;
 use App\Services\TaxHints;
+use App\Support\NameSearch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -30,7 +31,7 @@ class DocumentController extends Controller
         'number' => 'documents.number',
         // Reihenfolge des Geschäftsgangs statt Alphabet: Angebot → Auftragsbestätigung → Anzahlung → Rechnung → Gutschrift
         'type' => "FIELD(documents.type, 'angebot', 'auftragsbestaetigung', 'anzahlung', 'rechnung', 'gutschrift')",
-        'customer' => "COALESCE(NULLIF(c.company_name, ''), c.last_name, c.customer_number)",
+        'customer' => "COALESCE(NULLIF(c.last_name, ''), NULLIF(c.company_name, ''), c.customer_number)",
         'date' => 'documents.document_date',
         'gross' => 'documents.gross_total',
         'status' => 'documents.status',
@@ -71,7 +72,7 @@ class DocumentController extends Controller
         ]);
 
         $query = Document::query()
-            ->with(['customer:id,customer_number,company_name,first_name,last_name', 'source:id,type,number'])
+            ->with(['customer:id,customer_number,company_name,first_name,last_name,postal_code,city', 'source:id,type,number'])
             ->select('documents.*')
             ->leftJoin('customers as c', 'c.id', '=', 'documents.customer_id');
 
@@ -82,20 +83,14 @@ class DocumentController extends Controller
         }
 
         if ($q = trim((string) $request->query('q'))) {
-            // % und _ sind in LIKE Platzhalter – hier wörtlich gemeint.
-            $like = '%'.addcslashes($q, '%_\\').'%';
-            $query->where(function ($w) use ($like) {
-                $w->where('documents.number', 'like', $like)
-                    ->orWhere('documents.subject', 'like', $like)
-                    // Die Spalten in eine eigene Klammer: Ein orWhere direkt in whereHas würde die Bedingung
-                    // "gehört zu diesem Beleg" aushebeln, und jeder Beleg träfe, sobald irgendein Kunde passt.
-                    ->orWhereHas('customer', function ($c) use ($like) {
-                        $c->where(function ($w) use ($like) {
-                            foreach (['company_name', 'first_name', 'last_name', 'customer_number'] as $col) {
-                                $w->orWhere($col, 'like', $like);
-                            }
-                        });
-                    });
+            // Kundensuche am Wortanfang über den schon verbundenen Kunden `c` (kein Unterabfrage-Umweg), siehe NameSearch:
+            // „Muster“, „Max Hamburg“, „Mustermann,Max“. Dazu je Wort: Belegnummer und Betreff. Ein Wort mit Ziffer trifft die
+            // Nummer auch mittendrin („00010“), sonst nur am Anfang („RE“); der Betreff trifft am Wortanfang.
+            // Belege des Kunden, der inzwischen archiviert ist, bleiben auffindbar.
+            NameSearch::apply($query, $q, ['last_name', 'first_name', 'city', 'postal_code', 'customer_number', 'company_name', 'email'], 'c', function ($w, string $token) {
+                $w->orWhere('documents.number', 'like', preg_match('/\d/', $token) ? NameSearch::anywhere($token) : NameSearch::start($token))
+                    ->orWhere('documents.subject', 'like', NameSearch::start($token))
+                    ->orWhere('documents.subject', 'like', '% '.NameSearch::start($token));
             });
         }
 
@@ -163,7 +158,7 @@ class DocumentController extends Controller
             ->join(DB::raw($chain.' AS chain'), 'chain.id', '=', 'documents.id')
             ->join('documents as root', 'root.id', '=', 'chain.root_id')
             ->orderByRaw('c.id IS NULL')
-            ->orderByRaw("COALESCE(NULLIF(c.company_name, ''), c.last_name, c.customer_number)")
+            ->orderByRaw("COALESCE(NULLIF(c.last_name, ''), NULLIF(c.company_name, ''), c.customer_number)")
             ->orderBy('c.id')
             ->orderBy('root.created_at')
             ->orderBy('root.id')

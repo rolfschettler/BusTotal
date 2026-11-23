@@ -33,7 +33,7 @@
     <div class="row g-2 align-items-center">
       <div class="col-12 col-sm-6 col-lg-4">
         <input type="search" class="form-control form-control-sm" [class.filter-active]="q.trim() !== ''"
-               placeholder="Suche: Belegnr., Kunde, Betreff …" aria-label="Suche"
+               placeholder="Suche: Belegnr., Nachname, Betreff, Ort …" title="Mit Komma nach Nachname und Vorname: Mustermann,Max" aria-label="Suche"
                [(ngModel)]="q" (ngModelChange)="onSearch()" />
       </div>
       <div class="col-6 col-sm-auto">
@@ -111,7 +111,7 @@
             </td>
             <td>
               @if (d.number) {
-                <a [routerLink]="['/belege', d.id]"><code><app-highlight [text]="d.number" [query]="shownQuery()" /></code></a>
+                <a [routerLink]="['/belege', d.id]"><code><app-highlight [text]="d.number" [query]="shownQuery()" mode="words" /></code></a>
               } @else {
                 <span class="text-body-secondary">–</span>
               }
@@ -124,12 +124,12 @@
               }
             </td>
             <td [title]="recipientName(d)">
-              <span class="fw-semibold"><app-highlight [text]="recipientName(d)" [query]="shownQuery()" /></span>
+              <app-customer-name [customer]="d.recipient ?? d.customer" [query]="shownQuery()" />
               @if (d.subject) {
-                <div class="small text-body-secondary text-truncate"><app-highlight [text]="d.subject" [query]="shownQuery()" /></div>
+                <div class="small text-body-secondary text-truncate"><app-highlight [text]="d.subject" [query]="shownQuery()" mode="start" /></div>
               }
               @for (h of hiddenHits(d); track h.label) {
-                <div class="small text-body-secondary">Treffer in {{ h.label }}: <app-highlight [text]="h.value" [query]="shownQuery()" /></div>
+                <div class="small text-body-secondary">Treffer in {{ h.label }}: <app-highlight [text]="h.value" [query]="shownQuery()" mode="start" /></div>
               }
             </td>
             <td class="dim">{{ d.document_date ? (d.document_date | date: 'dd.MM.yyyy') : '' }}</td>

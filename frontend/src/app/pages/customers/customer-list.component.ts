@@ -7,6 +7,7 @@ import { ConfirmService } from '../../core/confirm.service';
 import { httpErrorText } from '../../core/http-error';
 import { Customer, CustomerService, CustomerType } from '../../core/customer.service';
 import { hasHit } from '../../shared/highlight';
+import { CustomerNameComponent } from '../../shared/customer-name.component';
 import { HighlightComponent } from '../../shared/highlight.component';
 import { StickyFilterBarDirective } from '../../shared/sticky-filter-bar.directive';
 import { RevealCurrentDirective } from '../../shared/reveal-current.directive';
@@ -22,7 +23,7 @@ type ListParams = { q: string; type: string; archived: boolean; sortCol: string;
  */
 @Component({
   selector: 'app-customer-list',
-  imports: [FormsModule, RouterLink, HighlightComponent, StickyFilterBarDirective, RevealCurrentDirective],
+  imports: [FormsModule, RouterLink, CustomerNameComponent, HighlightComponent, StickyFilterBarDirective, RevealCurrentDirective],
   templateUrl: './customer-list.component.html',
   // list-page: aktiviert das globale Listenlayout. --sheet-w: Breite des Blattes (Summe der Spalten in <colgroup>).
   host: { class: 'list-page', style: '--sheet-w: 1084px' },
@@ -164,12 +165,8 @@ export class CustomerListComponent implements OnInit {
     const q = this.shownQuery();
     if (!q) return [];
     const out: { label: string; value: string }[] = [];
-    if (hasHit(c.debitor_number, q)) out.push({ label: 'Debitorennr.', value: String(c.debitor_number) });
-    // Bei Kunden mit Firmennamen zeigt die Liste nur diesen, nicht Vor- und Nachname.
-    if (c.company_name) {
-      if (hasHit(c.first_name, q)) out.push({ label: 'Vorname', value: c.first_name ?? '' });
-      if (hasHit(c.last_name, q)) out.push({ label: 'Nachname', value: c.last_name ?? '' });
-    }
+    if (hasHit(c.debitor_number, q, 'start')) out.push({ label: 'Debitorennr.', value: String(c.debitor_number) });
+    // Vor- und Nachname zeigt die Liste immer (app-customer-name), hier fehlt nur noch die Debitorennummer.
     return out;
   }
 

@@ -115,6 +115,26 @@ class CustomerTest extends TestCase
         $this->as(Role::Admin)->getJson('/api/customers?q=Anna Nordmann')->assertJsonPath('total', 0);
     }
 
+
+    public function test_suche_am_wortanfang_nachname_komma_vorname(): void
+    {
+        Customer::factory()->privat()->create(['first_name' => 'Max', 'last_name' => 'Mustermann', 'city' => 'Hamburg']);
+        Customer::factory()->privat()->create(['first_name' => 'Marie', 'last_name' => 'Mustermann', 'city' => 'Bonn']);
+        Customer::factory()->privat()->create(['first_name' => 'Max', 'last_name' => 'Schneider', 'city' => 'Hamburg']);
+        Customer::factory()->create(['company_name' => 'Napf GmbH', 'last_name' => 'Muster', 'first_name' => 'Paul']);
+
+        $total = fn (string $q) => $this->as(Role::Admin)->getJson('/api/customers?q='.urlencode($q))->assertOk()->json('total');
+
+        $this->assertSame(3, $total('muster'));            // Nachname, auch bei Kunden mit Firma
+        $this->assertSame(0, $total('ustermann'));         // nur am Wortanfang (Index), nicht mittendrin
+        $this->assertSame(1, $total('Mustermann,Max'));    // Komma: Nachname und Vorname
+        $this->assertSame(2, $total('Muster,M'));          // beides Teilbegriffe: Max und Marie
+        $this->assertSame(2, $total(',Max'));              // nur Vorname
+        $this->assertSame(2, $total('Mustermann,'));       // nur Nachname
+        $this->assertSame(1, $total('max hamburg muster'));// jedes Wort irgendwo
+        $this->assertSame(2, $total('Max Hamburg'));
+    }
+
     // ---------- Dubletten ----------
 
     public function test_dublette_per_email_und_firmenname(): void

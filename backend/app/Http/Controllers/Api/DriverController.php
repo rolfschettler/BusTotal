@@ -8,6 +8,7 @@ use App\Enums\LicenseClass;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\DriverRequest;
 use App\Models\Driver;
+use App\Support\NameSearch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -62,13 +63,8 @@ class DriverController extends Controller
         }
 
         if ($q = trim((string) $request->query('q'))) {
-            // % und _ sind in LIKE Platzhalter, hier wörtlich gemeint.
-            $like = '%'.addcslashes($q, '%_\\').'%';
-            $query->where(function ($w) use ($like) {
-                foreach (['personnel_number', 'first_name', 'last_name', 'city', 'email', 'license_number', 'driver_card_number'] as $col) {
-                    $w->orWhere($col, 'like', $like);
-                }
-            });
+            // Suche am Wortanfang (Index), siehe NameSearch: „Müller“, „Hans Aachen“, „Müller,Hans“.
+            NameSearch::apply($query, $q, ['last_name', 'first_name', 'city', 'personnel_number', 'email', 'license_number', 'driver_card_number']);
         }
 
         // Leere Werte immer am Ende; bei Gleichstand entscheidet die Personalnummer, damit beim Blättern

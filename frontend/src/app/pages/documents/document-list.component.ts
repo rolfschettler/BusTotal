@@ -7,6 +7,7 @@ import { httpErrorText } from '../../core/http-error';
 import { BusDocument, DocumentService, DocumentTypeInfo } from '../../core/document.service';
 import { hasHit } from '../../shared/highlight';
 import { PrintPreviewService } from '../../core/print-preview.service';
+import { CustomerNameComponent } from '../../shared/customer-name.component';
 import { HighlightComponent } from '../../shared/highlight.component';
 import { StickyFilterBarDirective } from '../../shared/sticky-filter-bar.directive';
 import { RevealCurrentDirective } from '../../shared/reveal-current.directive';
@@ -23,7 +24,7 @@ type DocListParams = {
  */
 @Component({
   selector: 'app-document-list',
-  imports: [DatePipe, FormsModule, RouterLink, HighlightComponent, StickyFilterBarDirective, RevealCurrentDirective],
+  imports: [DatePipe, FormsModule, RouterLink, CustomerNameComponent, HighlightComponent, StickyFilterBarDirective, RevealCurrentDirective],
   templateUrl: './document-list.component.html',
   host: { class: 'list-page', style: '--sheet-w: 964px' },
 })
@@ -161,7 +162,7 @@ export class DocumentListComponent implements OnInit {
   hiddenHits(d: BusDocument): { label: string; value: string }[] {
     const q = this.shownQuery();
     const nr = d.customer?.customer_number;
-    return q && nr && hasHit(nr, q) ? [{ label: 'Kundennr.', value: nr }] : [];
+    return q && nr && hasHit(nr, q, 'start') ? [{ label: 'Kundennr.', value: nr }] : [];
   }
 
   private load() {

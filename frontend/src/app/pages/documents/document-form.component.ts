@@ -12,6 +12,7 @@ import { fieldErrors, httpErrorText } from '../../core/http-error';
 import { PricingService, PricingSettings } from '../../core/pricing.service';
 import { SettingsService, TaxRate } from '../../core/settings.service';
 import { PrintPreviewService } from '../../core/print-preview.service';
+import { CustomerNameComponent } from '../../shared/customer-name.component';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { CalcLine, formatAmount, formatCents, summarize } from './document-calc';
 import { DocumentPaymentsComponent } from './document-payments.component';
@@ -20,6 +21,11 @@ interface PickedCustomer {
   id: string;
   display_name: string;
   customer_number: string;
+  company_name?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  postal_code?: string | null;
+  city?: string | null;
 }
 
 /**
@@ -31,7 +37,7 @@ interface PickedCustomer {
  */
 @Component({
   selector: 'app-document-form',
-  imports: [DatePipe, ReactiveFormsModule, RouterLink, HelpLinkComponent, DocumentPaymentsComponent],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink, CustomerNameComponent, HelpLinkComponent, DocumentPaymentsComponent],
   templateUrl: './document-form.component.html',
   host: { class: 'form-page' },
 })
@@ -289,7 +295,10 @@ export class DocumentFormComponent implements OnInit {
     }
     this.customerTimer = setTimeout(() => {
       this.customers.list({ q: q.trim(), type: '', archived: false, page: 1, sort: 'name', dir: 'asc' }).subscribe((p) =>
-        this.customerHits.set(p.data.slice(0, 8).map((c) => ({ id: c.id, display_name: c.display_name, customer_number: c.customer_number }))),
+        this.customerHits.set(p.data.slice(0, 8).map((c) => ({
+          id: c.id, display_name: c.display_name, customer_number: c.customer_number, company_name: c.company_name,
+          first_name: c.first_name, last_name: c.last_name, postal_code: c.postal_code, city: c.city,
+        }))),
       );
     }, 300);
   }

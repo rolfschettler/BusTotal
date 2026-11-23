@@ -36,7 +36,7 @@
     <div class="row g-2 align-items-center">
       <div class="col-12 col-sm-6 col-lg-4">
         <input type="search" class="form-control form-control-sm" [class.filter-active]="q.trim() !== ''"
-               placeholder="Suche: Name, Kundennr., Ort, PLZ, E-Mail …" aria-label="Suche"
+               placeholder="Suche: Nachname, Kundennr., Ort, PLZ, E-Mail …" title="Mit Komma nach Nachname und Vorname: Mustermann,Max" aria-label="Suche"
                [(ngModel)]="q" (ngModelChange)="onSearch()" />
       </div>
       <div class="col-6 col-sm-auto">
@@ -116,17 +116,17 @@
                 </button>
               }
             </td>
-            <td><code><app-highlight [text]="c.customer_number" [query]="shownQuery()" /></code></td>
+            <td><code><app-highlight [text]="c.customer_number" [query]="shownQuery()" mode="start" /></code></td>
             <td [title]="c.display_name">
-              <a [routerLink]="['/kunden', c.id]" class="fw-semibold"><app-highlight [text]="c.display_name" [query]="shownQuery()" /></a>
+              <a [routerLink]="['/kunden', c.id]" class="text-reset text-decoration-none"><app-customer-name [customer]="c" [query]="shownQuery()" [showPlace]="false" /></a>
               @for (h of hiddenHits(c); track h.label) {
-                <div class="small text-body-secondary">Treffer in {{ h.label }}: <app-highlight [text]="h.value" [query]="shownQuery()" /></div>
+                <div class="small text-body-secondary">Treffer in {{ h.label }}: <app-highlight [text]="h.value" [query]="shownQuery()" mode="start" /></div>
               }
             </td>
             <td>{{ typeLabel(c.type) }}</td>
             <!-- {{ ' ' }}: Angular entfernt reinen Leerraum zwischen Bausteinen, der Abstand muss ausdrücklich da sein. -->
-            <td><app-highlight [text]="c.postal_code" [query]="shownQuery()" />{{ ' ' }}<app-highlight [text]="c.city" [query]="shownQuery()" /></td>
-            <td [title]="c.email ?? ''"><app-highlight [text]="c.email" [query]="shownQuery()" /></td>
+            <td><app-highlight [text]="c.postal_code" [query]="shownQuery()" mode="start" />{{ ' ' }}<app-highlight [text]="c.city" [query]="shownQuery()" mode="start" /></td>
+            <td [title]="c.email ?? ''"><app-highlight [text]="c.email" [query]="shownQuery()" mode="start" /></td>
             <td class="dim">{{ c.phone || c.mobile }}</td>
           </tr>
         } @empty {

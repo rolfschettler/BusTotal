@@ -92,12 +92,12 @@
         <input class="form-control" id="customerSearch" autocomplete="off" [class.is-invalid]="invalid('customer_id')"
                [value]="customerQuery()" (input)="onCustomerSearch($any($event.target).value)" />
         <div class="invalid-feedback">Bitte einen Kunden auswählen.</div>
-        <div class="form-text">Name, Kundennummer oder Ort eingeben, mindestens zwei Zeichen.</div>
+        <div class="form-text">Nachname, Kundennummer oder Ort eingeben, mindestens zwei Zeichen. Mit Komma nach Nachname und Vorname: Mustermann,Max</div>
         @if (customerHits().length) {
           <div class="list-group mt-1">
             @for (h of customerHits(); track h.id) {
               <button type="button" class="list-group-item list-group-item-action" (click)="pickCustomer(h)">
-                {{ h.display_name }} <span class="text-body-secondary small">{{ h.customer_number }}</span>
+                <app-customer-name [customer]="h" [query]="customerQuery()" [showNumber]="true" />
               </button>
             }
           </div>

@@ -5,6 +5,7 @@
   Kurz: Label oben (keine Floating Labels, Labels kurz und einzeilig, Hinweise als form-text darunter), weiße Bootstrap-Felder auf grauer `.form-area` (Seite hell), Tastenleiste `.form-bar` sticky unten in Formularbreite,
   links Speichern und Zurück, rechts seltene Aktion und Abbrechen. Feldbreiten immer über das Bootstrap-Raster (`col-lg-3/4/6/8/12`, Zeile = 12), nie eigene Breiten. Abweichungen nur nach Absprache. Neue Formulare ohne Design-Rückfragen nach dem Ablauf im Muster bauen; Designfehler im Muster beheben, nicht im einzelnen Formular.
 - Suchen markieren Treffer immer mit `<app-highlight>`.
+- **Adress- und Personensuche:** Muster `docs/ClaudeCodePatterns/SearchPattern.md`. Kurz: (Kunden, Fahrer, Belege, Auswahlfelder) läuft immer über `App\Support\NameSearch` (Backend) und zeigt Kunden mit `<app-customer-name>` (Frontend, Modus `start` der Markierung). Gesucht wird am Wortanfang (`feld LIKE 'text%'`, Index; die Datenbank hat Millionen Adressen), nie `%text%` auf Adressfeldern. Mit Komma: „Nachname,Vorname“. Neue Suchfelder brauchen einen Index (Migration `add_search_indexes`). Anzeige: Person „Nachname, Vorname“ vorn, Firma und Ort darunter.
 - Prüfungen im Browser und Start von Servern nur auf ausdrückliche Anweisung des Nutzers.
 - „BusTotal“ ist nur ein **Arbeitsname**. Produktnamen nie fest in Texte schreiben: Frontend `APP_NAME` (`core/app-info.ts`), Hilfetexte `{{app}}`,
   Backend `config('app.name')`. Umbenennung: `docs/UMBENENNUNG.md`.
