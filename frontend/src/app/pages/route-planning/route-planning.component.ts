@@ -74,7 +74,7 @@ export class RoutePlanningComponent implements OnInit {
   depotText = signal('');
   /** Der dazu gefundene Ort (null: noch nicht gesucht oder Text geändert) */
   depot = signal<Place | null>(null);
-  returnToDepot = signal(true);
+  returnToDepot = signal(false);
 
   /** Fahrzeugbedarf der Tour: ein Typ und eine Anzahl. Das konkrete Fahrzeug wählt später der Disponent. */
   vehicleType = signal('');
