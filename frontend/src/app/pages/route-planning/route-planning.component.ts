@@ -1,17 +1,19 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { forkJoin } from 'rxjs';
+import { Observable, forkJoin, map, of, switchMap, tap } from 'rxjs';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TripKindValue } from '../../core/document.service';
 import { PricingService } from '../../core/pricing.service';
 import { RouteResult, RouteService } from '../../core/route.service';
 import { httpErrorText } from '../../core/http-error';
 import { GERMAN_STATES } from '../../core/german-states';
 import { Depot, DepotService } from '../../core/depot.service';
+import { Trip, TripInput, TripService } from '../../core/trip.service';
 import { VehicleChoice, VehicleService } from '../../core/vehicle.service';
 import { HelpLinkComponent } from '../../help/help-link.component';
+import { HighlightComponent } from '../../shared/highlight.component';
 import { MapComponent, MapMarker } from '../../shared/map.component';
 import { PlaceFieldComponent } from './place-field.component';
 import {
@@ -25,19 +27,23 @@ import {
   formatDuration,
   formatKm,
   moveItem,
+  restoredResult,
+  storableRoute,
   toRequest,
+  tourTitle,
 } from './route-planning-view';
 
 /**
  * Streckenplanung: Von – Über – Nach eingeben, Strecke und Fahrzeit mit Pausen und Ruhezeiten berechnen.
  * Der Alltag braucht nur Von, Nach und (freiwillig) Über-Orte; Betriebshof, Aufenthalte und lange Tage stehen unter
- * "Weitere Angaben". Es wird nichts gespeichert (Speichern als Kalkulationsbasis kommt später). Die Betriebshöfe pflegt der
+ * "Weitere Angaben". Eine berechnete Tour lässt sich im Tour-Archiv speichern und später wieder laden (samt Zeitplan und Linienzug,
+ * ohne neue Berechnung); ohne "Tour speichern" bleibt nichts zurück. Die Betriebshöfe pflegt der
  * Administrator unter Einstellungen; ihre Koordinaten stehen dort schon fest. Die Seite ist ein Werkzeug, kein Bearbeitungsformular: Sie nutzt die Formular-Optik
  * (.form-area, .section-title), hat aber keine Tastenleiste.
  */
 @Component({
   selector: 'app-route-planning',
-  imports: [FormsModule, DatePipe, DecimalPipe, RouterLink, HelpLinkComponent, MapComponent, PlaceFieldComponent],
+  imports: [FormsModule, DatePipe, DecimalPipe, RouterLink, HelpLinkComponent, HighlightComponent, MapComponent, PlaceFieldComponent],
   templateUrl: './route-planning.component.html',
 })
 export class RoutePlanningComponent implements OnInit {
@@ -45,7 +51,10 @@ export class RoutePlanningComponent implements OnInit {
   private vehicleApi = inject(VehicleService);
   private depotApi = inject(DepotService);
   private pricing = inject(PricingService);
+  private tripApi = inject(TripService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private searchTimer: ReturnType<typeof setTimeout> | undefined;
   private nextKey = 1;
 
   // ---- Eingabe ----
@@ -67,7 +76,13 @@ export class RoutePlanningComponent implements OnInit {
   depot = signal<Place | null>(null);
   returnToDepot = signal(true);
 
+  /** Fahrzeugbedarf der Tour: ein Typ und eine Anzahl. Das konkrete Fahrzeug wählt später der Disponent. */
+  vehicleType = signal('');
+  vehicleCount = signal(1);
+  vehicleTypes = signal<{ value: string; label: string }[]>([]);
+
   vehicles = signal<VehicleChoice[]>([]);
+  /** Freiwillig: ein bestimmtes Fahrzeug, dessen Maße die Route beachtet */
   vehicleId = signal('');
   vehiclesError = signal<string | null>(null);
   startAt = signal('');
@@ -112,27 +127,35 @@ export class RoutePlanningComponent implements OnInit {
     const r = this.result();
     if (!r || this.stale()) return;
     // Betitelt wird mit Von und Nach der Fahrt mit Fahrgästen; Leerfahrten zum Betriebshof gehören nicht in den Betreff.
-    const loaded = r.legs.filter((l) => !l.empty);
-    // Die Namen des Dienstes sind lang ("München Hauptbahnhof, München"): im Betreff genügt der Teil vor dem ersten Komma.
-    const short = (s: string) => s.split(',')[0].trim();
-    const label = loaded.length ? `${short(loaded[0].from.label)} – ${short(loaded[loaded.length - 1].to.label)}` : '';
+    const label = this.tripTitle().trim() || tourTitle(r.legs);
 
     this.quoting.set(true);
     this.quoteError.set(null);
-    this.pricing
-      .quoteFromTour({
-        loaded_km: Math.round(r.loaded_distance_m / 100) / 10,
-        empty_km: Math.round(r.empty_distance_m / 100) / 10,
-        drive_s: r.drive_s,
-        days: Math.max(1, r.days),
-        surcharge_percent: this.surcharge() || 0,
-        label,
-        start_at: r.start_at,
-        end_at: r.end_at,
-        state: this.holidayState() || null,
-        vehicle_id: this.vehicleId() || null,
-        trip_kind: this.tripKind(),
-      })
+    // Die Reise verweist auf die gespeicherte Tour: Ist sie noch nicht im Archiv (oder wurde sie nach dem Laden verändert), legt
+    // "Angebot erstellen" sie selbst an. So muss niemand an einen Zwischenschritt denken.
+    const current = this.currentTrip();
+    const trip$ = current && !this.tripDirty() ? of(current.id) : this.storeTrip(true).pipe(map((t) => t.id));
+    trip$
+      .pipe(
+        switchMap((tripId) =>
+          this.pricing.quoteFromTour({
+            loaded_km: Math.round(r.loaded_distance_m / 100) / 10,
+            empty_km: Math.round(r.empty_distance_m / 100) / 10,
+            drive_s: r.drive_s,
+            days: Math.max(1, r.days),
+            surcharge_percent: this.surcharge() || 0,
+            label,
+            start_at: r.start_at,
+            end_at: r.end_at,
+            state: this.holidayState() || null,
+            vehicle_id: this.vehicleId() || null,
+            vehicle_type: this.vehicleType() || null,
+            vehicle_count: this.vehicleCount(),
+            trip_kind: this.tripKind(),
+            trip_id: tripId,
+          }),
+        ),
+      )
       .subscribe({
         next: (doc) => {
           this.quoting.set(false);
@@ -143,6 +166,201 @@ export class RoutePlanningComponent implements OnInit {
           this.quoteError.set(httpErrorText(e, 'Das Angebot konnte nicht erstellt werden.'));
         },
       });
+  }
+
+  // ---- Tour-Archiv ----
+  /** Name der Tour im Archiv; vorgeschlagen wird "Von – Nach" der berechneten Strecke */
+  tripTitle = signal('');
+  /** Die Tour, die aus dem Archiv geladen oder zuletzt gespeichert wurde: "Speichern" ändert sie, "Als neue Tour" legt eine zweite an. */
+  currentTrip = signal<{ id: string; title: string } | null>(null);
+  savingTrip = signal(false);
+  /** Die Eingabe wurde seit dem Laden oder Speichern der Tour verändert: Das Archiv hat einen anderen Stand. */
+  tripDirty = signal(false);
+  /** „Tour gespeichert“: erscheint direkt bei der Taste, weil man beim Speichern weit unten auf der Seite steht */
+  tripMessage = signal<string | null>(null);
+  /** „Tour geladen“: erscheint oben auf der Seite, wo man nach dem Laden steht */
+  tripLoadedMessage = signal<string | null>(null);
+  tripError = signal<string | null>(null);
+
+  archiveOpen = signal(false);
+  archiveQuery = signal('');
+  /** Der Suchbegriff, zu dem die angezeigte Liste gehört (für die Markierung der Treffer) */
+  archiveShownQuery = signal('');
+  archive = signal<Trip[]>([]);
+  archiveTotal = signal(0);
+  archiveLoading = signal(false);
+  archiveError = signal<string | null>(null);
+  loadingTrip = signal(false);
+
+  /**
+   * Kommt man aus dem Tour-Archiv (?trip=…), wird die Tour sofort geladen. Das geschieht erst, wenn die Betriebshöfe da sind,
+   * damit der gespeicherte Betriebshof gewählt werden kann.
+   */
+  private openLinkedTrip() {
+    const id = this.route.snapshot.queryParamMap.get('trip');
+    if (!id) return;
+    this.loadingTrip.set(true);
+    this.tripApi.get(id).subscribe({
+      next: (trip) => {
+        this.applyTrip(trip);
+        this.loadingTrip.set(false);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.loadingTrip.set(false);
+        this.tripError.set(httpErrorText(err, 'Die Tour konnte nicht geladen werden.'));
+      },
+    });
+  }
+
+  /** Öffnet oder schließt die Liste der gespeicherten Touren. */
+  toggleArchive() {
+    this.archiveOpen.update((o) => !o);
+    if (this.archiveOpen()) this.searchArchive();
+  }
+
+  /** Suche mit kurzer Verzögerung, damit nicht jeder Tastendruck eine Anfrage auslöst. */
+  onArchiveQuery(text: string) {
+    this.archiveQuery.set(text);
+    clearTimeout(this.searchTimer);
+    this.searchTimer = setTimeout(() => this.searchArchive(), 300);
+  }
+
+  searchArchive() {
+    const q = this.archiveQuery();
+    this.archiveLoading.set(true);
+    this.archiveError.set(null);
+    this.tripApi.list(q).subscribe({
+      next: (page) => {
+        // Eine ältere, langsamere Antwort darf eine neuere Suche nicht überschreiben.
+        if (q !== this.archiveQuery()) return;
+        this.archive.set(page.data);
+        this.archiveTotal.set(page.total);
+        this.archiveShownQuery.set(q);
+        this.archiveLoading.set(false);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.archiveLoading.set(false);
+        this.archiveError.set(httpErrorText(err, 'Das Tour-Archiv konnte nicht geladen werden.'));
+      },
+    });
+  }
+
+  /** Eine Tour aus dem Archiv in die Planung übernehmen: Halte, Einstellungen und das gespeicherte Ergebnis samt Linie, ohne neue Berechnung. */
+  loadTrip(summary: Trip) {
+    this.loadingTrip.set(true);
+    this.archiveError.set(null);
+    this.tripApi.get(summary.id).subscribe({
+      next: (trip) => {
+        this.applyTrip(trip);
+        this.loadingTrip.set(false);
+        this.archiveOpen.set(false);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.loadingTrip.set(false);
+        this.archiveError.set(httpErrorText(err, 'Die Tour konnte nicht geladen werden.'));
+      },
+    });
+  }
+
+  private applyTrip(trip: Trip) {
+    this.reset();
+    const place = (s: Trip['stops'][number]): Place => ({ label: s.label, lat: s.place.lat, lon: s.place.lon });
+    const waypoint = (s: Trip['stops'][number]): Waypoint => ({ key: this.nextKey++, place: place(s), dwell_minutes: s.dwell_minutes, driver_free: s.driver_free });
+
+    const list = trip.stops.map(waypoint);
+    this.start.set(list[0]);
+    this.end.set(list[list.length - 1]);
+    this.via.set(list.slice(1, -1));
+    this.texts.set(Object.fromEntries(list.map((w) => [w.key, w.place!.label])));
+    this.roundTrip.set(trip.round_trip);
+
+    // Der Betriebshof wird nur übernommen, wenn es ihn noch gibt.
+    const depot = this.depots().find((d) => d.id === trip.depot_id);
+    this.chooseDepot(depot ? depot.id : '');
+    this.returnToDepot.set(!!depot && trip.return_to_depot);
+
+    this.tripKind.set(trip.trip_kind);
+    this.vehicleType.set(trip.vehicle_type ?? '');
+    this.vehicleCount.set(trip.vehicle_count);
+    this.vehicleId.set('');
+
+    if (trip.route) this.result.set(restoredResult(trip.route, trip.geometry));
+    this.stale.set(false);
+    this.tripTitle.set(trip.title);
+    this.currentTrip.set({ id: trip.id, title: trip.title });
+    this.tripDirty.set(false);
+    this.tripLoadedMessage.set(`Tour „${trip.title}“ ist geladen. Sie können gleich ein Angebot erstellen oder die Strecke ändern und neu berechnen.`);
+  }
+
+  /** Speichert die berechnete Tour im Archiv: als Änderung der geladenen Tour oder (asNew) als neue Tour. */
+  saveTrip(asNew = false) {
+    if (this.stale() || !this.result() || !this.tripTitle().trim()) return;
+    this.savingTrip.set(true);
+    this.tripError.set(null);
+    this.storeTrip(asNew).subscribe({
+      next: (trip) => {
+        this.savingTrip.set(false);
+        this.tripLoadedMessage.set(null);
+        this.tripMessage.set(`Tour „${trip.title}“ ist im Tour-Archiv gespeichert. Nächster Schritt: Angebot erstellen. Die Tour finden Sie später über „Aus Archiv laden“.`);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.savingTrip.set(false);
+        this.tripError.set(httpErrorText(err, 'Die Tour konnte nicht gespeichert werden.'));
+      },
+    });
+  }
+
+  /** Schickt die berechnete Tour ans Archiv: ändert die geladene Tour oder (asNew) legt eine neue an. */
+  private storeTrip(asNew: boolean): Observable<Trip> {
+    const r = this.result()!;
+    const depotId = this.depots().some((d) => d.id === this.depotChoice()) ? this.depotChoice() : null;
+    const body: TripInput = {
+      title: this.tripTitle().trim() || tourTitle(r.legs) || 'Tour',
+      trip_kind: this.tripKind(),
+      vehicle_type: this.vehicleType() || null,
+      vehicle_count: this.vehicleCount(),
+      depot_id: depotId,
+      return_to_depot: !!depotId && this.returnToDepot(),
+      round_trip: this.roundTrip(),
+      loaded_km: Math.round(r.loaded_distance_m / 100) / 10,
+      empty_km: Math.round(r.empty_distance_m / 100) / 10,
+      drive_s: r.drive_s,
+      elapsed_s: r.elapsed_s,
+      days: Math.max(1, r.days),
+      route: storableRoute(r),
+      geometry: r.geometry,
+      // Die Rückfahrt zum Start steht in der Berechnung als zusätzlicher Halt (Nummer -1), gespeichert wird sie als Kennzeichen.
+      stops: this.stops()
+        .filter((s) => s.key !== -1)
+        .map((s) => ({ label: s.label, lat: s.lat, lon: s.lon, dwell_minutes: s.dwell_minutes, driver_free: s.driver_free })),
+    };
+
+    const current = this.currentTrip();
+    const call = current && !asNew ? this.tripApi.update(current.id, body) : this.tripApi.create(body);
+    return call.pipe(
+      tap((trip) => {
+        this.currentTrip.set({ id: trip.id, title: trip.title });
+        this.tripTitle.set(trip.title);
+        this.tripDirty.set(false);
+      }),
+    );
+  }
+
+  /** Ein anderes Fahrzeug gewählt: Der Typ des Fahrzeugs wird zum Fahrzeugtyp der Tour, solange es einen hat. */
+  chooseVehicle(id: string) {
+    this.vehicleId.set(id);
+    const type = this.vehicles().find((v) => v.id === id)?.type;
+    if (type) this.vehicleType.set(type);
+    this.changed();
+  }
+
+  typeLabel(value: string): string {
+    return this.vehicleTypes().find((t) => t.value === value)?.label ?? value;
+  }
+
+  setVehicleCount(value: unknown) {
+    const n = Math.round(Number(value));
+    this.vehicleCount.set(Number.isFinite(n) ? Math.min(99, Math.max(1, n)) : 1);
   }
 
   /** Die Halte in Fahrtreihenfolge (leere Felder fehlen, mit Rückfahrt steht der Start am Ende noch einmal). */
@@ -183,8 +401,12 @@ export class RoutePlanningComponent implements OnInit {
         this.depots.set(list.filter((d) => d.place));
         const standard = this.depots().find((d) => d.is_default);
         if (standard && this.depotChoice() === '') this.chooseDepot(standard.id);
+        this.openLinkedTrip();
       },
-      error: (err) => this.depotsError.set(httpErrorText(err, 'Die Betriebshöfe konnten nicht geladen werden.')),
+      error: (err) => {
+        this.depotsError.set(httpErrorText(err, 'Die Betriebshöfe konnten nicht geladen werden.'));
+        this.openLinkedTrip();
+      },
     });
     this.vehicleApi.choices().subscribe({
       next: (v) => this.vehicles.set(v),
@@ -195,6 +417,7 @@ export class RoutePlanningComponent implements OnInit {
       next: (p) => {
         this.companyState.set(p.company_state);
         this.tripKinds.set(p.trip_kinds.filter((k) => k.value !== 'sonstig'));
+        this.vehicleTypes.set(p.vehicle_types);
       },
       error: (e) => this.defaultsError.set(httpErrorText(e, 'Das Bundesland des Betriebssitzes konnte nicht geladen werden.')),
     });
@@ -269,11 +492,19 @@ export class RoutePlanningComponent implements OnInit {
     this.result.set(null);
     this.error.set(null);
     this.stale.set(false);
+    this.currentTrip.set(null);
+    this.tripTitle.set('');
+    this.tripMessage.set(null);
+    this.tripLoadedMessage.set(null);
+    this.tripError.set(null);
   }
 
   /** Jede Änderung an der Eingabe macht ein vorhandenes Ergebnis zum veralteten. */
   changed() {
     if (this.result()) this.stale.set(true);
+    this.tripMessage.set(null);
+    this.tripLoadedMessage.set(null);
+    this.tripDirty.set(true);
   }
 
   // ---- Berechnung ----
@@ -335,6 +566,8 @@ export class RoutePlanningComponent implements OnInit {
         this.result.set(r);
         this.stale.set(false);
         this.calculating.set(false);
+        // Name der Tour vorschlagen, solange der Nutzer keinen eigenen eingetragen hat.
+        if (!this.tripTitle().trim()) this.tripTitle.set(tourTitle(r.legs));
       },
       error: (err: HttpErrorResponse) => {
         this.calculating.set(false);

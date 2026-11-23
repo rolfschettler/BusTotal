@@ -31,7 +31,7 @@ Bevor Sie das erste Angebot schreiben, richtet der **Administrator** diese Dinge
 | Schritt | Was | Wo | Stand |
 |---|---|---|---|
 | 0 | Einmal einrichten | **Einstellungen**, Fuhrpark, Fahrer, Kunden | Verfügbar |
-| 1 | Tour planen | Seitenleiste **Fahrten und Abrechnung › Streckenplanung** | Verfügbar |
+| 1 | Tour planen und im Tour-Archiv speichern | Seitenleiste **Fahrten und Abrechnung › Streckenplanung** (Archiv: **Tour-Archiv**, Überblick: **Reisen**) | Verfügbar |
 | 2 | Angebot erstellen, **zwei Wege** | **A:** Streckenplanung › **Angebot erstellen**. **B:** Belege › **Neuer Beleg** (ohne Strecke) | Verfügbar |
 | 3 | Auftrag bestätigen | Im festgeschriebenen Angebot: **Auftragsbestätigung erstellen** | Verfügbar |
 | 4 | Anzahlung verlangen (optional) | **Anzahlungsrechnung erstellen** | Verfügbar |
@@ -45,9 +45,11 @@ Bevor Sie das erste Angebot schreiben, richtet der **Administrator** diese Dinge
 
 **Wo:** Seitenleiste, Gruppe **Fahrten und Abrechnung**, Eintrag **Streckenplanung** (Administrator und Disponent).
 
-1. Tragen Sie **Von** und **Nach** ein, bei Bedarf **Über**-Orte. Wählen Sie ein **Fahrzeug** und die **Abfahrt**.
+1. Tragen Sie **Von** und **Nach** ein, bei Bedarf **Über**-Orte. Wählen Sie **Fahrzeugtyp** und **Anzahl** der Busse und die **Abfahrt**.
 2. Klicken Sie **Strecke berechnen**.
 3. Sie sehen Strecke, Leerfahrt, Lenkzeit, Gesamtdauer, Fahrtage und den Zeitplan mit Pausen und Ruhezeiten. Warnungen weisen auf Probleme hin.
+4. **Tour speichern** (empfohlen): Unter dem Ergebnis legt die Schaltfläche die Tour im Tour-Archiv ab. Der Name ist mit „Von – Nach“ vorgeschlagen. Eine Tour, die Sie schon einmal geplant haben, laden Sie oben rechts mit **Aus Archiv laden**, ohne neu zu berechnen, oder öffnen sie in der Seitenleiste unter **Tour-Archiv**. Alle Reisen mit Stand und Betrag stehen unter **Reisen**.
+5. **Nächster Schritt:** **Angebot erstellen** (siehe Schritt 2).
 
 **Tipp:** Orte suchen Sie wie in OpenStreetMap („Ulm Hbf“, nicht „Ulm Hauptbahnhof“). Mehr unter [Streckenplanung](/hilfe/strecken).
 
@@ -71,10 +73,11 @@ Ein Angebot entsteht auf **zwei Wegen**. Beide führen in dasselbe Beleg-Formula
 
 1. Wählen Sie unter dem Ergebnis die **Fahrtart**. **Gelegenheitsverkehr** (Charter, Ausflug, Gruppenfahrt) ist vorbelegt, das ist der Normalfall. **Linienverkehr** und **Schülerfahrt** gelten nur für genehmigte Linien und Schulträger.
 2. Wählen Sie bei Bedarf einen **Zuschlag** und das Bundesland der **Feiertage**.
-3. Klicken Sie **Angebot erstellen**. {{app}} legt das Angebot als **Entwurf** an und öffnet es.
+3. Klicken Sie **Angebot erstellen**. {{app}} legt das Angebot als **Entwurf** an und öffnet es. Dabei entsteht automatisch die **Reise** (die Tour wird bei Bedarf im Archiv gespeichert). Oben im Beleg zeigt die Reise-Leiste die Belege der Reise und den nächsten Schritt, siehe [Reise](/hilfe/belege#reise).
 4. Wählen Sie im Beleg den **Kunden** (Suchfeld: Name, Nummer oder Ort).
 5. Prüfen Sie die **Positionen**: Preis, Menge, **Fahrtart** und **Steuersatz** lassen sich je Position ändern. Steht oben **„Bitte prüfen“**, passt ein Satz nicht zur Fahrtart. Das ist ein Hinweis und sperrt nichts.
-6. **Speichern**, dann **Festschreiben** (nur Administrator und Buchhaltung). Das Angebot bekommt seine Nummer und ist gesperrt.
+6. **Mehrere Strecken oder Busse?** Mit **Weitere Strecke hinzufügen** nehmen Sie Hinfahrt, Fahrten vor Ort und Rückfahrt in dasselbe Angebot auf, je Strecke mit einem oder mehreren Fahrzeugtypen. Siehe [Mehrere Strecken und Fahrzeugtypen](/hilfe/belege#mehrere-strecken).
+7. **Speichern**, dann **Festschreiben** (nur Administrator und Buchhaltung). Das Angebot bekommt seine Nummer und ist gesperrt.
 7. **Drucken** öffnet die Druckvorschau. Von dort drucken Sie oder speichern als PDF.
 
 ### Weg B: ohne Strecke {#angebot-hand}

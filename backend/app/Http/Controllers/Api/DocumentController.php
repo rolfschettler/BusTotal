@@ -4,15 +4,21 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\DocumentStatus;
 use App\Enums\DocumentType;
+use App\Enums\SectionKind;
+use App\Enums\VehicleType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\DocumentRequest;
 use App\Models\AuditLog;
 use App\Models\Document;
+use App\Models\JourneySection;
+use App\Models\Trip;
 use App\Services\DocumentArchive;
 use App\Services\DocumentPdf;
 use App\Services\DocumentService;
 use App\Services\EInvoiceService;
+use App\Services\JourneyService;
 use App\Services\PaymentService;
+use App\Services\QuoteService;
 use App\Services\TaxHints;
 use App\Support\NameSearch;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +26,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class DocumentController extends Controller
 {
@@ -53,6 +60,7 @@ class DocumentController extends Controller
     {
         $document->loadMissing('lines');
         $document->setAttribute('payment', $this->payments->summary($document));
+        $document->setAttribute('journey', app(JourneyService::class)->summary($document));
 
         return $document->setAttribute('warnings', $this->hints->forDocument($document));
     }
@@ -184,6 +192,56 @@ class DocumentController extends Controller
         $data = $request->validated();
 
         return response()->json($this->withHints($this->documents->updateDraft($document, $data, $data['lines'])));
+    }
+
+    /**
+     * Eine weitere Strecke der Reise in den Entwurf aufnehmen: Aus der gespeicherten Tour entstehen die Positionen je Fahrzeugtyp.
+     * Der Beleg muss ein Entwurf mit Reise sein; die Positionen kommen mit den Preisen der Firma (Einstellungen › Preise).
+     */
+    public function addSection(Request $request, Document $document, QuoteService $quotes): JsonResponse
+    {
+        $data = $request->validate([
+            'kind' => ['required', Rule::enum(SectionKind::class)],
+            'trip_id' => ['required', 'uuid', 'exists:trips,id'],
+            'start_on' => ['nullable', 'date_format:Y-m-d'],
+            'surcharge_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'vehicles' => ['required', 'array', 'min:1', 'max:6'],
+            'vehicles.*.type' => ['required', 'distinct', Rule::enum(VehicleType::class)],
+            'vehicles.*.count' => ['required', 'integer', 'min:1', 'max:99'],
+        ], [
+            'vehicles.required' => 'Bitte mindestens einen Fahrzeugtyp wählen.',
+            'vehicles.*.type.distinct' => 'Jeder Fahrzeugtyp darf nur einmal vorkommen. Erhöhen Sie stattdessen die Anzahl.',
+        ]);
+
+        $vehicles = array_map(fn (array $v) => ['type' => VehicleType::from($v['type']), 'count' => (int) $v['count']], $data['vehicles']);
+
+        $updated = $quotes->addSection(
+            $document, SectionKind::from($data['kind']), Trip::findOrFail($data['trip_id']), $vehicles,
+            $data['start_on'] ?? null, (float) ($data['surcharge_percent'] ?? 0),
+        );
+
+        return response()->json($this->withHints($updated->load(['lines', 'customer', 'source:id,type,number'])), 201);
+    }
+
+    /** Eine Strecke samt ihren Positionen aus dem Entwurf nehmen. Die erste Strecke bleibt, dann gehört der Entwurf gelöscht. */
+    public function removeSection(Document $document, JourneySection $section): JsonResponse
+    {
+        if ($document->journey_id === null || $section->journey_id !== $document->journey_id) {
+            throw ValidationException::withMessages(['section' => ['Diese Strecke gehört nicht zur Reise dieses Belegs.']]);
+        }
+        if (JourneySection::where('journey_id', $document->journey_id)->count() <= 1) {
+            throw ValidationException::withMessages(['section' => ['Die einzige Strecke der Reise kann nicht entfernt werden. Löschen Sie stattdessen den Entwurf.']]);
+        }
+
+        $updated = DB::transaction(function () use ($document, $section) {
+            $updated = $this->documents->removeSectionLines($document, $section->id);
+            // Der Abschnitt verschwindet nur, wenn kein anderer Beleg der Reise noch Positionen darauf hat.
+            app(JourneyService::class)->removeSectionIfUnused($section);
+
+            return $updated;
+        });
+
+        return response()->json($this->withHints($updated->load(['lines', 'customer', 'source:id,type,number'])));
     }
 
     public function destroy(Document $document): JsonResponse

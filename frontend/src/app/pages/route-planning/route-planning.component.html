@@ -1,7 +1,13 @@
 <div class="mb-3">
-  <h1 class="h3 mb-1">Streckenplanung</h1>
+  <div class="d-flex flex-wrap align-items-start justify-content-between gap-2">
+    <h1 class="h3 mb-1">Streckenplanung</h1>
+    <button type="button" class="btn btn-outline-secondary" [attr.aria-expanded]="archiveOpen()" aria-controls="archivePanel" (click)="toggleArchive()">
+      <i class="bi bi-folder2-open me-1" aria-hidden="true"></i>Aus Archiv laden
+    </button>
+  </div>
   <p class="mb-0 small text-body-secondary">
-    Von, über, nach eingeben und Strecke, Fahrzeit sowie Pausen und Ruhezeiten berechnen. Es wird nichts gespeichert.
+    Von, über, nach eingeben und Strecke, Fahrzeit sowie Pausen und Ruhezeiten berechnen.
+    Eine berechnete Tour speichern Sie mit <strong>Tour speichern</strong> im Tour-Archiv und laden sie später wieder.
     <app-help-link topic="strecken" anchor="streckenplanung" label="Streckenplanung" />
   </p>
   <p class="mb-0 small text-body-secondary">
@@ -9,6 +15,65 @@
     Ein Angebot <strong>ohne</strong> Tour legen Sie unter <a routerLink="/belege/neu">Belege › Neuer Beleg</a> an.
   </p>
 </div>
+
+@if (archiveOpen()) {
+  <!-- Tour-Archiv: gespeicherte Touren suchen und in die Planung übernehmen -->
+  <div id="archivePanel" class="form-area mb-3">
+    <div class="section-title">Tour-Archiv</div>
+    <div class="row g-3">
+      <div class="col-12 col-lg-6">
+        <label class="form-label" for="archiveSearch">Suchen</label>
+        <input id="archiveSearch" type="search" class="form-control" autocomplete="off" [ngModel]="archiveQuery()" (ngModelChange)="onArchiveQuery($event)" />
+        <div class="form-text">Name der Tour oder Ort, zum Beispiel „Wien“. Gesucht wird am Wortanfang.</div>
+      </div>
+    </div>
+
+    @if (archiveError(); as ae) {
+      <div class="alert alert-danger py-2 small mt-3" role="alert">{{ ae }}</div>
+    }
+
+    <div class="mt-3" aria-live="polite">
+      @if (archiveLoading() && !archive().length) {
+        <div class="text-body-secondary small"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Tour-Archiv wird geladen …</div>
+      } @else if (!archive().length && !archiveError()) {
+        <div class="text-body-secondary small">
+          @if (archiveShownQuery()) {
+            Keine gespeicherte Tour zu „{{ archiveShownQuery() }}“ gefunden.
+          } @else {
+            Noch keine Tour gespeichert. Berechnen Sie eine Strecke und wählen Sie darunter <strong>Tour speichern</strong>.
+          }
+        </div>
+      }
+      @for (t of archive(); track t.id) {
+        <div class="bg-white border rounded p-2 mb-2 d-flex flex-wrap align-items-center gap-2">
+          <div class="flex-grow-1" style="min-width: 14rem">
+            <div class="fw-semibold"><app-highlight [text]="t.title" [query]="archiveShownQuery()" mode="start" /></div>
+            <div class="small text-body-secondary">
+              <app-highlight [text]="t.stops[0].label" [query]="archiveShownQuery()" mode="start" /> →
+              <app-highlight [text]="t.stops[t.stops.length - 1].label" [query]="archiveShownQuery()" mode="start" />
+              @if (t.stops.length > 2) { · {{ t.stops.length - 2 }} Zwischenhalt(e) }
+            </div>
+            <div class="small text-body-secondary">
+              {{ t.loaded_km + t.empty_km | number: '1.0-1' : 'de-DE' }} km · {{ format.duration(t.drive_s) }} Lenkzeit · {{ t.days }} {{ t.days === 1 ? 'Tag' : 'Tage' }}
+              @if (t.vehicle_type) { · {{ t.vehicle_count }} × {{ typeLabel(t.vehicle_type) }} }
+            </div>
+          </div>
+          <button type="button" class="btn btn-primary" [disabled]="loadingTrip()" (click)="loadTrip(t)">
+            @if (loadingTrip()) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+            Laden
+          </button>
+        </div>
+      }
+      @if (archiveTotal() > archive().length) {
+        <div class="form-text">Es werden die neuesten {{ archive().length }} von {{ archiveTotal() }} Touren gezeigt. Mit der Suche grenzen Sie die Liste ein.</div>
+      }
+    </div>
+  </div>
+}
+
+@if (tripLoadedMessage(); as tm) {
+  <div class="alert alert-success py-2 small" role="status"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>{{ tm }}</div>
+}
 
 <div class="row g-3">
   <!-- ============ Eingabe ============ -->
@@ -59,10 +124,25 @@
 
       <div class="section-title mt-3">Fahrt</div>
       <div class="row g-3">
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="vehicleType">Fahrzeugtyp</label>
+          <select id="vehicleType" class="form-select" [ngModel]="vehicleType()" (ngModelChange)="vehicleType.set($event)">
+            <option value="">Kein Typ gewählt</option>
+            @for (t of vehicleTypes(); track t.value) {
+              <option [value]="t.value">{{ t.label }}</option>
+            }
+          </select>
+          <div class="form-text">Bestimmt die Preise im Angebot.</div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="vehicleCount">Anzahl Fahrzeuge</label>
+          <input id="vehicleCount" type="number" min="1" max="99" step="1" class="form-control" [ngModel]="vehicleCount()" (ngModelChange)="setVehicleCount($event)" />
+          <div class="form-text">Wie viele Busse dieses Typs fahren.</div>
+        </div>
         <div class="col-12">
-          <label class="form-label" for="vehicle">Fahrzeug</label>
-          <select id="vehicle" class="form-select" [ngModel]="vehicleId()" (ngModelChange)="vehicleId.set($event); changed()">
-            <option value="">Kein Fahrzeug gewählt</option>
+          <label class="form-label" for="vehicle">Bestimmtes Fahrzeug (freiwillig)</label>
+          <select id="vehicle" class="form-select" [ngModel]="vehicleId()" (ngModelChange)="chooseVehicle($event)">
+            <option value="">Kein bestimmtes Fahrzeug</option>
             @for (v of vehicles(); track v.id) {
               <option [value]="v.id">{{ v.display_name }} · {{ v.model }} · {{ v.seats }} Plätze</option>
             }
@@ -79,7 +159,7 @@
               <div class="form-text">Höhe, Breite, Länge und Gewicht werden bei der Route beachtet.</div>
             }
           } @else {
-            <div class="form-text">Mit Fahrzeug werden dessen Maße beachtet und die Fahrzeugkosten (Kilometer × Kostensatz) angezeigt.</div>
+            <div class="form-text">Das Fahrzeug disponieren Sie später. Wählen Sie hier eines, werden dessen Maße beachtet, die Fahrzeugkosten (Kilometer × Kostensatz) angezeigt und der Fahrzeugtyp übernommen.</div>
           }
         </div>
         <div class="col-12 col-lg-6">
@@ -200,6 +280,34 @@
       }
     </div>
 
+    <!-- Schritt 1 nach der Berechnung: Tour im Archiv speichern. Schritt 2: Angebot erstellen. -->
+    <div class="section-title">Tour speichern</div>
+    <div class="row g-2 align-items-end mb-1">
+      <div class="col-12 col-lg-6">
+        <label class="form-label small mb-1" for="tripTitle">Name der Tour</label>
+        <input id="tripTitle" type="text" maxlength="150" class="form-control" [ngModel]="tripTitle()" (ngModelChange)="tripTitle.set($event)" [disabled]="stale()" />
+      </div>
+      <div class="col-12 col-lg-6 d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-outline-primary" (click)="saveTrip()" [disabled]="savingTrip() || stale() || !tripTitle().trim()" [attr.title]="stale() ? 'Bitte zuerst neu berechnen' : null">
+          @if (savingTrip()) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+          <i class="bi bi-save me-1" aria-hidden="true"></i>{{ currentTrip() ? 'Änderungen speichern' : 'Tour speichern' }}
+        </button>
+        @if (currentTrip()) {
+          <button type="button" class="btn btn-outline-secondary" (click)="saveTrip(true)" [disabled]="savingTrip() || stale() || !tripTitle().trim()">Als neue Tour speichern</button>
+        }
+      </div>
+    </div>
+    <div class="form-text mb-3">
+      Gespeichert werden die Halte, die berechnete Strecke mit Zeitplan und Linie, Fahrtart sowie Fahrzeugtyp und Anzahl. Nicht gespeichert werden Abfahrtszeit und ein bestimmtes Fahrzeug.
+      @if (depotChoice() === 'other') { Ein „anderer Ort“ als Betriebshof wird nicht mitgespeichert. }
+    </div>
+    @if (tripMessage(); as tm) {
+      <div class="alert alert-success py-2 small" role="status"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>{{ tm }}</div>
+    }
+    @if (tripError(); as te) {
+      <div class="alert alert-danger py-2 small" role="alert">{{ te }}</div>
+    }
+
     <!-- Preisfindung: aus den Kennzahlen entsteht ein Angebot als Entwurf (Preise unter Einstellungen › Preise). -->
     <div class="d-flex flex-wrap align-items-end gap-2 mb-3">
       <div>
@@ -235,12 +343,16 @@
       </div>
     }
     <div class="form-text mb-3">
-      @if (selectedVehicle(); as sv) {
-        Es gelten die Preise des Fahrzeugtyps von {{ sv.display_name }}, wo für den Typ welche hinterlegt sind.
+      @if (vehicleType()) {
+        Es gelten die Preise des Fahrzeugtyps „{{ typeLabel(vehicleType()) }}“, wo für den Typ welche hinterlegt sind.
       } @else {
-        Ohne gewähltes Fahrzeug gelten die Standardpreise.
+        Ohne Fahrzeugtyp gelten die Standardpreise.
+      }
+      @if (vehicleCount() > 1) {
+        Bei {{ vehicleCount() }} Fahrzeugen enthält das Angebot jede Position {{ vehicleCount() }}-fach.
       }
       Zuschläge für Samstag, Sonntag und Feiertag ergeben sich aus den Tagen der Tour, wenn ein Starttermin gesetzt ist.
+      Mit dem Angebot entsteht eine <strong>Reise</strong>; die Tour wird dafür bei Bedarf automatisch im Tour-Archiv gespeichert.
       @if (defaultsError(); as de) {
         <span class="text-danger">{{ de }}</span>
       } @else if (!holidayState() && !companyState()) {

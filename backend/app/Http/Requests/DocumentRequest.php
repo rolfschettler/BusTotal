@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enums\DocumentType;
 use App\Enums\TripKind;
+use App\Enums\VehicleType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -40,6 +41,9 @@ class DocumentRequest extends FormRequest
             'lines.*.unit_price' => ['required', 'numeric', 'between:-9999999,9999999'],
             'lines.*.tax_rate' => ['required', 'numeric', 'between:0,100'],
             'lines.*.tax_note' => ['nullable', 'string', 'max:255'],
+            // Abschnitt und Fahrzeugtyp der Position (gesetzt vom Server, das Formular reicht sie nur durch)
+            'lines.*.journey_section_id' => ['nullable', 'uuid', 'exists:journey_sections,id'],
+            'lines.*.vehicle_type' => ['nullable', Rule::enum(VehicleType::class)],
         ];
     }
 

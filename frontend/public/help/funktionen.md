@@ -13,8 +13,8 @@ Diese Seite zeigt, was {{app}} für Ihr Busunternehmen leistet: **von der Streck
 |---|---|---|
 | Streckenplanung | Strecke, Fahrzeit, Pausen und Ruhezeiten in einem Schritt, Leerfahrten getrennt | Verfügbar |
 | Angebot aus der Tour | Preisvorschlag in Sekunden statt Taschenrechner | Verfügbar |
-| Tour speichern und wiederverwenden | Dieselbe Strecke für weitere Angebote, Ortsdaten nur einmal suchen | In Planung |
-| Reisevorhaben mit mehreren Bussen | Hinfahrt, Fahrten vor Ort und Rückfahrt in einem Vorgang | In Planung |
+| Tour speichern und wiederverwenden | Dieselbe Strecke für weitere Angebote, Ortsdaten nur einmal suchen | Verfügbar |
+| Reisevorhaben mit mehreren Bussen | Hinfahrt, Fahrten vor Ort und Rückfahrt in einem Vorgang | Verfügbar (im Angebot) |
 | Fahrtauftrag und Rückerfassung | Fahrer erfasst Zusatzleistungen, Kosten und Grenzstände, die Rechnung entsteht daraus | In Planung |
 | Belege nach GoBD | Unveränderbare Rechnungen, lückenlose Nummern, Storno statt Löschen | Verfügbar |
 | Archiv-PDF mit Prüfsumme | Jede festgeschriebene Rechnung wird einmal gesichert, nie neu erzeugt | Verfügbar |
@@ -40,11 +40,13 @@ Diese Seite zeigt, was {{app}} für Ihr Busunternehmen leistet: **von der Streck
 - **Leerfahrten** vom und zum Betriebshof werden getrennt ausgewiesen, weil sie anders kalkuliert werden. Siehe [Betriebshof und Leerfahrten](/hilfe/strecken#betriebshof).
 - **Angebot aus der Tour:** Aus der berechneten Tour entsteht ein Angebot als Entwurf, mit Positionen aus Ihren Preisen: Fahrstrecke, Fahrerzeit, Tagespauschale, Übernachtung, Zuschläge für Wochenende und Feiertag, Preise je Fahrzeugtyp. Siehe [Angebot aus der Tour](/hilfe/strecken#angebot-aus-tour).
 - **Orte werden nur einmal gesucht:** Betriebshöfe sind mit Koordinaten gespeichert, das spart Wartezeit und schont das Tageskontingent.
+- **Tour speichern und laden (Tour-Archiv):** Eine berechnete Tour mit Zeitplan und Linie legen Sie im Archiv ab und laden sie später wieder, ohne neu zu berechnen. Siehe [Tour speichern und wiederverwenden](/hilfe/strecken#tour-archiv).
+- **Mehrere Strecken und Fahrzeugtypen in einem Angebot:** Hinfahrt, Fahrten vor Ort und Rückfahrt, je Strecke mit mehreren Fahrzeugtypen und eigener Anzahl. Positionen gruppiert, Preise je Fahrzeugtyp. Siehe [Mehrere Strecken und Fahrzeugtypen](/hilfe/belege#mehrere-strecken).
+- **Fahrtbeschreibung im Beleg:** Beim Festschreiben wird festgehalten, was Sie dem Kunden angeboten haben (Halte, Kilometer, Zeiten, Fahrzeuge). Eine spätere Änderung am Tour-Archiv ändert den Beleg nicht. Siehe [Fahrtbeschreibung](/hilfe/belege#fahrtbeschreibung).
+- **Reisen und Tour-Archiv als Listen:** Alle Reisen mit Stand und Betrag, abgeleitet aus den Belegen, und alle gespeicherten Touren mit Suche, Öffnen in der Streckenplanung und Löschen. Siehe [Die Liste der Reisen](/hilfe/belege#reisen) und [Das Tour-Archiv als Liste](/hilfe/strecken#tour-archiv-liste).
+- **Reise mit Belegkette:** Jedes Angebot aus der Tour gehört automatisch zu einer Reise. Oben im Beleg zeigt eine Leiste Angebot, Auftrag, Rechnung und den nächsten Schritt. Siehe [Reise](/hilfe/belege#reise).
+- **Fahrzeugtyp und Anzahl statt Fahrzeug:** Sie planen mit „Doppeldecker“ oder „Kleinbus“ und der Zahl der Busse. Das konkrete Fahrzeug wählt der Disponent kurz vor der Fahrt. Der Typ bestimmt die Preise im Angebot.
 
-**In Planung**
-- **Tour speichern:** Zwei Ebenen. Das *Tour-Archiv* dient als Vorlage für weitere Angebote. Zusätzlich hält ein *unveränderlicher Schnappschuss am Beleg* fest, was Sie dem Kunden angeboten haben (Stationen, Zeiten, Kilometer, Fahrtbeschreibung).
-- **Fahrzeugtyp statt Fahrzeug:** Sie planen mit „Doppeldecker“ oder „Kleinbus“. Das konkrete Fahrzeug wählt der Disponent kurz vor der Fahrt.
-- **Mehrere Strecken und mehrere Busse** in einem Angebot, zum Beispiel ein Doppeldecker und ein Kleinbus nach Wien.
 
 ## Reisevorhaben, Fahrtauftrag und Rückerfassung {#reisevorhaben}
 

@@ -1,0 +1,150 @@
+<!-- Tabellen-Muster, siehe docs/ClaudeCodePatterns/TableViewPattern.md. Die Optik kommt aus src/styles/_list-page.scss. -->
+
+<div class="page-header">
+  <div class="row g-2 align-items-center">
+    <div class="col-auto">
+      <div class="d-flex align-items-center gap-2">
+        <h5 class="page-title mb-0">Tour-Archiv</h5>
+        @if (loaded()) {
+          <span class="badge rounded-pill record-count d-none d-sm-inline-flex">{{ total() }} {{ total() === 1 ? 'Tour' : 'Touren' }}</span>
+        }
+      </div>
+    </div>
+    <div class="col-12 col-sm-auto ms-sm-auto">
+      <div class="row row-cols-1 row-cols-sm-auto g-1 justify-content-end align-items-center header-ctrl">
+        <div class="col">
+          <button type="button" class="btn btn-sm btn-header w-100" (click)="refresh()" [disabled]="loading()">
+            <i class="bi bi-arrow-clockwise"></i><span class="ms-1">Aktualisieren</span>
+          </button>
+        </div>
+        @if (canEdit()) {
+          <div class="col">
+            <a routerLink="/streckenplanung" class="btn btn-sm btn-header-new w-100">
+              <i class="bi bi-signpost-split"></i><span class="ms-1">Neue Tour planen</span>
+            </a>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-content">
+
+  <div class="filter-bar" appStickyFilterBar>
+    <div class="row g-2 align-items-center">
+      <div class="col-12 col-sm-6 col-lg-4">
+        <input type="search" class="form-control form-control-sm" [class.filter-active]="q.trim() !== ''"
+               placeholder="Suche: Name der Tour oder Ort …" aria-label="Suche" autocomplete="off"
+               [(ngModel)]="q" (ngModelChange)="onSearch()" />
+      </div>
+      <div class="col-12 col-sm-auto small text-body-secondary">
+        Touren speichern Sie in der Streckenplanung mit „Tour speichern“.
+      </div>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-danger py-2 mb-3" role="alert">{{ error() }}</div>
+  }
+  @if (message(); as m) {
+    <div class="alert alert-success py-2 mb-3" role="status">{{ m }}</div>
+  }
+
+  <div class="card table-card rounded-3" [class.dimmed]="loading()">
+    <table class="table table-hover table-sm align-middle data-table mb-0">
+
+      <colgroup>
+        <col style="width:76px">   <!-- Aktionen -->
+        <col style="width:230px">  <!-- Name -->
+        <col style="width:300px">  <!-- Strecke -->
+        <col style="width:190px">  <!-- Kennzahlen -->
+        <col style="width:170px">  <!-- Fahrzeuge -->
+        <col style="width:110px">  <!-- Fahrtart -->
+        <col style="width:90px">   <!-- Verwendet -->
+      </colgroup>
+
+      <thead>
+        <tr>
+          <th class="col-actions"><span class="visually-hidden">Aktionen</span></th>
+          <th>Name</th>
+          <th>Strecke</th>
+          <th>Kilometer und Zeit</th>
+          <th>Fahrzeuge</th>
+          <th>Fahrtart</th>
+          <th>Verwendet</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (t of rows(); track t.id) {
+          <tr (click)="select(t.id)" [class.row-current]="t.id === currentId()" [appRevealCurrent]="t.id === currentId()">
+            <td class="col-actions">
+              <a class="btn-action edit" [routerLink]="['/streckenplanung']" [queryParams]="{ trip: t.id }" title="In der Streckenplanung öffnen" [attr.aria-label]="'Tour ' + t.title + ' in der Streckenplanung öffnen'">
+                <i class="bi bi-signpost-split"></i>
+              </a>
+              @if (canEdit()) {
+                @if ((t.sections_count ?? 0) > 0) {
+                  <span class="btn-action text-body-tertiary" title="Wird in einer Reise verwendet und lässt sich nicht löschen" aria-label="Tour wird verwendet, Löschen nicht möglich"><i class="bi bi-lock"></i></span>
+                } @else {
+                  <button type="button" class="btn-action delete" (click)="remove(t)" title="Löschen" [attr.aria-label]="'Tour ' + t.title + ' löschen'"><i class="bi bi-trash"></i></button>
+                }
+              }
+            </td>
+            <td>
+              <a [routerLink]="['/streckenplanung']" [queryParams]="{ trip: t.id }" class="fw-semibold text-decoration-none"><app-highlight [text]="t.title" [query]="shownQuery()" mode="start" /></a>
+              <div class="small text-body-secondary">geändert {{ t.updated_at | date: 'dd.MM.yyyy' }}</div>
+            </td>
+            <td>
+              <app-highlight [text]="t.stops[0].label" [query]="shownQuery()" mode="start" />{{ ' ' }}→{{ ' ' }}<app-highlight [text]="t.stops[t.stops.length - 1].label" [query]="shownQuery()" mode="start" />
+              @if (t.stops.length > 2) {
+                <div class="small text-body-secondary">{{ t.stops.length - 2 }} Zwischenhalt(e)@if (t.round_trip) { · mit Rückfahrt }</div>
+              } @else if (t.round_trip) {
+                <div class="small text-body-secondary">mit Rückfahrt</div>
+              }
+            </td>
+            <td>
+              {{ t.loaded_km + t.empty_km | number: '1.0-1' : 'de-DE' }} km
+              <div class="small text-body-secondary">{{ duration(t.drive_s) }} Lenkzeit · {{ t.days }} {{ t.days === 1 ? 'Tag' : 'Tage' }}</div>
+            </td>
+            <td>
+              @if (t.vehicle_type) { {{ t.vehicle_count }} × {{ vehicleLabel(t.vehicle_type) }} } @else { <span class="text-body-secondary">–</span> }
+            </td>
+            <td class="dim">{{ kindLabel(t.trip_kind) }}</td>
+            <td>
+              @if ((t.sections_count ?? 0) > 0) {
+                {{ t.sections_count }} {{ t.sections_count === 1 ? 'Reise' : 'Reisen' }}
+              } @else {
+                <span class="text-body-secondary">–</span>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="text-center text-secondary py-5 small">
+              @if (!loaded()) {
+                Daten werden geladen …
+              } @else if (shownQuery()) {
+                Keine Tour zu „{{ shownQuery() }}“ gefunden.
+              } @else {
+                Noch keine Tour gespeichert. Berechnen Sie eine Strecke in der <a routerLink="/streckenplanung">Streckenplanung</a> und wählen Sie darunter <strong>Tour speichern</strong>.
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pager">
+    <span>{{ total() }} {{ total() === 1 ? 'Tour' : 'Touren' }}</span>
+    <span class="ms-auto"></span>
+    <button type="button" class="btn btn-sm btn-outline-primary" (click)="go(page() - 1)" [disabled]="page() <= 1 || loading()">
+      <i class="bi bi-chevron-left"></i> Zurück
+    </button>
+    <span>Seite {{ page() }} von {{ lastPage() }}</span>
+    <button type="button" class="btn btn-sm btn-outline-primary" (click)="go(page() + 1)" [disabled]="page() >= lastPage() || loading()">
+      Weiter <i class="bi bi-chevron-right"></i>
+    </button>
+  </div>
+</div>

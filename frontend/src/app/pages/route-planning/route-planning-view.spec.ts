@@ -1,5 +1,5 @@
-import { RouteLeg, ScheduleEvent } from '../../core/route.service';
-import { Waypoint, buildStops, canCalculate, cleanMinutes, eventTitle, formatDuration, formatKm, formatOffset, moveItem, PlannedStop, shortLabel, toRequest } from './route-planning-view';
+import { RouteLeg, RouteResult, ScheduleEvent } from '../../core/route.service';
+import { Waypoint, buildStops, canCalculate, cleanMinutes, eventTitle, formatDuration, formatKm, formatOffset, moveItem, PlannedStop, restoredResult, shortLabel, storableRoute, toRequest, tourTitle } from './route-planning-view';
 
 const stop = (key: number, extra: Partial<PlannedStop> = {}): PlannedStop => ({ key, label: `Halt ${key}`, lat: 48 + key, lon: 10 + key, dwell_minutes: 0, driver_free: false, ...extra });
 
@@ -172,5 +172,40 @@ describe('Streckenplanung: Anfrage', () => {
     const r = toRequest({ ...base, stops: [stop(1, { dwell_minutes: 99999 }), stop(2, { dwell_minutes: NaN })], startAt: 'quatsch' });
     expect(r.start_at).toBeUndefined();
     expect(r.stops.map((s) => s.dwell_minutes)).toEqual([1440, 0]);
+  });
+});
+
+describe('Streckenplanung: Tour-Archiv', () => {
+  const result = {
+    order: [0, 1], optimized: false, distance_m: 3000, empty_distance_m: 1000, loaded_distance_m: 2000, drive_s: 1800, elapsed_s: 1800, days: 1,
+    legs, schedule: [{ type: 'drive', start_s: 0, duration_s: 600, leg: 0, day: 1, start_at: '2027-03-01T05:00:00Z', end_at: '2027-03-01T05:10:00Z' }],
+    summary: {}, warnings: [], geometry: [[1, 1], [2, 2]], start_at: '2027-03-01T05:00:00Z', end_at: '2027-03-01T06:00:00Z',
+    vehicle: { id: 'v1', display_name: 'Bus 1', cost_per_km: 1 }, vehicle_cost: 12,
+  } as unknown as RouteResult;
+
+  it('tourTitle: Von und Nach der Fahrt mit Fahrgästen, ohne Leerfahrten und ohne Ortsteil', () => {
+    expect(tourTitle(legs)).toBe('Ulm – Bonn');
+    expect(tourTitle([{ ...legs[0], from: { label: 'München Hbf, München', lat: 1, lon: 1 } }])).toBe('');
+    expect(tourTitle([{ ...legs[1], from: { label: 'München Hbf, München', lat: 1, lon: 1 } }])).toBe('München Hbf – Bonn');
+  });
+
+  it('storableRoute: ohne Linienzug, Termin und Fahrzeug, die Eingabe bleibt unverändert', () => {
+    const s = storableRoute(result);
+    expect('geometry' in s).toBeFalse();
+    expect(s.start_at).toBeNull();
+    expect(s.end_at).toBeNull();
+    expect(s.vehicle).toBeNull();
+    expect(s.vehicle_cost).toBeNull();
+    expect('start_at' in s.schedule[0]).toBeFalse();
+    expect(s.schedule[0].duration_s).toBe(600);
+    expect(result.start_at).toBe('2027-03-01T05:00:00Z');
+    expect(result.schedule[0].start_at).toBeDefined();
+  });
+
+  it('restoredResult setzt die Linie wieder ein', () => {
+    const back = restoredResult(storableRoute(result), [[1, 1]]);
+    expect(back.geometry).toEqual([[1, 1]]);
+    expect(back.legs.length).toBe(2);
+    expect(restoredResult(storableRoute(result), null).geometry).toEqual([]);
   });
 });

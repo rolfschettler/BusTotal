@@ -15,7 +15,7 @@ class DocumentLine extends Model
     // Protokoll fluten. Der Beleg selbst (Anlegen, Festschreiben, Storno) ist protokolliert.
     use HasUuids;
 
-    protected $fillable = ['title', 'description', 'quantity', 'unit', 'trip_kind', 'unit_price', 'tax_rate', 'tax_note'];
+    protected $fillable = ['title', 'description', 'quantity', 'unit', 'trip_kind', 'unit_price', 'tax_rate', 'tax_note', 'journey_section_id', 'vehicle_type'];
 
     protected function casts(): array
     {

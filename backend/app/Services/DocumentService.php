@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\CompanySetting;
 use App\Models\Customer;
 use App\Models\Document;
+use App\Models\JourneySection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -24,16 +25,18 @@ class DocumentService
         private readonly DocumentCalculator $calculator,
         private readonly DocumentArchive $archive,
         private readonly EInvoiceService $einvoice,
+        private readonly JourneyService $journeys,
+        private readonly TourSnapshotService $snapshots,
     ) {}
 
     /**
      * Neuer Entwurf. $lines: Liste mit title, description, quantity, unit, unit_price, tax_rate, tax_note.
      */
-    public function createDraft(DocumentType $type, array $data, array $lines = []): Document
+    public function createDraft(DocumentType $type, array $data, array $lines = [], ?string $journeyId = null): Document
     {
-        return DB::transaction(function () use ($type, $data, $lines) {
+        return DB::transaction(function () use ($type, $data, $lines, $journeyId) {
             $document = new Document($data);
-            $document->forceFill(['type' => $type, 'status' => DocumentStatus::Entwurf])->save();
+            $document->forceFill(['type' => $type, 'status' => DocumentStatus::Entwurf, 'journey_id' => $journeyId])->save();
 
             $this->replaceLines($document, $lines);
 
@@ -48,6 +51,8 @@ class DocumentService
             $document = $this->lockDraft($document);
             $document->fill($data)->save();
             $this->replaceLines($document, $lines);
+            // Kunde und Fahrtdatum des ersten Belegs gelten auch für die Reise.
+            $this->journeys->syncFromDraft($document);
 
             return $document->fresh(['lines', 'customer']);
         });
@@ -58,7 +63,10 @@ class DocumentService
     {
         DB::transaction(function () use ($document) {
             // Das Protokoll schreibt das Modell selbst (Auditable).
-            $this->lockDraft($document)->delete();
+            $locked = $this->lockDraft($document);
+            $locked->delete();
+            // Ein gelöschter erster Entwurf nimmt seine Reise mit, wenn sonst kein Beleg dazugehört.
+            $this->journeys->removeIfEmpty($locked->journey_id);
         });
     }
 
@@ -87,7 +95,10 @@ class DocumentService
             $date = $document->document_date ?? Carbon::today();
             $terms = $document->payment_term_days ?? $customer->payment_term_days ?? $company->payment_term_days;
 
+            $document->load('source');
             $document->forceFill([
+                // Die Fahrtbeschreibung der Strecken, wie sie jetzt gilt (GoBD: später nicht mehr änderbar)
+                'tour_snapshot' => $this->snapshots->build($document),
                 'seller' => $this->sellerSnapshot($company),
                 'recipient' => $this->recipientSnapshot($customer),
                 'document_date' => $date,
@@ -126,6 +137,7 @@ class DocumentService
                 'status' => DocumentStatus::Entwurf,
                 'customer_id' => $original->customer_id,
                 'source_id' => $original->id,
+                'journey_id' => $original->journey_id,
                 'cancels_id' => $original->id,
                 // Dieselben Angaben wie im Original: Absender und Empfänger werden NICHT neu aus den Stammdaten geholt.
                 'seller' => $original->seller,
@@ -146,6 +158,8 @@ class DocumentService
                 'unit_price' => (string) $line->unit_price,
                 'tax_rate' => (string) $line->tax_rate,
                 'tax_note' => $line->tax_note,
+                'journey_section_id' => $line->journey_section_id,
+                'vehicle_type' => $line->vehicle_type,
             ])->all();
             // Eine stornierte Schlussrechnung gibt ihre Anzahlungen wieder frei: Der Storno spiegelt auch den Abzug.
             $storno->deductions = collect($original->deductions ?? [])->map(fn ($d) => array_merge($d, [
@@ -188,7 +202,10 @@ class DocumentService
                 'service_date_from' => $source->service_date_from,
                 'service_date_to' => $source->service_date_to,
             ]);
-            $document->forceFill(['type' => $target, 'status' => DocumentStatus::Entwurf, 'source_id' => $source->id])->save();
+            $document->forceFill([
+                'type' => $target, 'status' => DocumentStatus::Entwurf, 'source_id' => $source->id,
+                'journey_id' => $source->journey_id,   // die Reise bleibt über die ganze Kette dieselbe
+            ])->save();
 
             $lines = $target === DocumentType::Anzahlung
                 ? $this->advanceLines($source, $percent ?? self::DEFAULT_ADVANCE_PERCENT)
@@ -196,6 +213,7 @@ class DocumentService
                     'title' => $l->title, 'description' => $l->description, 'quantity' => (string) $l->quantity,
                     'unit' => $l->unit, 'trip_kind' => $l->trip_kind?->value, 'unit_price' => (string) $l->unit_price,
                     'tax_rate' => (string) $l->tax_rate, 'tax_note' => $l->tax_note,
+                    'journey_section_id' => $l->journey_section_id, 'vehicle_type' => $l->vehicle_type,
                 ])->all();
             $this->replaceLines($document, $lines);
 
@@ -336,12 +354,52 @@ class DocumentService
         return $locked;
     }
 
+    /** Positionen eines Entwurfs anhängen (zum Beispiel die einer weiteren Strecke). Festgeschriebene Belege sind gesperrt. */
+    public function appendLines(Document $document, array $newLines): Document
+    {
+        return DB::transaction(function () use ($document, $newLines) {
+            $document = $this->lockDraft($document);
+            $this->replaceLines($document, [...$this->lineArrays($document), ...$newLines]);
+
+            return $document->fresh(['lines', 'customer']);
+        });
+    }
+
+    /** Die Positionen eines Abschnitts aus einem Entwurf entfernen. */
+    public function removeSectionLines(Document $document, string $sectionId): Document
+    {
+        return DB::transaction(function () use ($document, $sectionId) {
+            $document = $this->lockDraft($document);
+            $keep = array_values(array_filter($this->lineArrays($document), fn (array $l) => $l['journey_section_id'] !== $sectionId));
+            $this->replaceLines($document, $keep);
+
+            return $document->fresh(['lines', 'customer']);
+        });
+    }
+
+    /** Die vorhandenen Positionen in der Form, die replaceLines erwartet. */
+    private function lineArrays(Document $document): array
+    {
+        return $document->lines()->get()->map(fn ($l) => [
+            'title' => $l->title, 'description' => $l->description, 'quantity' => (string) $l->quantity, 'unit' => $l->unit,
+            'trip_kind' => $l->trip_kind?->value, 'unit_price' => (string) $l->unit_price, 'tax_rate' => (string) $l->tax_rate,
+            'tax_note' => $l->tax_note, 'journey_section_id' => $l->journey_section_id, 'vehicle_type' => $l->vehicle_type,
+        ])->all();
+    }
+
     private function replaceLines(Document $document, array $lines): void
     {
+        // Eine Position darf nur zu einer Strecke der eigenen Reise gehören.
+        $sectionIds = array_values(array_unique(array_filter(array_column($lines, 'journey_section_id'))));
+        if ($sectionIds !== [] && ($document->journey_id === null
+            || JourneySection::where('journey_id', $document->journey_id)->whereIn('id', $sectionIds)->count() !== count($sectionIds))) {
+            $this->fail('Eine Position gehört zu einer Strecke, die nicht zu dieser Reise gehört.');
+        }
+
         $document->lines()->delete();
         foreach (array_values($lines) as $i => $line) {
             $row = $document->lines()->make(array_intersect_key($line, array_flip([
-                'title', 'description', 'quantity', 'unit', 'trip_kind', 'unit_price', 'tax_rate', 'tax_note',
+                'title', 'description', 'quantity', 'unit', 'trip_kind', 'unit_price', 'tax_rate', 'tax_note', 'journey_section_id', 'vehicle_type',
             ])));
             $row->unit = $row->unit ?: 'Stk';
             $row->position = $i + 1;

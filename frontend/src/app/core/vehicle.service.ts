@@ -59,6 +59,8 @@ export interface VehicleChoice {
   display_name: string;
   model: string;
   seats: number;
+  /** Fahrzeugtyp (Reisebus, Doppeldecker …); die Planung übernimmt ihn als Typ der Tour */
+  type: string | null;
   /** Maße und Gewicht gepflegt (sonst rechnet die Streckenplanung ohne diese Grenzen) */
   has_dimensions: boolean;
 }

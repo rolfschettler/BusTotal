@@ -1,0 +1,135 @@
+<!-- Tabellen-Muster, siehe docs/ClaudeCodePatterns/TableViewPattern.md. Die Optik kommt aus src/styles/_list-page.scss. -->
+
+<div class="page-header">
+  <div class="row g-2 align-items-center">
+    <div class="col-auto">
+      <div class="d-flex align-items-center gap-2">
+        <h5 class="page-title mb-0">Reisen</h5>
+        @if (loaded()) {
+          <span class="badge rounded-pill record-count d-none d-sm-inline-flex">{{ total() }} {{ total() === 1 ? 'Reise' : 'Reisen' }}</span>
+        }
+      </div>
+    </div>
+    <div class="col-12 col-sm-auto ms-sm-auto">
+      <div class="row row-cols-1 row-cols-sm-auto g-1 justify-content-end align-items-center header-ctrl">
+        <div class="col">
+          <button type="button" class="btn btn-sm btn-header w-100" (click)="refresh()" [disabled]="loading()">
+            <i class="bi bi-arrow-clockwise"></i><span class="ms-1">Aktualisieren</span>
+          </button>
+        </div>
+        <div class="col">
+          <a routerLink="/streckenplanung" class="btn btn-sm btn-header-new w-100">
+            <i class="bi bi-signpost-split"></i><span class="ms-1">Neue Reise planen</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-content">
+
+  <div class="filter-bar" appStickyFilterBar>
+    <div class="row g-2 align-items-center">
+      <div class="col-12 col-sm-6 col-lg-4">
+        <input type="search" class="form-control form-control-sm" [class.filter-active]="q.trim() !== ''"
+               placeholder="Suche: Reise, Nachname, Ort …" title="Mit Komma nach Nachname und Vorname: Mustermann,Max" aria-label="Suche"
+               [(ngModel)]="q" (ngModelChange)="onSearch()" />
+      </div>
+      <div class="col-12 col-sm-auto small text-body-secondary">
+        Eine Reise entsteht mit dem ersten Angebot aus der Streckenplanung.
+      </div>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-danger py-2 mb-3" role="alert">{{ error() }}</div>
+  }
+
+  <div class="card table-card rounded-3" [class.dimmed]="loading()">
+    <table class="table table-hover table-sm align-middle data-table mb-0">
+
+      <colgroup>
+        <col style="width:76px">   <!-- Aktionen -->
+        <col style="width:260px">  <!-- Reise -->
+        <col style="width:230px">  <!-- Kunde -->
+        <col style="width:150px">  <!-- Zeitraum -->
+        <col style="width:160px">  <!-- Stand -->
+        <col style="width:110px">  <!-- Betrag -->
+      </colgroup>
+
+      <thead>
+        <tr>
+          <th class="col-actions"><span class="visually-hidden">Aktionen</span></th>
+          <th>Reise</th>
+          <th>Kunde</th>
+          <th>Zeitraum</th>
+          <th>Stand</th>
+          <th class="text-end">Betrag brutto</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (j of rows(); track j.id) {
+          <tr (click)="select(j.id)" [class.row-current]="j.id === currentId()" [appRevealCurrent]="j.id === currentId()">
+            <td class="col-actions">
+              <a class="btn-action edit" [routerLink]="['/reisen', j.id]" title="Öffnen" [attr.aria-label]="'Reise ' + j.title + ' öffnen'">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+            <td>
+              <a [routerLink]="['/reisen', j.id]" class="fw-semibold text-decoration-none"><app-highlight [text]="j.title" [query]="shownQuery()" mode="start" /></a>
+              <div class="small text-body-secondary">
+                {{ j.sections_count }} {{ j.sections_count === 1 ? 'Strecke' : 'Strecken' }} · {{ j.document_count }} {{ j.document_count === 1 ? 'Beleg' : 'Belege' }}
+              </div>
+            </td>
+            <td>
+              @if (j.customer) {
+                <app-customer-name [customer]="j.customer" [query]="shownQuery()" />
+              } @else {
+                <span class="text-body-secondary small">Noch kein Kunde gewählt</span>
+              }
+            </td>
+            <td class="dim">
+              @if (j.date_from) {
+                {{ j.date_from | date: 'dd.MM.yyyy' }}@if (j.date_to && j.date_to !== j.date_from) { – {{ j.date_to | date: 'dd.MM.yyyy' }} }
+              }
+            </td>
+            <td>
+              @if (j.stage; as st) {
+                <a [routerLink]="['/belege', j.stage_document_id]" class="text-decoration-none"><span class="badge text-bg-light border">{{ stageLabels[st] }}</span></a>
+              } @else {
+                <span class="text-body-secondary small">Kein gültiger Beleg</span>
+              }
+            </td>
+            <td class="text-end">{{ j.amount ? amount(j.amount) : '' }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="text-center text-secondary py-5 small">
+              @if (!loaded()) {
+                Daten werden geladen …
+              } @else if (shownQuery()) {
+                Keine Reise zu „{{ shownQuery() }}“ gefunden.
+              } @else {
+                Noch keine Reise. Planen Sie eine Strecke in der <a routerLink="/streckenplanung">Streckenplanung</a> und erstellen Sie daraus ein Angebot: Dabei entsteht die Reise.
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pager">
+    <span>{{ total() }} {{ total() === 1 ? 'Reise' : 'Reisen' }}</span>
+    <span class="ms-auto"></span>
+    <button type="button" class="btn btn-sm btn-outline-primary" (click)="go(page() - 1)" [disabled]="page() <= 1 || loading()">
+      <i class="bi bi-chevron-left"></i> Zurück
+    </button>
+    <span>Seite {{ page() }} von {{ lastPage() }}</span>
+    <button type="button" class="btn btn-sm btn-outline-primary" (click)="go(page() + 1)" [disabled]="page() >= lastPage() || loading()">
+      Weiter <i class="bi bi-chevron-right"></i>
+    </button>
+  </div>
+</div>

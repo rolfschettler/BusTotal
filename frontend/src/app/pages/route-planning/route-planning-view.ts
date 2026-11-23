@@ -158,3 +158,35 @@ export function eventTime(e: ScheduleEvent, result: Pick<RouteResult, 'start_at'
   }
   return formatOffset(e.start_s);
 }
+
+/** Kurzer Ortsname: der Teil vor dem ersten Komma ("München Hauptbahnhof, München" → "München Hauptbahnhof"). */
+export function cityOf(label: string): string {
+  return label.split(',')[0].trim();
+}
+
+/** Vorschlag für den Namen einer Tour und den Betreff eines Angebots: "Von – Nach" der Fahrt mit Fahrgästen (Leerfahrten zählen nicht). */
+export function tourTitle(legs: RouteLeg[]): string {
+  const loaded = legs.filter((l) => !l.empty);
+  return loaded.length ? `${cityOf(loaded[0].from.label)} – ${cityOf(loaded[loaded.length - 1].to.label)}` : '';
+}
+
+/**
+ * Das Ergebnis, wie es im Tour-Archiv liegt: ohne Linienzug (der liegt getrennt), ohne Abfahrtszeit und ohne Fahrzeug. Eine Tour ist
+ * eine Vorlage für spätere Fahrten, der Termin und das Fahrzeug der Planung gehören nicht dazu.
+ */
+export function storableRoute(r: RouteResult): Omit<RouteResult, 'geometry'> {
+  const { geometry: _line, ...rest } = r;
+  return {
+    ...rest,
+    start_at: null,
+    end_at: null,
+    vehicle: null,
+    vehicle_cost: null,
+    schedule: r.schedule.map(({ start_at: _s, end_at: _e, ...event }) => event),
+  };
+}
+
+/** Das gespeicherte Ergebnis wieder zusammensetzen (Zeitplan, Strecke und Linienzug aus dem Archiv). */
+export function restoredResult(route: Omit<RouteResult, 'geometry'>, geometry: [number, number][] | null | undefined): RouteResult {
+  return { ...route, geometry: geometry ?? [] };
+}

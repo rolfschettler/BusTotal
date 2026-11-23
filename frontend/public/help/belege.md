@@ -62,6 +62,53 @@ Ein **Entwurf** ist frei änderbar und hat noch keine Nummer. Sie können ihn je
 
 Ein festgeschriebener Beleg lässt sich nicht mehr ändern oder löschen, weder in der Oberfläche noch im Hintergrund. Das verlangen die Grundsätze ordnungsmäßiger Buchführung (GoBD). Hat sich ein Fehler eingeschlichen, [stornieren](#stornieren) Sie den Beleg und erstellen einen neuen.
 
+## Reise {#reise}
+
+Ein Angebot, das Sie in der Streckenplanung mit **Angebot erstellen** anlegen, gehört automatisch zu einer **Reise**. Sie müssen nichts anlegen: Die Reise trägt den Namen der Tour („München – Wien“), den Kunden und den Zeitraum der Fahrt. Im Beleg steht oben die **Reise-Leiste**:
+
+- Sie zeigt alle Belege der Reise in der Reihenfolge ihrer Anlage: Angebot, Auftragsbestätigung, Anzahlung, Rechnung. Der aktuelle Beleg ist hervorgehoben, ein stornierter durchgestrichen. Ein Klick öffnet den Beleg.
+- Darunter steht der **nächste Schritt**: bei einem Entwurf „Kunden wählen, Positionen prüfen und den Beleg festschreiben“, bei einem festgeschriebenen Beleg zum Beispiel „Auftragsbestätigung erstellen“ (Tasten unten im Formular).
+- Wählen Sie im ersten Beleg den **Kunden** oder ändern das Fahrtdatum, gilt das auch für die Reise. Folgebelege und der Storno bleiben in derselben Reise.
+
+Belege, die Sie von Hand anlegen („Neuer Beleg“), haben keine Reise und keine Leiste. Löschen Sie den ersten Entwurf, verschwindet auch die Reise, wenn sonst kein Beleg zu ihr gehört. Die Tour bleibt im Tour-Archiv.
+
+## Die Liste der Reisen {#reisen}
+
+Unter **Fahrten und Abrechnung › Reisen** sehen Sie alle [Reisen](#reise) auf einen Blick. Eine Reise legen Sie nicht an: Sie entsteht mit dem ersten Angebot aus der Streckenplanung („Neue Reise planen“ führt dorthin).
+
+- **Die Liste** zeigt je Reise den Namen mit Zahl der Strecken und Belege, den Kunden, den Zeitraum, den **Stand** und den **Betrag brutto**. Die neueste Reise steht oben. Die Suche trifft den Namen der Reise und den Kunden am Wortanfang („Wien“, „Sonnenschein“, „Mustermann,Max“).
+- **Stand und Betrag** sind aus den Belegen abgeleitet und nirgends gespeichert: Es zählt der weitestgehende gültige Beleg (Rechnung vor Auftragsbestätigung vor Angebot, Stornierte zählen nicht). Anzahlungen bestimmen den Stand nicht. Ein Klick auf den Stand öffnet diesen Beleg.
+- **Die Reise öffnen** (Auge-Symbol oder Name) zeigt die **Strecken** mit Fahrzeugen, Kilometern, Lenkzeit und Tagen, alle **Belege** mit Betrag und Stand und oben den **nächsten Schritt** mit einer Taste, die zum richtigen Beleg führt.
+- Bearbeitet wird im Beleg: Kunde, Positionen und weitere Strecken im Entwurf des Angebots. Die Touren stehen im [Tour-Archiv](/hilfe/strecken#tour-archiv-liste).
+
+## Mehrere Strecken und Fahrzeugtypen {#mehrere-strecken}
+
+Ein Angebot aus der Streckenplanung enthält zunächst **eine Strecke**. Eine Reise besteht oft aus mehreren: Hinfahrt, Fahrten vor Ort, Rückfahrt, und auf einer Strecke fahren manchmal verschiedene Busse (zum Beispiel ein Doppeldecker und ein Kleinbus nach Wien). Beides bauen Sie im **Entwurf** des Angebots auf:
+
+1. Klicken Sie unter den Positionen auf **Weitere Strecke hinzufügen**.
+2. Wählen Sie die **Art** (Hinfahrt, Fahrten vor Ort, Rückfahrt) und die **Tour** aus dem Tour-Archiv. Neue Touren planen Sie vorher in der [Streckenplanung](/hilfe/strecken#tour-archiv) und speichern sie dort. Optional tragen Sie das **Datum der Fahrt** ein, dann rechnet {{app}} auch die Zuschläge für Wochenende und Feiertag.
+3. Legen Sie die **Fahrzeuge** fest: Typ und Anzahl. Mit **Weiteren Fahrzeugtyp** kommt eine Zeile dazu. Jeder Typ erscheint nur einmal.
+4. Klicken Sie **Strecke hinzufügen**.
+
+**Was entsteht:** Für jeden Fahrzeugtyp legt {{app}} Positionen aus Ihren [Preisen](/hilfe/einstellungen#preise) an, mit den **Preisen des Typs**, wo welche hinterlegt sind. Bei mehreren gleichen Bussen sind die Mengen entsprechend höher. Im Beleg stehen die Positionen **gruppiert** unter einer Überschrift mit Strecke und Fahrzeugen („Rückfahrt: Wien – München · 2 × Doppeldeckerbus“). Die Beschreibung jeder Position nennt dasselbe, damit sie auch im PDF und in der E-Rechnung für sich verständlich ist. Alle Positionen lassen sich danach ändern.
+
+**Gut zu wissen:**
+- Haben Sie ungespeicherte Änderungen am Beleg, werden sie vor dem Hinzufügen gespeichert.
+- **Strecke entfernen** (an der Überschrift) nimmt die Strecke mit allen ihren Fahrzeugtypen und Positionen aus dem Entwurf. Die erste Strecke der Reise bleibt; wollen Sie sie nicht, löschen Sie den Entwurf.
+- Fehlen Preise (Einstellungen › Preise), kommt eine Meldung und es wird nichts angelegt.
+- Auftragsbestätigung, Anzahlung, Rechnung und Storno übernehmen die Gruppen. Festgeschriebene Belege lassen sich nicht mehr ändern.
+- Das Fahrzeug wählt später der Disponent. Hier geht es nur um Typ und Anzahl.
+
+## Fahrtbeschreibung {#fahrtbeschreibung}
+
+Beim **Festschreiben** hält {{app}} die Fahrtbeschreibung der Strecken im Beleg fest: je Strecke die **Halte** (mit Aufenthalt), die **Kilometer** mit Fahrgästen und als Leerfahrt, die **Lenkzeit**, die **Tage**, die einzelnen **Teilstrecken** und die **Fahrzeuge** (Typ und Anzahl). Sie steht im Beleg unter den Positionen und im PDF nach der Summe.
+
+- **Unveränderlich:** Der Stand gilt, wie er beim Festschreiben war. Ändern Sie später die Tour im Tour-Archiv, ändert sich der Beleg nicht, und das PDF zeigt weiter, was Sie dem Kunden angeboten haben.
+- **Folgebelege:** Die Auftragsbestätigung und die Rechnung übernehmen den Stand des Angebots. Nur eine Strecke, die erst im Folgebeleg dazukommt, wird zu diesem Zeitpunkt aus dem Archiv gelesen.
+- **Wo:** Angebot, Auftragsbestätigung und Rechnung. Anzahlungsrechnung und Storno haben keine Fahrtbeschreibung.
+- **Nicht dabei:** Abfahrtszeiten und die Linie auf der Karte. Belege ohne Strecke (von Hand angelegt) und ältere Belege haben keine Fahrtbeschreibung.
+- Im Entwurf sehen Sie einen Hinweis; die Fahrtbeschreibung selbst entsteht erst beim Festschreiben.
+
 ## Stornieren {#stornieren}
 
 Rechnungen und Anzahlungsrechnungen lassen sich stornieren (Administrator und Buchhaltung). Die Software erzeugt dabei eine eigene, sofort festgeschriebene **Stornorechnung** mit negativen Beträgen, eigener Nummer und dem Verweis auf die stornierte Rechnung. Der ursprüngliche Beleg bleibt unverändert erhalten und zeigt nur noch den Hinweis „Storniert“.

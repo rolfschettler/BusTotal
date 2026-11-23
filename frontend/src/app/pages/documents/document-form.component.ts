@@ -7,13 +7,15 @@ import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { ListMemory } from '../../core/list-memory.service';
 import { CustomerService } from '../../core/customer.service';
-import { BusDocument, DocumentInput, DocumentService, DocumentTypeInfo, DocumentTypeValue, TripKindValue } from '../../core/document.service';
+import { BusDocument, DocumentInput, DocumentService, DocumentTypeInfo, DocumentTypeValue, SectionKindValue, TripKindValue } from '../../core/document.service';
 import { fieldErrors, httpErrorText } from '../../core/http-error';
 import { PricingService, PricingSettings } from '../../core/pricing.service';
 import { SettingsService, TaxRate } from '../../core/settings.service';
 import { PrintPreviewService } from '../../core/print-preview.service';
+import { Trip, TripService } from '../../core/trip.service';
 import { CustomerNameComponent } from '../../shared/customer-name.component';
 import { HelpLinkComponent } from '../../help/help-link.component';
+import { formatDuration, formatKm } from '../route-planning/route-planning-view';
 import { CalcLine, formatAmount, formatCents, summarize } from './document-calc';
 import { DocumentPaymentsComponent } from './document-payments.component';
 
@@ -54,6 +56,7 @@ export class DocumentFormComponent implements OnInit {
   private confirm = inject(ConfirmService);
   private memory = inject(ListMemory);
   private printPreview = inject(PrintPreviewService);
+  private tripApi = inject(TripService);
 
   /** Festschreiben und Stornieren: nur Administrator und Buchhaltung (der Server prüft zusätzlich). */
   canFinalize = computed(() => ['admin', 'buchhaltung'].includes(this.auth.user()?.role ?? ''));
@@ -80,6 +83,9 @@ export class DocumentFormComponent implements OnInit {
   private customerTimer?: ReturnType<typeof setTimeout>;
 
   readonly formatCents = formatCents;
+  readonly formatDuration = formatDuration;
+  /** Kilometer (nicht Meter) in deutscher Schreibweise */
+  km = (kilometers: number) => formatKm(kilometers * 1000);
   /** Betrag mit umgekehrtem Vorzeichen: Ein Abzug von 357 € steht als „−357,00 €“, bei einem Storno (negativ) als positiver Betrag. */
   minus = (v: string) => formatCents(-Math.round(Number(v) * 100));
   readonly amount = formatAmount;
@@ -126,6 +132,14 @@ export class DocumentFormComponent implements OnInit {
     const d = this.doc();
     return !!d && this.readonly() && !this.cancelled() && !!this.typeInfo()?.invoice && d.type !== 'gutschrift' && this.canFinalize();
   });
+  /** Kurzer Hinweis zum nächsten Schritt in der Reise-Leiste (nur bei Belegen einer Reise). */
+  nextStep = computed(() => {
+    const d = this.doc();
+    if (!d?.journey || this.cancelled() || d.type === 'gutschrift') return null;
+    if (d.status === 'entwurf') return 'Kunden wählen, Positionen prüfen und den Beleg festschreiben.';
+    const next = this.typeInfo()?.convertible_to ?? [];
+    return next.length ? `${next.map((t) => this.typeLabel(t)).join(' oder ')} erstellen (Tasten unten).` : null;
+  });
   isInvoiceType = computed(() => !!this.types().find((t) => t.value === this.typeValue())?.invoice);
   typeValue = signal<DocumentTypeValue>('angebot');
 
@@ -143,7 +157,7 @@ export class DocumentFormComponent implements OnInit {
     return this.form.controls.lines;
   }
 
-  newLine(defaults?: Partial<{ title: string; description: string; quantity: number; unit: string; trip_kind: TripKindValue | null; unit_price: number; tax_rate: number; tax_note: string }>) {
+  newLine(defaults?: Partial<{ title: string; description: string; quantity: number; unit: string; trip_kind: TripKindValue | null; unit_price: number; tax_rate: number; tax_note: string; journey_section_id: string | null; vehicle_type: string | null }>) {
     return this.fb.nonNullable.group({
       title: [defaults?.title ?? '', Validators.required],
       description: [defaults?.description ?? ''],
@@ -153,6 +167,9 @@ export class DocumentFormComponent implements OnInit {
       unit_price: [defaults?.unit_price ?? 0, Validators.required],
       tax_rate: [defaults?.tax_rate ?? this.defaultRate(), Validators.required],
       tax_note: [defaults?.tax_note ?? ''],
+      // Gehören zur Strecke der Reise und werden nur durchgereicht (Server setzt sie)
+      journey_section_id: [defaults?.journey_section_id ?? null],
+      vehicle_type: [defaults?.vehicle_type ?? null],
     });
   }
 
@@ -247,6 +264,7 @@ export class DocumentFormComponent implements OnInit {
         this.newLine({
           title: l.title, description: l.description ?? '', quantity: Number(l.quantity), unit: l.unit, trip_kind: l.trip_kind ?? null,
           unit_price: Number(l.unit_price), tax_rate: Number(l.tax_rate), tax_note: l.tax_note ?? '',
+          journey_section_id: l.journey_section_id ?? null, vehicle_type: l.vehicle_type ?? null,
         }),
         { emitEvent: false },
       );
@@ -317,6 +335,160 @@ export class DocumentFormComponent implements OnInit {
     this.form.controls.customer_id.markAsDirty();
   }
 
+  // ---------- Strecken der Reise ----------
+
+  readonly sectionKinds: { value: SectionKindValue; label: string }[] = [
+    { value: 'hinfahrt', label: 'Hinfahrt' },
+    { value: 'vor_ort', label: 'Fahrten vor Ort' },
+    { value: 'rueckfahrt', label: 'Rückfahrt' },
+  ];
+  vehicleTypes = computed(() => this.pricing()?.vehicle_types ?? []);
+
+  /** Das Formular „Weitere Strecke hinzufügen“ ist offen. */
+  sectionOpen = signal(false);
+  sectionKind = signal<SectionKindValue>('rueckfahrt');
+  sectionTripId = signal('');
+  sectionDate = signal('');
+  sectionVehicles = signal<{ type: string; count: number }[]>([{ type: '', count: 1 }]);
+  sectionQuery = signal('');
+  sectionTrips = signal<Trip[]>([]);
+  sectionTripsError = signal<string | null>(null);
+  sectionBusy = signal(false);
+  private sectionTimer?: ReturnType<typeof setTimeout>;
+
+  /** Strecken lassen sich nur im Entwurf eines Belegs mit Reise ändern. */
+  canEditSections = computed(() => !this.readonly() && !!this.doc()?.journey);
+
+  openSectionForm() {
+    this.sectionOpen.set(true);
+    this.sectionKind.set('rueckfahrt');
+    this.sectionTripId.set('');
+    this.sectionDate.set('');
+    this.sectionVehicles.set([{ type: '', count: 1 }]);
+    this.sectionQuery.set('');
+    this.loadSectionTrips();
+  }
+
+  onSectionQuery(text: string) {
+    this.sectionQuery.set(text);
+    clearTimeout(this.sectionTimer);
+    this.sectionTimer = setTimeout(() => this.loadSectionTrips(), 300);
+  }
+
+  private loadSectionTrips() {
+    const q = this.sectionQuery();
+    this.tripApi.list(q, 50).subscribe({
+      next: (page) => {
+        if (q !== this.sectionQuery()) return;
+        this.sectionTrips.set(page.data);
+        this.sectionTripsError.set(null);
+      },
+      error: (err: HttpErrorResponse) => this.sectionTripsError.set(httpErrorText(err, 'Das Tour-Archiv konnte nicht geladen werden.')),
+    });
+  }
+
+  /** Eine Tour gewählt: Fahrzeugtyp und Anzahl der Tour sind die Vorbelegung. */
+  chooseSectionTrip(id: string) {
+    this.sectionTripId.set(id);
+    const trip = this.sectionTrips().find((t) => t.id === id);
+    if (trip?.vehicle_type) this.sectionVehicles.set([{ type: trip.vehicle_type, count: trip.vehicle_count }]);
+  }
+
+  setSectionVehicle(i: number, patch: Partial<{ type: string; count: number }>) {
+    this.sectionVehicles.update((list) => list.map((v, j) => (j === i ? { ...v, ...patch } : v)));
+  }
+  addSectionVehicle() {
+    this.sectionVehicles.update((list) => [...list, { type: '', count: 1 }]);
+  }
+  removeSectionVehicle(i: number) {
+    this.sectionVehicles.update((list) => list.filter((_, j) => j !== i));
+  }
+
+  /** Fehlt noch etwas für „Strecke hinzufügen“? Der Text sagt, was. */
+  sectionProblem = computed(() => {
+    if (!this.sectionTripId()) return 'Bitte eine Tour aus dem Archiv wählen.';
+    const list = this.sectionVehicles();
+    if (!list.length || list.some((v) => !v.type)) return 'Bitte zu jeder Zeile einen Fahrzeugtyp wählen.';
+    if (new Set(list.map((v) => v.type)).size !== list.length) return 'Jeder Fahrzeugtyp darf nur einmal vorkommen. Erhöhen Sie stattdessen die Anzahl.';
+    return null;
+  });
+
+  /** Ungespeicherte Änderungen zuerst speichern: Der Server schreibt die Positionen neu, sonst gingen sie verloren. */
+  private afterSave(then: () => void) {
+    if (this.form.dirty) this.save(then);
+    else then();
+  }
+
+  addSection() {
+    if (!this.id || this.sectionProblem() || this.sectionBusy()) return;
+    const id = this.id;
+    this.afterSave(() => {
+      this.sectionBusy.set(true);
+      this.api
+        .addSection(id, {
+          kind: this.sectionKind(),
+          trip_id: this.sectionTripId(),
+          start_on: this.sectionDate() || null,
+          vehicles: this.sectionVehicles().map((v) => ({ type: v.type, count: Number(v.count) || 1 })),
+        })
+        .subscribe({
+          next: (d) => {
+            this.sectionBusy.set(false);
+            this.apply(d);
+            this.sectionOpen.set(false);
+            this.notify(true, 'Strecke hinzugefügt. Bitte Positionen und Preise prüfen.');
+          },
+          error: (e: HttpErrorResponse) => {
+            this.sectionBusy.set(false);
+            this.fail(e, 'Die Strecke konnte nicht hinzugefügt werden.');
+          },
+        });
+    });
+  }
+
+  async removeSection(sectionId: string, title: string) {
+    if (!this.id) return;
+    const ok = await this.confirm.ask({ title: 'Strecke entfernen', message: `Die Strecke „${title}“ mit allen ihren Positionen aus dem Beleg entfernen?`, confirmLabel: 'Entfernen', danger: true });
+    if (!ok) return;
+    const id = this.id;
+    this.afterSave(() => {
+      this.sectionBusy.set(true);
+      this.api.removeSection(id, sectionId).subscribe({
+        next: (d) => {
+          this.sectionBusy.set(false);
+          this.apply(d);
+          this.notify(true, 'Strecke entfernt.');
+        },
+        error: (e: HttpErrorResponse) => {
+          this.sectionBusy.set(false);
+          this.fail(e, 'Die Strecke konnte nicht entfernt werden.');
+        },
+      });
+    });
+  }
+
+  /**
+   * Überschrift über einer Gruppe von Positionen: Strecke und Fahrzeugbedarf. Nur an der ersten Position der Gruppe, sonst null.
+   * Positionen ohne Strecke (von Hand angelegt) stehen unter „Weitere Positionen“, sobald der Beleg Strecken hat.
+   */
+  groupHeader(i: number): { sectionId: string | null; text: string; removable: boolean } | null {
+    const sections = this.doc()?.journey?.sections;
+    if (!sections?.length) return null;
+    const key = (j: number) => `${this.lines.at(j).value.journey_section_id ?? ''}|${this.lines.at(j).value.vehicle_type ?? ''}`;
+    if (i > 0 && key(i) === key(i - 1)) return null;
+
+    const sectionId = (this.lines.at(i).value.journey_section_id as string | null) ?? null;
+    const section = sections.find((s) => s.id === sectionId);
+    if (!section) return { sectionId: null, text: 'Weitere Positionen', removable: false };
+
+    const type = this.lines.at(i).value.vehicle_type as string | null;
+    const vehicle = section.vehicles.find((v) => v.type === type);
+    const bus = vehicle?.label ? ` · ${vehicle.count > 1 ? vehicle.count + ' × ' : ''}${vehicle.label}` : '';
+    // „Strecke entfernen“ nur an der ersten Gruppe einer Strecke (es nimmt alle ihre Fahrzeugtypen mit)
+    const first = i === 0 || (this.lines.at(i - 1).value.journey_section_id ?? null) !== sectionId;
+    return { sectionId: section.id, text: `${section.kind_label}: ${section.title}${bus}`, removable: sections.length > 1 && first };
+  }
+
   // ---------- Positionen ----------
 
   addLine() {
@@ -376,6 +548,8 @@ export class DocumentFormComponent implements OnInit {
         unit_price: Number(l['unit_price']),
         tax_rate: Number(l['tax_rate']),
         tax_note: l['tax_note'] === '' ? null : String(l['tax_note']),
+        journey_section_id: l['journey_section_id'] ? String(l['journey_section_id']) : null,
+        vehicle_type: l['vehicle_type'] ? String(l['vehicle_type']) : null,
       })),
     };
   }

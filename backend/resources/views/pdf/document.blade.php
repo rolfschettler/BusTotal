@@ -21,6 +21,9 @@
     ])->filter()->implode(' · ');
     $notes = $lines->filter(fn ($l) => filled($l->tax_note))->values();
     $deductions = $doc->deductions ?? [];
+    $tourSections = $doc->tour_snapshot['sections'] ?? [];
+    $km = fn ($v) => number_format((float) $v, 1, ',', '.').' km';
+    $dur = function ($s) { $m = (int) round($s / 60); return intdiv($m, 60) > 0 ? intdiv($m, 60).' Std.'.($m % 60 ? ' '.($m % 60).' Min.' : '') : $m.' Min.'; };
 @endphp
 <!DOCTYPE html>
 <html lang="de">
@@ -58,6 +61,7 @@
     .sums .total td { border-top: 0.6pt solid #111; font-weight: bold; font-size: 10pt; }
 
     .block { margin-top: 5mm; page-break-inside: avoid; }
+    .flow { margin-top: 5mm; }
     footer { position: fixed; bottom: -20mm; left: 0; right: 0; font-size: 6.5pt; color: #555; border-top: 0.3pt solid #999; padding-top: 1.5mm; }
     footer table { width: 100%; }
     footer td { vertical-align: top; padding-right: 3mm; }
@@ -202,6 +206,35 @@
         <tr class="total"><td></td><td class="right">Zu zahlen</td><td class="right">{{ $money($doc->payable_total) }}</td></tr>
     @endif
 </table>
+
+@if ($tourSections !== [])
+    {{-- Fahrtbeschreibung: Stand beim Festschreiben, aus dem Beleg, nie aus dem Tour-Archiv --}}
+    <div class="flow">
+        <b>Fahrtbeschreibung</b>
+        @foreach ($tourSections as $sec)
+            @php
+                $t = $sec['trip'] ?? null;
+                $buses = collect($sec['vehicles'] ?? [])->map(fn ($v) => (($v['count'] ?? 1) > 1 ? $v['count'].' × ' : '').($v['label'] ?? 'Fahrzeug'))->implode(', ');
+                if ($t) {
+                    $stopText = collect($t['stops'])->map(fn ($st) => $st['label'].(($st['dwell_minutes'] ?? 0) > 0 ? ' ('.$st['dwell_minutes'].' Min.)' : ''))->implode(' → ').(! empty($t['round_trip']) ? ' → zurück zum Start' : '');
+                    $emptyText = $t['empty_km'] > 0 ? ', '.$km($t['empty_km']).' Leerfahrt' : '';
+                    $figures = $km($t['loaded_km']).' mit Fahrgästen'.$emptyText.' · Lenkzeit '.$dur($t['drive_s']).' · '.$t['days'].($t['days'] == 1 ? ' Tag' : ' Tage');
+                }
+            @endphp
+            <div style="margin-top: 2.5mm">
+                <b>{{ $sec['kind_label'] }}: {{ $sec['title'] }}</b>
+                <span class="muted">{{ $buses !== '' ? ' · '.$buses : '' }}</span>
+                @if ($t)
+                    <div class="small">Halte: {{ $stopText }}</div>
+                    <div class="small muted">{{ $figures }}</div>
+                    @foreach ($t['legs'] ?? [] as $leg)
+                        <div class="small muted">{{ $leg['from'] }} → {{ $leg['to'] }}: {{ $km($leg['distance_m'] / 1000) }}, {{ $dur($leg['duration_s']) }}{{ $leg['empty'] ? ' (Leerfahrt)' : '' }}</div>
+                    @endforeach
+                @endif
+            </div>
+        @endforeach
+    </div>
+@endif
 
 @if ($notes->isNotEmpty())
     <div class="block small muted">

@@ -73,6 +73,34 @@ class PlaceResolver
         }
     }
 
+    /**
+     * Speichert einen Ort, den die Oberfläche schon gefunden hat (Halt einer Tour), ohne den Dienst anzurufen.
+     * Der Schlüssel enthält die Koordinaten: Ein Browser kann so keinen vorhandenen Ort ändern oder einem Betriebshof
+     * unterschieben, gleiche Angaben ergeben denselben Ort.
+     */
+    public function remember(string $label, float $lat, float $lon): Place
+    {
+        $key = sha1('stop:'.mb_strtolower(preg_replace('/\s+/u', ' ', trim($label))).'|'.round($lat, 5).'|'.round($lon, 5));
+
+        if ($known = Place::where('lookup_key', $key)->first()) {
+            return $known;
+        }
+
+        try {
+            return Place::create([
+                'lookup_key' => $key,
+                'query' => mb_substr(trim($label), 0, 255),
+                'label' => mb_substr(trim($label), 0, 255),
+                'lat' => $lat,
+                'lon' => $lon,
+                'source' => strtolower(class_basename($this->provider)),
+                'geocoded_at' => now(),
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            return Place::where('lookup_key', $key)->firstOrFail();
+        }
+    }
+
     /** Gleiche Adressen mit anderer Groß- und Kleinschreibung oder zusätzlichen Leerzeichen sind derselbe Ort. */
     private function key(string $query): string
     {

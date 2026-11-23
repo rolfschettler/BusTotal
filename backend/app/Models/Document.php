@@ -42,6 +42,7 @@ class Document extends Model
             'seller' => 'array',
             'recipient' => 'array',
             'tax_summary' => 'array',
+            'tour_snapshot' => 'array',
             'deductions' => 'array',
             'document_date' => 'date:Y-m-d',
             'service_date_from' => 'date:Y-m-d',

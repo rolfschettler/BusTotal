@@ -26,6 +26,9 @@ export interface DocumentLine {
   unit_price: number | string;
   tax_rate: number | string;
   tax_note: string | null;
+  /** Strecke (Abschnitt der Reise) und Fahrzeugtyp, zu denen die Position gehört; das Formular reicht sie nur durch */
+  journey_section_id?: string | null;
+  vehicle_type?: string | null;
   /** vom Server berechnet */
   net_amount?: string;
 }
@@ -140,6 +143,10 @@ export interface BusDocument {
   payment?: PaymentSummary | null;
   /** E-Rechnung: Format der archivierten XML (`xrechnung`), null solange es keine gibt */
   einvoice_format?: string | null;
+  /** Fahrtbeschreibung, wie sie beim Festschreiben galt (nur festgeschriebene Belege mit Strecken, sonst null) */
+  tour_snapshot?: TourSnapshot | null;
+  /** Reisevorhaben des Belegs (nur bei Belegen aus der Streckenplanung) mit allen Belegen der Reise in Reihenfolge der Anlage */
+  journey?: DocumentJourney | null;
   customer?: {
     id: string; customer_number: string; display_name: string;
     company_name?: string | null; first_name?: string | null; last_name?: string | null; postal_code?: string | null; city?: string | null;
@@ -213,6 +220,14 @@ export class DocumentService {
   cancel(id: string) {
     return this.http.post<BusDocument>(`${this.base}/${id}/cancel`, {});
   }
+  /** Eine weitere Strecke der Reise in den Entwurf aufnehmen; der Server berechnet die Positionen je Fahrzeugtyp. */
+  addSection(id: string, data: SectionInput) {
+    return this.http.post<BusDocument>(`${this.base}/${id}/sections`, data);
+  }
+  /** Eine Strecke mit ihren Positionen aus dem Entwurf nehmen. */
+  removeSection(id: string, sectionId: string) {
+    return this.http.delete<BusDocument>(`${this.base}/${id}/sections/${sectionId}`);
+  }
   /** `percent` gilt nur für die Anzahlungsrechnung (Anteil am Auftrag, Vorbelegung 30). */
   convert(id: string, type: DocumentTypeValue, percent?: number) {
     return this.http.post<BusDocument>(`${this.base}/${id}/convert`, percent ? { type, percent } : { type });
@@ -230,4 +245,58 @@ export class DocumentService {
   cancelPayment(id: string, paymentId: string, reason: string) {
     return this.http.post<PaymentsResponse>(`${this.base}/${id}/payments/${paymentId}/cancel`, { reason });
   }
+}
+
+/** Die Reise eines Belegs: Titel, Zeitraum und alle Belege der Reise (Angebot, Auftrag, Rechnung …). */
+export interface DocumentJourney {
+  id: string;
+  title: string;
+  date_from: string | null;
+  date_to: string | null;
+  /** Die Strecken der Reise in Reihenfolge, mit dem Fahrzeugbedarf */
+  sections: JourneySectionInfo[];
+  documents: { id: string; type: DocumentTypeValue; number: string | null; status: 'entwurf' | 'festgeschrieben'; cancelled: boolean }[];
+}
+
+export type SectionKindValue = 'hinfahrt' | 'vor_ort' | 'rueckfahrt';
+
+export interface JourneySectionInfo {
+  id: string;
+  kind: SectionKindValue;
+  kind_label: string;
+  title: string;
+  trip_id: string | null;
+  vehicles: { type: string | null; label: string | null; count: number }[];
+}
+
+/** Eine weitere Strecke für den Entwurf: Art, Tour aus dem Archiv, Fahrzeugbedarf und freiwillig das Fahrtdatum (für Zuschläge). */
+export interface SectionInput {
+  kind: SectionKindValue;
+  trip_id: string;
+  start_on?: string | null;
+  vehicles: { type: string; count: number }[];
+}
+
+/** Die beim Festschreiben festgehaltene Fahrtbeschreibung eines Belegs. Spätere Änderungen am Tour-Archiv ändern sie nicht. */
+export interface TourSnapshot {
+  created_at: string;
+  sections: {
+    section_id: string;
+    kind: SectionKindValue;
+    kind_label: string;
+    title: string;
+    vehicles: { type: string | null; label: string | null; count: number }[];
+    trip: {
+      title: string;
+      trip_kind_label: string;
+      loaded_km: number;
+      empty_km: number;
+      drive_s: number;
+      elapsed_s: number;
+      days: number;
+      round_trip: boolean;
+      stops: { label: string; dwell_minutes: number; driver_free: boolean }[];
+      legs: { from: string; to: string; distance_m: number; duration_s: number; empty: boolean }[];
+    } | null;
+  }[];
 }

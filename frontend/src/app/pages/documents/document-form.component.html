@@ -30,6 +30,36 @@
   }
 </div>
 
+@if (doc()?.journey; as j) {
+  <!-- Reise: Der Beleg gehört zu einer Reise. Die Leiste zeigt die Kette der Belege und den nächsten Schritt. -->
+  <nav class="bg-white border rounded px-3 py-2 mb-3" aria-label="Reise">
+    <div class="d-flex flex-wrap align-items-baseline gap-2">
+      <span class="small text-body-secondary">Reise</span>
+      <span class="fw-semibold">{{ j.title }}</span>
+      @if (j.date_from) {
+        <span class="small text-body-secondary">
+          · {{ j.date_from | date: 'dd.MM.yyyy' }}@if (j.date_to && j.date_to !== j.date_from) { – {{ j.date_to | date: 'dd.MM.yyyy' }} }
+        </span>
+      }
+    </div>
+    <ol class="list-unstyled d-flex flex-wrap align-items-center gap-2 mb-0 mt-2">
+      @for (x of j.documents; track x.id; let last = $last) {
+        <li class="d-flex align-items-center gap-2">
+          <a [routerLink]="['/belege', x.id]" class="badge text-decoration-none"
+             [class.text-bg-primary]="x.id === doc()!.id" [class.text-bg-light]="x.id !== doc()!.id" [class.border]="x.id !== doc()!.id"
+             [class.text-decoration-line-through]="x.cancelled" [attr.aria-current]="x.id === doc()!.id ? 'step' : null">
+            {{ typeLabel(x.type) }} {{ x.number ?? '(Entwurf)' }}
+          </a>
+          @if (!last) { <i class="bi bi-chevron-right text-body-secondary" aria-hidden="true"></i> }
+        </li>
+      }
+    </ol>
+    @if (nextStep(); as ns) {
+      <div class="small text-body-secondary mt-2"><i class="bi bi-arrow-right-circle me-1" aria-hidden="true"></i>Nächster Schritt: {{ ns }}</div>
+    }
+  </nav>
+}
+
 @if (loading()) {
   <div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary"></div></div>
 } @else {
@@ -136,6 +166,17 @@
     <div class="col-12"><div class="section-title">Positionen</div></div>
 
     @for (g of lines.controls; track g; let i = $index) {
+      @if (groupHeader(i); as gh) {
+        <!-- Überschrift der Strecke (und des Fahrzeugtyps), zu der die folgenden Positionen gehören -->
+        <div class="col-12 d-flex flex-wrap align-items-center gap-2 mt-2">
+          <h3 class="h6 mb-0"><i class="bi bi-signpost-split me-1" aria-hidden="true"></i>{{ gh.text }}</h3>
+          @if (gh.removable && canEditSections()) {
+            <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" [disabled]="sectionBusy()" (click)="removeSection(gh.sectionId!, gh.text)">
+              <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Strecke entfernen
+            </button>
+          }
+        </div>
+      }
       <div class="col-12" [formGroup]="g">
         <div class="border rounded-2 p-3 bg-body">
           <div class="row g-3">
@@ -207,6 +248,136 @@
     @if (!readonly()) {
       <div class="col-12">
         <button type="button" class="btn btn-outline-secondary" (click)="addLine()"><i class="bi bi-plus-lg me-1"></i>Position hinzufügen</button>
+      </div>
+    }
+
+    @if (canEditSections()) {
+      <!-- Weitere Strecke der Reise: Positionen entstehen aus einer Tour des Archivs, je Fahrzeugtyp mit dessen Preisen -->
+      <div class="col-12">
+        @if (!sectionOpen()) {
+          <button type="button" class="btn btn-outline-primary" (click)="openSectionForm()"><i class="bi bi-signpost-split me-1" aria-hidden="true"></i>Weitere Strecke hinzufügen</button>
+          <app-help-link topic="belege" anchor="mehrere-strecken" label="Mehrere Strecken und Fahrzeugtypen" />
+        } @else {
+          <div class="border rounded-2 p-3 bg-body">
+            <div class="row g-3">
+              <div class="col-12 d-flex align-items-center">
+                <strong>Weitere Strecke hinzufügen</strong>
+                <app-help-link topic="belege" anchor="mehrere-strecken" label="Mehrere Strecken und Fahrzeugtypen" />
+              </div>
+
+              <div class="col-12 col-lg-4">
+                <label class="form-label" for="sectionKind">Art der Strecke</label>
+                <select id="sectionKind" class="form-select" [value]="sectionKind()" (change)="sectionKind.set($any($event.target).value)">
+                  @for (k of sectionKinds; track k.value) { <option [value]="k.value" [selected]="k.value === sectionKind()">{{ k.label }}</option> }
+                </select>
+              </div>
+              <div class="col-12 col-lg-4">
+                <label class="form-label" for="sectionDate">Datum der Fahrt</label>
+                <input id="sectionDate" type="date" class="form-control" [value]="sectionDate()" (input)="sectionDate.set($any($event.target).value)" />
+                <div class="form-text">Freiwillig. Für die Zuschläge an Wochenende und Feiertag.</div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label" for="sectionSearch">Tour aus dem Archiv</label>
+                <input id="sectionSearch" type="search" class="form-control mb-2" autocomplete="off" placeholder="Name oder Ort suchen"
+                       [value]="sectionQuery()" (input)="onSectionQuery($any($event.target).value)" />
+                <select id="sectionTrip" class="form-select" size="5" [value]="sectionTripId()" (change)="chooseSectionTrip($any($event.target).value)" aria-label="Tour wählen">
+                  @for (t of sectionTrips(); track t.id) {
+                    <option [value]="t.id" [selected]="t.id === sectionTripId()">{{ t.title }} · {{ km(t.loaded_km + t.empty_km) }} · {{ t.days }} {{ t.days === 1 ? 'Tag' : 'Tage' }}</option>
+                  }
+                </select>
+                @if (sectionTripsError(); as te) {
+                  <div class="form-text text-danger">{{ te }}</div>
+                } @else if (!sectionTrips().length) {
+                  <div class="form-text">Keine Tour gefunden. Planen Sie die Strecke zuerst in der <a routerLink="/streckenplanung">Streckenplanung</a> und speichern Sie sie dort.</div>
+                } @else {
+                  <div class="form-text">Gesucht wird am Wortanfang. Neue Touren planen Sie in der <a routerLink="/streckenplanung">Streckenplanung</a>.</div>
+                }
+              </div>
+
+              <div class="col-12"><div class="form-label mb-0">Fahrzeuge für diese Strecke</div></div>
+              @for (v of sectionVehicles(); track $index; let vi = $index) {
+                <div class="col-12 col-lg-4">
+                  <label class="form-label" [for]="'svType' + vi">Fahrzeugtyp</label>
+                  <select [id]="'svType' + vi" class="form-select" [value]="v.type" (change)="setSectionVehicle(vi, { type: $any($event.target).value })">
+                    <option value="">Bitte wählen</option>
+                    @for (t of vehicleTypes(); track t.value) { <option [value]="t.value" [selected]="t.value === v.type">{{ t.label }}</option> }
+                  </select>
+                </div>
+                <div class="col-12 col-lg-4">
+                  <label class="form-label" [for]="'svCount' + vi">Anzahl</label>
+                  <input [id]="'svCount' + vi" type="number" min="1" max="99" step="1" class="form-control" [value]="v.count" (input)="setSectionVehicle(vi, { count: +$any($event.target).value })" />
+                </div>
+                <div class="col-12 col-lg-4 d-flex align-items-end">
+                  @if (sectionVehicles().length > 1) {
+                    <button type="button" class="btn btn-outline-secondary" (click)="removeSectionVehicle(vi)"><i class="bi bi-x-lg me-1" aria-hidden="true"></i>Zeile entfernen</button>
+                  }
+                </div>
+              }
+              <div class="col-12">
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="addSectionVehicle()"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Weiteren Fahrzeugtyp</button>
+                <div class="form-text">Zum Beispiel ein Doppeldecker und ein Kleinbus auf derselben Strecke. Jeder Typ bekommt seine Positionen mit den Preisen des Typs.</div>
+              </div>
+
+              @if (sectionProblem(); as sp) {
+                <div class="col-12"><div class="form-text text-warning-emphasis">{{ sp }}</div></div>
+              }
+              <div class="col-12 d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-primary" [disabled]="!!sectionProblem() || sectionBusy()" (click)="addSection()">
+                  @if (sectionBusy()) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+                  Strecke hinzufügen
+                </button>
+                <button type="button" class="btn btn-outline-secondary" [disabled]="sectionBusy()" (click)="sectionOpen.set(false)">Abbrechen</button>
+              </div>
+              <div class="col-12"><div class="form-text">Ungespeicherte Änderungen am Beleg werden dabei zuerst gespeichert. Die Positionen sind ein Vorschlag aus den Preisen und lassen sich danach ändern.</div></div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    @if (doc()?.tour_snapshot; as snap) {
+      <!-- Fahrtbeschreibung: Stand beim Festschreiben, unveränderlich im Beleg -->
+      <div class="col-12">
+        <div class="section-title">Fahrtbeschreibung</div>
+        <div class="form-text mb-2">
+          Festgehalten beim Festschreiben am {{ snap.created_at | date: 'dd.MM.yyyy' }}. Spätere Änderungen an den Touren im Archiv ändern diesen Beleg nicht.
+          <app-help-link topic="belege" anchor="fahrtbeschreibung" label="Fahrtbeschreibung" />
+        </div>
+        @for (sec of snap.sections; track sec.section_id) {
+          <div class="border rounded-2 p-3 bg-body mb-2">
+            <div class="fw-semibold">
+              {{ sec.kind_label }}: {{ sec.title }}
+              @if (sec.vehicles.length) {
+                <span class="fw-normal text-body-secondary">
+                  ·
+                  @for (v of sec.vehicles; track $index; let last = $last) {{{ v.count > 1 ? v.count + ' × ' : '' }}{{ v.label }}{{ last ? '' : ', ' }}}
+                </span>
+              }
+            </div>
+            @if (sec.trip; as t) {
+              <div class="small mt-1">
+                <span class="text-body-secondary">Halte:{{ ' ' }}</span>
+                @for (st of t.stops; track $index; let last = $last) {{{ st.label }}@if (st.dwell_minutes > 0) { ({{ st.dwell_minutes }} Min.) }@if (!last) { → }}
+                @if (t.round_trip) { → zurück zum Start }
+              </div>
+              <div class="small text-body-secondary">
+                {{ km(t.loaded_km) }} mit Fahrgästen@if (t.empty_km > 0) {, {{ km(t.empty_km) }} Leerfahrt} · Lenkzeit {{ formatDuration(t.drive_s) }} · {{ t.days }} {{ t.days === 1 ? 'Tag' : 'Tage' }}
+              </div>
+              @for (l of t.legs; track $index) {
+                <div class="small text-body-secondary">{{ l.from }} → {{ l.to }}: {{ km(l.distance_m / 1000) }}, {{ formatDuration(l.duration_s) }}@if (l.empty) { (Leerfahrt)}</div>
+              }
+            }
+          </div>
+        }
+      </div>
+    } @else if (canEditSections() && !readonly()) {
+      <div class="col-12">
+        <div class="form-text">
+          <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+          Beim Festschreiben wird die Fahrtbeschreibung der Strecken (Halte, Kilometer, Zeiten, Fahrzeuge) unveränderlich im Beleg festgehalten und im PDF abgedruckt.
+          <app-help-link topic="belege" anchor="fahrtbeschreibung" label="Fahrtbeschreibung" />
+        </div>
       </div>
     }
 

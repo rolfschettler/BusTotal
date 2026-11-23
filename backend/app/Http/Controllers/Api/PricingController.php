@@ -107,6 +107,11 @@ class PricingController extends Controller
             'state' => ['nullable', Rule::enum(GermanState::class)],
             'customer_id' => ['nullable', 'uuid', 'exists:customers,id'],
             'vehicle_id' => ['nullable', 'uuid', 'exists:vehicles,id'],
+            // Fahrzeugbedarf der Tour: Typ (bestimmt die Preise, geht vor dem Typ des Fahrzeugs) und Anzahl der Fahrzeuge
+            'vehicle_type' => ['nullable', Rule::enum(VehicleType::class)],
+            'vehicle_count' => ['nullable', 'integer', 'min:1', 'max:99'],
+            // Die gespeicherte Tour (Tour-Archiv), aus der das Reisevorhaben seine Hinfahrt bekommt
+            'trip_id' => ['nullable', 'uuid', 'exists:trips,id'],
             // Fahrtart des Angebots; ohne Angabe gilt Gelegenheitsverkehr (Charter, Ausflug, Gruppenfahrt)
             'trip_kind' => ['nullable', Rule::enum(TripKind::class)],
         ]);

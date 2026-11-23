@@ -303,6 +303,28 @@ class PricingTest extends TestCase
             ->assertCreated()->assertJsonPath('net_total', '720.00');    // ohne Fahrzeug: 400 km × 1,80
     }
 
+    public function test_angebot_aus_tour_nimmt_den_gewaehlten_fahrzeugtyp_und_multipliziert_mit_der_anzahl(): void
+    {
+        $this->prices(['price_per_km' => 1.80]);
+        $this->typeRates('doppeldecker', ['price_per_km' => 3.00]);
+        $kleinbus = Vehicle::factory()->create(['type' => 'minibus']);
+
+        // Der gewählte Typ geht vor dem Typ eines Fahrzeugs; ohne Fahrzeug genügt der Typ.
+        $this->as(Role::Disponent)->postJson('/api/quotes/from-tour', $this->tour(['empty_km' => 0, 'vehicle_type' => 'doppeldecker', 'vehicle_id' => $kleinbus->id]))
+            ->assertCreated()->assertJsonPath('net_total', '1200.00');
+
+        // zwei Fahrzeuge: jede Position mal zwei, mit Hinweis
+        $this->as(Role::Disponent)->postJson('/api/quotes/from-tour', $this->tour(['empty_km' => 0, 'vehicle_type' => 'doppeldecker', 'vehicle_count' => 2]))
+            ->assertCreated()
+            ->assertJsonPath('net_total', '2400.00')
+            ->assertJsonPath('lines.0.quantity', '800.000')
+            ->assertJsonPath('lines.0.description', 'Hinfahrt: München – Salzburg · 2 × Doppeldeckerbus')
+            ->assertJsonPath('lines.0.vehicle_type', 'doppeldecker');
+
+        $this->as(Role::Disponent)->postJson('/api/quotes/from-tour', $this->tour(['vehicle_type' => 'ufo']))->assertUnprocessable()->assertJsonValidationErrors(['vehicle_type']);
+        $this->as(Role::Disponent)->postJson('/api/quotes/from-tour', $this->tour(['vehicle_count' => 0]))->assertUnprocessable()->assertJsonValidationErrors(['vehicle_count']);
+    }
+
     public function test_nur_typpreise_genuegen_fuer_ein_angebot(): void
     {
         $this->typeRates('reisebus', ['price_per_km' => 2]);

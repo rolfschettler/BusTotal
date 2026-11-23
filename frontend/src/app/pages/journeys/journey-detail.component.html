@@ -1,0 +1,101 @@
+<a routerLink="/reisen" class="small text-decoration-none">‹ Alle Reisen</a>
+
+@if (loading()) {
+  <div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary"></div></div>
+} @else if (error()) {
+  <div class="alert alert-danger mt-3" role="alert">{{ error() }}</div>
+} @else if (journey()) {
+  @let j = journey()!;
+  <div class="mb-3">
+    <h1 class="h3 mb-1">{{ j.title }}</h1>
+    <p class="mb-0 small text-body-secondary">
+      @if (j.customer; as c) {
+        Kunde: <a [routerLink]="['/kunden', c.id]">{{ c.display_name }}</a>
+      } @else {
+        Noch kein Kunde gewählt (im Angebot wählen)
+      }
+      @if (j.date_from) {
+        · {{ j.date_from | date: 'dd.MM.yyyy' }}@if (j.date_to && j.date_to !== j.date_from) { – {{ j.date_to | date: 'dd.MM.yyyy' }} }
+      }
+      <app-help-link topic="belege" anchor="reisen" label="Reisen" />
+    </p>
+  </div>
+
+  <!-- Nächster Schritt: ein Satz und eine Taste, die zum richtigen Beleg führt -->
+  <div class="alert alert-info d-flex flex-wrap align-items-center gap-2 py-2" role="note">
+    <i class="bi bi-arrow-right-circle" aria-hidden="true"></i>
+    <span><strong>Nächster Schritt:</strong> {{ nextStep() }}</span>
+    @if (latest(); as d) {
+      <a class="btn btn-sm btn-primary ms-auto" [routerLink]="['/belege', d.id]">{{ typeLabel(d.type) }} öffnen</a>
+    } @else {
+      <a class="btn btn-sm btn-primary ms-auto" routerLink="/streckenplanung">Zur Streckenplanung</a>
+    }
+  </div>
+
+  <div class="form-area mb-3">
+    <div class="section-title">Strecken</div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle bg-white border mb-0">
+        <thead>
+          <tr><th scope="col">Art</th><th scope="col">Strecke</th><th scope="col">Fahrzeuge</th><th scope="col" class="text-end">Kilometer</th><th scope="col" class="text-end">Lenkzeit</th><th scope="col" class="text-end">Tage</th></tr>
+        </thead>
+        <tbody>
+          @for (s of j.sections; track s.id) {
+            <tr>
+              <td class="text-nowrap">{{ s.kind_label }}</td>
+              <td>
+                {{ s.title }}
+                @if (s.trip; as t) {
+                  <div class="small text-body-secondary">{{ t.from }} → {{ t.to }}</div>
+                }
+              </td>
+              <td>
+                @for (v of s.vehicles; track $index; let last = $last) {{{ v.count }} × {{ v.label ?? 'Fahrzeug' }}{{ last ? '' : ', ' }}}
+                @if (!s.vehicles.length) { <span class="text-body-secondary">–</span> }
+              </td>
+              <td class="text-end text-nowrap">@if (s.trip; as t) { {{ t.loaded_km + t.empty_km | number: '1.0-1' : 'de-DE' }} km }</td>
+              <td class="text-end text-nowrap">@if (s.trip; as t) { {{ duration(t.drive_s) }} }</td>
+              <td class="text-end">@if (s.trip; as t) { {{ t.days }} }</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="form-text">Strecken fügen Sie im Entwurf des Angebots hinzu („Weitere Strecke hinzufügen“). Die Touren selbst stehen im <a routerLink="/tour-archiv">Tour-Archiv</a>.</div>
+  </div>
+
+  <div class="form-area mb-3">
+    <div class="section-title">Belege</div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle bg-white border mb-0">
+        <thead>
+          <tr><th scope="col">Beleg</th><th scope="col">Datum</th><th scope="col">Stand</th><th scope="col" class="text-end">Brutto</th></tr>
+        </thead>
+        <tbody>
+          @for (d of j.documents; track d.id) {
+            <tr [class.text-decoration-line-through]="d.cancelled">
+              <td>
+                <a [routerLink]="['/belege', d.id]">{{ typeLabel(d.type) }} @if (d.number) { <code>{{ d.number }}</code> } @else { (Entwurf) }</a>
+                @if (d.subject) { <div class="small text-body-secondary">{{ d.subject }}</div> }
+              </td>
+              <td class="text-nowrap">{{ d.document_date ? (d.document_date | date: 'dd.MM.yyyy') : '' }}</td>
+              <td>
+                @if (d.status === 'entwurf') {
+                  <span class="badge text-bg-warning">Entwurf</span>
+                } @else if (d.cancelled) {
+                  <span class="badge text-bg-secondary">Storniert</span>
+                } @else {
+                  <span class="badge text-bg-success">Festgeschrieben</span>
+                }
+              </td>
+              <td class="text-end">{{ amount(d.gross_total) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (j.stage; as st) {
+      <div class="form-text">Stand der Reise: {{ stageLabels[st] }}@if (j.amount) { über {{ amount(j.amount) }} brutto }. Der Stand folgt dem weitestgehenden gültigen Beleg, gespeichert wird er nicht.</div>
+    }
+  </div>
+}

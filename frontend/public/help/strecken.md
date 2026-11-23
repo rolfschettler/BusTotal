@@ -1,15 +1,16 @@
 # Streckenplanung {#strecken}
 
-Hier berechnen Sie eine Tour: **Strecke**, **Fahrzeit** und den **zeitlichen Ablauf mit den gesetzlichen Pausen und Ruhezeiten**. Den Bereich sehen Administrator und Disponent. Die Berechnung ist eine **Planungshilfe**: Es wird nichts gespeichert, und sie ersetzt keine Auswertung des Fahrtenschreibers.
+Hier berechnen Sie eine Tour: **Strecke**, **Fahrzeit** und den **zeitlichen Ablauf mit den gesetzlichen Pausen und Ruhezeiten**. Den Bereich sehen Administrator und Disponent. Die Berechnung ist eine **Planungshilfe** und ersetzt keine Auswertung des Fahrtenschreibers. Eine berechnete Tour können Sie im [Tour-Archiv speichern](#tour-archiv) und später wieder laden.
 
 ## Eine Tour berechnen {#streckenplanung}
 
 1. **Von:** Schreiben Sie den Startort, zum Beispiel „88400 Biberach“ oder „Ulm Hbf“. Ihr Text bleibt so stehen, wie Sie ihn eingegeben haben. Gesucht wird erst beim Berechnen. Danach steht unter dem Feld, welcher Ort verwendet wurde („Verwendet: …“). Passt er nicht, schreiben Sie den Ort genauer und berechnen neu.
 2. **Nach:** Genauso das Ziel.
 3. **Über** (freiwillig): Mit **Zwischenhalt (über)** kommt ein weiteres Ortsfeld dazu, so oft Sie wollen. Mit den Pfeilen ändern Sie die Reihenfolge, mit dem Kreuz entfernen Sie einen Halt. **Tauschen** vertauscht Von und Nach. Mit **Rückfahrt zum Start (Von)** fährt die Tour am Ende zum Start zurück.
-4. **Fahrzeug wählen** (freiwillig): Bei der Route werden Höhe, Breite, Länge und Gewicht des Fahrzeugs beachtet (zum Beispiel niedrige Brücken). Fehlen beim Fahrzeug Maße oder Gewicht, weist die Seite darauf hin; die Route wird dann ohne diese Grenzen berechnet. Mit Fahrzeug erscheinen außerdem die **Fahrzeugkosten** (Kilometer mal Kostensatz des Fahrzeugs).
-5. **Abfahrt** (freiwillig): Mit Datum und Uhrzeit zeigt der Zeitplan echte Zeitpunkte, ohne Abfahrt den Versatz seit Beginn („+4:30“).
-6. **Strecke berechnen** (oder Enter in einem Ortsfeld). Dafür genügen **Von** und **Nach**.
+4. **Fahrzeugtyp und Anzahl** (freiwillig): Sie planen mit „Doppeldecker“ oder „Kleinbus“ und der Zahl der Busse. Das konkrete Fahrzeug wählt der Disponent erst kurz vor der Fahrt. Der Typ bestimmt die Preise im Angebot.
+5. **Bestimmtes Fahrzeug** (freiwillig): Bei der Route werden Höhe, Breite, Länge und Gewicht des Fahrzeugs beachtet (zum Beispiel niedrige Brücken). Wählen Sie eines, wird sein Typ als Fahrzeugtyp übernommen. Fehlen beim Fahrzeug Maße oder Gewicht, weist die Seite darauf hin; die Route wird dann ohne diese Grenzen berechnet. Mit Fahrzeug erscheinen außerdem die **Fahrzeugkosten** (Kilometer mal Kostensatz des Fahrzeugs).
+6. **Abfahrt** (freiwillig): Mit Datum und Uhrzeit zeigt der Zeitplan echte Zeitpunkte, ohne Abfahrt den Versatz seit Beginn („+4:30“).
+7. **Strecke berechnen** (oder Enter in einem Ortsfeld). Dafür genügen **Von** und **Nach**.
 
 Ein Ort, der schon einmal gesucht wurde, wird nicht erneut gesucht: Der Browser merkt sich die Orte zu Ihren Eingaben. Das schont das Tageskontingent des Routing-Dienstes. Groß- und Kleinschreibung, doppelte Leerzeichen und ein Komma oder Punkt am Ende spielen dabei keine Rolle.
 
@@ -42,6 +43,27 @@ Der **Zeitplan** zeigt jeden Abschnitt: Fahrt, Pause, Halt und Ruhezeit, geglied
 
 > **Nicht geprüft** werden die Wochenlenkzeit (56 Stunden), die Doppelwoche, die Wochenruhezeit, die verkürzte Tagesruhezeit und mehrere Fahrer. Dauert eine Tour länger als 6 Tage oder lenkt der Fahrer mehr als 56 Stunden, erscheint ein Hinweis. Ob eine Tour wirklich zulässig ist, klären Sie fachlich ab (Entwurf zur Prüfung durch den Auftraggeber).
 
+## Tour speichern und wiederverwenden {#tour-archiv}
+
+Eine berechnete Tour können Sie im **Tour-Archiv** ablegen und für weitere Angebote wiederverwenden. Das spart die Eingabe und die Berechnung.
+
+**Speichern:** Nach dem Berechnen steht unter dem Ergebnis **Tour speichern**. Der Name ist mit „Von – Nach“ vorgeschlagen, Sie können ihn ändern. Gespeichert werden die Halte (mit Aufenthalt und „Fahrer frei“), die berechnete Strecke mit Zeitplan und **Linie auf der Karte**, die Fahrtart sowie Fahrzeugtyp und Anzahl. **Nicht** gespeichert werden die Abfahrtszeit und ein bestimmtes Fahrzeug, denn beides gehört zur einzelnen Fahrt. Ein „anderer Ort“ als Betriebshof wird ebenfalls nicht mitgespeichert, wohl aber ein Betriebshof Ihrer Firma.
+
+**Laden:** Oben rechts öffnet **Aus Archiv laden** die Liste. Suchen Sie nach dem Namen oder nach einem Ort (am Wortanfang, die Treffer sind markiert) und klicken Sie **Laden**. Die Planung füllt sich mit allen Angaben und zeigt das gespeicherte Ergebnis sofort, **ohne neue Berechnung**. Tragen Sie die neue **Abfahrt** ein und berechnen Sie neu, wenn Sie Uhrzeiten und die Zuschläge für Wochenende und Feiertag brauchen.
+
+**Ändern:** Haben Sie eine geladene Tour verändert, speichert **Änderungen speichern** sie unter demselben Namen, **Als neue Tour speichern** legt eine zweite an.
+
+**Danach:** Mit **Angebot erstellen** geht es direkt weiter. Die Orte der Halte liegen in der zentralen Ortstabelle und werden nie erneut gesucht.
+
+## Das Tour-Archiv als Liste {#tour-archiv-liste}
+
+Alle gespeicherten Touren sehen Sie in der Seitenleiste unter **Fahrten und Abrechnung › Tour-Archiv**. Die Liste zeigt je Tour den Namen, die Strecke (Von → Nach, Zahl der Zwischenhalte, Rückfahrt), Kilometer, Lenkzeit und Tage, Fahrzeuge (Anzahl und Typ), die Fahrtart und in wie vielen [Reisen](/hilfe/belege#reisen) die Tour verwendet wird. Die neueste Änderung steht oben.
+
+- **Suchen:** Das Suchfeld trifft den Namen und die Orte am Wortanfang, die Treffer sind markiert (zum Beispiel „Wien“ oder „Salz“).
+- **Öffnen:** Ein Klick auf den Namen oder das Symbol links öffnet die Tour in der Streckenplanung, mit allen Angaben und dem gespeicherten Ergebnis. Dort ändern Sie sie und speichern mit **Änderungen speichern** oder legen mit **Als neue Tour speichern** eine zweite an.
+- **Löschen** (Administrator und Disponent): Das Papierkorb-Symbol entfernt die Tour nach einer Rückfrage. Eine Tour, die in einer Reise verwendet wird, trägt stattdessen ein Schloss und lässt sich nicht löschen. Belege, die eine Tour schon enthalten, bleiben unverändert, weil sie ihre Fahrtbeschreibung selbst tragen.
+- **Neue Tour:** „Neue Tour planen“ führt in die Streckenplanung. Touren entstehen dort, nicht in der Liste.
+
 ## Angebot aus der Tour {#angebot-aus-tour}
 
 Dies ist **einer von zwei Wegen** zu einem Angebot. Ein Angebot **ohne** Strecke legen Sie unter **Belege › Neuer Beleg** an, siehe [Angebot erstellen](/hilfe/fahrten#angebot).
@@ -51,9 +73,10 @@ Unter dem Ergebnis legt **Angebot erstellen** aus der berechneten Tour ein Angeb
 - **Fahrtart:** Vor dem Erstellen wählen Sie die **Fahrtart**. Vorbelegt ist Gelegenheitsverkehr (Charter, Ausflug, Gruppenfahrt) mit dem Regelsatz. Bei **Linienverkehr** oder **Schülerfahrt** gilt der ermäßigte Satz aus den [Einstellungen](/hilfe/einstellungen#preise-steuersatz), aber nur bis 50 km. Ist die Fahrt länger, erscheint ein Hinweis (bei Fahrten ins Ausland zählt nur der Inlandsteil). Alle Positionen des Angebots tragen die Fahrtart, auch die Zuschläge. Mehr unter [Fahrtart und Steuersatz](/hilfe/belege#fahrtart).
 - **Wochenende und Feiertag:** Hat die Tour einen Starttermin, setzt die Software die [Zuschläge](/hilfe/einstellungen#preise-zuschlaege) für Samstag, Sonntag und Feiertag selbst, je Tag nach den Sätzen in den Einstellungen. **Feiertage in** wählt das Bundesland, nach dem die Feiertage gelten. Vorbelegt ist das Bundesland Ihres Betriebssitzes. Ändern Sie es, wenn die Fahrt in einem anderen Land liegt. Ohne Starttermin gibt es keine automatischen Zuschläge.
 - **Zuschlag (%):** Hier tragen Sie von Hand einen weiteren Zuschlag auf die Summe ein, zum Beispiel für Besonderheiten. Er erscheint als eigene Position und kommt zu den automatischen Zuschlägen hinzu.
-- **Fahrzeug:** Ist oben ein Fahrzeug gewählt, gelten die [Preise seines Fahrzeugtyps](/hilfe/einstellungen#preise-fahrzeugtyp), soweit für den Typ welche hinterlegt sind, sonst die Standardpreise. Ohne Fahrzeug gelten immer die Standardpreise.
+- **Fahrzeugtyp und Anzahl:** Es gelten die [Preise des gewählten Fahrzeugtyps](/hilfe/einstellungen#preise-fahrzeugtyp), soweit für den Typ welche hinterlegt sind, sonst die Standardpreise. Ohne Typ gelten immer die Standardpreise. Wählen Sie ein bestimmtes Fahrzeug, wird dessen Typ vorgeschlagen. Fahren **mehrere gleiche Busse**, enthält das Angebot jede Position entsprechend oft, mit dem Hinweis „für 2 Fahrzeuge“.
+- **Reise und Tour:** Mit dem Angebot entsteht eine [Reise](/hilfe/belege#reise) mit der Tour als Hinfahrt. Ist die Tour noch nicht im Archiv (oder haben Sie eine geladene Tour verändert), speichert **Angebot erstellen** sie selbst, Sie müssen vorher nicht **Tour speichern** klicken.
 - **Kunde:** Den Kunden wählen Sie im geöffneten Angebot.
-- **Nur Zahlen:** Zum Server gehen nur Kilometer, Lenkzeit, Zahl der Tage, Start- und Endzeit, das Bundesland und das gewählte Fahrzeug (daraus nimmt der Server den Typ), nicht die Route und nicht die Orte. Der Betreff nennt Start und Ziel der Fahrt.
+- **Nur Zahlen:** Zum Server gehen nur Kilometer, Lenkzeit, Zahl der Tage, Start- und Endzeit, das Bundesland, Fahrzeugtyp und Anzahl (und ein gewähltes Fahrzeug, daraus nimmt der Server sonst den Typ), nicht die Route und nicht die Orte. Der Betreff nennt Start und Ziel der Fahrt.
 - **Maut** und Besonderheiten fehlen: Fügen Sie sie im Angebot als eigene Position hinzu.
 - Alle Positionen lassen sich im Entwurf ändern. Das Ergebnis ist ein Vorschlag, kein verbindlicher Preis.
 - Wurde die Eingabe nach der Berechnung geändert, ist der Knopf gesperrt: Bitte zuerst neu berechnen.

@@ -270,7 +270,7 @@ class VehicleTest extends TestCase
         $liste = $this->as(Role::Disponent)->getJson('/api/vehicles/choices')->assertOk()->json();
 
         $this->assertCount(26, $liste, 'Alle aktiven, nicht nur eine Seite; archivierte nicht.');
-        $this->assertSame(['id', 'display_name', 'model', 'seats', 'has_dimensions'], array_keys($liste[0]));
+        $this->assertSame(['id', 'display_name', 'model', 'seats', 'type', 'has_dimensions'], array_keys($liste[0]));
         $this->assertTrue(collect($liste)->firstWhere('id', $voll->id)['has_dimensions']);
         $this->assertFalse($liste[0]['has_dimensions']);
     }

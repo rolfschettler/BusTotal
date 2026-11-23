@@ -142,6 +142,7 @@ class VehicleController extends Controller
             'display_name' => $v->display_name,
             'model' => trim($v->manufacturer.' '.$v->model),
             'seats' => $v->seats,
+            'type' => $v->type?->value,
             'has_dimensions' => $v->height_m !== null && $v->width_m !== null && $v->length_m !== null && $v->gross_weight_kg !== null,
         ])->values());
     }

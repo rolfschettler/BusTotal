@@ -17,6 +17,8 @@ use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\Superadmin\AuthController as SuperadminAuthController;
 use App\Http\Controllers\Api\Superadmin\TenantController as SuperadminTenantController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\JourneyController;
+use App\Http\Controllers\Api\TripController;
 use App\Http\Controllers\Api\VehicleController;
 use Illuminate\Support\Facades\Route;
 
@@ -132,6 +134,19 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
     Route::get('/settings/pricing', [PricingController::class, 'show'])->middleware('role:admin,disponent,buchhaltung');
     Route::put('/settings/pricing', [PricingController::class, 'update'])->middleware('role:admin');
 
+    // Tour-Archiv: lesen Admin, Disponent und Buchhaltung; speichern, ändern, löschen Admin und Disponent.
+    Route::get('/trips', [TripController::class, 'index'])->middleware('role:admin,disponent,buchhaltung');
+    Route::get('/trips/{trip}', [TripController::class, 'show'])->middleware('role:admin,disponent,buchhaltung');
+    Route::middleware('role:admin,disponent')->group(function () {
+        Route::post('/trips', [TripController::class, 'store']);
+        Route::put('/trips/{trip}', [TripController::class, 'update']);
+        Route::delete('/trips/{trip}', [TripController::class, 'destroy']);
+    });
+
+    // Reisen: nur lesen (Admin, Disponent, Buchhaltung). Sie entstehen mit dem ersten Angebot aus der Streckenplanung.
+    Route::get('/journeys', [JourneyController::class, 'index'])->middleware('role:admin,disponent,buchhaltung');
+    Route::get('/journeys/{journey}', [JourneyController::class, 'show'])->middleware('role:admin,disponent,buchhaltung');
+
     // Betriebshöfe: lesen Admin, Disponent und Buchhaltung, ändern nur Admin.
     Route::get('/depots', [DepotController::class, 'index'])->middleware('role:admin,disponent,buchhaltung');
     Route::middleware('role:admin')->group(function () {
@@ -158,6 +173,9 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
         Route::get('/{document}/zugferd', [DocumentController::class, 'zugferd']);
         Route::put('/{document}', [DocumentController::class, 'update']);
         Route::delete('/{document}', [DocumentController::class, 'destroy']);
+        // Weitere Strecken der Reise im Entwurf: hinzufügen (aus dem Tour-Archiv) und entfernen
+        Route::post('/{document}/sections', [DocumentController::class, 'addSection']);
+        Route::delete('/{document}/sections/{section}', [DocumentController::class, 'removeSection']);
         Route::post('/{document}/convert', [DocumentController::class, 'convert']);
         Route::get('/{document}/payments', [DocumentPaymentController::class, 'index']);
     });

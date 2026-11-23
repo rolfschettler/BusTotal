@@ -47,6 +47,11 @@ export interface TourFigures {
   state?: string | null;
   /** Eingeplantes Fahrzeug: der Server nimmt nur dessen Typ, um die Preise des Typs zu wählen. */
   vehicle_id?: string | null;
+  /** Fahrzeugtyp der Tour (geht vor dem Typ des Fahrzeugs) und Anzahl gleicher Fahrzeuge */
+  vehicle_type?: string | null;
+  vehicle_count?: number;
+  /** Die gespeicherte Tour (Tour-Archiv); aus ihr bekommt die Reise ihre Hinfahrt. */
+  trip_id?: string | null;
   /** Fahrtart des Angebots (bestimmt den Steuersatz); der Server nimmt ohne Angabe Gelegenheitsverkehr. */
   trip_kind?: TripKindValue | null;
 }

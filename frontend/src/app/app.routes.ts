@@ -46,6 +46,31 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'reisen',
+        // Nur lesen: Admin, Disponent, Buchhaltung. Reisen entstehen mit dem ersten Angebot aus der Streckenplanung.
+        canActivate: [roleGuard('admin', 'disponent', 'buchhaltung')],
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            data: { help: 'belege#reisen', fullPage: true },
+            loadComponent: () => import('./pages/journeys/journey-list.component').then((m) => m.JourneyListComponent),
+          },
+          {
+            path: ':id',
+            data: { help: 'belege#reisen' },
+            loadComponent: () => import('./pages/journeys/journey-detail.component').then((m) => m.JourneyDetailComponent),
+          },
+        ],
+      },
+      {
+        path: 'tour-archiv',
+        // Lesen: Admin, Disponent, Buchhaltung. Löschen und Planen dürfen nur Admin und Disponent (Liste und Server prüfen das).
+        canActivate: [roleGuard('admin', 'disponent', 'buchhaltung')],
+        data: { help: 'strecken#tour-archiv-liste', fullPage: true },
+        loadComponent: () => import('./pages/trips/trip-list.component').then((m) => m.TripListComponent),
+      },
+      {
         path: 'belege',
         // Entwürfe: Admin, Disponent, Buchhaltung. Festschreiben und Stornieren nur Admin und Buchhaltung (Formular und Server prüfen das).
         canActivate: [roleGuard('admin', 'disponent', 'buchhaltung')],
