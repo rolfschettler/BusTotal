@@ -11,12 +11,14 @@ use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\CreatesInvoiceDrafts;
 use Tests\TestCase;
 
 /** Reisen: Übersicht und Detail (nur lesen), Stand und Betrag aus den Belegen abgeleitet, Verwendung der Touren im Archiv. */
 class JourneyListTest extends TestCase
 {
     use RefreshDatabase;
+    use CreatesInvoiceDrafts;
 
     protected function setUp(): void
     {
@@ -146,7 +148,7 @@ class JourneyListTest extends TestCase
         $this->as(Role::Buchhaltung)->postJson("/api/documents/{$advance['id']}/finalize")->assertOk();
         $this->as(Role::Buchhaltung)->getJson('/api/journeys')->assertJsonPath('data.0.stage', 'auftragsbestaetigung');   // Anzahlung zählt nicht als Stand
 
-        $invoice = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$order['id']}/convert", ['type' => 'rechnung'])->assertCreated()->json();
+        $invoice = $this->invoiceDraftFrom($order['id']);
         $this->as(Role::Buchhaltung)->postJson("/api/documents/{$invoice['id']}/finalize")->assertOk();
         $this->as(Role::Buchhaltung)->getJson('/api/journeys')->assertJsonPath('data.0.stage', 'rechnung')->assertJsonPath('data.0.stage_document_id', $invoice['id']);
 

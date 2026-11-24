@@ -36,7 +36,11 @@ class TripOrderService
      */
     public function assign(TripOrder $order, array $data, ?string $reason = null): TripOrder
     {
-        return DB::transaction(function () use ($order, $data, $reason) {
+        // Die Zustiegsstellen kommen als Liste unter „boardings“ und ersetzen die vorhandenen; fehlt der Schlüssel, bleiben sie.
+        $boardings = array_key_exists('boardings', $data) ? $this->normalizeBoardings((array) $data['boardings']) : null;
+        unset($data['boardings']);
+
+        return DB::transaction(function () use ($order, $data, $boardings, $reason) {
             $order = TripOrder::lockForUpdate()->findOrFail($order->id);
 
             if ($order->status === TripOrderStatus::Erledigt || $order->billing_status === 'abgerechnet') {
@@ -48,6 +52,10 @@ class TripOrderService
 
             $issued = $order->isIssued();
             $changes = array_diff_key($order->getDirty(), array_flip(['driver_note', 'notes', 'collective_only']));
+            $boardingsChanged = $boardings !== null && $boardings !== $this->currentBoardings($order);
+            if ($boardingsChanged) {
+                $changes['boardings'] = true;
+            }
             if ($issued && $changes !== [] && blank($reason)) {
                 $this->fail('Der Fahrtauftrag ist schon ausgegeben. Bitte eine Begründung für die Änderung angeben.');
             }
@@ -58,12 +66,60 @@ class TripOrderService
             }
             $order->save();
 
+            if ($boardingsChanged) {
+                $order->boardings()->delete();
+                foreach ($boardings as $i => $row) {
+                    $order->boardings()->create($row + ['position' => $i + 1]);
+                }
+            }
+
             if ($issued && $changes !== []) {
                 AuditLog::record('reassigned', $order, null, ['reason' => $reason, 'fields' => array_keys($changes)]);
             }
 
-            return $order->fresh(['vehicle', 'driver', 'driver2']);
+            return $order->fresh(['vehicle', 'driver', 'driver2', 'boardings']);
         });
+    }
+
+    /**
+     * Zustiegsstellen in eine feste Form bringen: leere Zeilen entfallen, jede andere braucht einen Ort.
+     *
+     * @param  array<int, mixed>  $rows
+     * @return list<array{kind: string, place: string, time: ?string, passengers: ?string}>
+     */
+    private function normalizeBoardings(array $rows): array
+    {
+        // Die geprüften Daten können die Zeilen in anderer Reihenfolge liefern: nach der Zeilennummer ordnen
+        ksort($rows);
+        $out = [];
+        foreach ($rows as $row) {
+            $row = (array) $row;
+            $place = trim((string) ($row['place'] ?? ''));
+            $time = trim((string) ($row['time'] ?? ''));
+            $count = trim((string) ($row['passengers'] ?? ''));
+            $kind = ($row['kind'] ?? 'zustieg') === 'ausstieg' ? 'ausstieg' : 'zustieg';
+            if ($place === '' && $time === '' && $count === '') {
+                continue;
+            }
+            if ($place === '') {
+                $this->fail('Bitte bei jedem Zu- und Ausstieg den Ort angeben.');
+            }
+            $out[] = ['kind' => $kind, 'place' => $place, 'time' => $time === '' ? null : $time, 'passengers' => $count === '' ? null : $count];
+        }
+
+        return $out;
+    }
+
+    /** @return list<array{place: string, time: ?string, passengers: ?string}> */
+    private function currentBoardings(TripOrder $order): array
+    {
+        return $order->boardings()->get()->map(fn ($b) => ['kind' => $b->kind, 'place' => $b->place, 'time' => $b->time, 'passengers' => $b->passengers])->all();
+    }
+
+    /** Die erste Zahl aus einer Personenzahl wie „20“ oder „ca. 20 Pers.“; null, wenn keine Zahl darin steht. */
+    private function passengerCount(?string $text): ?int
+    {
+        return $text !== null && preg_match('/\d+/', $text, $m) === 1 ? (int) $m[0] : null;
     }
 
     /**
@@ -142,8 +198,9 @@ class TripOrderService
             if ($order->vehicle_type !== null && $vehicle->type !== $order->vehicle_type) {
                 $add('vehicle_type', 'vehicle', "Gebucht ist {$order->vehicle_type->label()}, das Fahrzeug {$vehicle->display_name} ist ein(e) {$vehicle->type->label()}.");
             }
-            if ($order->passengers !== null && $vehicle->seats !== null && $vehicle->seats < $order->passengers) {
-                $add('seats', 'vehicle', "Das Fahrzeug {$vehicle->display_name} hat {$vehicle->seats} Sitzplätze, vorgesehen sind {$order->passengers} Fahrgäste.");
+            $count = $this->passengerCount($order->passengers === null ? null : (string) $order->passengers);
+            if ($count !== null && $vehicle->seats !== null && $vehicle->seats < $count) {
+                $add('seats', 'vehicle', "Das Fahrzeug {$vehicle->display_name} hat {$vehicle->seats} Sitzplätze, vorgesehen sind {$count} Fahrgäste.");
             }
             foreach ($this->deadlineProblems($vehicle, Vehicle::DEADLINES, $to) as $text) {
                 $add('vehicle_deadline', 'vehicle', "Fahrzeug {$vehicle->display_name}: $text");

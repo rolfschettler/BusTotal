@@ -191,16 +191,20 @@ Für Kunden mit dem Kennzeichen **E-Rechnung statt PDF** ([Kunde](/hilfe/kunden#
 
 Aus einem **festgeschriebenen** Beleg erstellen Sie den nächsten Schritt der Belegkette:
 
-- Aus einem Angebot: Auftragsbestätigung, Anzahlungsrechnung oder Rechnung
-- Aus einer Auftragsbestätigung: Anzahlungsrechnung oder Rechnung
+- Aus einem Angebot: die Auftragsbestätigung
+- Aus einer Auftragsbestätigung: die Anzahlungsrechnung
 
 Die Software legt einen neuen **Entwurf** an und übernimmt Kunde, Texte und Positionen. Sie prüfen und ändern ihn und schreiben ihn dann fest. Der Verweis auf den Ursprungsbeleg bleibt sichtbar.
 
-Bei der **Anzahlungsrechnung** schlägt die Software 30 % des Auftrags vor, je Steuersatz eine Position („Anzahlung 30 % auf Angebot …“). Den Betrag ändern Sie im Entwurf wie jede Position.
+**Aus einem Angebot gibt es nur eine Auftragsbestätigung.** Sie ist die eine Zusage des Kunden, auf ihr bauen die Fahrtaufträge auf. Gibt es schon eine, zeigt das Angebot statt der Taste „Auftragsbestätigung erstellen“ nur einen Verweis auf die vorhandene. Ein Entwurf zählt mit: Festschreiben oder löschen Sie ihn, wenn Sie neu beginnen wollen.
+
+**Die Rechnung entsteht nicht aus Angebot oder Auftragsbestätigung**, sondern aus den gefahrenen Fahrten (den Fahrtaufträgen mit ihrer Rückerfassung). Dieser Weg folgt in einer späteren Etappe. Bis dahin legen Sie eine Rechnung über **Neuer Beleg** an.
+
+Eine **Anzahlungsrechnung** gibt es nur zur Auftragsbestätigung, mehrere sind möglich. Die Software schlägt 30 % des Auftrags vor, je Steuersatz eine Position („Anzahlung 30 % auf Auftragsbestätigung …“). Den Betrag ändern Sie im Entwurf wie jede Position.
 
 ## Schlussrechnung und Anzahlungen {#schlussrechnung}
 
-Die **Schlussrechnung** ist die Rechnung, die aus demselben Angebot (oder derselben Auftragsbestätigung) entsteht wie die Anzahlungsrechnungen. Sie zeigt die **volle Leistung** und zieht die erhaltenen Anzahlungen **getrennt** ab, nicht als negative Position:
+Die **Schlussrechnung** ist die Rechnung, die zu derselben Auftragsbestätigung gehört wie die Anzahlungsrechnungen. Sie zeigt die **volle Leistung** und zieht die erhaltenen Anzahlungen **getrennt** ab, nicht als negative Position:
 
 - Gesamtbetrag brutto (volle Leistung, mit Steuer je Satz)
 - abzüglich Anzahlung *Nummer, Datum* (mit Netto und Steuer der Anzahlung)

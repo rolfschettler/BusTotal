@@ -14,12 +14,14 @@ use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\CreatesInvoiceDrafts;
 use Tests\TestCase;
 
 /** Reisevorhaben: entsteht automatisch mit dem ersten Angebot aus der Tour und bleibt über die ganze Belegkette dieselbe. */
 class JourneyTest extends TestCase
 {
     use RefreshDatabase;
+    use CreatesInvoiceDrafts;
 
     protected function setUp(): void
     {
@@ -170,8 +172,7 @@ class JourneyTest extends TestCase
             ->assertCreated()->json();
         $this->as(Role::Buchhaltung)->postJson("/api/documents/{$order['id']}/finalize")->assertOk();
 
-        $invoice = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$order['id']}/convert", ['type' => 'rechnung'])
-            ->assertCreated()->json();
+        $invoice = $this->invoiceDraftFrom($order['id']);
         $this->as(Role::Buchhaltung)->postJson("/api/documents/{$invoice['id']}/finalize")->assertOk();
 
         $storno = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$invoice['id']}/cancel")->assertCreated()->json();

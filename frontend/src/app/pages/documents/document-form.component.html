@@ -556,9 +556,17 @@
     }
     @if (readonly()) {
       @for (t of typeInfo()?.convertible_to ?? []; track t) {
-        <button type="button" class="btn btn-outline-secondary" [disabled]="working()" (click)="convertTo(t)">
-          <i class="bi bi-arrow-right-circle me-1"></i>{{ typeLabel(t) }} erstellen
-        </button>
+        @if (doc()?.existing_followups?.[t]; as ex) {
+          <!-- Diese Art gibt es aus diesem Beleg nur einmal: statt der Taste ein Verweis auf den vorhandenen Beleg -->
+          <span class="align-self-center small text-body-secondary">
+            {{ typeLabel(t) }} vorhanden:
+            <a [routerLink]="['/belege', ex.id]">{{ ex.number ?? 'Entwurf' }}</a>
+          </span>
+        } @else {
+          <button type="button" class="btn btn-outline-secondary" [disabled]="working()" (click)="convertTo(t)">
+            <i class="bi bi-arrow-right-circle me-1"></i>{{ typeLabel(t) }} erstellen
+          </button>
+        }
       }
       @if (canCancel()) {
         <button type="button" class="btn btn-outline-secondary" [disabled]="working()" (click)="cancelDocument()">

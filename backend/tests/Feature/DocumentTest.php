@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\DocumentType;
 use App\Enums\Role;
 use App\Models\CompanySetting;
 use App\Models\Customer;
@@ -338,7 +339,7 @@ class DocumentTest extends TestCase
 
     // ---------- Belegkette ----------
 
-    public function test_aus_angebot_wird_auftragsbestaetigung_und_rechnung(): void
+    public function test_aus_angebot_wird_auftragsbestaetigung_und_daraus_die_anzahlung(): void
     {
         $angebot = $this->finalized('angebot');
 
@@ -352,8 +353,51 @@ class DocumentTest extends TestCase
             ->json();
 
         $this->as(Role::Buchhaltung)->postJson("/api/documents/{$ab['id']}/finalize")->assertOk();
-        $this->as(Role::Disponent)->postJson("/api/documents/{$ab['id']}/convert", ['type' => 'rechnung'])
-            ->assertCreated()->assertJsonPath('type', 'rechnung');
+        $this->as(Role::Disponent)->postJson("/api/documents/{$ab['id']}/convert", ['type' => 'anzahlung'])
+            ->assertCreated()->assertJsonPath('type', 'anzahlung');
+    }
+
+    public function test_die_rechnung_entsteht_nicht_aus_der_belegkette(): void
+    {
+        // Konzept (docs/fachlich/workflow-reisevorhaben.md): Die Rechnung kommt aus den Fahrtaufträgen (Etappe 4).
+        $angebot = $this->finalized('angebot');
+        $this->as(Role::Disponent)->postJson("/api/documents/{$angebot['id']}/convert", ['type' => 'rechnung'])->assertUnprocessable();
+        $this->as(Role::Disponent)->postJson("/api/documents/{$angebot['id']}/convert", ['type' => 'anzahlung'])->assertUnprocessable();
+
+        $ab = $this->as(Role::Disponent)->postJson("/api/documents/{$angebot['id']}/convert", ['type' => 'auftragsbestaetigung'])->json();
+        $this->as(Role::Buchhaltung)->postJson("/api/documents/{$ab['id']}/finalize")->assertOk();
+        $this->as(Role::Disponent)->postJson("/api/documents/{$ab['id']}/convert", ['type' => 'rechnung'])->assertUnprocessable();
+
+        $this->assertSame([DocumentType::Auftragsbestaetigung], DocumentType::Angebot->convertibleTo());
+        $this->assertSame([DocumentType::Anzahlung], DocumentType::Auftragsbestaetigung->convertibleTo());
+        $this->assertSame([], DocumentType::Rechnung->convertibleTo());
+    }
+
+    public function test_aus_einem_angebot_gibt_es_nur_eine_gueltige_auftragsbestaetigung(): void
+    {
+        $angebot = $this->finalized('angebot');
+        $url = "/api/documents/{$angebot['id']}/convert";
+
+        // Das Angebot zeigt, dass es schon eine Auftragsbestätigung gibt (die Oberfläche zeigt dann einen Verweis statt der Taste)
+        $this->as(Role::Disponent)->getJson("/api/documents/{$angebot['id']}")->assertJsonPath('existing_followups', []);
+
+        $ab = $this->as(Role::Disponent)->postJson($url, ['type' => 'auftragsbestaetigung'])->assertCreated()->json();
+        $this->as(Role::Disponent)->getJson("/api/documents/{$angebot['id']}")
+            ->assertJsonPath('existing_followups.auftragsbestaetigung.id', $ab['id']);
+
+        // Auch ein Entwurf zählt: Die zweite Auftragsbestätigung wird abgelehnt und nennt die vorhandene
+        $this->as(Role::Disponent)->postJson($url, ['type' => 'auftragsbestaetigung'])
+            ->assertUnprocessable()->assertJsonValidationErrors(['document']);
+        $this->assertSame(1, Document::where('source_id', $angebot['id'])->count());
+
+        $this->as(Role::Buchhaltung)->postJson("/api/documents/{$ab['id']}/finalize")->assertOk();
+        $res = $this->as(Role::Disponent)->postJson($url, ['type' => 'auftragsbestaetigung'])->assertUnprocessable();
+        $this->assertStringContainsString(Document::find($ab['id'])->number, $res->json('errors.document.0'));
+
+        // Anzahlungen gibt es zur Auftragsbestätigung, nicht zum Angebot; mehrere sind möglich (Teilzahlungen)
+        $abUrl = "/api/documents/{$ab['id']}/convert";
+        $this->as(Role::Buchhaltung)->postJson($abUrl, ['type' => 'anzahlung'])->assertCreated();
+        $this->as(Role::Buchhaltung)->postJson($abUrl, ['type' => 'anzahlung'])->assertCreated();
     }
 
     public function test_folgebeleg_nur_aus_festgeschriebenem_und_erlaubtem_beleg(): void

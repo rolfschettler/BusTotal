@@ -9,12 +9,14 @@ use App\Models\User;
 use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\CreatesInvoiceDrafts;
 use Tests\TestCase;
 
 /** Anzahlungsrechnung und Schlussrechnung mit Abzug der Anzahlungen. */
 class DocumentAdvanceTest extends TestCase
 {
     use RefreshDatabase;
+    use CreatesInvoiceDrafts;
 
     private Customer $customer;
 
@@ -37,19 +39,30 @@ class DocumentAdvanceTest extends TestCase
         return $this->actingAs(User::factory()->create(['role' => $role]), 'sanctum');
     }
 
-    /** Festgeschriebenes Angebot über 1000 € netto (19 %). */
+    /**
+     * Festgeschriebene Auftragsbestätigung über 1000 € netto (19 %). Die Anzahlung gehört zur Auftragsbestätigung,
+     * Angebot → Auftragsbestätigung ist der einzige Weg dorthin.
+     */
     private function angebot(?array $lines = null): array
     {
         $id = $this->as(Role::Buchhaltung)->postJson('/api/documents', [
             'type' => 'angebot', 'customer_id' => $this->customer->id, 'service_date_from' => '2027-05-10',
             'lines' => $lines ?? [['title' => 'Busfahrt', 'quantity' => 1, 'unit' => 'Fahrt', 'unit_price' => '1000', 'tax_rate' => 19]],
         ])->assertCreated()->json('id');
+        $this->as(Role::Buchhaltung)->postJson("/api/documents/{$id}/finalize")->assertOk();
+        $ab = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$id}/convert", ['type' => 'auftragsbestaetigung'])
+            ->assertCreated()->json('id');
 
-        return $this->as(Role::Buchhaltung)->postJson("/api/documents/{$id}/finalize")->assertOk()->json();
+        return $this->as(Role::Buchhaltung)->postJson("/api/documents/{$ab}/finalize")->assertOk()->json();
     }
 
     private function convert(string $id, string $type, ?float $percent = null): array
     {
+        // Die Rechnung entsteht erst in Etappe 4 aus den Fahrtaufträgen; bis dahin als Entwurf nachgebildet.
+        if ($type === 'rechnung') {
+            return $this->invoiceDraftFrom($id);
+        }
+
         return $this->as(Role::Buchhaltung)
             ->postJson("/api/documents/{$id}/convert", array_filter(['type' => $type, 'percent' => $percent]))
             ->assertCreated()->json();

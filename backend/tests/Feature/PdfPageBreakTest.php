@@ -13,6 +13,7 @@ use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\CreatesInvoiceDrafts;
 use Tests\TestCase;
 
 /**
@@ -27,6 +28,7 @@ use Tests\TestCase;
 class PdfPageBreakTest extends TestCase
 {
     use RefreshDatabase;
+    use CreatesInvoiceDrafts;
 
     private Customer $customer;
 
@@ -104,9 +106,11 @@ class PdfPageBreakTest extends TestCase
     private function finalInvoice(int $lines, int $descLines = 1): Document
     {
         $offer = $this->invoice($lines, $descLines, [], 0, 'angebot');
-        $down = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$offer->id}/convert", ['type' => 'anzahlung'])->assertCreated()->json('id');
+        $order = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$offer->id}/convert", ['type' => 'auftragsbestaetigung'])->assertCreated()->json('id');
+        $this->as(Role::Buchhaltung)->postJson("/api/documents/$order/finalize")->assertOk();
+        $down = $this->as(Role::Buchhaltung)->postJson("/api/documents/$order/convert", ['type' => 'anzahlung'])->assertCreated()->json('id');
         $this->as(Role::Buchhaltung)->postJson("/api/documents/$down/finalize")->assertOk();
-        $final = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$offer->id}/convert", ['type' => 'rechnung'])->assertCreated()->json('id');
+        $final = $this->invoiceDraftFrom($order)['id'];
         $this->as(Role::Buchhaltung)->postJson("/api/documents/$final/finalize")->assertOk();
 
         return Document::findOrFail($final);

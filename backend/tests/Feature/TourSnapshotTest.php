@@ -15,6 +15,7 @@ use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\CreatesInvoiceDrafts;
 use Tests\TestCase;
 
 /**
@@ -24,6 +25,7 @@ use Tests\TestCase;
 class TourSnapshotTest extends TestCase
 {
     use RefreshDatabase;
+    use CreatesInvoiceDrafts;
 
     private Customer $customer;
 
@@ -203,7 +205,7 @@ class TourSnapshotTest extends TestCase
         $advance = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$order['id']}/convert", ['type' => 'anzahlung'])->assertCreated()->json();
         $this->assertNull($this->finalize($advance['id'])['tour_snapshot']);
 
-        $invoice = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$order['id']}/convert", ['type' => 'rechnung'])->assertCreated()->json();
+        $invoice = $this->invoiceDraftFrom($order['id']);
         $this->assertNotNull($this->finalize($invoice['id'])['tour_snapshot']);
 
         $storno = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$invoice['id']}/cancel")->assertCreated()->json();

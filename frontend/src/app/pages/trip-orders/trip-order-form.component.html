@@ -112,9 +112,60 @@
         <div class="form-text">Datum und Uhrzeit</div>
       </div>
       <div class="col-12 col-lg-4">
-        <label class="form-label" for="passengers">Fahrgäste</label>
-        <input type="number" class="form-control" id="passengers" formControlName="passengers" min="1" max="99" [class.is-invalid]="invalid('passengers')" />
+        <label class="form-label" for="staging_time">Bereitstellung</label>
+        <input type="time" class="form-control" id="staging_time" formControlName="staging_time" [class.is-invalid]="invalid('staging_time')" />
+        <div class="invalid-feedback">{{ fieldErrors()['staging_time'] }}</div>
+        <div class="form-text">Ab dann haben die Gäste Zugang zum Bus.</div>
+      </div>
+      <div class="col-12 col-lg-4">
+        <label class="form-label" for="passengers">Personen</label>
+        <input class="form-control" id="passengers" formControlName="passengers" maxlength="40" [class.is-invalid]="invalid('passengers')" />
         <div class="invalid-feedback">{{ fieldErrors()['passengers'] }}</div>
+        <div class="form-text">z. B. 20 oder ca. 20 Pers.</div>
+      </div>
+
+      <div class="col-12"><div class="section-title">Zu- und Ausstiege</div></div>
+
+      <div class="col-12">
+        <div class="form-text mb-2">Weitere Orte, an denen unterwegs Gäste zu- oder aussteigen (zum Beispiel bei der Rückreise). Sie gelten nur für diesen Fahrtauftrag und sind von der Streckenplanung unabhängig.</div>
+        <div formArrayName="boardings">
+          @for (b of boardings.controls; track b; let i = $index) {
+            <div class="row g-3 mb-2" [formGroupName]="i">
+              <div class="col-12 col-lg-2">
+                <label class="form-label" [for]="'boarding_kind_' + i">Art</label>
+                <select class="form-select" [id]="'boarding_kind_' + i" formControlName="kind">
+                  <option value="zustieg">Zustieg</option>
+                  <option value="ausstieg">Ausstieg</option>
+                </select>
+              </div>
+              <div class="col-12 col-lg-4">
+                <label class="form-label" [for]="'boarding_place_' + i">Ort</label>
+                <input class="form-control" [id]="'boarding_place_' + i" formControlName="place" maxlength="150" />
+              </div>
+              <div class="col-12 col-lg-2">
+                <label class="form-label" [for]="'boarding_time_' + i">Uhrzeit</label>
+                <input type="time" class="form-control" [id]="'boarding_time_' + i" formControlName="time" />
+              </div>
+              <div class="col-12 col-lg-4">
+                <label class="form-label" [for]="'boarding_passengers_' + i">Personen</label>
+                <div class="input-group">
+                  <input class="form-control" [id]="'boarding_passengers_' + i" formControlName="passengers" maxlength="40" />
+                  @if (!readOnly()) {
+                    <button type="button" class="btn btn-outline-secondary" (click)="removeBoarding(i)" title="Zeile entfernen" [attr.aria-label]="'Zeile ' + (i + 1) + ' entfernen'">
+                      <i class="bi bi-trash" aria-hidden="true"></i>
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+        @if (fieldErrors()['boardings.0.time'] || fieldErrors()['boardings']) {
+          <div class="text-danger small mb-2" role="alert">{{ fieldErrors()['boardings.0.time'] || fieldErrors()['boardings'] }}</div>
+        }
+        @if (!readOnly()) {
+          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="addBoarding()"><i class="bi bi-plus-lg me-1"></i>Zu- oder Ausstieg hinzufügen</button>
+        }
       </div>
 
       <div class="col-12"><div class="section-title">Hinweise</div></div>

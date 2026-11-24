@@ -9,6 +9,7 @@ use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use LogicException;
 
 /**
@@ -22,7 +23,7 @@ class TripOrder extends Model
     /** Nur diese Felder kommen aus Formularen. Alles andere setzt der TripOrderService. */
     protected $fillable = [
         'vehicle_id', 'external_company', 'external_plate', 'driver_id', 'driver2_id',
-        'date_from', 'date_to', 'departure_at', 'passengers', 'driver_note', 'notes', 'collective_only',
+        'date_from', 'date_to', 'departure_at', 'staging_time', 'passengers', 'driver_note', 'notes', 'collective_only',
     ];
 
     protected function casts(): array
@@ -37,7 +38,6 @@ class TripOrder extends Model
             'departure_at' => 'datetime',
             'issued_at' => 'datetime',
             'collective_only' => 'boolean',
-            'passengers' => 'integer',
             'bus_no' => 'integer',
         ];
     }
@@ -61,6 +61,12 @@ class TripOrder extends Model
     public function isIssued(): bool
     {
         return $this->number !== null;
+    }
+
+    /** Zustiegsstellen in Reihenfolge der Abholung */
+    public function boardings(): HasMany
+    {
+        return $this->hasMany(TripOrderBoarding::class)->orderBy('position');
     }
 
     public function section(): BelongsTo

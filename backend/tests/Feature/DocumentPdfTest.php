@@ -12,11 +12,13 @@ use App\Services\DocumentPdf;
 use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\CreatesInvoiceDrafts;
 use Tests\TestCase;
 
 class DocumentPdfTest extends TestCase
 {
     use RefreshDatabase;
+    use CreatesInvoiceDrafts;
 
     private Customer $customer;
 
@@ -171,9 +173,11 @@ class DocumentPdfTest extends TestCase
     public function test_schlussrechnung_zeigt_abzug_und_zahlbetrag(): void
     {
         $angebot = $this->finalize($this->draft('angebot')['id']);
-        $anz = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$angebot['id']}/convert", ['type' => 'anzahlung'])->json();
+        $ab = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$angebot['id']}/convert", ['type' => 'auftragsbestaetigung'])->json();
+        $ab = $this->finalize($ab['id']);
+        $anz = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$ab['id']}/convert", ['type' => 'anzahlung'])->json();
         $anz = $this->finalize($anz['id']);
-        $schluss = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$angebot['id']}/convert", ['type' => 'rechnung'])->json();
+        $schluss = $this->invoiceDraftFrom($ab['id']);
         $schluss = $this->finalize($schluss['id']);
 
         $html = $this->html($schluss['id']);

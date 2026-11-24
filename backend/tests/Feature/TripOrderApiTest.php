@@ -97,17 +97,54 @@ class TripOrderApiTest extends TestCase
         $vehicle = Vehicle::factory()->create();
         $driver = Driver::factory()->create();
 
-        $this->as(Role::Disponent)->putJson("/api/trip-orders/{$order->id}", ['vehicle_id' => $vehicle->id, 'driver_id' => $driver->id, 'passengers' => 40, 'driver_note' => 'Treffpunkt 6 Uhr'])
+        $this->as(Role::Disponent)->putJson("/api/trip-orders/{$order->id}", ['vehicle_id' => $vehicle->id, 'driver_id' => $driver->id, 'passengers' => 'ca. 40 Pers.', 'staging_time' => '06:00', 'driver_note' => 'Treffpunkt 6 Uhr'])
             ->assertOk()->assertJsonPath('status', 'disponiert')->assertJsonPath('vehicle.id', $vehicle->id)->assertJsonPath('driver.id', $driver->id)
-            ->assertJsonPath('passengers', 40);
+            ->assertJsonPath('passengers', 'ca. 40 Pers.')->assertJsonPath('staging_time', '06:00');
 
         // Unmögliches und fehlerhafte Eingaben
         $this->as(Role::Disponent)->putJson("/api/trip-orders/{$order->id}", ['driver2_id' => $driver->id])->assertUnprocessable()->assertJsonValidationErrors(['assignment']);
-        $this->as(Role::Disponent)->putJson("/api/trip-orders/{$order->id}", ['passengers' => 0])->assertUnprocessable()->assertJsonValidationErrors(['passengers']);
+        $this->as(Role::Disponent)->putJson("/api/trip-orders/{$order->id}", ['passengers' => str_repeat('x', 41)])->assertUnprocessable()->assertJsonValidationErrors(['passengers']);
+        $this->as(Role::Disponent)->putJson("/api/trip-orders/{$order->id}", ['staging_time' => '25:99'])->assertUnprocessable()->assertJsonValidationErrors(['staging_time']);
+        $this->as(Role::Disponent)->putJson("/api/trip-orders/{$order->id}", ['boardings' => [['place' => 'Ulm', 'time' => '6 Uhr']]])->assertUnprocessable()->assertJsonValidationErrors(['boardings.0.time']);
+        $this->as(Role::Disponent)->putJson("/api/trip-orders/{$order->id}", ['boardings' => [['place' => '', 'time' => '06:30']]])->assertUnprocessable()->assertJsonValidationErrors(['assignment']);
         $this->as(Role::Disponent)->putJson("/api/trip-orders/{$order->id}", ['vehicle_id' => 'kein-uuid'])->assertUnprocessable()->assertJsonValidationErrors(['vehicle_id']);
 
         // Leerer Fremdunternehmer zählt als nicht angegeben
         $this->as(Role::Disponent)->putJson("/api/trip-orders/{$order->id}", ['external_company' => '  '])->assertOk()->assertJsonPath('external_company', null);
+    }
+
+    public function test_zustiegsstellen_werden_ersetzt_geordnet_und_nach_dem_ausgeben_nur_mit_begruendung_geaendert(): void
+    {
+        $order = $this->order(['external_company' => 'Bus Huber GmbH', 'status' => TripOrderStatus::Disponiert]);
+
+        // Leere Zeilen entfallen, die Reihenfolge bleibt, Personenzahl ist Text
+        $res = $this->as(Role::Disponent)->putJson("/api/trip-orders/{$order->id}", ['boardings' => [
+            ['place' => 'Ulm Hbf', 'time' => '06:30', 'passengers' => '5'],
+            ['place' => '', 'time' => '', 'passengers' => ''],
+            ['place' => 'Neu-Ulm, Bahnhof', 'time' => null, 'passengers' => 'ca. 8 Pers.', 'kind' => 'ausstieg'],
+        ]])->assertOk();
+        $this->assertSame(['Ulm Hbf', 'Neu-Ulm, Bahnhof'], array_column($res->json('boardings'), 'place'));
+        // Ohne Angabe gilt Zustieg
+        $this->assertSame(['zustieg', 'ausstieg'], array_column($res->json('boardings'), 'kind'));
+        $this->as(Role::Disponent)->putJson("/api/trip-orders/{$order->id}", ['boardings' => [['place' => 'X', 'kind' => 'umstieg']]])->assertUnprocessable()->assertJsonValidationErrors(['boardings.0.kind']);
+        $this->assertSame(['06:30', null], array_column($res->json('boardings'), 'time'));
+        $this->assertSame(['5', 'ca. 8 Pers.'], array_column($res->json('boardings'), 'passengers'));
+        $this->as(Role::Buchhaltung)->getJson("/api/trip-orders/{$order->id}")->assertJsonCount(2, 'boardings');
+
+        // Ohne den Schlüssel bleiben sie, mit leerer Liste entfallen sie
+        $this->as(Role::Disponent)->putJson("/api/trip-orders/{$order->id}", ['driver_note' => 'x'])->assertJsonCount(2, 'boardings');
+
+        // Nach dem Ausgeben braucht die Änderung eine Begründung, gleiche Liste nicht
+        $this->as(Role::Disponent)->postJson("/api/trip-orders/{$order->id}/issue")->assertOk();
+        $this->as(Role::Disponent)->putJson("/api/trip-orders/{$order->id}", ['boardings' => []])->assertUnprocessable()->assertJsonValidationErrors(['assignment']);
+        $this->as(Role::Disponent)->putJson("/api/trip-orders/{$order->id}", ['boardings' => [
+            ['place' => 'Ulm Hbf', 'time' => '06:30', 'passengers' => '5'], ['place' => 'Neu-Ulm, Bahnhof', 'time' => null, 'passengers' => 'ca. 8 Pers.', 'kind' => 'ausstieg'],
+        ]])->assertOk();
+        // Nur die Art zu ändern ist eine Änderung und braucht ebenfalls eine Begründung
+        $this->as(Role::Disponent)->putJson("/api/trip-orders/{$order->id}", ['boardings' => [
+            ['place' => 'Ulm Hbf', 'time' => '06:30', 'passengers' => '5'], ['place' => 'Neu-Ulm, Bahnhof', 'time' => null, 'passengers' => 'ca. 8 Pers.', 'kind' => 'zustieg'],
+        ]])->assertUnprocessable()->assertJsonValidationErrors(['assignment']);
+        $this->as(Role::Disponent)->putJson("/api/trip-orders/{$order->id}", ['boardings' => [], 'reason' => 'Gruppe sagt ab'])->assertOk()->assertJsonCount(0, 'boardings');
     }
 
     public function test_ausgeben_vergibt_fortlaufende_nummern_und_sperrt_aenderungen(): void

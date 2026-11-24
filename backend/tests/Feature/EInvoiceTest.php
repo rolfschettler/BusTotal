@@ -14,6 +14,7 @@ use horstoeko\zugferd\ZugferdDocumentReader;
 use horstoeko\zugferd\ZugferdXsdValidator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\CreatesInvoiceDrafts;
 use Tests\TestCase;
 
 /**
@@ -23,6 +24,7 @@ use Tests\TestCase;
 class EInvoiceTest extends TestCase
 {
     use RefreshDatabase;
+    use CreatesInvoiceDrafts;
 
     private Customer $customer;
 
@@ -240,9 +242,11 @@ class EInvoiceTest extends TestCase
     {
         $offer = $this->draft('angebot');
         $this->finalize($offer)->assertOk();
-        $advance = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$offer}/convert", ['type' => 'anzahlung'])->assertCreated()->json('id');
+        $order = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$offer}/convert", ['type' => 'auftragsbestaetigung'])->assertCreated()->json('id');
+        $this->finalize($order)->assertOk();
+        $advance = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$order}/convert", ['type' => 'anzahlung'])->assertCreated()->json('id');
         $advanceNumber = $this->finalize($advance)->assertOk()->json('number');
-        $final = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$offer}/convert", ['type' => 'rechnung'])->assertCreated()->json('id');
+        $final = $this->invoiceDraftFrom($order)['id'];
         $this->finalize($final)->assertOk();
 
         $xp = $this->xp($this->xml($final));

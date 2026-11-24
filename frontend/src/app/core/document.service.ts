@@ -155,6 +155,8 @@ export interface BusDocument {
   chain_depth?: number;
   source?: { id: string; type: DocumentTypeValue; number: string | null } | null;
   cancelled_by?: { id: string; number: string | null } | null;
+  /** Arten, die es aus diesem Beleg nur einmal geben darf, mit dem schon vorhandenen Beleg (statt der Taste „erstellen“) */
+  existing_followups?: Partial<Record<DocumentTypeValue, { id: string; number: string | null; status: string }>>;
 }
 
 export interface DocumentInput {

@@ -11,6 +11,14 @@ export interface TripOrderWarning {
   text: string;
 }
 
+/** Zu- oder Ausstieg unterwegs: Art, Ort, Uhrzeit ("HH:MM") und, wenn bekannt, die Personenzahl dort (Text). */
+export interface TripOrderBoarding {
+  kind: 'zustieg' | 'ausstieg';
+  place: string;
+  time: string | null;
+  passengers: string | null;
+}
+
 export interface TripOrder {
   id: string;
   number: string | null;
@@ -27,7 +35,12 @@ export interface TripOrder {
   date_to: string | null;
   /** Zeitpunkt (UTC, ISO); die Oberfläche zeigt und erfasst ihn in der Zeit des Browsers */
   departure_at: string | null;
-  passengers: number | null;
+  /** Bereitstellung: ab dieser Uhrzeit ("HH:MM") haben die Gäste Zugang zum Bus */
+  staging_time: string | null;
+  /** Personenzahl als Text: „20“ ebenso wie „ca. 20 Pers.“ */
+  passengers: string | null;
+  /** weitere Zustiegsstellen unterwegs, von Hand erfasst (nur im Einzelabruf vollständig) */
+  boardings: TripOrderBoarding[];
   vehicle: { id: string; display_name: string; seats: number | null } | null;
   vehicle_id: string | null;
   external_company: string | null;
@@ -55,7 +68,9 @@ export interface TripOrderInput {
   date_from: string | null;
   date_to: string | null;
   departure_at: string | null;
-  passengers: number | null;
+  staging_time: string | null;
+  passengers: string | null;
+  boardings: TripOrderBoarding[];
   driver_note: string | null;
   notes: string | null;
   /** Begründung, nötig bei Änderungen nach dem Ausgeben */

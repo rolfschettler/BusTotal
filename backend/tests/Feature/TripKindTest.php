@@ -10,6 +10,7 @@ use App\Models\User;
 use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\CreatesInvoiceDrafts;
 use Tests\TestCase;
 
 /**
@@ -19,6 +20,7 @@ use Tests\TestCase;
 class TripKindTest extends TestCase
 {
     use RefreshDatabase;
+    use CreatesInvoiceDrafts;
 
     private Customer $customer;
 
@@ -94,11 +96,11 @@ class TripKindTest extends TestCase
         $id = $this->draft([$this->line()], 'angebot');
         $this->as(Role::Buchhaltung)->postJson("/api/documents/{$id}/finalize")->assertOk();
 
-        $invoice = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$id}/convert", ['type' => 'rechnung'])->assertCreated();
-        $invoice->assertJsonPath('lines.0.trip_kind', 'linie');
+        $invoice = $this->invoiceDraftFrom($id);
+        $this->assertSame('linie', $invoice['lines'][0]['trip_kind']);
 
-        $this->as(Role::Buchhaltung)->postJson("/api/documents/{$invoice->json('id')}/finalize")->assertOk();
-        $this->as(Role::Buchhaltung)->postJson("/api/documents/{$invoice->json('id')}/cancel")->assertCreated()
+        $this->as(Role::Buchhaltung)->postJson("/api/documents/{$invoice['id']}/finalize")->assertOk();
+        $this->as(Role::Buchhaltung)->postJson("/api/documents/{$invoice['id']}/cancel")->assertCreated()
             ->assertJsonPath('lines.0.trip_kind', 'linie');
     }
 

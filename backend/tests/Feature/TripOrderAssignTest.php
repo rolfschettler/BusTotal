@@ -114,7 +114,7 @@ class TripOrderAssignTest extends TestCase
         $vehicle = Vehicle::factory()->create(['type' => 'minibus', 'seats' => 40, 'hu_due_date' => '2027-05-11']);
         $driver = Driver::factory()->create(['license_classes' => ['B'], 'code95_due_date' => '2020-01-01']);
         $driver->absences()->create(['type' => 'urlaub', 'start_date' => '2027-05-01', 'end_date' => '2027-05-10']);
-        $order = $this->order(['passengers' => 50]);
+        $order = $this->order(['passengers' => 'ca. 50 Pers.']);
 
         $this->service()->assign($order, ['vehicle_id' => $vehicle->id, 'driver_id' => $driver->id]);
 

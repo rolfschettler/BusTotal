@@ -17,6 +17,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use LogicException;
+use Tests\Concerns\CreatesInvoiceDrafts;
 use Tests\TestCase;
 
 /**
@@ -25,6 +26,7 @@ use Tests\TestCase;
 class TripOrderCreateTest extends TestCase
 {
     use RefreshDatabase;
+    use CreatesInvoiceDrafts;
 
     protected function setUp(): void
     {
@@ -163,7 +165,7 @@ class TripOrderCreateTest extends TestCase
         $this->confirmation($quote);
         TripOrder::query()->delete();
 
-        $invoice = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$quote['id']}/convert", ['type' => 'rechnung'])->assertCreated()->json();
+        $invoice = $this->invoiceDraftFrom($quote['id']);
         $lines = array_map(fn (array $l) => array_intersect_key($l, array_flip(['title', 'description', 'quantity', 'unit', 'trip_kind', 'unit_price', 'tax_rate', 'tax_note', 'journey_section_id', 'vehicle_type'])), $invoice['lines']);
         $this->as(Role::Buchhaltung)->putJson("/api/documents/{$invoice['id']}", ['service_date_from' => '2027-05-10', 'lines' => $lines])->assertOk();
         $this->as(Role::Buchhaltung)->postJson("/api/documents/{$invoice['id']}/finalize")->assertOk();

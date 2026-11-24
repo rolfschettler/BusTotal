@@ -61,6 +61,7 @@ class DocumentController extends Controller
         $document->loadMissing('lines');
         $document->setAttribute('payment', $this->payments->summary($document));
         $document->setAttribute('journey', app(JourneyService::class)->summary($document));
+        $document->setAttribute('existing_followups', $this->documents->existingFollowUps($document));
 
         return $document->setAttribute('warnings', $this->hints->forDocument($document));
     }

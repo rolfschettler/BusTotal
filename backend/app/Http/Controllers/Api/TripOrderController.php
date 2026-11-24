@@ -34,7 +34,7 @@ class TripOrderController extends Controller
 
         $query = TripOrder::query()
             ->select('trip_orders.*')
-            ->with(['customer:id,customer_number,company_name,first_name,last_name,postal_code,city', 'vehicle', 'driver', 'driver2', 'section:id,journey_id'])
+            ->with(['customer:id,customer_number,company_name,first_name,last_name,postal_code,city', 'vehicle', 'driver', 'driver2', 'section:id,journey_id', 'boardings'])
             ->leftJoin('customers as c', 'c.id', '=', 'trip_orders.customer_id');
 
         if (! empty($filters['status'])) {
@@ -100,14 +100,25 @@ class TripOrderController extends Controller
             'date_from' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
             'date_to' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
             'departure_at' => ['sometimes', 'nullable', 'date'],
-            'passengers' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:99'],
+            'staging_time' => ['sometimes', 'nullable', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
+            // Personenzahl als Text: „20“ ebenso wie „ca. 20 Pers.“
+            'passengers' => ['sometimes', 'nullable', 'string', 'max:40'],
+            // Zustiegsstellen: weitere Orte unterwegs mit Uhrzeit und, wenn bekannt, der Personenzahl dort
+            'boardings' => ['sometimes', 'array', 'max:30'],
+            'boardings.*.kind' => ['nullable', 'in:zustieg,ausstieg'],
+            'boardings.*.place' => ['nullable', 'string', 'max:150'],
+            'boardings.*.time' => ['nullable', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
+            'boardings.*.passengers' => ['nullable', 'string', 'max:40'],
             'driver_note' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'notes' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'collective_only' => ['sometimes', 'boolean'],
             'reason' => ['nullable', 'string', 'max:255'],
         ], [
-            'passengers.min' => 'Die Zahl der Fahrgäste muss mindestens 1 sein.',
-            'passengers.max' => 'Mehr als 99 Fahrgäste sind nicht möglich.',
+            'passengers.max' => 'Die Personenzahl darf höchstens 40 Zeichen lang sein.',
+            'staging_time.regex' => 'Bitte die Uhrzeit als HH:MM angeben, zum Beispiel 06:30.',
+            'boardings.max' => 'Es sind höchstens 30 Zu- und Ausstiege möglich.',
+            'boardings.*.time.regex' => 'Bitte die Uhrzeit des Zu- oder Ausstiegs als HH:MM angeben, zum Beispiel 06:30.',
+            'boardings.*.passengers.max' => 'Die Personenzahl eines Zu- oder Ausstiegs darf höchstens 40 Zeichen lang sein.',
             'date_from.date_format' => 'Bitte das Datum als JJJJ-MM-TT angeben.',
             'date_to.date_format' => 'Bitte das Datum als JJJJ-MM-TT angeben.',
         ]);
@@ -133,7 +144,7 @@ class TripOrderController extends Controller
     /** @return array<string, mixed> */
     private function present(TripOrder $order, bool $detail): array
     {
-        $order->loadMissing(['customer', 'vehicle', 'driver', 'driver2', 'section']);
+        $order->loadMissing(['customer', 'vehicle', 'driver', 'driver2', 'section', 'boardings']);
         $out = $order->toArray();
         $out['status_label'] = $order->status->label();
         $out['vehicle_type_label'] = $order->vehicle_type?->label();

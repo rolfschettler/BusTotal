@@ -48,7 +48,7 @@
     .fill th { background: #eee; border: 0.4pt solid #666; text-align: left; padding: 1.2mm 1.5mm; font-size: 8pt; }
     .fill td { border: 0.4pt solid #666; height: 6.5mm; padding: 0 1.5mm; }
     .fill tr { page-break-inside: avoid; }
-    .notes { border: 0.4pt solid #666; height: 22mm; }
+    .notes { border: 0.4pt solid #666; height: 16mm; }
     .sheet { page-break-before: always; }
     .sheet h2 { margin-top: 4mm; }
 
@@ -82,10 +82,23 @@
 <table class="facts">
     @if ($customer)<tr><td class="k">Auftraggeber</td><td class="v">{{ $customer->display_name }}</td></tr>@endif
     @if ($period !== '')<tr><td class="k">Termin</td><td class="v">{{ $period }}</td></tr>@endif
+    @if (filled($order->staging_time))<tr><td class="k">Bereitstellung</td><td class="v">{{ $order->staging_time }} Uhr <span class="muted" style="font-weight: normal">(ab dann haben die Gäste Zugang zum Bus)</span></td></tr>@endif
     @if ($order->departure_at)<tr><td class="k">Abfahrt</td><td class="v">{{ $order->departure_at->copy()->timezone('Europe/Berlin')->format('d.m.Y H:i') }} Uhr</td></tr>@endif
-    @if ($order->passengers)<tr><td class="k">Fahrgäste</td><td class="v">{{ $order->passengers }}</td></tr>@endif
+    @if (filled($order->passengers))<tr><td class="k">Personen</td><td class="v">{{ $order->passengers }}</td></tr>@endif
     @if ($order->section?->journey)<tr><td class="k">Reise</td><td>{{ $order->section->journey->title }}</td></tr>@endif
 </table>
+
+@if ($order->boardings->isNotEmpty())
+    <h2>Zu- und Ausstiege</h2>
+    <table class="list">
+        <thead><tr><th style="width: 22mm">Uhrzeit</th><th style="width: 20mm">Art</th><th>Ort</th><th class="right" style="width: 40mm">Personen</th></tr></thead>
+        <tbody>
+            @foreach ($order->boardings as $b)
+                <tr><td>{{ $b->time ? $b->time.' Uhr' : '' }}</td><td>{{ $b->kind === 'ausstieg' ? 'Ausstieg' : 'Zustieg' }}</td><td>{{ $b->place }}</td><td class="right">{{ $b->passengers }}</td></tr>
+            @endforeach
+        </tbody>
+    </table>
+@endif
 
 <h2>Fahrzeug und Fahrer</h2>
 <table class="facts">
@@ -146,21 +159,23 @@
 {{-- Erfassungsblatt: leere Felder zum Ausfüllen unterwegs, Rückerfassung im Büro (Etappe 3) --}}
 <div class="sheet">
     <h1 style="font-size: 13pt">Erfassungsblatt {{ $order->number }}</h1>
-    <div class="muted small">{{ $order->title }} · {{ $period }}@if ($vehicle) · {{ $vehicle->license_plate }}@elseif (filled($order->external_plate)) · {{ $order->external_plate }}@endif</div>
+    @if ($customer)<div style="margin-top: 1mm"><span class="muted">Auftraggeber:</span> <b>{{ $customer->display_name }}</b></div>@endif
+    <div class="muted small">{{ collect([$order->title, $period, $vehicle?->license_plate ?? $order->external_plate])->filter()->implode(' · ') }}</div>
 
     <h2>Zeiten und Kilometerstände</h2>
     <table class="fill">
-        <tr><th style="width: 70mm">Ereignis</th><th>Datum</th><th>Uhrzeit</th><th>km-Stand</th></tr>
-        @foreach (['Abfahrt Betriebshof', 'Abfahrt erster Halt', 'Ankunft Ziel', 'Abfahrt Rückreise', 'Ende am Betriebshof'] as $event)
-            <tr><td>{{ $event }}</td><td></td><td></td><td></td></tr>
+        <tr><th style="width: 46mm">Ereignis</th><th style="width: 26mm">Datum</th><th>Ort</th><th style="width: 22mm">Uhrzeit</th><th style="width: 28mm">km-Stand</th></tr>
+        @foreach ($events as $e)
+            <tr><td>{{ $e['event'] }}</td><td>{{ $e['date'] }}</td><td>{{ $e['place'] }}</td><td></td><td></td></tr>
         @endforeach
     </table>
 
     <h2>Grenzübertritte</h2>
     <table class="fill">
-        <tr><th>Land</th><th style="width: 24mm">Ein / Aus</th><th>Datum</th><th>Uhrzeit</th><th>km-Stand</th></tr>
-        @for ($i = 0; $i < 3; $i++)<tr><td></td><td></td><td></td><td></td><td></td></tr>@endfor
+        <tr><th>Land</th><th style="width: 36mm">km-Stand Einfahrt</th><th style="width: 36mm">km-Stand Ausfahrt</th><th style="width: 36mm">km im Ausland</th></tr>
+        @for ($i = 0; $i < 4; $i++)<tr><td></td><td></td><td></td><td></td></tr>@endfor
     </table>
+    <div class="small muted" style="margin-top: 1mm">Je Land eine Zeile. „km im Ausland“ ist der Unterschied von Ausfahrt und Einfahrt.</div>
 
     <h2>Zusatzleistungen (Sonderfahrt, Wartezeit)</h2>
     <table class="fill">

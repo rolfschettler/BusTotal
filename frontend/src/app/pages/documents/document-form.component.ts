@@ -138,7 +138,8 @@ export class DocumentFormComponent implements OnInit {
     const d = this.doc();
     if (!d?.journey || this.cancelled() || d.type === 'gutschrift') return null;
     if (d.status === 'entwurf') return 'Kunden wählen, Positionen prüfen und den Beleg festschreiben.';
-    const next = this.typeInfo()?.convertible_to ?? [];
+    // Was es aus diesem Beleg schon gibt (Auftragsbestätigung), ist kein nächster Schritt mehr
+    const next = (this.typeInfo()?.convertible_to ?? []).filter((t) => !d.existing_followups?.[t]);
     return next.length ? `${next.map((t) => this.typeLabel(t)).join(' oder ')} erstellen (Tasten unten).` : null;
   });
   isInvoiceType = computed(() => !!this.types().find((t) => t.value === this.typeValue())?.invoice);

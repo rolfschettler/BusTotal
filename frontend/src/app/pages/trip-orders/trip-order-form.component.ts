@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, OnInit, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
@@ -8,7 +8,7 @@ import { DriverChoice, DriverService } from '../../core/driver.service';
 import { httpErrorText } from '../../core/http-error';
 import { ListMemory } from '../../core/list-memory.service';
 import { PrintPreviewService } from '../../core/print-preview.service';
-import { TripOrder, TripOrderInput, TripOrderService, statusBadge } from '../../core/trip-order.service';
+import { TripOrder, TripOrderBoarding, TripOrderInput, TripOrderService, statusBadge } from '../../core/trip-order.service';
 import { VehicleChoice, VehicleService } from '../../core/vehicle.service';
 import { HelpLinkComponent } from '../../help/help-link.component';
 
@@ -68,11 +68,32 @@ export class TripOrderFormComponent implements OnInit {
     date_from: [''],
     date_to: [''],
     departure_at: [''],
-    passengers: [null as number | null],
+    staging_time: [''],
+    passengers: [''],
+    /** Zustiegsstellen: weitere Orte unterwegs mit Uhrzeit und Personenzahl, von Hand erfasst */
+    boardings: this.fb.array<FormGroup>([]),
     driver_note: [''],
     notes: [''],
     reason: [''],
   });
+
+  get boardings(): FormArray<FormGroup> {
+    return this.form.controls.boardings;
+  }
+
+  private newBoarding(row?: TripOrderBoarding): FormGroup {
+    return this.fb.nonNullable.group({ kind: [row?.kind ?? 'zustieg'], place: [row?.place ?? ''], time: [row?.time ?? ''], passengers: [row?.passengers ?? ''] });
+  }
+
+  addBoarding() {
+    this.boardings.push(this.newBoarding());
+    this.boardings.markAsDirty();
+  }
+
+  removeBoarding(i: number) {
+    this.boardings.removeAt(i);
+    this.boardings.markAsDirty();
+  }
 
   ngOnInit() {
     this.id = this.route.snapshot.paramMap.get('id') ?? '';
@@ -110,6 +131,10 @@ export class TripOrderFormComponent implements OnInit {
   private apply(o: TripOrder) {
     this.order.set(o);
     this.form.reset(this.toFormValue(o), { emitEvent: false });
+    // Die Zustiegsstellen sind eine Liste: nach dem Zurücksetzen neu aufbauen
+    this.boardings.clear({ emitEvent: false });
+    for (const b of o.boardings ?? []) this.boardings.push(this.newBoarding(b), { emitEvent: false });
+    this.form.markAsPristine();
     if (this.readOnly()) this.form.disable({ emitEvent: false });
     else this.form.enable({ emitEvent: false });
   }
@@ -124,7 +149,8 @@ export class TripOrderFormComponent implements OnInit {
       date_from: o.date_from ?? '',
       date_to: o.date_to ?? '',
       departure_at: toLocalInput(o.departure_at),
-      passengers: o.passengers,
+      staging_time: o.staging_time ?? '',
+      passengers: o.passengers ?? '',
       driver_note: o.driver_note ?? '',
       notes: o.notes ?? '',
       reason: '',
@@ -143,7 +169,9 @@ export class TripOrderFormComponent implements OnInit {
       date_from: text(v.date_from),
       date_to: text(v.date_to),
       departure_at: fromLocalInput(v.departure_at),
-      passengers: v.passengers === null || (v.passengers as unknown) === '' ? null : Number(v.passengers),
+      staging_time: text(v.staging_time),
+      passengers: text(v.passengers),
+      boardings: this.boardingValues(),
       driver_note: text(v.driver_note),
       notes: text(v.notes),
       reason: text(v.reason),
@@ -173,14 +201,24 @@ export class TripOrderFormComponent implements OnInit {
     });
   }
 
+  /** Die Zustiegsstellen wie der Server sie bekommt: getrimmt, ohne ganz leere Zeilen. */
+  private boardingValues() {
+    const t = (s: string | null | undefined) => (s ?? '').trim();
+    return this.boardings.getRawValue()
+      .map((b) => ({ kind: (b['kind'] === 'ausstieg' ? 'ausstieg' : 'zustieg') as TripOrderBoarding['kind'], place: t(b['place']), time: t(b['time']) || null, passengers: t(b['passengers']) || null }))
+      .filter((b) => b.place !== '' || b.time !== null || b.passengers !== null);
+  }
+
   /** Hat sich etwas geändert, das nach dem Ausgeben eine Begründung braucht (nicht nur Hinweise und Notizen)? */
   needsReason(): boolean {
     const o = this.order();
     if (!o) return false;
     const was = this.toFormValue(o);
     const now = this.form.getRawValue();
-    return (['vehicle_id', 'external_company', 'external_plate', 'driver_id', 'driver2_id', 'date_from', 'date_to', 'departure_at', 'passengers'] as const)
+    const fields = (['vehicle_id', 'external_company', 'external_plate', 'driver_id', 'driver2_id', 'date_from', 'date_to', 'departure_at', 'staging_time', 'passengers'] as const)
       .some((k) => String(was[k] ?? '') !== String(now[k] ?? ''));
+    const savedBoardings = (o.boardings ?? []).map((b) => ({ kind: b.kind ?? 'zustieg', place: b.place, time: b.time || null, passengers: b.passengers || null }));
+    return fields || JSON.stringify(savedBoardings) !== JSON.stringify(this.boardingValues());
   }
 
   async issue() {

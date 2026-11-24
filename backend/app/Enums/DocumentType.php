@@ -45,12 +45,16 @@ enum DocumentType: string
         };
     }
 
-    /** Welche Belegarten dürfen aus diesem Beleg abgeleitet werden. */
+    /**
+     * Welche Belegarten dürfen aus diesem Beleg abgeleitet werden. Festgelegt 2026-11-24 nach dem Konzept
+     * (docs/fachlich/workflow-reisevorhaben.md): Das Angebot führt nur zur Auftragsbestätigung, die Anzahlung gehört zur
+     * Auftragsbestätigung, und die Rechnung entsteht nicht aus der Belegkette, sondern aus den Fahrtaufträgen (Etappe 4).
+     */
     public function convertibleTo(): array
     {
         return match ($this) {
-            self::Angebot => [self::Auftragsbestaetigung, self::Anzahlung, self::Rechnung],
-            self::Auftragsbestaetigung => [self::Anzahlung, self::Rechnung],
+            self::Angebot => [self::Auftragsbestaetigung],
+            self::Auftragsbestaetigung => [self::Anzahlung],
             default => [],
         };
     }

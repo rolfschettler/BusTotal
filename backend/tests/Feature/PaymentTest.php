@@ -12,6 +12,7 @@ use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\CreatesInvoiceDrafts;
 use Tests\TestCase;
 
 /**
@@ -21,6 +22,7 @@ use Tests\TestCase;
 class PaymentTest extends TestCase
 {
     use RefreshDatabase;
+    use CreatesInvoiceDrafts;
 
     private Customer $customer;
 
@@ -259,9 +261,11 @@ class PaymentTest extends TestCase
     {
         // Angebot 1.190 €, Anzahlung 30 % = 357 €, Schlussrechnung zu zahlen 833 €
         $offer = $this->invoice('angebot');
-        $advance = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$offer}/convert", ['type' => 'anzahlung'])->assertCreated()->json('id');
+        $order = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$offer}/convert", ['type' => 'auftragsbestaetigung'])->assertCreated()->json('id');
+        $this->as(Role::Buchhaltung)->postJson("/api/documents/{$order}/finalize")->assertOk();
+        $advance = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$order}/convert", ['type' => 'anzahlung'])->assertCreated()->json('id');
         $this->as(Role::Buchhaltung)->postJson("/api/documents/{$advance}/finalize")->assertOk();
-        $final = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$offer}/convert", ['type' => 'rechnung'])->assertCreated()->json('id');
+        $final = $this->invoiceDraftFrom($order)['id'];
         $this->as(Role::Buchhaltung)->postJson("/api/documents/{$final}/finalize")->assertOk();
 
         $this->as(Role::Buchhaltung)->getJson("/api/documents/{$final}/payments")->assertJsonPath('summary.payable', '833.00');

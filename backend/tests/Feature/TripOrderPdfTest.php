@@ -81,6 +81,74 @@ class TripOrderPdfTest extends TestCase
         }
     }
 
+    public function test_das_erfassungsblatt_nennt_datum_und_ort_aber_keine_zeiten(): void
+    {
+        $route = $this->route(3);
+        $route['trip']['stops'][0]['label'] = 'Mietingen, Landkreis Biberach, Baden-Württemberg, Deutschland';
+        $route['trip']['stops'][2]['label'] = 'Villach, Kärnten, Österreich';
+        $order = $this->order(['departure_at' => '2027-05-10 04:00:00', 'route' => $route]);
+
+        $rows = collect(app(TripOrderPdf::class)->eventRows($order))->keyBy('event');
+
+        $this->assertSame(['date' => '10.05.2027', 'place' => 'Mietingen'], ['date' => $rows['Abfahrt erster Halt']['date'], 'place' => $rows['Abfahrt erster Halt']['place']]);
+        $this->assertSame(['date' => '12.05.2027', 'place' => 'Villach'], ['date' => $rows['Ankunft Ziel']['date'], 'place' => $rows['Ankunft Ziel']['place']]);
+        $html = app(TripOrderPdf::class)->html($order);
+        $this->assertStringContainsString('Mietingen', $html);
+        $sheet = substr($html, (int) strpos($html, 'Erfassungsblatt'));
+        $this->assertStringNotContainsString('06:00', $sheet);   // auf dem Erfassungsblatt ist keine Uhrzeit vorbelegt (im Kopf steht die Abfahrt)
+        $this->assertStringNotContainsString('geplant', $sheet);
+    }
+
+    public function test_ohne_abfahrt_gilt_der_beginn_und_ohne_ende_die_zahl_der_tage(): void
+    {
+        $order = $this->order(['date_from' => '2027-05-10', 'date_to' => null]);   // Tour hat 2 Tage
+
+        $rows = collect(app(TripOrderPdf::class)->eventRows($order))->keyBy('event');
+
+        $this->assertSame('10.05.2027', $rows['Abfahrt erster Halt']['date']);
+        $this->assertSame('11.05.2027', $rows['Ankunft Ziel']['date']);
+    }
+
+    public function test_betriebshof_nur_mit_leerfahrt_und_ohne_termin_bleibt_datum_leer(): void
+    {
+        $route = $this->route(3);
+        $route['trip']['legs'][0]['from'] = 'Betriebshof Muster, Hauptstr. 1';
+        $route['trip']['legs'][] = ['from' => 'x', 'to' => 'Betriebshof Muster, Hauptstr. 1', 'distance_m' => 1000, 'duration_s' => 600, 'empty' => true];
+        $order = $this->order(['date_from' => null, 'date_to' => null, 'route' => $route]);
+
+        $rows = collect(app(TripOrderPdf::class)->eventRows($order))->keyBy('event');
+
+        $this->assertSame('Betriebshof Muster', $rows['Abfahrt Betriebshof']['place']);
+        $this->assertSame('Betriebshof Muster', $rows['Ende am Betriebshof']['place']);
+        $this->assertNull($rows['Abfahrt erster Halt']['date']);
+        $this->assertNull($rows['Ankunft Ziel']['date']);
+
+        // Strecke ohne Tour: nichts zu nennen
+        $own = $this->order(['route' => ['title' => 'Ausflug', 'own' => ['loaded_km' => 60.0, 'drive_s' => 9000, 'days' => 1]]]);
+        $this->assertSame('', collect(app(TripOrderPdf::class)->eventRows($own))->firstWhere('event', 'Ankunft Ziel')['place']);
+    }
+
+    public function test_pdf_nennt_bereitstellung_personen_als_text_zustiegsstellen_und_den_auftraggeber_auf_dem_erfassungsblatt(): void
+    {
+        $order = $this->order(['staging_time' => '06:00', 'passengers' => 'ca. 20 Pers.']);
+        $order->boardings()->create(['position' => 1, 'place' => 'Ulm Hbf', 'time' => '06:30', 'passengers' => '5']);
+        $order->boardings()->create(['position' => 2, 'kind' => 'ausstieg', 'place' => 'Neu-Ulm Bahnhof', 'time' => null, 'passengers' => 'ca. 8 Pers.']);
+
+        $html = app(TripOrderPdf::class)->html($order->fresh());
+
+        foreach (['Bereitstellung', '06:00 Uhr', 'ca. 20 Pers.', 'Zu- und Ausstiege', 'Zustieg', 'Ausstieg', 'Ulm Hbf', '06:30 Uhr', 'Neu-Ulm Bahnhof', 'ca. 8 Pers.'] as $needle) {
+            $this->assertStringContainsString($needle, $html, $needle);
+        }
+        // Der Auftraggeber steht auch auf dem Erfassungsblatt (es wird getrennt vom Rest abgegeben)
+        $sheet = substr($html, (int) strpos($html, 'Erfassungsblatt'));
+        $this->assertStringContainsString('Reisebüro Sonnenschein', $sheet);
+
+        // Ohne Zustiegsstellen und Bereitstellung erscheinen die Abschnitte nicht
+        $plain = app(TripOrderPdf::class)->html($this->order());
+        $this->assertStringNotContainsString('Zu- und Ausstiege', $plain);
+        $this->assertStringNotContainsString('Bereitstellung', $plain);
+    }
+
     public function test_ausgegeben_zeigt_die_nummer_ohne_entwurfshinweis_und_fremdunternehmer_steht_im_pdf(): void
     {
         $order = $this->order(['number' => 'FA-2027-00007', 'status' => TripOrderStatus::Ausgegeben, 'external_company' => 'Bus Huber GmbH', 'external_plate' => 'M-HU 123']);
@@ -148,7 +216,7 @@ class TripOrderPdfTest extends TestCase
         }
 
         foreach ([2, 12, 45] as $stops) {
-            $pages = $this->pages($this->order(['number' => 'FA-2027-0000'.$stops], $stops));
+            $pages = $this->pages($this->order(['number' => 'FA-2027-0000'.$stops, 'departure_at' => '2027-05-10 04:00:00'], $stops));
             $total = count($pages);
 
             $this->assertGreaterThanOrEqual(2, $total, "$stops Halte");

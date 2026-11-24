@@ -184,6 +184,40 @@ class DocumentService
         });
     }
 
+    /** Arten, die es aus einem Vorgänger nur einmal (gleichzeitig gültig) geben darf. Die Auftragsbestätigung ist die eine Zusage. */
+    private const SINGLE_FOLLOW_UP = [DocumentType::Auftragsbestaetigung];
+
+    /**
+     * Der gültige (nicht stornierte) Folgebeleg der Art `$type` zu `$source`, wenn die Art nur einmal vorkommen darf; sonst null.
+     * Anzahlungen und Rechnungen sind davon ausgenommen (mehrere Anzahlungen, Teil- und Sammelrechnungen in Etappe 4).
+     */
+    public function activeFollowUp(Document $source, DocumentType $type): ?Document
+    {
+        if (! in_array($type, self::SINGLE_FOLLOW_UP, true)) {
+            return null;
+        }
+
+        return Document::where('source_id', $source->id)->where('type', $type)->whereNull('cancelled_by_id')->orderBy('created_at')->first();
+    }
+
+    /**
+     * Für die Oberfläche: je Art, die nur einmal vorkommen darf, der vorhandene Folgebeleg (Nummer, Stand), damit statt der Taste
+     * ein Verweis erscheint.
+     *
+     * @return array<string, array{id: string, number: ?string, status: string}>
+     */
+    public function existingFollowUps(Document $source): array
+    {
+        $out = [];
+        foreach (self::SINGLE_FOLLOW_UP as $type) {
+            if ($d = $this->activeFollowUp($source, $type)) {
+                $out[$type->value] = ['id' => $d->id, 'number' => $d->number, 'status' => $d->status->value];
+            }
+        }
+
+        return $out;
+    }
+
     /**
      * Folgebeleg als neuen Entwurf aus einem festgeschriebenen Beleg (Angebot → Auftragsbestätigung → Rechnung).
      * Kunde, Texte und Positionen werden kopiert, der Verweis auf den Vorgänger bleibt (source_id).
@@ -191,6 +225,8 @@ class DocumentService
     public function convert(Document $source, DocumentType $target, ?float $percent = null): Document
     {
         return DB::transaction(function () use ($source, $target, $percent) {
+            // Zeilensperre: Zwei gleichzeitige Klicks dürfen nicht beide eine Auftragsbestätigung anlegen.
+            Document::whereKey($source->id)->lockForUpdate()->first();
             $source->load('lines');
 
             if ($source->isDraft()) {
@@ -198,6 +234,11 @@ class DocumentService
             }
             if (! in_array($target, $source->type->convertibleTo(), true)) {
                 $this->fail("Aus {$source->type->label()} kann kein(e) {$target->label()} erstellt werden.");
+            }
+            if ($existing = $this->activeFollowUp($source, $target)) {
+                $what = $existing->number ?? 'ein Entwurf';
+                $then = $existing->isDraft() ? ' Bitte diesen Entwurf festschreiben oder löschen.' : '';
+                $this->fail("Zu diesem {$source->type->label()} gibt es schon eine {$target->label()} ({$what}).{$then}");
             }
 
             $document = new Document([
