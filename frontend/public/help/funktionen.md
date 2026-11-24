@@ -16,7 +16,8 @@ Diese Seite zeigt, was {{app}} für Ihr Busunternehmen leistet: **von der Streck
 | Tour speichern und wiederverwenden | Dieselbe Strecke für weitere Angebote, Ortsdaten nur einmal suchen | Verfügbar |
 | Reisevorhaben mit mehreren Bussen | Hinfahrt, Fahrt vor Ort und Rückfahrt in einem Vorgang | Verfügbar (im Angebot) |
 | Fahrt vor Ort ohne Tour | Ausflug am Reiseziel nur mit Kilometern und Fahrzeit, ohne Routenplanung | Verfügbar (im Angebot) |
-| Fahrtauftrag und Rückerfassung | Fahrer erfasst Zusatzleistungen, Kosten und Grenzstände, die Rechnung entsteht daraus | In Planung |
+| Fahrtauftrag je Bus | Fahrzeug und Fahrer zuweisen mit Hinweisen, Fahrer-PDF ohne Preise mit Erfassungsblatt | [Verfügbar](/hilfe/fahrten#fahrtauftrag) |
+| Rückerfassung | Zusatzleistungen, Kosten und Grenzstände aus dem Fahrtauftrag, die Rechnung entsteht daraus | In Planung |
 | Belege nach GoBD | Unveränderbare Rechnungen, lückenlose Nummern, Storno statt Löschen | Verfügbar |
 | Archiv-PDF mit Prüfsumme | Jede festgeschriebene Rechnung wird einmal gesichert, nie neu erzeugt | Verfügbar |
 | Anzahlung und Schlussrechnung | Anzahlung, Abzug mit Steuer, Restbetrag automatisch | Verfügbar |
@@ -54,10 +55,11 @@ Diese Seite zeigt, was {{app}} für Ihr Busunternehmen leistet: **von der Streck
 **Verfügbar**
 - **Reisevorhaben:** Eine Reise besteht aus **Hinfahrt, Fahrten vor Ort am Reiseziel und Rückfahrt**, je mit einem oder mehreren Fahrzeugtypen. Sie bündelt Angebot, Auftrag, Anzahlung und Rechnung. Sie entsteht automatisch mit dem ersten Angebot aus der Streckenplanung, Sie legen nichts von Hand an. Die Seite **Reisen** zeigt Strecken, Belege, Stand und den nächsten Schritt; die Reise lässt sich **umbenennen**. Einen Überblick über den Aufbau gibt [So ist die Software aufgebaut](/hilfe/fahrten#konzept). Werksverkehr und andere Einzelfahrten gehen auch **ohne** Reise.
 
+- **Fahrtauftrag je Bus:** Mit der Auftragsbestätigung entstehen die Fahrtaufträge. Ablauf, Stationen, Zeiten und Fahrzeugtyp kommen aus dem Angebot. Fahrzeug (eigenes oder **Fremdunternehmer**), **Fahrer 1 und Fahrer 2** weist der Disponent zu, mit Hinweisen bei Doppelbelegung, abgelaufenen Fristen, Abwesenheit, Führerscheinklasse und Sitzplätzen. Das Fahrer-PDF zeigt keine Preise. Siehe [Der Fahrtauftrag](/hilfe/fahrten#fahrtauftrag).
+- **Erfassungsblatt:** Auf der letzten Seite des Fahrer-PDFs notiert der Fahrer Zusatzleistungen (Sonderfahrten vor Ort), unvorhergesehene Kosten (Maut, Parken) und die **Kilometerstände bei Grenzein- und -austritt**.
+
 **In Planung**
-- **Fahrtauftrag je Bus:** Mit der Auftragsbestätigung entstehen die Fahrtaufträge. Ablauf, Stationen, Zeiten und Fahrzeugtyp kommen aus dem Angebot. Fahrzeug, **Fahrer 1 und Fahrer 2** weist der Disponent zu. Das Fahrer-PDF zeigt keine Preise.
-- **Der Fahrtauftrag ist das Erfassungsblatt:** Der Fahrer notiert Zusatzleistungen (Sonderfahrten vor Ort), unvorhergesehene Kosten (Maut, Parken) und die **Kilometerstände bei Grenzein- und -austritt**.
-- **Rückerfassung:** Das Büro übernimmt die Angaben, die Software prüft sie auf Plausibilität (lückenlose Kilometerstände und Zeiten). Daraus entsteht die Rechnung.
+- **Rückerfassung:** Das Büro übernimmt die Angaben vom Erfassungsblatt, die Software prüft sie auf Plausibilität (lückenlose Kilometerstände und Zeiten). Daraus entsteht die Rechnung.
 - **Ihr Vorteil:** Keine Zettelwirtschaft zwischen Fahrer und Büro, Zusatzleistungen gehen nicht verloren, die Rechnung stimmt mit der Fahrt überein.
 
 ## Rechnungen nach GoBD {#rechnungen}

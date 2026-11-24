@@ -103,6 +103,9 @@ export class JourneyDetailComponent implements OnInit {
   readonly stageLabels = STAGE_LABELS;
   typeLabel = (t: string) => TYPE_LABELS[t] ?? t;
 
+  /** Die Fahrtaufträge der Reise im Überblick (entstehen mit der Auftragsbestätigung). */
+  orders = computed(() => this.journey()?.trip_orders ?? null);
+
   /** Der Beleg, bei dem es weitergeht: der zuletzt angelegte, der nicht storniert ist (sonst der letzte). */
   latest = computed(() => {
     const docs = this.journey()?.documents ?? [];
@@ -117,7 +120,11 @@ export class JourneyDetailComponent implements OnInit {
     if (d.cancelled) return 'Dieser Beleg ist storniert. Erstellen Sie bei Bedarf einen neuen.';
     switch (d.type) {
       case 'angebot': return 'Auftragsbestätigung erstellen, sobald der Kunde zusagt.';
-      case 'auftragsbestaetigung': return 'Optional eine Anzahlung verlangen, nach der Fahrt die Rechnung erstellen.';
+      case 'auftragsbestaetigung': {
+        const o = this.orders();
+        if (o && o.to_plan > 0) return `Fahrzeug und Fahrer für ${o.to_plan === 1 ? 'den Fahrtauftrag' : `die ${o.to_plan} Fahrtaufträge`} zuweisen. Optional eine Anzahlung verlangen, nach der Fahrt die Rechnung erstellen.`;
+        return 'Optional eine Anzahlung verlangen, nach der Fahrt die Rechnung erstellen.';
+      }
       case 'anzahlung': return 'Zahlungseingang erfassen, nach der Fahrt die Schlussrechnung erstellen.';
       case 'rechnung': return 'Zahlungseingang erfassen.';
       default: return '';

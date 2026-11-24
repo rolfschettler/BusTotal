@@ -28,6 +28,7 @@ class SettingsSeeder extends Seeder
             ['auftragsbestaetigung', 'Auftragsbestätigung', 'AB', true, 5, true],
             ['rechnung', 'Rechnung', 'RE', true, 5, true],
             ['gutschrift', 'Gutschrift / Storno', 'GS', true, 5, true],
+            ['fahrtauftrag', 'Fahrtauftrag', 'FA', true, 5, true],
         ];
         foreach ($ranges as [$type, $label, $prefix, $year, $pad, $reset]) {
             NumberRange::firstOrCreate(['type' => $type], [

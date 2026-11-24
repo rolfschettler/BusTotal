@@ -1,0 +1,160 @@
+<!-- Tabellen-Muster, siehe docs/ClaudeCodePatterns/TableViewPattern.md. Die Optik kommt aus src/styles/_list-page.scss. -->
+
+<div class="page-header">
+  <div class="row g-2 align-items-center">
+    <div class="col-auto">
+      <div class="d-flex align-items-center gap-2">
+        <h5 class="page-title mb-0">Fahrtaufträge</h5>
+        @if (loaded()) {
+          <span class="badge rounded-pill record-count d-none d-sm-inline-flex">{{ total() }} {{ total() === 1 ? 'Fahrtauftrag' : 'Fahrtaufträge' }}</span>
+        }
+      </div>
+    </div>
+    <div class="col-12 col-sm-auto ms-sm-auto">
+      <div class="row row-cols-1 row-cols-sm-auto g-1 justify-content-end align-items-center header-ctrl">
+        <div class="col">
+          <button type="button" class="btn btn-sm btn-header w-100" (click)="refresh()" [disabled]="loading()">
+            <i class="bi bi-arrow-clockwise"></i><span class="ms-1">Aktualisieren</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-content">
+
+  <div class="filter-bar" appStickyFilterBar>
+    <div class="row g-2 align-items-center">
+      <div class="col-12 col-sm-6 col-lg-4">
+        <input type="search" class="form-control form-control-sm" [class.filter-active]="q.trim() !== ''"
+               placeholder="Suche: Strecke, Nummer, Nachname, Ort …" title="Mit Komma nach Nachname und Vorname: Mustermann,Max" aria-label="Suche"
+               [(ngModel)]="q" (ngModelChange)="onSearch()" />
+      </div>
+      <div class="col-6 col-sm-3 col-lg-2">
+        <select class="form-select form-select-sm" [class.filter-active]="status !== ''" [(ngModel)]="status" (ngModelChange)="reload()" aria-label="Stand">
+          <option value="">Alle Stände</option>
+          @for (s of statuses; track s.value) { <option [value]="s.value">{{ s.label }}</option> }
+        </select>
+      </div>
+      @if (journeyId()) {
+        <div class="col-12 col-sm-auto small">
+          <span class="badge text-bg-light border">Nur eine Reise</span>
+          <a href="#" class="ms-2" (click)="$event.preventDefault(); showAll()">Alle Fahrtaufträge anzeigen</a>
+        </div>
+      } @else {
+        <div class="col-12 col-sm-auto small text-body-secondary">
+          Fahrtaufträge entstehen mit der Auftragsbestätigung, je Strecke und Bus einer.
+        </div>
+      }
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-danger py-2 mb-3" role="alert">{{ error() }}</div>
+  }
+
+  <div class="card table-card rounded-3" [class.dimmed]="loading()">
+    <table class="table table-hover table-sm align-middle data-table mb-0">
+
+      <colgroup>
+        <col style="width:76px">   <!-- Aktionen -->
+        <col style="width:250px">  <!-- Fahrtauftrag -->
+        <col style="width:200px">  <!-- Kunde -->
+        <col style="width:130px">  <!-- Termin -->
+        <col style="width:170px">  <!-- Fahrzeug -->
+        <col style="width:170px">  <!-- Fahrer -->
+        <col style="width:120px">  <!-- Stand -->
+      </colgroup>
+
+      <thead>
+        <tr>
+          <th class="col-actions"><span class="visually-hidden">Aktionen</span></th>
+          <th>Fahrtauftrag</th>
+          <th>Kunde</th>
+          <th>Termin</th>
+          <th>Fahrzeug</th>
+          <th>Fahrer</th>
+          <th>Stand</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (o of rows(); track o.id) {
+          <tr (click)="select(o.id)" [class.row-current]="o.id === currentId()" [appRevealCurrent]="o.id === currentId()">
+            <td class="col-actions">
+              <a class="btn-action edit" [routerLink]="['/fahrtauftraege', o.id]" title="Öffnen" [attr.aria-label]="'Fahrtauftrag ' + o.title + ' öffnen'">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <button type="button" class="btn-action edit" (click)="openPdf(o)" title="Fahrer-PDF drucken" [attr.aria-label]="'Fahrer-PDF von ' + o.title + ' drucken'">
+                <i class="bi bi-printer"></i>
+              </button>
+            </td>
+            <td>
+              <a [routerLink]="['/fahrtauftraege', o.id]" class="fw-semibold text-decoration-none"><app-highlight [text]="o.title" [query]="shownQuery()" mode="start" /></a>
+              <div class="small text-body-secondary">
+                @if (o.number) { <app-highlight [text]="o.number" [query]="shownQuery()" mode="start" />{{ ' · ' }} }
+                {{ o.vehicle_type_label ?? 'Fahrzeug' }}, Bus {{ o.bus_no }}
+              </div>
+            </td>
+            <td>
+              @if (o.customer) {
+                <app-customer-name [customer]="o.customer" [query]="shownQuery()" />
+              }
+            </td>
+            <td class="dim">
+              @if (o.date_from) {
+                {{ o.date_from | date: 'dd.MM.yyyy' }}@if (o.date_to && o.date_to !== o.date_from) { – {{ o.date_to | date: 'dd.MM.yyyy' }} }
+              } @else {
+                <span class="text-body-secondary small">Kein Datum</span>
+              }
+            </td>
+            <td>
+              @if (o.vehicle) {
+                {{ o.vehicle.display_name }}
+              } @else if (o.external_company) {
+                <app-highlight [text]="o.external_company" [query]="shownQuery()" mode="start" />
+                <div class="small text-body-secondary">Fremdunternehmer</div>
+              } @else {
+                <span class="text-body-secondary small">noch offen</span>
+              }
+            </td>
+            <td>
+              @if (o.driver) {
+                {{ o.driver.display_name }}
+                @if (o.driver2) { <div class="small text-body-secondary">{{ o.driver2.display_name }}</div> }
+              } @else {
+                <span class="text-body-secondary small">noch offen</span>
+              }
+            </td>
+            <td><span class="badge" [class]="badge(o.status)">{{ o.status_label }}</span></td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="text-center text-secondary py-5 small">
+              @if (!loaded()) {
+                Daten werden geladen …
+              } @else if (shownQuery() || status) {
+                Kein Fahrtauftrag zu dieser Suche gefunden.
+              } @else {
+                Noch kein Fahrtauftrag. Sie entstehen, sobald eine <a routerLink="/belege">Auftragsbestätigung</a> festgeschrieben wird: je Strecke und Bus einer.
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pager">
+    <span>{{ total() }} {{ total() === 1 ? 'Fahrtauftrag' : 'Fahrtaufträge' }}</span>
+    <span class="ms-auto"></span>
+    <button type="button" class="btn btn-sm btn-outline-primary" (click)="go(page() - 1)" [disabled]="page() <= 1 || loading()">
+      <i class="bi bi-chevron-left"></i> Zurück
+    </button>
+    <span>Seite {{ page() }} von {{ lastPage() }}</span>
+    <button type="button" class="btn btn-sm btn-outline-primary" (click)="go(page() + 1)" [disabled]="page() >= lastPage() || loading()">
+      Weiter <i class="bi bi-chevron-right"></i>
+    </button>
+  </div>
+</div>

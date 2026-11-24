@@ -123,6 +123,17 @@ class DriverController extends Controller
     }
 
     /** Auswahllisten für das Formular. */
+    /** Alle aktiven Fahrer als schlanke Auswahlliste (ohne Seiten), zum Beispiel für den Fahrtauftrag. */
+    public function choices(): JsonResponse
+    {
+        return response()->json(Driver::orderBy('last_name')->orderBy('first_name')->get()->map(fn (Driver $d) => [
+            'id' => $d->id,
+            'display_name' => $d->display_name,
+            'personnel_number' => $d->personnel_number,
+            'license_classes' => $d->license_classes ?? [],
+        ])->values());
+    }
+
     public function options(): JsonResponse
     {
         $list = fn (array $cases) => collect($cases)->map(fn ($c) => ['value' => $c->value, 'label' => $c->label()]);

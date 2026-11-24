@@ -256,6 +256,17 @@ export interface DocumentJourney {
   /** Die Strecken der Reise in Reihenfolge, mit dem Fahrzeugbedarf */
   sections: JourneySectionInfo[];
   documents: { id: string; type: DocumentTypeValue; number: string | null; status: 'entwurf' | 'festgeschrieben'; cancelled: boolean }[];
+  trip_orders?: JourneyTripOrders;
+}
+
+/** Die Fahrtaufträge einer Reise im Überblick. `check`: Zahl der Busse in der Auftragsbestätigung und der Fahrtaufträge weichen ab. */
+export interface JourneyTripOrders {
+  count: number;
+  to_plan: number;
+  planned: number;
+  issued: number;
+  expected: number | null;
+  check: boolean;
 }
 
 export type SectionKindValue = 'hinfahrt' | 'vor_ort' | 'rueckfahrt';

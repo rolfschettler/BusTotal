@@ -47,6 +47,25 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'fahrtauftraege',
+        // Lesen: Admin, Disponent, Buchhaltung; disponieren und ausgeben Admin und Disponent (das Formular sperrt sich selbst).
+        // Fahrtaufträge entstehen mit der festgeschriebenen Auftragsbestätigung, hier wird nichts angelegt.
+        canActivate: [roleGuard('admin', 'disponent', 'buchhaltung')],
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            data: { help: 'fahrten#fahrtauftrag', fullPage: true },
+            loadComponent: () => import('./pages/trip-orders/trip-order-list.component').then((m) => m.TripOrderListComponent),
+          },
+          {
+            path: ':id',
+            data: { help: 'fahrten#fahrtauftrag' },
+            loadComponent: () => import('./pages/trip-orders/trip-order-form.component').then((m) => m.TripOrderFormComponent),
+          },
+        ],
+      },
+      {
         path: 'reisen',
         // Nur lesen: Admin, Disponent, Buchhaltung. Reisen entstehen mit dem ersten Angebot aus der Streckenplanung.
         canActivate: [roleGuard('admin', 'disponent', 'buchhaltung')],

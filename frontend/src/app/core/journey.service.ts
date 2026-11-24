@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Page } from './customer.service';
-import { DocumentTypeValue, JourneySectionInfo } from './document.service';
+import { DocumentTypeValue, JourneySectionInfo, JourneyTripOrders } from './document.service';
 
 /** Der Kunde einer Reise in der Kurzform der Oberfläche */
 export interface JourneyCustomer {
@@ -56,6 +56,7 @@ export interface JourneyDetail {
   stage_document_id: string | null;
   amount: string | null;
   document_count: number;
+  trip_orders: JourneyTripOrders;
 }
 
 @Injectable({ providedIn: 'root' })

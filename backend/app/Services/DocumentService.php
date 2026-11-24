@@ -27,6 +27,7 @@ class DocumentService
         private readonly EInvoiceService $einvoice,
         private readonly JourneyService $journeys,
         private readonly TourSnapshotService $snapshots,
+        private readonly TripOrderService $tripOrders,
     ) {}
 
     /**
@@ -107,7 +108,12 @@ class DocumentService
                 'currency' => 'EUR',
             ]);
 
-            return $this->issueArchived($document);
+            $document = $this->issueArchived($document);
+
+            // Mit der Auftragsbestätigung entstehen die Fahrtaufträge als Entwürfe (je Strecke und Bus); scheitert das, bleibt der Beleg Entwurf.
+            $this->tripOrders->createFromConfirmation($document);
+
+            return $document;
         });
     }
 

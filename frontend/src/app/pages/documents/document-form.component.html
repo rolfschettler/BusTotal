@@ -57,6 +57,18 @@
     @if (nextStep(); as ns) {
       <div class="small text-body-secondary mt-2"><i class="bi bi-arrow-right-circle me-1" aria-hidden="true"></i>Nächster Schritt: {{ ns }}</div>
     }
+    @if (j.trip_orders; as o) {
+      @if (o.count > 0) {
+        <div class="small text-body-secondary mt-1">
+          <i class="bi bi-clipboard-check me-1" aria-hidden="true"></i>{{ o.count }} {{ o.count === 1 ? 'Fahrtauftrag' : 'Fahrtaufträge' }}
+          ({{ o.to_plan }} zu disponieren, {{ o.planned }} disponiert, {{ o.issued }} ausgegeben):
+          <a routerLink="/fahrtauftraege" [queryParams]="{ journey_id: j.id }">Fahrtaufträge öffnen</a>
+        </div>
+      }
+      @if (o.check) {
+        <div class="small text-warning-emphasis mt-1"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>Fahrtaufträge prüfen: Die Auftragsbestätigung nennt {{ o.expected }} {{ o.expected === 1 ? 'Bus' : 'Busse' }}, es gibt {{ o.count }}.</div>
+      }
+    }
   </nav>
 }
 

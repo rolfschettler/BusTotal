@@ -40,7 +40,7 @@ class DocumentPdf
      * „Seite 1 von 3“ unten rechts in der Fußzeile. Der Seitenzähler der Vorlage (CSS counter(pages)) kennt die Gesamtzahl nicht
      * und druckte „von 0“; die Gesamtzahl steht erst nach dem Rendern fest. Die Fußzeile der Vorlage lässt die Zeile dafür frei.
      */
-    private function addPageNumbers(Dompdf $pdf): void
+    public static function addPageNumbers(Dompdf $pdf): void
     {
         $canvas = $pdf->getCanvas();
         $font = $pdf->getFontMetrics()->getFont('DejaVu Sans', 'normal');
@@ -86,7 +86,7 @@ class DocumentPdf
     }
 
     /** Das Logo als eingebettetes Bild. Es kommt aus dem privaten Speicher, nie aus dem Netz. */
-    private function logoDataUri(CompanySetting $company): ?string
+    public static function logoDataUri(CompanySetting $company): ?string
     {
         $path = $company->logo_path;
         if (! $path || ! Storage::disk('local')->exists($path)) {
@@ -101,7 +101,7 @@ class DocumentPdf
     }
 
     /** Schwarz oder Weiß auf der Markenfarbe, je nach Helligkeit (wie im Frontend). */
-    private function textOn(string $hex): string
+    public static function textOn(string $hex): string
     {
         [$r, $g, $b] = sscanf($hex, '#%02x%02x%02x');
         $luma = (0.299 * $r + 0.587 * $g + 0.114 * $b) / 255;

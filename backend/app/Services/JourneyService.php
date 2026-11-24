@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\DocumentStatus;
+use App\Enums\DocumentType;
 use App\Enums\SectionKind;
 use App\Enums\VehicleType;
 use App\Models\Document;
@@ -9,6 +11,7 @@ use App\Models\DocumentLine;
 use App\Models\Journey;
 use App\Models\JourneySection;
 use App\Models\Trip;
+use App\Models\TripOrder;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -126,6 +129,8 @@ class JourneyService
             return null;
         }
 
+        $documents = Document::where('journey_id', $journey->id)->orderBy('created_at')->orderBy('id')->get();
+
         return [
             'id' => $journey->id,
             'title' => $journey->title,
@@ -136,12 +141,11 @@ class JourneyService
                 'own' => $s->ownFigures(),
                 'vehicles' => $s->vehicles->map(fn ($v) => ['type' => $v->vehicle_type?->value, 'label' => $v->vehicle_type?->label(), 'count' => $v->vehicle_count])->all(),
             ])->all(),
-            'documents' => Document::where('journey_id', $journey->id)->orderBy('created_at')->orderBy('id')
-                ->get(['id', 'type', 'number', 'status', 'cancelled_by_id', 'cancels_id'])
-                ->map(fn (Document $d) => [
-                    'id' => $d->id, 'type' => $d->type->value, 'number' => $d->number, 'status' => $d->status->value,
-                    'cancelled' => $d->cancelled_by_id !== null,
-                ])->all(),
+            'documents' => $documents->map(fn (Document $d) => [
+                'id' => $d->id, 'type' => $d->type->value, 'number' => $d->number, 'status' => $d->status->value,
+                'cancelled' => $d->cancelled_by_id !== null,
+            ])->all(),
+            'trip_orders' => $this->tripOrderSummary($journey, $documents),
         ];
     }
 
@@ -231,7 +235,38 @@ class JourneyService
                 'id' => $d->id, 'type' => $d->type->value, 'number' => $d->number, 'status' => $d->status->value, 'cancelled' => $d->cancelled_by_id !== null,
                 'document_date' => $d->document_date?->toDateString(), 'gross_total' => $d->gross_total, 'subject' => $d->subject,
             ])->all(),
+            'trip_orders' => $this->tripOrderSummary($journey, $documents),
         ] + $this->overview($documents);
+    }
+
+    /**
+     * Die Fahrtaufträge einer Reise im Überblick (abgeleitet, nichts gespeichert). „expected“ ist die Zahl der Busse in der neuesten
+     * gültigen festgeschriebenen Auftragsbestätigung; weicht sie von den vorhandenen Fahrtaufträgen ab (Bus dazu oder weniger), steht
+     * „check“ auf true und die Oberfläche sagt „Fahrtaufträge prüfen“. Ohne Auftragsbestätigung ist nichts zu erwarten.
+     *
+     * @param  iterable<Document>  $documents  die Belege EINER Reise
+     * @return array{count: int, to_plan: int, planned: int, issued: int, expected: ?int, check: bool}
+     */
+    public function tripOrderSummary(Journey $journey, iterable $documents): array
+    {
+        $byStatus = TripOrder::whereIn('journey_section_id', $journey->sections()->select('id'))
+            ->selectRaw('status, COUNT(*) as n')->groupBy('status')->pluck('n', 'status');
+        $count = (int) $byStatus->sum();
+
+        $confirmation = collect($documents)
+            ->filter(fn (Document $d) => $d->type === DocumentType::Auftragsbestaetigung && $d->status === DocumentStatus::Festgeschrieben && $d->cancelled_by_id === null)
+            ->sortByDesc('finalized_at')->first();
+        $expected = $confirmation === null ? null : (int) collect($confirmation->tour_snapshot['sections'] ?? [])
+            ->sum(fn ($s) => collect($s['vehicles'] ?? [])->sum(fn ($v) => max(1, (int) ($v['count'] ?? 1))));
+
+        return [
+            'count' => $count,
+            'to_plan' => (int) ($byStatus['entwurf'] ?? 0),
+            'planned' => (int) ($byStatus['disponiert'] ?? 0),
+            'issued' => (int) (($byStatus['ausgegeben'] ?? 0) + ($byStatus['erledigt'] ?? 0)),
+            'expected' => $expected,
+            'check' => $expected !== null && $expected !== $count,
+        ];
     }
 
     /** Ein Entwurf wurde gelöscht: Eine Reise ohne Belege bleibt nicht übrig. */

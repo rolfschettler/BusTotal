@@ -52,6 +52,13 @@ export interface Driver {
 
 export type DriverInput = Omit<Driver, 'id' | 'display_name' | 'deadlines' | 'next_deadline' | 'absent_today' | 'absences' | 'is_demo' | 'deleted_at'>;
 
+export interface DriverChoice {
+  id: string;
+  display_name: string;
+  personnel_number: string;
+  license_classes: string[];
+}
+
 export interface DriverOptions {
   employment_types: Option[];
   license_classes: Option[];
@@ -76,6 +83,10 @@ export class DriverService {
 
   options() {
     return this.http.get<DriverOptions>(`${this.base}/options`);
+  }
+  /** Alle aktiven Fahrer als schlanke Auswahlliste (ohne Seiten), zum Beispiel für den Fahrtauftrag. */
+  choices() {
+    return this.http.get<DriverChoice[]>(`${this.base}/choices`);
   }
   get(id: string) {
     return this.http.get<Driver>(`${this.base}/${id}`);

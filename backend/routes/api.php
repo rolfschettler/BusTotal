@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\Superadmin\TenantController as SuperadminTenantCont
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\JourneyController;
 use App\Http\Controllers\Api\TripController;
+use App\Http\Controllers\Api\TripOrderController;
 use App\Http\Controllers\Api\VehicleController;
 use Illuminate\Support\Facades\Route;
 
@@ -113,6 +114,7 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
         Route::get('/', [DriverController::class, 'index']);
         Route::post('/', [DriverController::class, 'store']);
         Route::get('/options', [DriverController::class, 'options']);
+        Route::get('/choices', [DriverController::class, 'choices']);
         Route::get('/{driver}', [DriverController::class, 'show'])->withTrashed();
         Route::put('/{driver}', [DriverController::class, 'update']);
         Route::post('/{driver}/card-read', [DriverController::class, 'markCardRead']);
@@ -147,6 +149,16 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
     Route::get('/journeys', [JourneyController::class, 'index'])->middleware('role:admin,disponent,buchhaltung');
     Route::get('/journeys/{journey}', [JourneyController::class, 'show'])->middleware('role:admin,disponent,buchhaltung');
     Route::put('/journeys/{journey}', [JourneyController::class, 'update'])->middleware('role:admin,disponent,buchhaltung');
+
+    // Fahrtaufträge: lesen Admin, Disponent, Buchhaltung; disponieren und ausgeben Admin und Disponent.
+    // Sie entstehen mit der festgeschriebenen Auftragsbestätigung, hier wird nichts angelegt.
+    Route::get('/trip-orders', [TripOrderController::class, 'index'])->middleware('role:admin,disponent,buchhaltung');
+    Route::get('/trip-orders/{tripOrder}', [TripOrderController::class, 'show'])->middleware('role:admin,disponent,buchhaltung');
+    Route::get('/trip-orders/{tripOrder}/pdf', [TripOrderController::class, 'pdf'])->middleware('role:admin,disponent,buchhaltung');
+    Route::middleware('role:admin,disponent')->group(function () {
+        Route::put('/trip-orders/{tripOrder}', [TripOrderController::class, 'update']);
+        Route::post('/trip-orders/{tripOrder}/issue', [TripOrderController::class, 'issue']);
+    });
 
     // Betriebshöfe: lesen Admin, Disponent und Buchhaltung, ändern nur Admin.
     Route::get('/depots', [DepotController::class, 'index'])->middleware('role:admin,disponent,buchhaltung');

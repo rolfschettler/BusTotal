@@ -57,7 +57,8 @@ Die Touren „München – Wien“ und „Wien – München“ liegen im Archiv 
 **Gut zu wissen:**
 - Eine Änderung an einer Tour im Archiv ändert **keinen** festgeschriebenen Beleg. Beim Festschreiben wird der Stand im Beleg festgehalten.
 - Belege ohne Strecke (Pauschalpreise, Zusatzleistungen) legen Sie von Hand an. Sie gehören zu keiner Reise.
-- **Noch nicht gebaut:** der **Fahrtauftrag** je Bus (Fahrzeug und Fahrer zuweisen, Fahrer-PDF) und die **Rückerfassung** der Fahrt. Sie kommen später zwischen Auftrag und Rechnung dazu, siehe die Schritte 5 und 6.
+- Mit der Auftragsbestätigung entsteht je Strecke und Bus ein **Fahrtauftrag**, siehe [Schritt 5](#fahrt).
+- **Noch nicht gebaut:** die **Rückerfassung** der Fahrt. Sie kommt später zwischen Fahrtauftrag und Rechnung dazu, siehe Schritt 6.
 
 ## Vorbereitung: einmal einrichten {#einrichten}
 
@@ -87,7 +88,7 @@ Bevor Sie das erste Angebot schreiben, richtet der **Administrator** diese Dinge
 | 2 | Angebot erstellen, **zwei Wege** | **A:** Streckenplanung › **Angebot erstellen**. **B:** Belege › **Neuer Beleg** (ohne Strecke) | Verfügbar |
 | 3 | Auftrag bestätigen | Im festgeschriebenen Angebot: **Auftragsbestätigung erstellen** | Verfügbar |
 | 4 | Anzahlung verlangen (optional) | **Anzahlungsrechnung erstellen** | Verfügbar |
-| 5 | Fahrt durchführen | Fahrtauftrag für Disponent und Fahrer | In Planung |
+| 5 | Fahrt durchführen | **Fahrtaufträge**: Fahrzeug und Fahrer zuweisen, ausgeben, Fahrer-PDF drucken | Verfügbar |
 | 6 | Fahrt zurückerfassen | Zeiten, Kilometerstände, Zusatzleistungen, Kosten | In Planung |
 | 7 | Rechnung schreiben | **Rechnung erstellen** aus dem Auftrag | Verfügbar (aus dem Auftrag) |
 | 8 | Zahlung erfassen | Abschnitt **Zahlungen** in der Rechnung | Verfügbar |
@@ -167,9 +168,36 @@ Das neue Angebot weist oben darauf hin, dass Sie es von Hand anlegen, und verlin
 
 ## Schritt 5: Fahrt durchführen {#fahrt}
 
-**In Planung.** Hier entsteht der **Fahrtauftrag**: je Bus einer, mit Ablauf, Zeiten, Fahrzeug und Fahrer. Der Fahrer hat ihn im Fahrzeug und notiert **Zusatzleistungen** (zum Beispiel Sonderfahrten vor Ort), **unvorhergesehene Kosten** (Maut, Parken) und die **Kilometerstände bei Grenzübertritt**.
+**Wo:** Seitenleiste **Fahrten und Abrechnung › Fahrtaufträge**. Administrator und Disponent teilen ein, die Buchhaltung darf lesen und drucken.
 
-**Bis dahin:** Fahrtdatum und Strecke stehen im Angebot und in der Auftragsbestätigung. Notieren Sie Besonderheiten der Fahrt wie bisher außerhalb von {{app}} und tragen Sie sie in die Rechnung ein.
+Sobald Sie eine **Auftragsbestätigung festschreiben**, legt {{app}} für jede Strecke und **jeden Bus** einen **Fahrtauftrag** an. Ein Doppeldecker und zwei Kleinbusse auf der Hinfahrt ergeben also drei Fahrtaufträge. Sie müssen nichts anlegen. Alle Fahrtaufträge einer Reise erreichen Sie über **Fahrtaufträge öffnen** in der Reise.
+
+### Der Fahrtauftrag {#fahrtauftrag}
+
+Ein neuer Fahrtauftrag hat den Stand **Zu disponieren**: Der Fahrzeugtyp steht fest (aus dem Angebot), Fahrzeug und Fahrer sind noch offen.
+
+1. **Öffnen:** In der Liste auf den Namen oder den Stift klicken. Suchen können Sie nach Strecke, Nummer, Kunde oder Fremdunternehmer, filtern nach dem Stand.
+2. **Fahrzeug:** Wählen Sie ein **eigenes Fahrzeug** aus Ihrem Fuhrpark **oder** tragen Sie einen **Fremdunternehmer** mit Kennzeichen ein, wenn ein anderes Unternehmen den Bus stellt. Beides zugleich geht nicht.
+3. **Fahrer:** **Fahrer 1**, bei Langstrecken zusätzlich **Fahrer 2**.
+4. **Termin und Hinweise:** Beginn, Ende, **Abfahrt** (Datum und Uhrzeit), Zahl der **Fahrgäste**. Unter „Für den Fahrer“ stehen Treffpunkt und Besonderheiten, sie kommen ins Fahrer-PDF. Die interne Notiz steht **nicht** im PDF.
+5. **Speichern.** Sind Fahrzeug und Fahrer (oder ein Fremdunternehmer) eingetragen, steht der Auftrag auf **Disponiert**.
+6. **Ausgeben:** Die Taste **Ausgeben** gibt dem Fahrtauftrag seine **Nummer** (FA-Jahr-Nummer, fortlaufend). Sie ist erst möglich, wenn der Auftrag disponiert und gespeichert ist.
+7. **Drucken:** Die Taste **Drucken** öffnet die Druckvorschau mit der **Fahrer-Fassung**. Sie zeigt **keine Preise**: Kunde, Termin, Fahrzeug, Fahrer, Hinweise und die Strecke mit Halten und Teilstrecken. Auf der letzten Seite steht ein **Erfassungsblatt** zum Ausfüllen unterwegs: Zeiten und Kilometerstände, **Grenzübertritte**, **Zusatzleistungen**, **unvorhergesehene Kosten** (Maut, Parken), Notizen und Unterschrift.
+
+**Gelber Kasten „Bitte prüfen“:** {{app}} weist darauf hin, wenn etwas nicht zusammenpasst. Das sind **nur Hinweise**, Sie können trotzdem so einteilen. Geprüft wird:
+- Das Fahrzeug ist **schon eingesetzt** (anderer Fahrtauftrag zur gleichen Zeit), ebenso ein **Fahrer**, auch als Fahrer 2.
+- **Fristen** von Fahrzeug oder Fahrer (zum Beispiel HU, Fahrerkarte, Code 95), die abgelaufen sind oder **vor dem Ende der Fahrt ablaufen**.
+- Ein Fahrer ist in dieser Zeit **abwesend** (Urlaub, krank, Schulung).
+- Die **Führerscheinklasse** passt nicht zum Fahrzeug. Für Busse bis 17 Sitzplätze genügt D1, sonst braucht der Fahrer D oder DE.
+- Das Fahrzeug hat **weniger Sitzplätze** als Fahrgäste vorgesehen sind, oder es ist ein anderer **Typ** als gebucht.
+
+Die **Lenk- und Ruhezeiten** der Fahrer über mehrere Fahrten prüft {{app}} hier noch nicht (kommt mit der Disposition).
+
+**Nach dem Ausgeben** lassen sich Fahrzeug, Fahrer und Termine nur noch mit einer **Begründung** ändern (Feld „Begründung“ unten im Formular). Die Änderung steht im Änderungsprotokoll. Hinweise für den Fahrer und die interne Notiz können Sie jederzeit ändern. Eine vergebene Nummer wird **nie zurückgenommen** und ein ausgegebener Fahrtauftrag nicht gelöscht. Das **PDF** wird bei jedem Druck neu aus dem aktuellen Stand erzeugt.
+
+**„Fahrtaufträge prüfen“:** Steht dieser Hinweis in der Reise oder oben im Beleg, passt die Zahl der Busse in der Auftragsbestätigung nicht zur Zahl der Fahrtaufträge, zum Beispiel weil ein Bus dazukam oder wegfiel. {{app}} ändert vorhandene Fahrtaufträge dann nicht von selbst. Prüfen Sie in der Liste, ob einer fehlt oder überzählig ist.
+
+**Bis die Rückerfassung kommt:** Was der Fahrer auf dem Erfassungsblatt notiert hat (Zusatzleistungen, Kosten, Grenzstände), tragen Sie wie bisher in die Rechnung ein.
 
 ## Schritt 6: Fahrt zurückerfassen {#rueckerfassung}
 
@@ -224,7 +252,7 @@ Das neue Angebot weist oben darauf hin, dass Sie es von Hand anlegen, und verlin
 Diese Anleitung wird mit jeder Ausbaustufe ergänzt. Geplant sind in dieser Reihenfolge:
 
 1. **Tour speichern und wiederverwenden**, Angebot mit **mehreren Strecken und Fahrzeugtypen**, das **Reisevorhaben** (Hinfahrt, Fahrt vor Ort, Rückfahrt).
-2. **Fahrtauftrag** je Bus mit Fahrer-PDF, **Rückerfassung** mit Kilometerständen an der Grenze.
+2. **Rückerfassung** mit Kilometerständen an der Grenze (der **Fahrtauftrag** je Bus mit Fahrer-PDF ist schon da).
 3. **Rechnung aus Fahrtaufträgen**, **Sammelrechnung** (Werksverkehr), **Auslandsanteil** nach Streckenlänge.
 4. **Reiseleistungen nach § 25 UStG** (Marge).
 5. **Voranmeldungsbericht**, Datenexport, DATEV, Aufbewahrung.

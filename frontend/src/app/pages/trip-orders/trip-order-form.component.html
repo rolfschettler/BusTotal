@@ -1,0 +1,173 @@
+<!-- Formular-Muster, siehe docs/ClaudeCodePatterns/EditFormPattern.md (Drittelraster). Die Optik kommt aus src/styles/_edit-form.scss. -->
+<a routerLink="/fahrtauftraege" class="small text-decoration-none">‹ Alle Fahrtaufträge</a>
+
+<div class="mb-3">
+  @if (order(); as o) {
+    <h1 class="h3 mb-1">
+      Fahrtauftrag @if (o.number) { <code>{{ o.number }}</code> } @else { <span class="text-body-secondary">(noch nicht ausgegeben)</span> }
+    </h1>
+    <p class="mb-0 small text-body-secondary">
+      <span class="badge" [class]="badge(o.status)">{{ o.status_label }}</span>
+      {{ o.title }} · {{ o.vehicle_type_label ?? 'Fahrzeug' }}, Bus {{ o.bus_no }}
+      @if (o.customer; as c) { · {{ c.display_name }} }
+      @if (o.journey_id) { · <a [routerLink]="['/reisen', o.journey_id]">zur Reise</a> }
+      @if (o.document_id) { · <a [routerLink]="['/belege', o.document_id]">Auftragsbestätigung{{ o.document_number ? ' ' + o.document_number : '' }}</a> }
+      @if (!canEdit()) { <span class="badge text-bg-secondary ms-2">Nur Ansicht</span> }
+      <app-help-link topic="fahrten" anchor="fahrtauftrag" label="Fahrtauftrag" />
+    </p>
+  } @else {
+    <h1 class="h3 mb-0">Fahrtauftrag</h1>
+  }
+</div>
+
+@if (loading()) {
+  <div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary"></div></div>
+} @else {
+
+  @if (message(); as m) {
+    <div class="alert py-2 small" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
+  }
+
+  @if (order()?.warnings?.length) {
+    <div class="alert alert-warning py-2 small" role="status">
+      <strong>Bitte prüfen</strong> (das sind Hinweise, Sie können trotzdem so einteilen):
+      <ul class="mb-0 mt-1">
+        @for (w of order()!.warnings; track $index) { <li>{{ w.text }}</li> }
+      </ul>
+    </div>
+  }
+
+  <form id="tripOrderForm" class="form-area" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <div class="row g-3">
+
+      <div class="col-12"><div class="section-title">Fahrzeug</div></div>
+
+      <div class="col-12 col-lg-4">
+        <label class="form-label" for="vehicle_id">Eigenes Fahrzeug</label>
+        <select class="form-select" id="vehicle_id" formControlName="vehicle_id" [class.is-invalid]="invalid('vehicle_id')">
+          <option value="">– keins –</option>
+          @for (v of vehicleChoices(); track v.id) {
+            <option [value]="v.id">{{ v.display_name }} · {{ v.seats }} Plätze</option>
+          }
+          @if (order()?.vehicle; as cur) {
+            @if (!vehicleChoices().length) { <option [value]="cur.id">{{ cur.display_name }}</option> }
+          }
+        </select>
+        <div class="invalid-feedback">{{ fieldErrors()['vehicle_id'] }}</div>
+        <div class="form-text">Gebucht: {{ order()?.vehicle_type_label ?? 'Fahrzeugtyp offen' }}</div>
+      </div>
+      <div class="col-12 col-lg-4">
+        <label class="form-label" for="external_company">Fremdunternehmer</label>
+        <input class="form-control" id="external_company" formControlName="external_company" [class.is-invalid]="invalid('external_company')" />
+        <div class="invalid-feedback">{{ fieldErrors()['external_company'] }}</div>
+        <div class="form-text">statt eigenem Fahrzeug</div>
+      </div>
+      <div class="col-12 col-lg-4">
+        <label class="form-label" for="external_plate">Kennzeichen</label>
+        <input class="form-control" id="external_plate" formControlName="external_plate" [class.is-invalid]="invalid('external_plate')" />
+        <div class="invalid-feedback">{{ fieldErrors()['external_plate'] }}</div>
+        <div class="form-text">des Fremdfahrzeugs</div>
+      </div>
+
+      <div class="col-12 col-lg-4">
+        <label class="form-label" for="driver_id">Fahrer 1</label>
+        <select class="form-select" id="driver_id" formControlName="driver_id" [class.is-invalid]="invalid('driver_id')">
+          <option value="">– offen –</option>
+          @for (d of driverChoices(); track d.id) { <option [value]="d.id">{{ d.display_name }}</option> }
+          @if (order()?.driver; as cur) {
+            @if (!driverChoices().length) { <option [value]="cur.id">{{ cur.display_name }}</option> }
+          }
+        </select>
+        <div class="invalid-feedback">{{ fieldErrors()['driver_id'] }}</div>
+      </div>
+      <div class="col-12 col-lg-4">
+        <label class="form-label" for="driver2_id">Fahrer 2</label>
+        <select class="form-select" id="driver2_id" formControlName="driver2_id" [class.is-invalid]="invalid('driver2_id')">
+          <option value="">– keiner –</option>
+          @for (d of driverChoices(); track d.id) { <option [value]="d.id">{{ d.display_name }}</option> }
+          @if (order()?.driver2; as cur) {
+            @if (!driverChoices().length) { <option [value]="cur.id">{{ cur.display_name }}</option> }
+          }
+        </select>
+        <div class="invalid-feedback">{{ fieldErrors()['driver2_id'] }}</div>
+        <div class="form-text">bei Langstrecken</div>
+      </div>
+
+      <div class="col-12"><div class="section-title">Termin</div></div>
+
+      <div class="col-12 col-lg-4">
+        <label class="form-label" for="date_from">Beginn</label>
+        <input type="date" class="form-control" id="date_from" formControlName="date_from" [class.is-invalid]="invalid('date_from')" />
+        <div class="invalid-feedback">{{ fieldErrors()['date_from'] }}</div>
+      </div>
+      <div class="col-12 col-lg-4">
+        <label class="form-label" for="date_to">Ende</label>
+        <input type="date" class="form-control" id="date_to" formControlName="date_to" [class.is-invalid]="invalid('date_to')" />
+        <div class="invalid-feedback">{{ fieldErrors()['date_to'] }}</div>
+      </div>
+      <div class="col-12 col-lg-4">
+        <label class="form-label" for="departure_at">Abfahrt</label>
+        <input type="datetime-local" class="form-control" id="departure_at" formControlName="departure_at" [class.is-invalid]="invalid('departure_at')" />
+        <div class="invalid-feedback">{{ fieldErrors()['departure_at'] }}</div>
+        <div class="form-text">Datum und Uhrzeit</div>
+      </div>
+      <div class="col-12 col-lg-4">
+        <label class="form-label" for="passengers">Fahrgäste</label>
+        <input type="number" class="form-control" id="passengers" formControlName="passengers" min="1" max="99" [class.is-invalid]="invalid('passengers')" />
+        <div class="invalid-feedback">{{ fieldErrors()['passengers'] }}</div>
+      </div>
+
+      <div class="col-12"><div class="section-title">Hinweise</div></div>
+
+      <div class="col-12">
+        <label class="form-label" for="driver_note">Für den Fahrer</label>
+        <textarea class="form-control" id="driver_note" rows="3" formControlName="driver_note"></textarea>
+        <div class="form-text">Steht auf dem Fahrer-PDF, zum Beispiel Treffpunkt und Besonderheiten.</div>
+      </div>
+      <div class="col-12">
+        <label class="form-label" for="notes">Interne Notiz</label>
+        <textarea class="form-control" id="notes" rows="3" formControlName="notes"></textarea>
+        <div class="form-text">Steht nicht auf dem Fahrer-PDF.</div>
+      </div>
+
+      @if (issued() && !readOnly()) {
+        <div class="col-12"><div class="section-title">Änderung nach dem Ausgeben</div></div>
+        <div class="col-12">
+          <label class="form-label" for="reason">Begründung</label>
+          <input class="form-control" id="reason" formControlName="reason" maxlength="255" [class.is-invalid]="invalid('reason')" />
+          <div class="invalid-feedback">{{ fieldErrors()['reason'] || 'Bitte eine Begründung angeben.' }}</div>
+          <div class="form-text">Nötig, wenn Fahrzeug, Fahrer oder Termine geändert werden. Sie steht im Änderungsprotokoll.</div>
+        </div>
+      }
+
+    </div>
+  </form>
+
+  <div class="form-bar">
+    @if (!readOnly()) {
+      <button type="submit" form="tripOrderForm" class="btn btn-primary" [disabled]="saving()">
+        @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+        {{ saving() ? 'Speichert …' : 'Speichern' }}
+      </button>
+    }
+    <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
+    @if (form.dirty && !readOnly()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
+    <div class="form-bar-right">
+      @if (order(); as o) {
+        @if (canEdit() && !issued()) {
+          <button type="button" class="btn btn-outline-secondary" [disabled]="issuing() || o.status !== 'disponiert' || form.dirty"
+                  [attr.title]="o.status !== 'disponiert' ? 'Zuerst Fahrzeug und Fahrer zuweisen (oder einen Fremdunternehmer eintragen).' : form.dirty ? 'Bitte zuerst speichern' : 'Vergibt die Nummer'"
+                  (click)="issue()">
+            <i class="bi bi-check2-circle me-1"></i>Ausgeben
+          </button>
+        }
+        <button type="button" class="btn btn-outline-secondary" (click)="print()" title="Fahrer-Fassung ohne Preise, mit Erfassungsblatt">
+          <i class="bi bi-printer me-1"></i>Drucken
+        </button>
+      }
+      @if (!readOnly()) {
+        <button type="button" class="btn btn-outline-secondary" [disabled]="!form.dirty" [attr.title]="form.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancel()">Abbrechen</button>
+      }
+    </div>
+  </div>
+}

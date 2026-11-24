@@ -69,6 +69,7 @@ Ein Angebot, das Sie in der Streckenplanung mit **Angebot erstellen** anlegen, g
 - Sie zeigt alle Belege der Reise in der Reihenfolge ihrer Anlage: Angebot, Auftragsbestätigung, Anzahlung, Rechnung. Der aktuelle Beleg ist hervorgehoben, ein stornierter durchgestrichen. Ein Klick öffnet den Beleg.
 - Darunter steht der **nächste Schritt**: bei einem Entwurf „Kunden wählen, Positionen prüfen und den Beleg festschreiben“, bei einem festgeschriebenen Beleg zum Beispiel „Auftragsbestätigung erstellen“ (Tasten unten im Formular).
 - Wählen Sie im ersten Beleg den **Kunden** oder ändern das Fahrtdatum, gilt das auch für die Reise. Folgebelege und der Storno bleiben in derselben Reise.
+- Ist die **Auftragsbestätigung** festgeschrieben, zeigt die Leiste die **Fahrtaufträge** der Reise (zu disponieren, disponiert, ausgegeben) mit einem Link dorthin. Weicht die Zahl der Busse in der Auftragsbestätigung von den Fahrtaufträgen ab, steht „Fahrtaufträge prüfen“. Mehr unter [Der Fahrtauftrag](/hilfe/fahrten#fahrtauftrag).
 
 Belege, die Sie von Hand anlegen („Neuer Beleg“), haben keine Reise und keine Leiste. Löschen Sie den ersten Entwurf, verschwindet auch die Reise, wenn sonst kein Beleg zu ihr gehört. Die Tour bleibt im Tour-Archiv.
 
