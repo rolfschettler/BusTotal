@@ -81,37 +81,61 @@
     <div class="form-area">
       <div class="section-title">Strecke</div>
 
-      <div class="mb-3">
-        <app-place-field label="Von" inputId="placeFrom" hint="Ort, Adresse oder Bahnhof, z. B. „88400 Biberach“ oder „Ulm Hbf“. Gesucht wird beim Berechnen."
-                         [text]="textOf(start())" [note]="usedFor(start())" [current]="coordsOf(start())" [problem]="problemOf(start())" (textChange)="setText(start().key, $event)" (pick)="choosePlace(start().key, $event)" (enter)="calculate()" />
-      </div>
-
-      @for (w of via(); track w.key; let i = $index; let first = $first; let last = $last) {
-        <div class="mb-3 d-flex align-items-start gap-2">
-          <div class="flex-grow-1">
-            <app-place-field [label]="'Über ' + (i + 1)" [inputId]="'placeVia' + w.key"
-                             [text]="textOf(w)" [note]="usedFor(w)" [current]="coordsOf(w)" [problem]="problemOf(w)" (textChange)="setText(w.key, $event)" (pick)="choosePlace(w.key, $event)" (enter)="calculate()" />
-          </div>
-          <div class="btn-group mt-4 pt-1" role="group" [attr.aria-label]="'Über ' + (i + 1) + ' verschieben oder entfernen'">
-            <button type="button" class="btn btn-outline-secondary" [disabled]="first" aria-label="Nach oben" (click)="moveVia(i, -1)"><i class="bi bi-arrow-up" aria-hidden="true"></i></button>
-            <button type="button" class="btn btn-outline-secondary" [disabled]="last" aria-label="Nach unten" (click)="moveVia(i, 1)"><i class="bi bi-arrow-down" aria-hidden="true"></i></button>
-            <button type="button" class="btn btn-outline-danger" aria-label="Entfernen" (click)="removeVia(i)"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+      <!-- Routenleiste: Links verbindet eine gestrichelte Linie die Marker A, 1, 2 … Z (wie auf der Karte), so sieht man den Fahrtverlauf
+           auf einen Blick. Von und Nach sind größer und fett hervorgehoben, die Zwischenhalte kleiner. -->
+      <div class="route-rail">
+        <div class="rail-row rail-start">
+          <div class="rail-col"><span class="rail-marker rail-marker-end" aria-hidden="true">A</span></div>
+          <div class="rail-field">
+            <app-place-field label="Von" inputId="placeFrom" [emphasis]="true" hint="Ort, Adresse oder Bahnhof, z. B. „88400 Biberach“ oder „Ulm Hbf“. Gesucht wird beim Berechnen."
+                             [text]="textOf(start())" [note]="usedFor(start())" [current]="coordsOf(start())" [problem]="problemOf(start())" (textChange)="setText(start().key, $event)" (pick)="choosePlace(start().key, $event)" (enter)="calculate()" />
           </div>
         </div>
-      }
 
-      <div class="mb-3 d-flex flex-wrap gap-2">
-        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="addVia()"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Zwischenhalt (über)</button>
-        <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="!textOf(start()).trim() && !textOf(end()).trim()" (click)="swap()" title="Von und Nach vertauschen"><i class="bi bi-arrow-down-up me-1" aria-hidden="true"></i>Tauschen</button>
+        @for (w of via(); track w.key; let i = $index; let first = $first; let last = $last) {
+          <div class="rail-row">
+            <div class="rail-col"><span class="rail-marker rail-marker-via" aria-hidden="true">{{ i + 1 }}</span></div>
+            <div class="rail-field d-flex align-items-start gap-2">
+              <div class="flex-grow-1">
+                <app-place-field [label]="'Über ' + (i + 1)" [inputId]="'placeVia' + w.key"
+                                 [text]="textOf(w)" [note]="usedFor(w)" [current]="coordsOf(w)" [problem]="problemOf(w)" (textChange)="setText(w.key, $event)" (pick)="choosePlace(w.key, $event)" (enter)="calculate()" />
+              </div>
+              <div class="btn-group mt-4 pt-1" role="group" [attr.aria-label]="'Über ' + (i + 1) + ' verschieben oder entfernen'">
+                <button type="button" class="btn btn-outline-secondary" [disabled]="first" aria-label="Nach oben" (click)="moveVia(i, -1)"><i class="bi bi-arrow-up" aria-hidden="true"></i></button>
+                <button type="button" class="btn btn-outline-secondary" [disabled]="last" aria-label="Nach unten" (click)="moveVia(i, 1)"><i class="bi bi-arrow-down" aria-hidden="true"></i></button>
+                <button type="button" class="btn btn-outline-danger" aria-label="Entfernen" (click)="removeVia(i)"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+              </div>
+            </div>
+          </div>
+        }
+
+        <div class="rail-row rail-actions">
+          <div class="rail-col"></div>
+          <div class="rail-field d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="addVia()"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Zwischenhalt (über)</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" [disabled]="!textOf(start()).trim() && !textOf(end()).trim()" (click)="swap()" title="Von und Nach vertauschen"><i class="bi bi-arrow-down-up me-1" aria-hidden="true"></i>Tauschen</button>
+          </div>
+        </div>
+
+        <div class="rail-row rail-end">
+          <div class="rail-col"><span class="rail-marker rail-marker-end" aria-hidden="true">Z</span></div>
+          <div class="rail-field">
+            <app-place-field label="Nach" inputId="placeTo" [emphasis]="true" [text]="textOf(end())" [note]="usedFor(end())" [current]="coordsOf(end())" [problem]="problemOf(end())" (textChange)="setText(end().key, $event)" (pick)="choosePlace(end().key, $event)" (enter)="calculate()" />
+          </div>
+        </div>
       </div>
 
-      <div class="mb-2">
-        <app-place-field label="Nach" inputId="placeTo" [text]="textOf(end())" [note]="usedFor(end())" [current]="coordsOf(end())" [problem]="problemOf(end())" (textChange)="setText(end().key, $event)" (pick)="choosePlace(end().key, $event)" (enter)="calculate()" />
-      </div>
+      <!-- Abschnitt für den Ablauf der Fahrt: abgesetzt von den Ortsfeldern darüber, beide Optionen gleich gewichtet als Kasten -->
+      <div class="section-title mt-4 pt-3 border-top">Rückfahrt und Reihenfolge</div>
 
-      <div class="form-check mb-3">
-        <input id="roundTrip" type="checkbox" class="form-check-input" [ngModel]="roundTrip()" (ngModelChange)="roundTrip.set($event); changed()" />
-        <label class="form-check-label" for="roundTrip">Rückfahrt zum Start (Von)</label>
+      <div class="mb-2 px-3 py-2 rounded border bg-white" [class.border-primary]="roundTrip()">
+        <div class="form-check mb-0">
+          <input id="roundTrip" type="checkbox" class="form-check-input" [ngModel]="roundTrip()" (ngModelChange)="roundTrip.set($event); changed()" />
+          <label class="form-check-label fw-semibold" for="roundTrip"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Rückfahrt zum Start (Von)</label>
+        </div>
+        <div class="form-text mt-1">
+          Die Tour fährt am Ende zum Start zurück. Ist ein Betriebshof angegeben, geht es von dort anschließend weiter zum Betriebshof.
+        </div>
       </div>
 
       <!-- Optimieren (Rundreiseproblem): immer sichtbar, damit man die Funktion kennt; wählbar ab zwei Zwischenhalten -->
@@ -212,8 +236,11 @@
           }
           @if (depotChoice() !== '') {
             <div class="form-check mt-2">
-              <input id="returnToDepot" type="checkbox" class="form-check-input" [ngModel]="returnToDepot()" (ngModelChange)="returnToDepot.set($event); changed()" />
+              <input id="returnToDepot" type="checkbox" class="form-check-input" [disabled]="roundTrip()" [ngModel]="returnsToDepot()" (ngModelChange)="returnToDepot.set($event); changed()" />
               <label class="form-check-label" for="returnToDepot">Rückfahrt zum Betriebshof</label>
+              @if (roundTrip()) {
+                <div class="form-text">Mit „Rückfahrt zum Start (Von)“ fährt der Bus danach weiter zum Betriebshof.</div>
+              }
             </div>
           }
         </div>
@@ -367,7 +394,7 @@
     @if (!stale() && calculatedHere()) {
       @if (!optimize() && viaCount() >= 2) {
         <div class="alert alert-info py-2 small d-flex flex-wrap align-items-center gap-2" role="status">
-          <span class="me-auto"><i class="bi bi-lightbulb me-1" aria-hidden="true"></i><strong>Tipp:</strong> Sie haben {{ viaCount() }} Zwischenhalte in einer festen Reihenfolge eingegeben. Mit „Reihenfolge der Zwischenhalte optimieren“ wählt die Software die Reihenfolge mit der kürzesten Fahrzeit.</span>
+          <span class="me-auto"><i class="bi bi-lightbulb me-1" aria-hidden="true"></i><strong>Tipp:</strong> Sollte die Route nicht Ihren Vorstellungen entsprechen, versuchen Sie eine Optimierung der Zwischenstopps.</span>
           <button type="button" class="btn btn-sm btn-primary" [disabled]="calculating()" (click)="optimizeNow()"><i class="bi bi-magic me-1" aria-hidden="true"></i>Optimieren und neu berechnen</button>
         </div>
       } @else if (optimize() && viaCount() >= 2) {

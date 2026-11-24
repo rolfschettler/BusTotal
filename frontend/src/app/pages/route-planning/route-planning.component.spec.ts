@@ -151,6 +151,20 @@ describe('Streckenplanung: Halt einer geladenen Tour ändern', () => {
     expect(c.needsCalc()).toBe(true);
   });
 
+  it('Rückfahrt zum Start mit Betriebshof: Der Bus fährt von dort weiter zum Betriebshof', () => {
+    const c = planner();
+    c.depot.set({ label: 'Betriebshof', lat: 48.2, lon: 9.9 });
+
+    expect(c.returnsToDepot()).toBe(false);   // Tour endet am letzten Halt, kein Rückweg gewählt
+
+    c.roundTrip.set(true);
+    expect(c.returnsToDepot()).toBe(true);    // Nach → Von → Betriebshof
+    expect(c.returnToDepot()).toBe(false);    // die eigene Wahl bleibt unberührt
+
+    c.depot.set(null);
+    expect(c.returnsToDepot()).toBe(false);   // ohne Betriebshof gibt es keinen Rückweg dorthin
+  });
+
   it('Neu beginnen fragt nur bei Ungespeichertem nach', () => {
     const c = planner();
     expect(c.unsavedInput()).toBe(false);   // gerade geladen, nichts verändert

@@ -48,6 +48,32 @@ import {
   selector: 'app-route-planning',
   imports: [FormsModule, NgbDropdown, NgbDropdownToggle, NgbDropdownMenu, NgbDropdownItem, DatePipe, DecimalPipe, RouterLink, HelpLinkComponent, HighlightComponent, MapComponent, PlaceFieldComponent],
   templateUrl: './route-planning.component.html',
+  styles: `
+    /* Routenleiste: Marker A, 1, 2 … Z auf einer gestrichelten Linie neben den Ortsfeldern (wie die Pins auf der Karte) */
+    .route-rail { --rail-col: 2.5rem; --rail-line-top: 3.55rem; }
+    .rail-row { position: relative; display: flex; gap: 0.75rem; padding-bottom: 0.75rem; }
+    .rail-row::before {
+      content: ''; position: absolute; top: 0; bottom: 0; left: calc(var(--rail-col) / 2 - 1px); width: 2px;
+      background: repeating-linear-gradient(to bottom, var(--brand, #1f4e8c) 0 6px, transparent 6px 11px); opacity: 0.55;
+    }
+    .rail-start::before { top: var(--rail-line-top); }
+    .rail-end { padding-bottom: 0; }
+    .rail-end::before { bottom: auto; height: var(--rail-line-top); }
+    .rail-col { position: relative; z-index: 1; flex: 0 0 var(--rail-col); display: flex; justify-content: center; }
+    .rail-field { flex: 1 1 auto; min-width: 0; }
+    .rail-marker {
+      display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; line-height: 1;
+      background: var(--brand, #1f4e8c); color: var(--brand-on, #fff); border: 2px solid var(--brand, #1f4e8c);
+    }
+    /* Von und Nach: groß, mit Ring */
+    .rail-marker-end {
+      width: 2.5rem; height: 2.5rem; font-size: 1.05rem; margin-top: 2.3rem;
+      box-shadow: 0 0 0 0.3rem color-mix(in srgb, var(--brand, #1f4e8c) 18%, transparent);
+    }
+    /* Zwischenhalte: kleiner, hell mit farbigem Rand */
+    .rail-marker-via { width: 1.75rem; height: 1.75rem; font-size: 0.85rem; margin-top: 2.3rem; background: #fff; color: var(--brand, #1f4e8c); }
+    @media (max-width: 575.98px) { .route-rail { --rail-col: 2rem; } .rail-marker-end { width: 2rem; height: 2rem; font-size: 0.9rem; } }
+  `,
 })
 export class RoutePlanningComponent implements OnInit {
   private api = inject(RouteService);
@@ -79,6 +105,12 @@ export class RoutePlanningComponent implements OnInit {
   /** Der dazu gefundene Ort (null: noch nicht gesucht oder Text geändert) */
   depot = signal<Place | null>(null);
   returnToDepot = signal(false);
+  /**
+   * Fährt der Bus am Ende zum Betriebshof zurück? Ja, wenn „Rückfahrt zum Betriebshof“ gewählt ist, und auch immer dann, wenn die Tour
+   * mit „Rückfahrt zum Start (Von)“ zum Start zurückkehrt und ein Betriebshof angegeben ist: Dann geht es von dort weiter zum
+   * Betriebshof (Nach → Von → Betriebshof). Gespeichert wird nur die eigene Wahl (returnToDepot), das hier ergibt sich daraus.
+   */
+  returnsToDepot = computed(() => (this.returnToDepot() || this.roundTrip()) && (!!this.depot() || this.depotPending()));
 
   /** Fahrzeugbedarf der Tour: ein Typ und eine Anzahl. Das konkrete Fahrzeug wählt später der Disponent. */
   vehicleType = signal('');
@@ -490,7 +522,7 @@ export class RoutePlanningComponent implements OnInit {
    * eben berechnete Strecke): Eine neue Anfrage lieferte dasselbe und kostet Kontingent beim Routing-Dienst.
    */
   needsCalc = computed(() => this.canCalc() && (this.stale() || !this.result()));
-  canCalc = computed(() => canCalculate(this.stops().length + this.pending().length, !!this.depot() || this.depotPending(), this.returnToDepot()) && !this.calculating());
+  canCalc = computed(() => canCalculate(this.stops().length + this.pending().length, !!this.depot() || this.depotPending(), this.returnsToDepot()) && !this.calculating());
   selectedVehicle = computed(() => this.vehicles().find((v) => v.id === this.vehicleId()) ?? null);
 
   markers = computed<MapMarker[]>(() => {
@@ -811,7 +843,7 @@ export class RoutePlanningComponent implements OnInit {
     const request = toRequest({
       stops: this.stops(),
       depot: this.depot(),
-      returnToDepot: this.returnToDepot(),
+      returnToDepot: this.returnsToDepot(),
       vehicleId: this.vehicleId(),
       startAt: this.startAt(),
       extendedDays: this.extendedDays(),

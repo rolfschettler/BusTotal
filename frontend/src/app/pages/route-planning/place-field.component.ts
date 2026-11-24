@@ -3,6 +3,7 @@ import { Component, computed, inject, input, output, signal } from '@angular/cor
 import { FormsModule } from '@angular/forms';
 import { httpErrorText } from '../../core/http-error';
 import { GeoHit, RouteService } from '../../core/route.service';
+import { HelpLinkComponent } from '../../help/help-link.component';
 
 /**
  * Ein Ortsfeld: einfacher Text, keine Vorschläge beim Tippen. Gesucht wird erst beim Berechnen (eine Anfrage je
@@ -17,10 +18,10 @@ import { GeoHit, RouteService } from '../../core/route.service';
  */
 @Component({
   selector: 'app-place-field',
-  imports: [FormsModule],
+  imports: [FormsModule, HelpLinkComponent],
   template: `
-    <label class="form-label" [for]="inputId()">{{ label() }}</label>
-    <input [id]="inputId()" type="text" class="form-control" autocomplete="off" [placeholder]="placeholder()" [class.is-invalid]="!!problem()"
+    <label class="form-label" [class.fw-semibold]="emphasis()" [for]="inputId()">{{ label() }}</label>
+    <input [id]="inputId()" type="text" class="form-control" [class.form-control-lg]="emphasis()" autocomplete="off" [placeholder]="placeholder()" [class.is-invalid]="!!problem()"
            [ngModel]="text()" (ngModelChange)="onText($event)" (keydown.enter)="enter.emit()" />
     @if (problem()) {
       <div class="invalid-feedback d-block"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>{{ problem() }}</div>
@@ -49,6 +50,7 @@ import { GeoHit, RouteService } from '../../core/route.service';
         <button type="button" class="btn btn-link btn-sm p-0 align-baseline" [attr.aria-expanded]="open()" (click)="toggle()">
           {{ open() ? 'Auswahl schließen' : current() ? 'Anderen Ort wählen' : 'Ort aus Trefferliste wählen' }}
         </button>
+        <app-help-link topic="strecken" anchor="ort-waehlen" label="Ort wählen" />
       </div>
     }
     @if (open()) {
@@ -85,6 +87,8 @@ export class PlaceFieldComponent {
   label = input.required<string>();
   inputId = input.required<string>();
   hint = input('');
+  /** Von und Nach: Beschriftung fett, Feld größer (Start und Ziel der Fahrt sollen auffallen). */
+  emphasis = input(false);
   /** Welcher Ort für den Text verwendet wird (steht nach dem Berechnen unter dem Feld) */
   note = input('');
   placeholder = input('Ort oder Adresse');
