@@ -30,8 +30,13 @@ Weitere Werte (optional): `ORS_BASE_URL` (eigene Instanz), `ORS_TIMEOUT`, `ROUTI
 
 - **Keine Vorschläge beim Tippen** (kein Autocomplete). Die Ortsfelder sind reiner Text; gesucht wird nur beim Berechnen, je geändertem Feld
   eine Anfrage (`RouteService.locate`, `limit=1`), wie im Projekt RATIOserver.
-- **Zwischenspeicher im Browser:** Text → gefundener Ort in `localStorage` (`bustotal.planung.orte`, höchstens 500 Einträge). Derselbe Text
-  wird nie zweimal gesucht. „Nichts gefunden“ wird nicht gemerkt.
+- **Zwischenspeicher im Browser:** Text → gefundener Ort in `localStorage` (`bustotal.planung.orte.v2`, höchstens 500 Einträge; die Version
+  im Namen verwirft Einträge früherer Programmstände). Derselbe Text wird nie zweimal gesucht. „Nichts gefunden“ wird nicht gemerkt.
+- **Grundsatz: Anfragen sparen, nie doppelt ohne Notwendigkeit** (Entscheidung des Nutzers 2026-11-24):
+  „Strecke berechnen“ ist gesperrt, solange das Ergebnis aktuell ist (`needsCalc`, auch Enter im Feld); die Trefferliste „Ort wählen“ fragt
+  dieselbe Suche nur einmal an; **Optimieren** (Fahrzeitmatrix) läuft nie von selbst, nur auf Klick, und der Tipp dazu erscheint nur nach
+  einer eigenen Berechnung, nicht beim Laden einer Tour. Eine Berechnung kostet höchstens eine Routenanfrage (alle Punkte in einem Aufruf),
+  mit Optimieren eine Matrixanfrage dazu. **Ratetreffer** der Ortssuche (Sicherheit unter 0,5) filtert der Server weg.
 - **Zwischenspeicher auf dem Server** für alle Firmen: Strecken und Fahrzeitmatrix 12 Stunden, Ortssuche 7 Tage. Der Schlüssel der Ortssuche
   ist normalisiert (Kleinschreibung, mehrfache Leerzeichen, Satzzeichen am Ende).
 - **Sperre nach „Quota exceeded“:** Merker `ors:quota:<bereich>` (geocode, directions, matrix) bis Mitternacht UTC. Solange gehen in diesem

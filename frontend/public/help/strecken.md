@@ -4,9 +4,9 @@ Hier berechnen Sie eine Tour: **Strecke**, **Fahrzeit** und den **zeitlichen Abl
 
 ## Eine Tour berechnen {#streckenplanung}
 
-1. **Von:** Schreiben Sie den Startort, zum Beispiel „88400 Biberach“ oder „Ulm Hbf“. Ihr Text bleibt so stehen, wie Sie ihn eingegeben haben. Gesucht wird erst beim Berechnen. Danach steht unter dem Feld, welcher Ort verwendet wurde („Verwendet: …“). Passt er nicht, schreiben Sie den Ort genauer und berechnen neu.
+1. **Von:** Schreiben Sie den Startort, zum Beispiel „88400 Biberach“ oder „Ulm Hbf“. Ihr Text bleibt so stehen, wie Sie ihn eingegeben haben, und er ist auch der **Name des Halts** im Tour-Archiv, im Angebot und im PDF. Gesucht wird erst beim Berechnen, vom Ortsdienst kommt nur die Lage. Nennt der Ortsdienst den gefundenen Ort anders als Sie, steht das zur Kontrolle unter dem Feld („Verwendet: …“). Passt der Ort nicht, schreiben Sie ihn genauer und berechnen neu. Liegt der Punkt auf der Karte trotzdem falsch (bei einem Dorf nimmt die Suche manchmal den Mittelpunkt der Gemeinde, der im Wald liegen kann), klicken Sie unter dem Feld auf **Anderen Ort wählen**. Die Software zeigt dann die Treffer des Ortsdienstes, zum Beispiel „Bahnhof“ oder „Strandbad“ des Ortes, und Sie wählen den richtigen. Der Name im Feld bleibt Ihr Text, nur die Lage wird die des gewählten Treffers. Die Wahl gilt künftig für denselben Text.
 2. **Nach:** Genauso das Ziel.
-3. **Über** (freiwillig): Mit **Zwischenhalt (über)** kommt ein weiteres Ortsfeld dazu, so oft Sie wollen. Mit den Pfeilen ändern Sie die Reihenfolge, mit dem Kreuz entfernen Sie einen Halt. **Tauschen** vertauscht Von und Nach. Mit **Rückfahrt zum Start (Von)** fährt die Tour am Ende zum Start zurück.
+3. **Über** (freiwillig): Mit **Zwischenhalt (über)** kommt ein weiteres Ortsfeld dazu, so oft Sie wollen. Mit den Pfeilen ändern Sie die Reihenfolge, mit dem Kreuz entfernen Sie einen Halt. **Tauschen** vertauscht Von und Nach. Mit **Rückfahrt zum Start (Von)** fährt die Tour am Ende zum Start zurück. Ab **zwei Zwischenhalten** können Sie **Reihenfolge der Zwischenhalte optimieren** anhaken: Die Software ordnet die Über-Orte so, dass die Fahrzeit am kürzesten ist (Von und Nach bleiben stehen), und zeigt die neue Reihenfolge in den Feldern. Das Kästchen ist immer zu sehen, bei weniger als zwei Zwischenhalten ausgegraut. Haben Sie zwei oder mehr Zwischenhalte und nicht optimiert, zeigt die Seite nach **Ihrer eigenen Berechnung** (nicht bei einer geladenen Tour) unter dem Ergebnis einen **Tipp** mit der Taste **Optimieren und neu berechnen**. Danach steht dort, ob die Reihenfolge geändert wurde oder schon die kürzeste war.
 4. **Fahrzeugtyp und Anzahl** (freiwillig): Sie planen mit „Doppeldecker“ oder „Kleinbus“ und der Zahl der Busse. Das konkrete Fahrzeug wählt der Disponent erst kurz vor der Fahrt. Der Typ bestimmt die Preise im Angebot.
 5. **Bestimmtes Fahrzeug** (freiwillig): Bei der Route werden Höhe, Breite, Länge und Gewicht des Fahrzeugs beachtet (zum Beispiel niedrige Brücken). Wählen Sie eines, wird sein Typ als Fahrzeugtyp übernommen. Fehlen beim Fahrzeug Maße oder Gewicht, weist die Seite darauf hin; die Route wird dann ohne diese Grenzen berechnet. Mit Fahrzeug erscheinen außerdem die **Fahrzeugkosten** (Kilometer mal Kostensatz des Fahrzeugs).
 6. **Abfahrt** (freiwillig): Mit Datum und Uhrzeit zeigt der Zeitplan echte Zeitpunkte, ohne Abfahrt den Versatz seit Beginn („+4:30“).
@@ -14,7 +14,7 @@ Hier berechnen Sie eine Tour: **Strecke**, **Fahrzeit** und den **zeitlichen Abl
 
 Ein Ort, der schon einmal gesucht wurde, wird nicht erneut gesucht: Der Browser merkt sich die Orte zu Ihren Eingaben. Das schont das Tageskontingent des Routing-Dienstes. Groß- und Kleinschreibung, doppelte Leerzeichen und ein Komma oder Punkt am Ende spielen dabei keine Rolle.
 
-Die Karte zeigt die Orte (A = Von, Zahlen = Über, Z = Nach) und die berechnete Strecke. Ändern Sie danach etwas an der Eingabe, wird das Ergebnis blass und mit einem Hinweis als **veraltet** gekennzeichnet, bis Sie neu berechnen.
+Die Karte zeigt die Orte (A = Von, Zahlen = Über, Z = Nach) und die berechnete Strecke. Ändern Sie danach etwas an der Eingabe (zum Beispiel einen Halt), werden Zahlen und Zeitplan blass und mit einem Hinweis als **veraltet** gekennzeichnet. Sie berechnen mit **Strecke berechnen** neu. Klicken Sie stattdessen gleich auf **Änderungen speichern** oder **Angebot erstellen**, fragt ein Dialog, ob die Strecke zuerst neu berechnet werden soll. Ohne Ihr Ja wird nie neu berechnet und nie ein veraltetes Ergebnis gespeichert.
 
 Betriebshof, Aufenthalte und lange Tage stehen unter **Weitere Angaben (freiwillig)** und sind zunächst eingeklappt.
 
@@ -51,7 +51,7 @@ Eine berechnete Tour können Sie im **Tour-Archiv** ablegen und für weitere Ang
 
 **Laden:** Oben rechts öffnet **Aus Archiv laden** die Liste. Suchen Sie nach dem Namen oder nach einem Ort (am Wortanfang, die Treffer sind markiert) und klicken Sie **Laden**. Die Planung füllt sich mit allen Angaben und zeigt das gespeicherte Ergebnis sofort, **ohne neue Berechnung**. Die Abfahrt ist danach leer, weil eine Tour keinen Termin hat. Tragen Sie die neue **Abfahrt** ein und berechnen Sie neu, wenn Sie Uhrzeiten und die Zuschläge für Wochenende und Feiertag brauchen.
 
-**Ändern:** Haben Sie eine geladene Tour verändert, speichert **Änderungen speichern** sie unter demselben Namen, **Als neue Tour speichern** legt eine zweite an.
+**Ändern:** Haben Sie eine geladene Tour verändert, speichert **Änderungen speichern** sie unter demselben Namen. Alle Tasten zur Strecke stehen in einer Leiste unten im Eingabebereich: links **Tour speichern** (bzw. **Änderungen speichern**) und **Strecke berechnen**, rechts **Neu beginnen** (leert die Planung auf der Seite, gespeicherte Touren bleiben erhalten; ist noch etwas nicht gespeichert, fragt die Software vorher nach). Bei einer geladenen Tour öffnet der kleine Pfeil neben dem Speichern-Knopf **Unter neuem Namen speichern**. Das lässt die geladene Tour unverändert und legt die Strecke als zweite Tour an (heißt sie noch gleich, bekommt sie den Zusatz „(Kopie)“). Ändern Sie Von oder Nach, schlägt die Software unter dem Namen einen neuen Namen vor, den Sie mit **Als Namen übernehmen** annehmen können. Ein selbst gewählter Name wird nie überschrieben. **Verlassen Sie die Seite** (anderer Menüpunkt, Zurück, Neu laden) mit einer Eingabe, die noch nicht im Archiv steht, fragt die Software vorher nach, damit nichts verloren geht. Fehlermeldungen und die Meldung „Tour gespeichert“ erscheinen direkt über den Tasten, die Seite scrollt von selbst dorthin.
 
 **Danach:** Mit **Angebot erstellen** geht es direkt weiter. Die Orte der Halte liegen in der zentralen Ortstabelle und werden nie erneut gesucht.
 
@@ -60,7 +60,7 @@ Eine berechnete Tour können Sie im **Tour-Archiv** ablegen und für weitere Ang
 Alle gespeicherten Touren sehen Sie in der Seitenleiste unter **Fahrten und Abrechnung › Tour-Archiv**. Die Liste zeigt je Tour den Namen, die Strecke (Von → Nach, Zahl der Zwischenhalte, Rückfahrt), Kilometer, Lenkzeit und Tage, Fahrzeuge (Anzahl und Typ), die Fahrtart und in wie vielen [Reisen](/hilfe/belege#reisen) die Tour verwendet wird. Die neueste Änderung steht oben.
 
 - **Suchen:** Das Suchfeld trifft den Namen am Wortanfang und die Orte am Anfang des Ortsnamens, die Treffer sind markiert (zum Beispiel „Wien“ oder „Salz“).
-- **Öffnen:** Ein Klick auf den Namen oder das Symbol links öffnet die Tour in der Streckenplanung, mit allen Angaben und dem gespeicherten Ergebnis. Dort ändern Sie sie und speichern mit **Änderungen speichern** oder legen mit **Als neue Tour speichern** eine zweite an.
+- **Öffnen:** Ein Klick auf den Namen oder das Symbol links öffnet die Tour in der Streckenplanung, mit allen Angaben und dem gespeicherten Ergebnis. Dort ändern Sie sie und speichern mit **Änderungen speichern** oder legen mit **Unter neuem Namen speichern** eine zweite an.
 - **Löschen** (Administrator und Disponent): Das Papierkorb-Symbol entfernt die Tour nach einer Rückfrage. Eine Tour, die in einer Reise verwendet wird, trägt stattdessen ein Schloss und lässt sich nicht löschen. Belege, die eine Tour schon enthalten, bleiben unverändert, weil sie ihre Fahrtbeschreibung selbst tragen.
 - **Neue Tour:** „Neue Tour planen“ führt in die Streckenplanung. Touren entstehen dort, nicht in der Liste.
 
@@ -79,7 +79,7 @@ Unter dem Ergebnis legt **Angebot erstellen** aus der berechneten Tour ein Angeb
 - **Nur Zahlen:** Zum Server gehen nur Kilometer, Lenkzeit, Zahl der Tage, Start- und Endzeit, das Bundesland, Fahrzeugtyp und Anzahl (und ein gewähltes Fahrzeug, daraus nimmt der Server sonst den Typ), nicht die Route und nicht die Orte. Der Betreff nennt Start und Ziel der Fahrt.
 - **Maut** und Besonderheiten fehlen: Fügen Sie sie im Angebot als eigene Position hinzu.
 - Alle Positionen lassen sich im Entwurf ändern. Das Ergebnis ist ein Vorschlag, kein verbindlicher Preis.
-- Wurde die Eingabe nach der Berechnung geändert, ist der Knopf gesperrt: Bitte zuerst neu berechnen.
+- Wurde die Eingabe nach der Berechnung geändert, fragt **Angebot erstellen**, ob die Strecke zuerst neu berechnet werden soll (der Preis käme sonst von der alten Strecke). Antworten Sie mit „Neu berechnen und Angebot erstellen“, rechnet die Software neu und legt das Angebot an. Mit „Abbrechen“ passiert nichts. Fahrtart, Zuschlag und Feiertage lassen sich auch nach einer Änderung weiter einstellen.
 
 ## Wenn etwas nicht klappt {#fehler}
 

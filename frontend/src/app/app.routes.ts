@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard, passwordChangeGuard, roleGuard } from './core/auth.guard';
+import { planningLeaveGuard } from './pages/route-planning/leave.guard';
 
 // data.help = "thema#sprungmarke": Das Hilfethema der Seite. Es steuert das Fragezeichen in der
 // Kopfleiste. Die Hilfetexte liegen unter public/help/<thema>.md.
@@ -144,6 +145,8 @@ export const routes: Routes = [
         path: 'streckenplanung',
         // Ruft einen externen Routing-Dienst auf (Kontingent): nur Administrator und Disponent (der Server prüft zusätzlich).
         canActivate: [roleGuard('admin', 'disponent')],
+        // Ungespeicherte Eingaben gehen beim Verlassen verloren: vorher nachfragen
+        canDeactivate: [planningLeaveGuard],
         data: { help: 'strecken#streckenplanung' },
         loadComponent: () => import('./pages/route-planning/route-planning.component').then((m) => m.RoutePlanningComponent),
       },

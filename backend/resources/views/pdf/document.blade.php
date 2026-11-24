@@ -22,6 +22,12 @@
     $notes = $lines->filter(fn ($l) => filled($l->tax_note))->values();
     $deductions = $doc->deductions ?? [];
     $tourSections = $doc->tour_snapshot['sections'] ?? [];
+    // Was nach den Summen kommt, bleibt mit ihnen zusammen und steht nie allein auf einer Seite (siehe Stilblatt)
+    $hasTour = $tourSections !== [];
+    $hasNotes = $notes->isNotEmpty();
+    $hasPay = $type === DocumentType::Gutschrift || ($isInvoice && $doc->due_date);
+    $hasClosing = filled($doc->footer_text);
+    $hasClosingParts = $hasNotes || $hasPay || $hasClosing;
     $km = fn ($v) => number_format((float) $v, 1, ',', '.').' km';
     $dur = function ($s) { $m = (int) round($s / 60); return intdiv($m, 60) > 0 ? intdiv($m, 60).' Std.'.($m % 60 ? ' '.($m % 60).' Min.' : '') : $m.' Min.'; };
 @endphp
@@ -55,18 +61,17 @@
     .items th { background: {{ $brand }}; color: {{ $brandOn }}; text-align: left; padding: 1.6mm 1.5mm; font-size: 7.5pt; }
     .items td { padding: 1.6mm 1.5mm; border-bottom: 0.3pt solid #bbb; vertical-align: top; }
     .items tr { page-break-inside: avoid; }
+    .items tr.keep-next { page-break-after: avoid; }
+    .items tr.sum td { padding: 1mm 1.5mm; border-bottom: none; }
+    .items tr.sum.first td { padding-top: 3mm; }
+    .items tr.sum.total td { border-top: 0.6pt solid #111; font-weight: bold; font-size: 10pt; }
+    .items tr.tail td { border-bottom: none; padding: 5mm 1.5mm 0 1.5mm; }
+    .items tr.tail.tour td { padding-top: 2.5mm; }
+    .items tr.tail.tour:first-of-type td { padding-top: 5mm; }
 
-    .sums { width: 100%; margin-top: 3mm; page-break-inside: avoid; }
-    .sums td { padding: 1mm 1.5mm; }
-    .sums .total td { border-top: 0.6pt solid #111; font-weight: bold; font-size: 10pt; }
-
-    .block { margin-top: 5mm; page-break-inside: avoid; }
-    .flow { margin-top: 5mm; }
     footer { position: fixed; bottom: -20mm; left: 0; right: 0; font-size: 6.5pt; color: #555; border-top: 0.3pt solid #999; padding-top: 1.5mm; }
     footer table { width: 100%; }
     footer td { vertical-align: top; padding-right: 3mm; }
-    .pagenum:before { content: counter(page); }
-    .pages:before { content: counter(pages); }
 </style>
 </head>
 <body>
@@ -100,7 +105,7 @@
     @if (filled($seller['footer_text'] ?? null))
         <div style="margin-top: 1mm">{!! nl2br(e($seller['footer_text'])) !!}</div>
     @endif
-    <div class="right">Seite <span class="pagenum"></span> von <span class="pages"></span></div>
+    <div class="right">&nbsp;</div>{{-- Platz für „Seite x von y“ (wird nach dem Rendern eingesetzt, DocumentPdf::addPageNumbers) --}}
 </footer>
 
 @if ($isDraft)
@@ -169,7 +174,7 @@
     </thead>
     <tbody>
         @foreach ($lines as $line)
-            <tr>
+            <tr @class(['keep-next' => $loop->last])>
                 <td>{{ $line->position }}</td>
                 <td>
                     <b>{{ $line->title }}</b>
@@ -181,39 +186,34 @@
                 <td class="right">{{ $money($line->net_amount) }}</td>
             </tr>
         @endforeach
-    </tbody>
-</table>
-
-<table class="sums">
-    <tr><td></td><td class="right" style="width: 60mm">Nettobetrag</td><td class="right" style="width: 28mm">{{ $money($doc->net_total) }}</td></tr>
-    @foreach (($doc->tax_summary ?? []) as $row)
-        <tr><td></td><td class="right muted">zzgl. {{ $pct($row['rate']) }} % MwSt. auf {{ $money($row['net']) }}</td><td class="right">{{ $money($row['tax']) }}</td></tr>
-    @endforeach
-    <tr @class(['total' => empty($deductions)])>
-        <td></td>
-        <td class="right">{{ empty($deductions) ? 'Gesamtbetrag' : 'Gesamtbetrag brutto' }}</td>
-        <td class="right">{{ $money($doc->gross_total) }}</td>
-    </tr>
-    @if (! empty($deductions))
-        @foreach ($deductions as $d)
-            <tr>
-                <td></td>
-                <td class="right muted">abzüglich Anzahlung {{ $d['number'] }}@if (! empty($d['document_date'])) vom {{ $date($d['document_date']) }}@endif
-                    (netto {{ $money($d['net']) }}, MwSt. {{ $money($d['tax']) }})</td>
-                <td class="right">{{ $money(-1 * (float) $d['gross']) }}</td>
-            </tr>
+        {{-- Summen: Zeilen derselben Tabelle, damit sie mit der letzten Position zusammenbleiben --}}
+        <tr class="sum keep-next first"><td colspan="2"></td><td colspan="3" class="right">Nettobetrag</td><td class="right">{{ $money($doc->net_total) }}</td></tr>
+        @foreach (($doc->tax_summary ?? []) as $row)
+            <tr class="sum keep-next"><td colspan="2"></td><td colspan="3" class="right muted">zzgl. {{ $pct($row['rate']) }} % MwSt. auf {{ $money($row['net']) }}</td><td class="right">{{ $money($row['tax']) }}</td></tr>
         @endforeach
-        <tr class="total"><td></td><td class="right">Zu zahlen</td><td class="right">{{ $money($doc->payable_total) }}</td></tr>
-    @endif
-</table>
+        <tr @class(['sum', 'total' => empty($deductions), 'keep-next' => ! empty($deductions) || (! $hasTour && $hasClosingParts)])>
+            <td colspan="2"></td>
+            <td colspan="3" class="right">{{ empty($deductions) ? 'Gesamtbetrag' : 'Gesamtbetrag brutto' }}</td>
+            <td class="right">{{ $money($doc->gross_total) }}</td>
+        </tr>
+        @if (! empty($deductions))
+            @foreach ($deductions as $d)
+                <tr class="sum keep-next">
+                    <td colspan="2"></td>
+                    <td colspan="3" class="right muted">abzüglich Anzahlung {{ $d['number'] }}@if (! empty($d['document_date'])) vom {{ $date($d['document_date']) }}@endif
+                        (netto {{ $money($d['net']) }}, MwSt. {{ $money($d['tax']) }})</td>
+                    <td class="right">{{ $money(-1 * (float) $d['gross']) }}</td>
+                </tr>
+            @endforeach
+            <tr @class(['sum', 'total', 'keep-next' => ! $hasTour && $hasClosingParts])><td colspan="2"></td><td colspan="3" class="right">Zu zahlen</td><td class="right">{{ $money($doc->payable_total) }}</td></tr>
+        @endif
 
-@if ($tourSections !== [])
-    {{-- Fahrtbeschreibung: Stand beim Festschreiben, aus dem Beleg, nie aus dem Tour-Archiv --}}
-    <div class="flow">
-        <b>Fahrtbeschreibung</b>
+        {{-- Alles nach den Summen ebenfalls als Zeilen der Tabelle: Seitenumbruch-Regeln siehe Stilblatt (keep-next, nie geteilt) --}}
         @foreach ($tourSections as $sec)
             @php
                 $t = $sec['trip'] ?? null;
+                $own = $sec['own'] ?? null;
+                $ownText = $own ? $km($own['loaded_km']).' · Fahrzeit '.$dur($own['drive_s']).' · '.$own['days'].($own['days'] == 1 ? ' Tag' : ' Tage') : '';
                 $buses = collect($sec['vehicles'] ?? [])->map(fn ($v) => (($v['count'] ?? 1) > 1 ? $v['count'].' × ' : '').($v['label'] ?? 'Fahrzeug'))->implode(', ');
                 if ($t) {
                     $stopText = collect($t['stops'])->map(fn ($st) => $st['label'].(($st['dwell_minutes'] ?? 0) > 0 ? ' ('.$st['dwell_minutes'].' Min.)' : ''))->implode(' → ').(! empty($t['round_trip']) ? ' → zurück zum Start' : '');
@@ -221,44 +221,54 @@
                     $figures = $km($t['loaded_km']).' mit Fahrgästen'.$emptyText.' · Lenkzeit '.$dur($t['drive_s']).' · '.$t['days'].($t['days'] == 1 ? ' Tag' : ' Tage');
                 }
             @endphp
-            <div style="margin-top: 2.5mm">
-                <b>{{ $sec['kind_label'] }}: {{ $sec['title'] }}</b>
-                <span class="muted">{{ $buses !== '' ? ' · '.$buses : '' }}</span>
-                @if ($t)
-                    <div class="small">Halte: {{ $stopText }}</div>
-                    <div class="small muted">{{ $figures }}</div>
-                    @foreach ($t['legs'] ?? [] as $leg)
-                        <div class="small muted">{{ $leg['from'] }} → {{ $leg['to'] }}: {{ $km($leg['distance_m'] / 1000) }}, {{ $dur($leg['duration_s']) }}{{ $leg['empty'] ? ' (Leerfahrt)' : '' }}</div>
+            {{-- Fahrtbeschreibung: Stand beim Festschreiben, aus dem Beleg, nie aus dem Tour-Archiv. Die Überschrift gehört zum ersten Abschnitt. --}}
+            <tr @class(['tail', 'tour', 'keep-next' => $loop->last && $hasClosingParts])>
+                <td colspan="6">
+                    @if ($loop->first)<div style="margin-bottom: 1.5mm"><b>Fahrtbeschreibung</b></div>@endif
+                    <b>{{ $sec['kind_label'] }}: {{ $sec['title'] }}</b>
+                    <span class="muted">{{ $buses !== '' ? ' · '.$buses : '' }}</span>
+                    @if ($t)
+                        <div class="small">Halte: {{ $stopText }}</div>
+                        <div class="small muted">{{ $figures }}</div>
+                        @foreach ($t['legs'] ?? [] as $leg)
+                            <div class="small muted">{{ $leg['from'] }} → {{ $leg['to'] }}: {{ $km($leg['distance_m'] / 1000) }}, {{ $dur($leg['duration_s']) }}{{ $leg['empty'] ? ' (Leerfahrt)' : '' }}</div>
+                        @endforeach
+                    @elseif ($own)
+                        <div class="small muted">{{ $ownText }}</div>
+                    @endif
+                </td>
+            </tr>
+        @endforeach
+
+        @if ($hasNotes)
+            <tr @class(['tail', 'keep-next' => $hasPay || $hasClosing])>
+                <td colspan="6" class="small muted">
+                    @foreach ($notes as $i => $n)
+                        <sup>{{ $i + 1 }}</sup> Pos. {{ $n->position }}: {{ $n->tax_note }}<br>
                     @endforeach
-                @endif
-            </div>
-        @endforeach
-    </div>
-@endif
-
-@if ($notes->isNotEmpty())
-    <div class="block small muted">
-        @foreach ($notes as $i => $n)
-            <sup>{{ $i + 1 }}</sup> Pos. {{ $n->position }}: {{ $n->tax_note }}<br>
-        @endforeach
-    </div>
-@endif
-
-@if ($isInvoice && $type !== DocumentType::Gutschrift)
-    <div class="block">
-        @if ($doc->due_date)
-            Bitte überweisen Sie den Betrag {{ empty($deductions) ? '' : 'von '.$money($doc->payable_total).' ' }}bis zum <b>{{ $date($doc->due_date) }}</b>
-            @if (filled($seller['iban'] ?? null)) auf das Konto IBAN {{ $seller['iban'] }}@if (filled($seller['bic'] ?? null)), BIC {{ $seller['bic'] }}@endif @endif
-            unter Angabe der Rechnungsnummer {{ $doc->number ?? '' }}.
+                </td>
+            </tr>
         @endif
-    </div>
-@elseif ($type === DocumentType::Gutschrift)
-    <div class="block">Dieser Beleg storniert {{ $doc->source ? $doc->source->type->label().' '.$doc->source->number : 'den Ursprungsbeleg' }} und gleicht ihn aus.</div>
-@endif
 
-@if (filled($doc->footer_text))
-    <div class="block">{!! nl2br(e($doc->footer_text)) !!}</div>
-@endif
+        @if ($hasPay)
+            <tr @class(['tail', 'keep-next' => $hasClosing])>
+                <td colspan="6">
+                    @if ($type === DocumentType::Gutschrift)
+                        Dieser Beleg storniert {{ $doc->source ? $doc->source->type->label().' '.$doc->source->number : 'den Ursprungsbeleg' }} und gleicht ihn aus.
+                    @else
+                        Bitte überweisen Sie den Betrag {{ empty($deductions) ? '' : 'von '.$money($doc->payable_total).' ' }}bis zum <b>{{ $date($doc->due_date) }}</b>
+                        @if (filled($seller['iban'] ?? null)) auf das Konto IBAN {{ $seller['iban'] }}@if (filled($seller['bic'] ?? null)), BIC {{ $seller['bic'] }}@endif @endif
+                        unter Angabe der Rechnungsnummer {{ $doc->number ?? '' }}.
+                    @endif
+                </td>
+            </tr>
+        @endif
+
+        @if ($hasClosing)
+            <tr class="tail"><td colspan="6">{!! nl2br(e($doc->footer_text)) !!}</td></tr>
+        @endif
+    </tbody>
+</table>
 
 </body>
 </html>

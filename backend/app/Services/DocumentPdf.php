@@ -31,8 +31,24 @@ class DocumentPdf
         $pdf->setPaper('A4');
         $pdf->loadHtml($this->html($document), 'UTF-8');
         $pdf->render();
+        $this->addPageNumbers($pdf);
 
         return (string) $pdf->output();
+    }
+
+    /**
+     * „Seite 1 von 3“ unten rechts in der Fußzeile. Der Seitenzähler der Vorlage (CSS counter(pages)) kennt die Gesamtzahl nicht
+     * und druckte „von 0“; die Gesamtzahl steht erst nach dem Rendern fest. Die Fußzeile der Vorlage lässt die Zeile dafür frei.
+     */
+    private function addPageNumbers(Dompdf $pdf): void
+    {
+        $canvas = $pdf->getCanvas();
+        $font = $pdf->getFontMetrics()->getFont('DejaVu Sans', 'normal');
+        $size = 6.5;
+        $text = 'Seite {PAGE_NUM} von {PAGE_COUNT}';
+        // Breite mit der längsten üblichen Zahl messen, damit der Text rechtsbündig mit dem Seitenrand abschließt
+        $width = $pdf->getFontMetrics()->getTextWidth('Seite 99 von 99', $font, $size);
+        $canvas->page_text($canvas->get_width() - 51.0 - $width, $canvas->get_height() - 25.0, $text, $font, $size, [0.33, 0.33, 0.33]);
     }
 
     /** Das HTML, aus dem das PDF entsteht (getrennt, damit es sich ohne PDF-Lesegerät prüfen lässt). */

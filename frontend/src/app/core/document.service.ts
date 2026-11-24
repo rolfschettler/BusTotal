@@ -266,13 +266,26 @@ export interface JourneySectionInfo {
   kind_label: string;
   title: string;
   trip_id: string | null;
+  /** Eigene Angaben einer Strecke ohne Tour (etwa einer Fahrt vor Ort), sonst null */
+  own?: OwnFigures | null;
   vehicles: { type: string | null; label: string | null; count: number }[];
 }
 
-/** Eine weitere Strecke für den Entwurf: Art, Tour aus dem Archiv, Fahrzeugbedarf und freiwillig das Fahrtdatum (für Zuschläge). */
+/** Kilometer, Fahrzeit (Sekunden) und Tage einer Strecke ohne Tour aus dem Archiv. */
+export interface OwnFigures {
+  loaded_km: number;
+  drive_s: number;
+  days: number;
+}
+
+/**
+ * Eine weitere Strecke für den Entwurf: Art, Tour aus dem Archiv ODER eigene Angaben (Bezeichnung, Kilometer, Fahrzeit in Minuten,
+ * Tage), Fahrzeugbedarf und freiwillig das Fahrtdatum (für Zuschläge).
+ */
 export interface SectionInput {
   kind: SectionKindValue;
-  trip_id: string;
+  trip_id?: string;
+  own?: { title: string; loaded_km: number; drive_minutes: number; days: number };
   start_on?: string | null;
   vehicles: { type: string; count: number }[];
 }
@@ -286,6 +299,8 @@ export interface TourSnapshot {
     kind_label: string;
     title: string;
     vehicles: { type: string | null; label: string | null; count: number }[];
+    /** Strecke ohne Tour: die eingegebenen Zahlen */
+    own?: OwnFigures | null;
     trip: {
       title: string;
       trip_kind_label: string;

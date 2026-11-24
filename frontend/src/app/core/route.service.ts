@@ -109,7 +109,9 @@ export interface Located {
   lon: number;
 }
 
-const LOCATE_CACHE_KEY = 'bustotal.planung.orte';
+/** Version im Namen: Mit der Ortssuche geändert, dann werden gemerkte Treffer der früheren Version nicht mehr benutzt (zum Beispiel Ratetreffer). */
+const LOCATE_CACHE_KEY = 'bustotal.planung.orte.v2';
+const OLD_LOCATE_CACHE_KEY = 'bustotal.planung.orte';
 /** Höchstens so viele Texte im Browser merken (die ältesten fallen heraus) */
 const LOCATE_CACHE_MAX = 500;
 
@@ -148,6 +150,14 @@ export class RouteService {
     );
   }
 
+  /**
+   * Der Nutzer hat zu einem Text selbst einen Ort aus der Trefferliste gewählt: Künftig gilt dieser Ort für denselben Text,
+   * ohne neue Suche (der erste Treffer des Dienstes war nicht der gemeinte).
+   */
+  rememberChoice(text: string, place: Located) {
+    if (locateKey(text).length >= 2) this.remember(locateKey(text), place);
+  }
+
   private remember(key: string, place: Located) {
     this.located.delete(key);
     this.located.set(key, place);
@@ -161,6 +171,7 @@ export class RouteService {
 
   private loadLocated(): [string, Located][] {
     try {
+      localStorage.removeItem(OLD_LOCATE_CACHE_KEY);
       const raw = JSON.parse(localStorage.getItem(LOCATE_CACHE_KEY) ?? '[]');
       if (!Array.isArray(raw)) return [];
       return raw.filter(

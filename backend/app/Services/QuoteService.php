@@ -65,13 +65,18 @@ class QuoteService
     }
 
     /**
-     * Fügt einem Entwurf eine weitere Strecke der Reise hinzu: Aus der gespeicherten Tour entstehen je Fahrzeugtyp Positionen mit den
-     * Preisen dieses Typs, jede Position mal Anzahl der Fahrzeuge. Der Abschnitt und sein Fahrzeugbedarf werden mit angelegt.
+     * Fügt einem Entwurf eine weitere Strecke der Reise hinzu: Aus der gespeicherten Tour (oder ohne Tour aus eigenen Angaben)
+     * entstehen je Fahrzeugtyp Positionen mit den Preisen dieses Typs, jede Position mal Anzahl der Fahrzeuge. Der Abschnitt und sein
+     * Fahrzeugbedarf werden mit angelegt.
      *
      * @param  list<array{type: VehicleType, count: int}>  $vehicles
+     * @param  array{title: string, loaded_km: float, drive_s: int, days: int}|null  $own  eigene Angaben, nur ohne Tour
      */
-    public function addSection(Document $draft, SectionKind $kind, Trip $trip, array $vehicles, ?string $startOn, float $surchargePercent = 0, ?string $state = null): Document
+    public function addSection(Document $draft, SectionKind $kind, ?Trip $trip, array $vehicles, ?string $startOn, float $surchargePercent = 0, ?string $state = null, ?array $own = null): Document
     {
+        if ($trip === null && $own === null) {
+            throw ValidationException::withMessages(['trip_id' => ['Bitte eine Tour aus dem Archiv wählen oder Kilometer und Fahrzeit angeben.']]);
+        }
         if (! $draft->isDraft()) {
             throw ValidationException::withMessages(['section' => ['Dieser Beleg ist festgeschrieben. Strecken lassen sich nur im Entwurf hinzufügen.']]);
         }
@@ -79,18 +84,23 @@ class QuoteService
             throw ValidationException::withMessages(['section' => ['Dieser Beleg gehört zu keiner Reise. Weitere Strecken gibt es nur bei Angeboten aus der Streckenplanung.']]);
         }
 
-        $tour = [
+        $tour = ($trip ? [
             'loaded_km' => $trip->loaded_km, 'empty_km' => $trip->empty_km, 'drive_s' => $trip->drive_s, 'days' => $trip->days,
-            'trip_kind' => $trip->trip_kind->value, 'surcharge_percent' => $surchargePercent, 'state' => $state,
+            'trip_kind' => $trip->trip_kind->value,
+        ] : [
+            // Eigene Angaben ohne Tour: Der Bus ist schon vor Ort, also keine Leerfahrt; Gelegenheitsverkehr (Regelsatz).
+            'loaded_km' => $own['loaded_km'], 'empty_km' => 0, 'drive_s' => $own['drive_s'], 'days' => $own['days'], 'trip_kind' => null,
+        ]) + [
+            'surcharge_percent' => $surchargePercent, 'state' => $state,
             // Mittags gewählt, damit der Kalendertag in deutscher Zeit derselbe bleibt.
             'start_at' => $startOn ? $startOn.'T12:00:00Z' : null,
         ];
 
-        return DB::transaction(function () use ($draft, $kind, $trip, $vehicles, $tour) {
+        return DB::transaction(function () use ($draft, $kind, $trip, $vehicles, $tour, $own) {
             // Erst alles berechnen: Fehlen Preise, entsteht kein halber Abschnitt.
             $priced = array_map(fn (array $v) => $this->priceLines($tour, $v['type']), $vehicles);
 
-            $section = $this->journeys->addSection($draft->journey_id, $kind, $trip, $vehicles);
+            $section = $this->journeys->addSection($draft->journey_id, $kind, $trip, $vehicles, $trip ? null : $own);
             $new = [];
             foreach ($vehicles as $i => $v) {
                 array_push($new, ...$this->tagLines($priced[$i], $section, $v['type'], $v['count']));

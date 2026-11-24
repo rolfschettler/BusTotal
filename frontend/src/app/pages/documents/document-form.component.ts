@@ -340,7 +340,7 @@ export class DocumentFormComponent implements OnInit {
 
   readonly sectionKinds: { value: SectionKindValue; label: string }[] = [
     { value: 'hinfahrt', label: 'Hinfahrt' },
-    { value: 'vor_ort', label: 'Fahrten vor Ort' },
+    { value: 'vor_ort', label: 'Fahrt vor Ort' },
     { value: 'rueckfahrt', label: 'Rückfahrt' },
   ];
   vehicleTypes = computed(() => this.pricing()?.vehicle_types ?? []);
@@ -349,6 +349,12 @@ export class DocumentFormComponent implements OnInit {
   sectionOpen = signal(false);
   sectionKind = signal<SectionKindValue>('rueckfahrt');
   sectionTripId = signal('');
+  /** Woher Kilometer und Fahrzeit kommen: eigene Angaben (ohne Tour, Vorgabe bei der Fahrt vor Ort) oder eine Tour aus dem Archiv */
+  sectionSource = signal<'own' | 'archive'>('archive');
+  ownTitle = signal('');
+  ownKm = signal<number | null>(null);
+  ownHours = signal<number | null>(null);
+  ownDays = signal(1);
   sectionDate = signal('');
   sectionVehicles = signal<{ type: string; count: number }[]>([{ type: '', count: 1 }]);
   sectionQuery = signal('');
@@ -364,12 +370,31 @@ export class DocumentFormComponent implements OnInit {
 
   openSectionForm() {
     this.sectionOpen.set(true);
-    this.sectionKind.set('rueckfahrt');
+    this.setSectionKind('rueckfahrt');
     this.sectionTripId.set('');
+    this.ownTitle.set('');
+    this.ownKm.set(null);
+    this.ownHours.set(null);
+    this.ownDays.set(1);
     this.sectionDate.set('');
-    this.sectionVehicles.set([{ type: '', count: 1 }]);
+    // Vorbelegung: die Busse der ersten Strecke (meist fahren dieselben weiter)
+    const first = (this.doc()?.journey?.sections[0]?.vehicles ?? []).filter((v) => !!v.type);
+    this.sectionVehicles.set(first.length ? first.map((v) => ({ type: v.type!, count: v.count })) : [{ type: '', count: 1 }]);
     this.sectionQuery.set('');
     this.loadSectionTrips();
+  }
+
+  /** Art gewählt: Bei der Fahrt vor Ort sind eigene Angaben die Vorgabe, bei Hin- und Rückfahrt die Tour aus dem Archiv. */
+  setSectionKind(kind: SectionKindValue) {
+    this.sectionKind.set(kind);
+    this.sectionSource.set(kind === 'vor_ort' ? 'own' : 'archive');
+  }
+
+  /** Zahl aus einem Eingabefeld; leer oder unlesbar = null. Komma und Punkt gelten beide als Dezimalzeichen. */
+  numberOf(text: string): number | null {
+    const t = String(text ?? '').trim();
+    const n = Number(t.replace(',', '.'));
+    return t === '' || !Number.isFinite(n) ? null : n;
   }
 
   onSectionQuery(text: string) {
@@ -410,7 +435,14 @@ export class DocumentFormComponent implements OnInit {
 
   /** Fehlt noch etwas für „Strecke hinzufügen“? Der Text sagt, was. */
   sectionProblem = computed(() => {
-    if (!this.sectionTripId()) return 'Bitte eine Tour aus dem Archiv wählen.';
+    if (this.sectionSource() === 'archive') {
+      if (!this.sectionTripId()) return 'Bitte eine Tour aus dem Archiv wählen.';
+    } else {
+      if (!this.ownTitle().trim()) return 'Bitte eine Bezeichnung angeben.';
+      if (!this.ownKm() || this.ownKm()! <= 0) return 'Bitte die Kilometer angeben.';
+      if (!this.ownHours() || this.ownHours()! <= 0) return 'Bitte die Fahrzeit angeben.';
+      if (!this.ownDays() || this.ownDays() < 1) return 'Bitte die Anzahl der Tage angeben (mindestens 1).';
+    }
     const list = this.sectionVehicles();
     if (!list.length || list.some((v) => !v.type)) return 'Bitte zu jeder Zeile einen Fahrzeugtyp wählen.';
     if (new Set(list.map((v) => v.type)).size !== list.length) return 'Jeder Fahrzeugtyp darf nur einmal vorkommen. Erhöhen Sie stattdessen die Anzahl.';
@@ -431,7 +463,16 @@ export class DocumentFormComponent implements OnInit {
       this.api
         .addSection(id, {
           kind: this.sectionKind(),
-          trip_id: this.sectionTripId(),
+          ...(this.sectionSource() === 'archive'
+            ? { trip_id: this.sectionTripId() }
+            : {
+                own: {
+                  title: this.ownTitle().trim(),
+                  loaded_km: this.ownKm()!,
+                  drive_minutes: Math.max(1, Math.round(this.ownHours()! * 60)),
+                  days: Math.round(this.ownDays()),
+                },
+              }),
           start_on: this.sectionDate() || null,
           vehicles: this.sectionVehicles().map((v) => ({ type: v.type, count: Number(v.count) || 1 })),
         })

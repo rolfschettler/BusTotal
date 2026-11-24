@@ -15,7 +15,7 @@ Bevor es an die Schritte geht, hilft ein Bild vom Ganzen. {{app}} kennt **fünf 
 REISE  (ein Vorgang für einen Kunden)
  │
  ├── Strecke 1: Hinfahrt           = Tour aus dem Archiv + Fahrzeuge (Typ × Anzahl)
- ├── Strecke 2: Fahrten vor Ort    = Tour aus dem Archiv + Fahrzeuge
+ ├── Strecke 2: Fahrt vor Ort      = eigene Angaben (km, Fahrzeit) + Fahrzeuge
  ├── Strecke 3: Rückfahrt          = Tour aus dem Archiv + Fahrzeuge
  │
  └── Belege: Angebot → Auftragsbestätigung → (Anzahlung) → Rechnung
@@ -38,7 +38,7 @@ Anders gesagt: Die Tour beantwortet **„Wie fahren wir?“**, die Strecke **„
 |---|---|
 | **Reise** | für die Realschule, 10. bis 12. Mai. Sie heißt zunächst wie die erste Tour („München – Wien“); Sie nennen sie um in „Klassenfahrt Realschule Mai“. |
 | **Strecke 1: Hinfahrt** | Tour „München – Wien“ aus dem Archiv, **1 Doppeldecker und 2 Kleinbusse** |
-| **Strecke 2: Fahrten vor Ort** | Tour „Wien Rundfahrt“, **1 Kleinbus** |
+| **Strecke 2: Fahrt vor Ort** | eigene Angaben „Stadtfahrt Wien“, 40 km, **1 Kleinbus** |
 | **Strecke 3: Rückfahrt** | Tour „Wien – München“, 1 Doppeldecker und 2 Kleinbusse |
 | **Belege** | Angebot, daraus die Auftragsbestätigung, später die Rechnung. Alle hängen an dieser einen Reise. |
 
@@ -128,7 +128,7 @@ Ein Angebot entsteht auf **zwei Wegen**. Beide führen in dasselbe Beleg-Formula
 3. Klicken Sie **Angebot erstellen**. {{app}} legt das Angebot als **Entwurf** an und öffnet es. Dabei entsteht automatisch die **Reise** (die Tour wird bei Bedarf im Archiv gespeichert). Oben im Beleg zeigt die Reise-Leiste die Belege der Reise und den nächsten Schritt, siehe [Reise](/hilfe/belege#reise).
 4. Wählen Sie im Beleg den **Kunden** (Suchfeld: Name, Nummer oder Ort).
 5. Prüfen Sie die **Positionen**: Preis, Menge, **Fahrtart** und **Steuersatz** lassen sich je Position ändern. Steht oben **„Bitte prüfen“**, passt ein Satz nicht zur Fahrtart. Das ist ein Hinweis und sperrt nichts.
-6. **Mehrere Strecken oder Busse?** Mit **Weitere Strecke hinzufügen** nehmen Sie Hinfahrt, Fahrten vor Ort und Rückfahrt in dasselbe Angebot auf, je Strecke mit einem oder mehreren Fahrzeugtypen. Siehe [Mehrere Strecken und Fahrzeugtypen](/hilfe/belege#mehrere-strecken).
+6. **Mehrere Strecken oder Busse?** Mit **Weitere Strecke hinzufügen** nehmen Sie Hinfahrt, Fahrt vor Ort und Rückfahrt in dasselbe Angebot auf, je Strecke mit einem oder mehreren Fahrzeugtypen. Siehe [Mehrere Strecken und Fahrzeugtypen](/hilfe/belege#mehrere-strecken).
 7. **Speichern**, dann **Festschreiben** (nur Administrator und Buchhaltung). Das Angebot bekommt seine Nummer und ist gesperrt. Dabei hält {{app}} die **Fahrtbeschreibung** der Strecken (Halte, Kilometer, Zeiten, Fahrzeuge) unveränderlich im Beleg fest, siehe [Fahrtbeschreibung](/hilfe/belege#fahrtbeschreibung).
 8. **Drucken** öffnet die Druckvorschau. Von dort drucken Sie oder speichern als PDF.
 
@@ -223,7 +223,7 @@ Das neue Angebot weist oben darauf hin, dass Sie es von Hand anlegen, und verlin
 
 Diese Anleitung wird mit jeder Ausbaustufe ergänzt. Geplant sind in dieser Reihenfolge:
 
-1. **Tour speichern und wiederverwenden**, Angebot mit **mehreren Strecken und Fahrzeugtypen**, das **Reisevorhaben** (Hinfahrt, Fahrten vor Ort, Rückfahrt).
+1. **Tour speichern und wiederverwenden**, Angebot mit **mehreren Strecken und Fahrzeugtypen**, das **Reisevorhaben** (Hinfahrt, Fahrt vor Ort, Rückfahrt).
 2. **Fahrtauftrag** je Bus mit Fahrer-PDF, **Rückerfassung** mit Kilometerständen an der Grenze.
 3. **Rechnung aus Fahrtaufträgen**, **Sammelrechnung** (Werksverkehr), **Auslandsanteil** nach Streckenlänge.
 4. **Reiseleistungen nach § 25 UStG** (Marge).

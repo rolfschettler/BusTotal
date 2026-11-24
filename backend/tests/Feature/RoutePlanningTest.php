@@ -100,6 +100,27 @@ class RoutePlanningTest extends TestCase
         $this->assertSame(['label' => 'Ulm, Baden-Württemberg, Deutschland', 'postal_code' => '89073', 'city' => 'Ulm', 'country' => 'DEU', 'lat' => 48.4, 'lon' => 9.99], $hits[0]);
     }
 
+    public function test_ratetreffer_des_dienstes_werden_nicht_angeboten(): void
+    {
+        // Unbekannte Adresse ("Senden-Ay"): Der Dienst rät Gebiete in aller Welt mit geringer Sicherheit.
+        Http::fake(['*/geocode/search*' => Http::response(['features' => [
+            ['geometry' => ['coordinates' => [95.13, 16.79]], 'properties' => ['label' => 'Irrawaddy, Myanmar', 'confidence' => 0.3, 'match_type' => 'fallback']],
+            ['geometry' => ['coordinates' => [28.0, 37.7]], 'properties' => ['label' => 'Aydın, Türkei', 'confidence' => 0.3, 'match_type' => 'fallback']],
+        ]])]);
+        $this->as(Role::Disponent)->getJson('/api/geocode?q='.urlencode('Germanenstraße 4, 89250 Senden-Ay'))->assertOk()->assertJsonCount(0, 'data');
+    }
+
+    public function test_treffer_mit_mittlerer_oder_fehlender_sicherheit_bleiben_erhalten(): void
+    {
+        // Ein Ortsmittelpunkt mit mittlerer Sicherheit (0,6) und ein Treffer ohne Angabe bleiben erhalten.
+        Http::fake(['*/geocode/search*' => Http::response(['features' => [
+            ['geometry' => ['coordinates' => [13.9, 46.66]], 'properties' => ['label' => 'Sattendorf, KA, Österreich', 'confidence' => 0.6]],
+            ['geometry' => ['coordinates' => [10.0, 48.3]], 'properties' => ['label' => 'Germanenstraße 4, Senden', 'confidence' => 1]],
+            ['geometry' => ['coordinates' => [9.9, 48.4]], 'properties' => ['label' => 'Ohne Angabe']],
+        ]])]);
+        $this->as(Role::Disponent)->getJson('/api/geocode?q=Sattendorf')->assertOk()->assertJsonCount(3, 'data');
+    }
+
     public function test_der_zugangsschluessel_geht_nur_im_header_raus_nie_in_der_adresse(): void
     {
         Http::fake(['*/geocode/search*' => Http::response(['features' => []])]);

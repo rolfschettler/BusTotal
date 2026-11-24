@@ -30,6 +30,10 @@ class OpenRouteService implements GeocodingProvider, RoutingProvider
 
     private const GEOCODE_FETCH = 8;
 
+    /** Treffer mit geringerer Sicherheit gelten als geraten und werden nicht angeboten. */
+
+    private const MIN_CONFIDENCE = 0.5;
+
     // Die Zwischenspeicher-Schlüssel tragen eine Formatversion ("ors:v2:..."). Ändert sich, WAS abgelegt wird, die Version erhöhen:
     // Einträge des alten Formats (v1 waren Objekte, die sich nicht zurücklesen ließen) werden dann nie mehr gelesen.
 
@@ -126,7 +130,7 @@ class OpenRouteService implements GeocodingProvider, RoutingProvider
         }
         $limit = max(1, min(10, $limit));
 
-        $rows = $this->remember('ors:v2:geocode:'.sha1(mb_strtolower($query).'|'.self::GEOCODE_FETCH), self::GEOCODE_TTL, function () use ($query) {
+        $rows = $this->remember('ors:v3:geocode:'.sha1(mb_strtolower($query).'|'.self::GEOCODE_FETCH), self::GEOCODE_TTL, function () use ($query) {
             // Immer gleich viele holen (auch für limit=1): Die Sortierung unten braucht Auswahl, und der Zwischenspeicher gilt für alle.
             $json = $this->send('get', '/geocode/search', ['text' => $query, 'size' => self::GEOCODE_FETCH, 'lang' => 'de']);
 
@@ -144,11 +148,17 @@ class OpenRouteService implements GeocodingProvider, RoutingProvider
                     'postal_code' => $p['postalcode'] ?? null,
                     'city' => $p['locality'] ?? $p['localadmin'] ?? null,
                     'country' => $p['country_a'] ?? null,
+                    // Wie sicher der Dienst ist (0 bis 1). Bei einer unbekannten Adresse rät er sonst irgendeinen Ort mit ähnlichem Namen.
+                    'confidence' => isset($p['confidence']) ? (float) $p['confidence'] : null,
                 ];
             }
 
             return $hits;
         });
+
+        // Ratetreffer weglassen: Kennt der Dienst eine Adresse nicht ("Senden-Ay"), liefert er Gebiete wie "Irrawaddy, Myanmar" mit
+        // Sicherheit 0,3. Besser "nichts gefunden" (der Nutzer schreibt genauer) als eine Strecke nach Myanmar. Ohne Angabe gilt ein Treffer.
+        $rows = array_values(array_filter($rows, fn (array $r) => ($r['confidence'] ?? 1.0) >= self::MIN_CONFIDENCE));
 
         // Verwaltungsbezirke ("Landkreis Biberach") kommen aus den Daten als Ort und stehen bei "88400 Biberach" ganz oben,
         // gemeint ist aber die Stadt. Sie rutschen ans Ende (bleiben wählbar); sonst bleibt die Reihenfolge des Dienstes.

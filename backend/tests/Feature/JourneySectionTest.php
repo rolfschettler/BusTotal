@@ -97,7 +97,7 @@ class JourneySectionTest extends TestCase
         // erste Strecke: 400 km × 2 € = 800 €; neue Strecke: 100 km × 2 € = 200 € (Doppeldecker) und 2 × 100 km × 1 € = 200 € (Kleinbus)
         $res->assertJsonCount(3, 'lines')->assertJsonPath('net_total', '1200.00');
         $this->assertSame(['doppeldecker', 'doppeldecker', 'minibus'], array_column($res->json('lines'), 'vehicle_type'));
-        $this->assertSame('Fahrten vor Ort: Wien – Wien Rundfahrt · 2 × Minibus / Kleinbus', $res->json('lines.2.description'));
+        $this->assertSame('Fahrt vor Ort: Wien – Wien Rundfahrt · 2 × Minibus / Kleinbus', $res->json('lines.2.description'));
 
         $journey = Journey::firstOrFail();
         $this->assertSame(2, $journey->sections()->count());
@@ -106,6 +106,66 @@ class JourneySectionTest extends TestCase
         $this->assertSame(2, $second->vehicles->count());
         $this->assertSame($second->id, $res->json('lines.1.journey_section_id'));
         $res->assertJsonPath('journey.sections.1.vehicles.1.count', 2);
+    }
+
+    // ---------- Fahrt vor Ort ohne Tour: eigene Angaben ----------
+
+    private function addOwn(string $docId, array $own = [], array $over = [])
+    {
+        return $this->as(Role::Disponent)->postJson("/api/documents/$docId/sections", array_merge([
+            'kind' => 'vor_ort',
+            'own' => array_merge(['title' => 'Ausflug Ossiacher See', 'loaded_km' => 60, 'drive_minutes' => 150, 'days' => 1], $own),
+            'vehicles' => [['type' => 'doppeldecker', 'count' => 1]],
+        ], $over));
+    }
+
+    public function test_fahrt_vor_ort_mit_eigenen_angaben_ohne_tour(): void
+    {
+        $quote = $this->quote();
+
+        $res = $this->addOwn($quote['id'])->assertCreated();
+
+        // 400 km + 60 km, je 2 € (Leerfahrt gibt es vor Ort nicht)
+        $res->assertJsonCount(2, 'lines')->assertJsonPath('net_total', '920.00')
+            ->assertJsonPath('journey.sections.1.title', 'Ausflug Ossiacher See')
+            ->assertJsonPath('journey.sections.1.trip_id', null)
+            ->assertJsonPath('journey.sections.1.own.loaded_km', 60)
+            ->assertJsonPath('journey.sections.1.own.drive_s', 9000);
+        $this->assertStringStartsWith('Fahrt vor Ort: Ausflug Ossiacher See · Doppeldeckerbus', $res->json('lines.1.description'));
+        $this->assertDatabaseCount('trips', 0);   // im Archiv entsteht nichts
+    }
+
+    public function test_fahrt_vor_ort_steht_festgeschrieben_in_der_fahrtbeschreibung(): void
+    {
+        $customer = Customer::factory()->create(['company_name' => 'Reisebüro', 'street' => 'Hauptstr. 1', 'postal_code' => '80331', 'city' => 'München']);
+        $quote = $this->quote();
+        $lines = $this->addOwn($quote['id'])->assertCreated()->json('lines');
+        $this->as(Role::Disponent)->putJson("/api/documents/{$quote['id']}", ['customer_id' => $customer->id, 'lines' => $lines])->assertOk();
+
+        $doc = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$quote['id']}/finalize")->assertOk();
+
+        $own = collect($doc->json('tour_snapshot.sections'))->firstWhere('title', 'Ausflug Ossiacher See');
+        $this->assertNotNull($own);
+        $this->assertNull($own['trip']);
+        $this->assertSame(['loaded_km' => 60, 'drive_s' => 9000, 'days' => 1], $own['own']);
+        $this->as(Role::Disponent)->getJson("/api/journeys/{$quote['journey_id']}")->assertOk()
+            ->assertJsonPath('sections.1.own.days', 1)->assertJsonPath('sections.1.trip', null);
+    }
+
+    public function test_eigene_angaben_werden_geprueft(): void
+    {
+        $quote = $this->quote();
+
+        $this->addOwn($quote['id'], ['title' => ''])->assertUnprocessable()->assertJsonValidationErrors(['own.title']);
+        $this->addOwn($quote['id'], ['loaded_km' => 0])->assertUnprocessable()->assertJsonValidationErrors(['own.loaded_km']);
+        $this->addOwn($quote['id'], ['drive_minutes' => 0])->assertUnprocessable()->assertJsonValidationErrors(['own.drive_minutes']);
+        $this->addOwn($quote['id'], ['days' => 0])->assertUnprocessable()->assertJsonValidationErrors(['own.days']);
+        // weder Tour noch eigene Angaben, oder beides
+        $this->as(Role::Disponent)->postJson("/api/documents/{$quote['id']}/sections", ['kind' => 'vor_ort', 'vehicles' => [['type' => 'doppeldecker', 'count' => 1]]])
+            ->assertUnprocessable()->assertJsonValidationErrors(['trip_id']);
+        $this->addOwn($quote['id'], [], ['trip_id' => $this->trip()])->assertUnprocessable()->assertJsonValidationErrors(['trip_id']);
+
+        $this->assertSame(1, JourneySection::count());
     }
 
     public function test_die_zuordnung_ueberlebt_speichern_und_folgebelege(): void

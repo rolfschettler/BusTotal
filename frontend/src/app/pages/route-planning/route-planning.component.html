@@ -40,7 +40,7 @@
           @if (archiveShownQuery()) {
             Keine gespeicherte Tour zu „{{ archiveShownQuery() }}“ gefunden.
           } @else {
-            Noch keine Tour gespeichert. Berechnen Sie eine Strecke und wählen Sie darunter <strong>Tour speichern</strong>.
+            Noch keine Tour gespeichert. Geben Sie eine Strecke ein und wählen Sie <strong>Tour speichern</strong>.
           }
         </div>
       }
@@ -77,20 +77,20 @@
 
 <div class="row g-3">
   <!-- ============ Eingabe ============ -->
-  <div class="col-12 col-lg-5">
+  <div class="col-12 col-lg-6">
     <div class="form-area">
       <div class="section-title">Strecke</div>
 
       <div class="mb-3">
         <app-place-field label="Von" inputId="placeFrom" hint="Ort, Adresse oder Bahnhof, z. B. „88400 Biberach“ oder „Ulm Hbf“. Gesucht wird beim Berechnen."
-                         [text]="textOf(start())" [note]="usedFor(start())" (textChange)="setText(start().key, $event)" (enter)="calculate()" />
+                         [text]="textOf(start())" [note]="usedFor(start())" [current]="coordsOf(start())" [problem]="problemOf(start())" (textChange)="setText(start().key, $event)" (pick)="choosePlace(start().key, $event)" (enter)="calculate()" />
       </div>
 
       @for (w of via(); track w.key; let i = $index; let first = $first; let last = $last) {
         <div class="mb-3 d-flex align-items-start gap-2">
           <div class="flex-grow-1">
             <app-place-field [label]="'Über ' + (i + 1)" [inputId]="'placeVia' + w.key"
-                             [text]="textOf(w)" [note]="usedFor(w)" (textChange)="setText(w.key, $event)" (enter)="calculate()" />
+                             [text]="textOf(w)" [note]="usedFor(w)" [current]="coordsOf(w)" [problem]="problemOf(w)" (textChange)="setText(w.key, $event)" (pick)="choosePlace(w.key, $event)" (enter)="calculate()" />
           </div>
           <div class="btn-group mt-4 pt-1" role="group" [attr.aria-label]="'Über ' + (i + 1) + ' verschieben oder entfernen'">
             <button type="button" class="btn btn-outline-secondary" [disabled]="first" aria-label="Nach oben" (click)="moveVia(i, -1)"><i class="bi bi-arrow-up" aria-hidden="true"></i></button>
@@ -106,7 +106,7 @@
       </div>
 
       <div class="mb-2">
-        <app-place-field label="Nach" inputId="placeTo" [text]="textOf(end())" [note]="usedFor(end())" (textChange)="setText(end().key, $event)" (enter)="calculate()" />
+        <app-place-field label="Nach" inputId="placeTo" [text]="textOf(end())" [note]="usedFor(end())" [current]="coordsOf(end())" [problem]="problemOf(end())" (textChange)="setText(end().key, $event)" (pick)="choosePlace(end().key, $event)" (enter)="calculate()" />
       </div>
 
       <div class="form-check mb-3">
@@ -114,13 +114,21 @@
         <label class="form-check-label" for="roundTrip">Rückfahrt zum Start (Von)</label>
       </div>
 
-      @if (via().length >= 2) {
-        <div class="form-check mb-3">
-          <input id="optimize" type="checkbox" class="form-check-input" [ngModel]="optimize()" (ngModelChange)="optimize.set($event); changed()" />
-          <label class="form-check-label" for="optimize">Reihenfolge der Zwischenhalte optimieren</label>
-          <div class="form-text">Ordnet die Über-Orte nach kürzester Fahrzeit. Von und Nach bleiben stehen.</div>
+      <!-- Optimieren (Rundreiseproblem): immer sichtbar, damit man die Funktion kennt; wählbar ab zwei Zwischenhalten -->
+      <div class="mb-3 px-3 py-2 rounded border bg-white" [class.border-primary]="optimize()">
+        <div class="form-check mb-0">
+          <input id="optimize" type="checkbox" class="form-check-input" [disabled]="via().length < 2" [ngModel]="optimize()"
+                 (ngModelChange)="optimize.set($event); changed()" />
+          <label class="form-check-label fw-semibold" for="optimize"><i class="bi bi-magic me-1" aria-hidden="true"></i>Reihenfolge der Zwischenhalte optimieren</label>
         </div>
-      }
+        <div class="form-text mt-1">
+          @if (via().length < 2) {
+            Findet die Reihenfolge mit der kürzesten Fahrzeit. Möglich ab <strong>zwei Zwischenhalten</strong>: Fügen Sie mit „Zwischenhalt (über)“ weitere Orte hinzu.
+          } @else {
+            Ordnet die Über-Orte so, dass die Fahrzeit am kürzesten ist. Von und Nach bleiben stehen. Nach dem Berechnen zeigen die Felder die neue Reihenfolge.
+          }
+        </div>
+      </div>
 
       <div class="section-title mt-3">Fahrt</div>
       <div class="row g-3">
@@ -166,6 +174,14 @@
           <label class="form-label" for="startAt">Abfahrt</label>
           <input id="startAt" type="datetime-local" class="form-control" [ngModel]="startAt()" (ngModelChange)="startAt.set($event); changed()" />
           <div class="form-text">Leer lassen: Zeiten als Versatz.</div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="tripKind">Fahrtart</label>
+          <select id="tripKind" class="form-select" [ngModel]="tripKind()" (ngModelChange)="tripKind.set($event); markTripChanged()">
+            @for (k of tripKinds(); track k.value) { <option [value]="k.value">{{ k.label }}</option> }
+            @if (!tripKinds().length) { <option value="gelegenheit">Gelegenheitsverkehr</option> }
+          </select>
+          <div class="form-text">Bestimmt den Steuersatz im Angebot.</div>
         </div>
       </div>
 
@@ -236,21 +252,88 @@
         }
       </details>
 
-      <div class="d-flex flex-wrap gap-2 mt-4">
-        <button type="button" class="btn btn-primary" [disabled]="!canCalc()" (click)="calculate()">
-          @if (calculating()) { <span class="spinner-border spinner-border-sm" aria-hidden="true"></span> }
-          Strecke berechnen
-        </button>
-        <button type="button" class="btn btn-outline-secondary" (click)="reset()">Neu beginnen</button>
+      <!-- Tour im Archiv: Name und was gespeichert wird. Die Tasten stehen unten in der Tastenleiste. -->
+      <div class="section-title mt-4">Tour im Archiv</div>
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label" for="tripTitle">Name der Tour</label>
+          <input id="tripTitle" type="text" maxlength="150" class="form-control" [ngModel]="tripTitle()" (ngModelChange)="tripTitle.set($event)" />
+          @if (titleSuggestion(); as ts) {
+            <div class="form-text">
+              Die Strecke heißt jetzt anders. Vorschlag: „{{ ts }}“
+              <button type="button" class="btn btn-link btn-sm p-0 align-baseline" (click)="acceptTitleSuggestion(ts)">Als Namen übernehmen</button>
+            </div>
+          } @else if (!tripTitle().trim()) {
+            <div class="form-text">Wird vorgeschlagen, sobald die Strecke berechnet ist.</div>
+          }
+        </div>
+      </div>
+      <div class="form-text mt-2">
+        <div><i class="bi bi-check2 me-1" aria-hidden="true"></i>Gespeichert werden: Halte, berechnete Strecke mit Zeitplan und Linie, Fahrtart, Fahrzeugtyp und Anzahl.</div>
+        <div><i class="bi bi-x me-1" aria-hidden="true"></i>Nicht gespeichert werden: Abfahrtszeit und ein bestimmtes Fahrzeug.</div>
+        @if (depotChoice() === 'other') { <div>Ein „anderer Ort“ als Betriebshof wird nicht mitgespeichert.</div> }
+        @if (!canStore()) {
+          <div class="text-warning-emphasis">Diese Tour lässt sich nicht im Archiv speichern: Sie braucht zwei Halte, oder einen Halt und einen Betriebshof der Firma. Ein Angebot können Sie trotzdem erstellen.</div>
+        }
       </div>
       @if (!canCalc() && !calculating()) {
-        <div class="form-text mt-2">Geben Sie Von und Nach ein.</div>
+        <div class="form-bar-hint mt-3">Geben Sie Von und Nach ein, dann können Sie die Strecke berechnen.</div>
+      } @else if (result() && !stale() && !calculating()) {
+        <div class="form-text mt-3"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Das Ergebnis ist aktuell. Ändern Sie etwas an der Strecke, dann berechnen Sie neu.</div>
       }
+
+      <!-- Tastenleiste (Formular-Muster): links Speichern, dann Berechnen; rechts die seltene Aktion. Klebt unten im Sichtbereich. -->
+      <div class="form-bar form-bar-equal form-page">
+        <!-- Meldungen (Fehler der Berechnung und des Speicherns, Erfolg) stehen IN der Leiste, ganz oben über den Tasten. Die Leiste klebt
+             unten im Sichtbereich: So sieht man die Meldung immer, genau dort, wo man geklickt hat. -->
+        <div id="planMessages" class="form-bar-messages" aria-live="polite">
+          @if (error(); as e) {
+            <div class="alert alert-danger py-2 small mb-2" role="alert"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>{{ e }}</div>
+          }
+          @if (tripError(); as te) {
+            <div class="alert alert-danger py-2 small mb-2" role="alert"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>{{ te }}</div>
+          }
+          @if (tripMessage(); as tm) {
+            <div class="alert alert-success py-2 small mb-2" role="status"><i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i>{{ tm }}</div>
+          }
+        </div>
+
+        <div class="form-bar-buttons">
+        @if (currentTrip()) {
+          <!-- Geladene Tour: Hauptknopf ändert sie, die seltene Kopie steckt im Menü -->
+          <div class="btn-group" ngbDropdown placement="top-start" container="body">
+            <button type="button" class="btn btn-outline-primary" (click)="saveTrip()" [disabled]="saveDisabled()">
+              @if (savingTrip()) { <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span> }
+              Speichern
+            </button>
+            <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" ngbDropdownToggle [disabled]="saveDisabled()" style="min-width: 0" aria-label="Weitere Speicherarten"></button>
+            <div ngbDropdownMenu>
+              <button type="button" ngbDropdownItem (click)="saveTrip(true)" title="Die geladene Tour bleibt unverändert, die Strecke wird als zweite Tour im Archiv angelegt.">Unter neuem Namen speichern</button>
+            </div>
+          </div>
+        } @else {
+          <button type="button" class="btn btn-outline-primary" (click)="saveTrip()" [disabled]="saveDisabled()">
+            @if (savingTrip()) { <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span> }
+            Tour speichern
+          </button>
+        }
+
+        <button type="button" class="btn btn-primary" [disabled]="!needsCalc()" (click)="calculate()"
+                [attr.title]="canCalc() && !needsCalc() ? 'Das Ergebnis ist aktuell, es hat sich nichts geändert.' : null">
+          @if (calculating()) { <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span> }
+          Strecke berechnen
+        </button>
+
+        <div class="form-bar-right">
+          <button type="button" class="btn btn-outline-secondary" (click)="confirmReset()">Neu beginnen</button>
+        </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- ============ Karte ============ -->
-  <div class="col-12 col-lg-7">
+  <div class="col-12 col-lg-6">
     <div class="app-map-sticky">
       <app-map [markers]="markers()" [line]="line()" [dimmed]="stale()" />
     </div>
@@ -258,18 +341,16 @@
 </div>
 
 <!-- ============ Ergebnis ============ -->
-@if (error(); as e) {
-  <div class="alert alert-danger mt-3" role="alert">{{ e }}</div>
-}
-
 @if (result(); as r) {
-  <div class="mt-4" [class.opacity-50]="stale()">
+  <div class="mt-4">
     @if (stale()) {
-      <div class="alert alert-secondary py-2 small" role="status">Die Eingabe wurde geändert. Dieses Ergebnis gehört noch zur vorherigen Eingabe. Bitte neu berechnen.</div>
+      <div class="alert alert-secondary py-2 small" role="status">
+        <i class="bi bi-info-circle me-1" aria-hidden="true"></i>Sie haben die Angaben zur Strecke geändert. Die Zahlen und der Zeitplan (abgeblendet) gehören noch zur vorherigen Eingabe. Berechnen Sie oben mit <strong>Strecke berechnen</strong> neu.
+      </div>
     }
 
     <div class="section-title">Ergebnis</div>
-    <div class="row g-2 mb-3">
+    <div class="row g-2 mb-3" [class.opacity-50]="stale()">
       <div class="col-6 col-lg-4 col-xl-2"><div class="bg-white border rounded p-2 h-100"><div class="small text-body-secondary">Strecke</div><div class="fs-5 fw-semibold">{{ format.km(r.distance_m) }}</div></div></div>
       <div class="col-6 col-lg-4 col-xl-2"><div class="bg-white border rounded p-2 h-100"><div class="small text-body-secondary">davon Leerfahrt</div><div class="fs-5 fw-semibold">{{ format.km(r.empty_distance_m) }}</div></div></div>
       <div class="col-6 col-lg-4 col-xl-2"><div class="bg-white border rounded p-2 h-100"><div class="small text-body-secondary">Lenkzeit</div><div class="fs-5 fw-semibold">{{ format.duration(r.drive_s) }}</div></div></div>
@@ -280,98 +361,87 @@
       }
     </div>
 
-    <!-- Schritt 1 nach der Berechnung: Tour im Archiv speichern. Schritt 2: Angebot erstellen. -->
-    <div class="section-title">Tour speichern</div>
-    <div class="row g-2 align-items-end mb-1">
-      <div class="col-12 col-lg-6">
-        <label class="form-label small mb-1" for="tripTitle">Name der Tour</label>
-        <input id="tripTitle" type="text" maxlength="150" class="form-control" [ngModel]="tripTitle()" (ngModelChange)="tripTitle.set($event)" [disabled]="stale()" />
-      </div>
-      <div class="col-12 col-lg-6 d-flex flex-wrap gap-2">
-        <button type="button" class="btn btn-outline-primary" (click)="saveTrip()" [disabled]="savingTrip() || stale() || !tripTitle().trim() || !canStore()" [attr.title]="stale() ? 'Bitte zuerst neu berechnen' : null">
-          @if (savingTrip()) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
-          <i class="bi bi-save me-1" aria-hidden="true"></i>{{ currentTrip() ? 'Änderungen speichern' : 'Tour speichern' }}
-        </button>
-        @if (currentTrip()) {
-          <button type="button" class="btn btn-outline-secondary" (click)="saveTrip(true)" [disabled]="savingTrip() || stale() || !tripTitle().trim() || !canStore()">Als neue Tour speichern</button>
-        }
-      </div>
-    </div>
-    <div class="form-text mb-3">
-      Gespeichert werden die Halte, die berechnete Strecke mit Zeitplan und Linie, Fahrtart sowie Fahrzeugtyp und Anzahl. Nicht gespeichert werden Abfahrtszeit und ein bestimmtes Fahrzeug.
-      @if (depotChoice() === 'other') { Ein „anderer Ort“ als Betriebshof wird nicht mitgespeichert. }
-      @if (!canStore()) {
-        <span class="text-warning-emphasis">Diese Tour lässt sich nicht im Archiv speichern: Sie braucht zwei Halte, oder einen Halt und einen Betriebshof der Firma. Ein Angebot können Sie trotzdem erstellen.</span>
-      }
-    </div>
-    @if (tripMessage(); as tm) {
-      <div class="alert alert-success py-2 small" role="status"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>{{ tm }}</div>
-    }
-    @if (tripError(); as te) {
-      <div class="alert alert-danger py-2 small" role="alert">{{ te }}</div>
-    }
-
-    <!-- Preisfindung: aus den Kennzahlen entsteht ein Angebot als Entwurf (Preise unter Einstellungen › Preise). -->
-    <div class="d-flex flex-wrap align-items-end gap-2 mb-3">
-      <div>
-        <label class="form-label small mb-1" for="tripKind">Fahrtart</label>
-        <select id="tripKind" class="form-select form-select-sm" [ngModel]="tripKind()" (ngModelChange)="tripKind.set($event); markTripChanged()" [disabled]="stale()">
-          @for (k of tripKinds(); track k.value) { <option [value]="k.value">{{ k.label }}</option> }
-          @if (!tripKinds().length) { <option value="gelegenheit">Gelegenheitsverkehr</option> }
-        </select>
-      </div>
-      <div>
-        <label class="form-label small mb-1" for="surcharge">Zuschlag (%)</label>
-        <input id="surcharge" type="number" min="0" max="100" step="1" class="form-control form-control-sm" [ngModel]="surcharge()" (ngModelChange)="surcharge.set($event)" [disabled]="stale()" />
-      </div>
-      <div>
-        <label class="form-label small mb-1" for="holidayState">Feiertage in</label>
-        <select id="holidayState" class="form-select form-select-sm" [ngModel]="holidayState()" (ngModelChange)="holidayState.set($event)" [disabled]="stale()">
-          <option value="">{{ companyStateLabel() ? 'Betriebssitz (' + companyStateLabel() + ')' : 'Kein Bundesland' }}</option>
-          @for (s of states(); track s.value) {
-            <option [value]="s.value">{{ s.label }}</option>
+    <!-- Tipp zur Reihenfolge: nur nach einer Berechnung in dieser Sitzung (nicht bei einer geladenen Tour, deren Ergebnis schon feststeht),
+         mit mindestens zwei Zwischenhalten ohne Optimierung. Die Seite bietet es mit einem Klick an.
+         Nach der Optimierung steht, was dabei herauskam (die Reihenfolge war schon die beste, oder sie wurde geändert). -->
+    @if (!stale() && calculatedHere()) {
+      @if (!optimize() && viaCount() >= 2) {
+        <div class="alert alert-info py-2 small d-flex flex-wrap align-items-center gap-2" role="status">
+          <span class="me-auto"><i class="bi bi-lightbulb me-1" aria-hidden="true"></i><strong>Tipp:</strong> Sie haben {{ viaCount() }} Zwischenhalte in einer festen Reihenfolge eingegeben. Mit „Reihenfolge der Zwischenhalte optimieren“ wählt die Software die Reihenfolge mit der kürzesten Fahrzeit.</span>
+          <button type="button" class="btn btn-sm btn-primary" [disabled]="calculating()" (click)="optimizeNow()"><i class="bi bi-magic me-1" aria-hidden="true"></i>Optimieren und neu berechnen</button>
+        </div>
+      } @else if (optimize() && viaCount() >= 2) {
+        <div class="alert alert-success py-2 small" role="status">
+          <i class="bi bi-magic me-1" aria-hidden="true"></i>
+          @if (r.optimized) {
+            <strong>Optimiert:</strong> Die Reihenfolge der Zwischenhalte wurde geändert, die Felder links zeigen die neue Reihenfolge mit der kürzesten Fahrzeit.
+          } @else {
+            <strong>Optimiert:</strong> Ihre Reihenfolge der Zwischenhalte war bereits die mit der kürzesten Fahrzeit.
           }
-        </select>
-      </div>
-      <button type="button" class="btn btn-primary" (click)="createQuote()" [disabled]="quoting() || stale()" [attr.title]="stale() ? 'Bitte zuerst neu berechnen' : null">
-        @if (quoting()) { <span class="spinner-border spinner-border-sm me-2"></span> }
-        <i class="bi bi-file-earmark-text me-1" aria-hidden="true"></i>Angebot erstellen
-      </button>
-      <app-help-link topic="strecken" anchor="angebot-aus-tour" label="Angebot aus der Tour" />
-    </div>
-    @if (reducedTooLong()) {
-      <div class="alert alert-warning py-2 small" role="status">
-        Diese Fahrt ist länger als 50 km. Der ermäßigte Steuersatz gilt nur innerhalb einer Gemeinde oder bis 50 km Beförderungsstrecke
-        (bei Fahrten ins Ausland zählt nur der Inlandsteil). Bitte die Fahrtart und den Steuersatz im Angebot prüfen.
-      </div>
-    }
-    <div class="form-text mb-3">
-      @if (vehicleType()) {
-        Es gelten die Preise des Fahrzeugtyps „{{ typeLabel(vehicleType()) }}“, wo für den Typ welche hinterlegt sind.
-      } @else {
-        Ohne Fahrzeugtyp gelten die Standardpreise.
+        </div>
       }
-      @if (vehicleCount() > 1) {
-        Bei {{ vehicleCount() }} Fahrzeugen enthält das Angebot jede Position {{ vehicleCount() }}-fach.
-      }
-      Zuschläge für Samstag, Sonntag und Feiertag ergeben sich aus den Tagen der Tour, wenn ein Starttermin gesetzt ist.
-      Mit dem Angebot entsteht eine <strong>Reise</strong>; die Tour wird dafür bei Bedarf automatisch im Tour-Archiv gespeichert.
-      @if (defaultsError(); as de) {
-        <span class="text-danger">{{ de }}</span>
-      } @else if (!holidayState() && !companyState()) {
-        <span class="text-warning-emphasis">Ohne Bundesland (Firmendaten oder Auswahl „Feiertage in“) werden Feiertage nicht erkannt.</span>
-      }
-    </div>
-    @if (quoteError(); as qe) {
-      <div class="alert alert-danger py-2 small" role="alert">{{ qe }}</div>
     }
 
     @for (w of r.warnings; track w.code) {
       <div class="alert alert-warning py-2 small" role="alert"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>{{ w.message }}</div>
     }
 
+    <!-- Was man mit dem Ergebnis tut: Angebot erstellen (Preise unter Einstellungen › Preise) -->
+    <div class="form-area mb-3">
+      <div class="section-title">Angebot</div>
+      <div class="row g-3">
+        <div class="col-12 col-lg-4">
+          <label class="form-label" for="holidayState">Feiertage in</label>
+          <select id="holidayState" class="form-select" [ngModel]="holidayState()" (ngModelChange)="holidayState.set($event)">
+            <option value="">{{ companyStateLabel() ? 'Betriebssitz (' + companyStateLabel() + ')' : 'Kein Bundesland' }}</option>
+            @for (s of states(); track s.value) {
+              <option [value]="s.value">{{ s.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="col-12 col-lg-3">
+          <label class="form-label" for="surcharge">Zuschlag (%)</label>
+          <input id="surcharge" type="number" min="0" max="100" step="1" class="form-control" [ngModel]="surcharge()" (ngModelChange)="surcharge.set($event)" />
+        </div>
+      </div>
+      @if (reducedTooLong()) {
+        <div class="alert alert-warning py-2 small mt-3 mb-0" role="status">
+          Diese Fahrt ist länger als 50 km. Der ermäßigte Steuersatz gilt nur innerhalb einer Gemeinde oder bis 50 km Beförderungsstrecke
+          (bei Fahrten ins Ausland zählt nur der Inlandsteil). Bitte die Fahrtart und den Steuersatz im Angebot prüfen.
+        </div>
+      }
+      <div class="form-text mt-2">
+        Zuschlag und Feiertage gelten nur für dieses Angebot. Die Fahrtart, den Fahrzeugtyp und die Anzahl stellen Sie oben bei der Strecke ein.
+        @if (vehicleType()) {
+          Es gelten die Preise des Fahrzeugtyps „{{ typeLabel(vehicleType()) }}“, wo für den Typ welche hinterlegt sind.
+        } @else {
+          Ohne Fahrzeugtyp gelten die Standardpreise.
+        }
+        @if (vehicleCount() > 1) {
+          Bei {{ vehicleCount() }} Fahrzeugen enthält das Angebot jede Position {{ vehicleCount() }}-fach.
+        }
+        Zuschläge für Samstag, Sonntag und Feiertag ergeben sich aus den Tagen der Tour, wenn ein Starttermin gesetzt ist.
+        @if (defaultsError(); as de) {
+          <span class="text-danger">{{ de }}</span>
+        } @else if (!holidayState() && !companyState()) {
+          <span class="text-warning-emphasis">Ohne Bundesland (Firmendaten oder Auswahl „Feiertage in“) werden Feiertage nicht erkannt.</span>
+        }
+      </div>
+      <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
+        <button type="button" class="btn btn-primary" (click)="createQuote()" [disabled]="quoting() || calculating() || (stale() && !canCalc())">
+          @if (quoting() || calculating()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+          <i class="bi bi-file-earmark-text me-1" aria-hidden="true"></i>Angebot erstellen
+        </button>
+        <app-help-link topic="strecken" anchor="angebot-aus-tour" label="Angebot aus der Tour" />
+      </div>
+      <div class="form-text mt-2">Es entsteht ein Angebot als Entwurf und eine <strong>Reise</strong>; die Tour wird dafür bei Bedarf selbst im Tour-Archiv gespeichert.</div>
+      @if (quoteError(); as qe) {
+        <div class="alert alert-danger py-2 small mt-2 mb-0" role="alert">{{ qe }}</div>
+      }
+    </div>
+
     <div class="section-title">Zeitplan</div>
-    <div class="table-responsive mb-3">
+    <div class="table-responsive mb-3" [class.opacity-50]="stale()">
       <table class="table table-sm align-middle bg-white border mb-0">
         <thead>
           <tr><th scope="col" style="width: 11rem">{{ r.start_at ? 'Zeit' : 'Seit Beginn' }}</th><th scope="col">Was</th><th scope="col" class="text-end" style="width: 9rem">Dauer</th></tr>

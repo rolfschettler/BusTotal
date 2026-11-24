@@ -3,7 +3,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { Located, RouteService, locateKey } from './route.service';
 
-const CACHE = 'bustotal.planung.orte';
+const CACHE = 'bustotal.planung.orte.v2';
+const OLD_CACHE = 'bustotal.planung.orte';
 
 describe('RouteService.locate', () => {
   let api: RouteService;
@@ -15,10 +16,14 @@ describe('RouteService.locate', () => {
     http = TestBed.inject(HttpTestingController);
   }
 
-  beforeEach(() => localStorage.removeItem(CACHE));
+  beforeEach(() => {
+    localStorage.removeItem(CACHE);
+    localStorage.removeItem(OLD_CACHE);
+  });
   afterEach(() => {
     http?.verify();
     localStorage.removeItem(CACHE);
+    localStorage.removeItem(OLD_CACHE);
   });
 
   it('gleiche Eingaben ergeben denselben Schlüssel', () => {
@@ -47,6 +52,14 @@ describe('RouteService.locate', () => {
     api.locate('Ulm').subscribe((x) => (p = x));
     http.expectNone('/api/geocode');
     expect(p!.label).toBe('Ulm');
+  });
+
+  it('gemerkte Treffer früherer Versionen (zum Beispiel Ratetreffer) werden verworfen und neu gesucht', () => {
+    localStorage.setItem(OLD_CACHE, JSON.stringify([['germanenstraße 4, 89250 senden-ay', { label: 'Irrawaddy, Myanmar', lat: 16.8, lon: 95.1 }]]));
+    setup();
+    api.locate('Germanenstraße 4, 89250 Senden-Ay').subscribe((p) => expect(p).toBeNull());
+    http.expectOne((r) => r.url === '/api/geocode').flush({ data: [] });
+    expect(localStorage.getItem(OLD_CACHE)).toBeNull();
   });
 
   it('"nichts gefunden" wird nicht gemerkt', () => {

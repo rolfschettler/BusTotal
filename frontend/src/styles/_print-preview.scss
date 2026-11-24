@@ -64,6 +64,8 @@ app-print-preview {
 
   // Alles außer der Vorschau ausblenden, auch das Layout der App
   body.pp-open app-root > *:not(app-print-preview) { display: none !important; }
+  // Auch alles, was Bootstrap und die App direkt an den body hängen (Hilfe-Fenster, Dialoge, Hintergrund, Meldungen)
+  body.pp-open > *:not(app-root):not(script):not(style) { display: none !important; }
   body.pp-open { overflow: visible; background: #fff; }
 
   app-print-preview {

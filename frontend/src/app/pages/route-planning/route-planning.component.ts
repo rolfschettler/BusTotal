@@ -1,12 +1,14 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, forkJoin, map, of, switchMap, tap } from 'rxjs';
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { NgbDropdown, NgbDropdownItem, NgbDropdownMenu, NgbDropdownToggle } from '@ng-bootstrap/ng-bootstrap';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ConfirmService } from '../../core/confirm.service';
 import { TripKindValue } from '../../core/document.service';
 import { PricingService } from '../../core/pricing.service';
-import { RouteResult, RouteService } from '../../core/route.service';
+import { GeoHit, RouteResult, RouteService, locateKey } from '../../core/route.service';
 import { httpErrorText } from '../../core/http-error';
 import { GERMAN_STATES } from '../../core/german-states';
 import { Depot, DepotService } from '../../core/depot.service';
@@ -28,6 +30,7 @@ import {
   formatKm,
   moveItem,
   restoredResult,
+  shortLabel,
   storableRoute,
   toRequest,
   tourTitle,
@@ -43,7 +46,7 @@ import {
  */
 @Component({
   selector: 'app-route-planning',
-  imports: [FormsModule, DatePipe, DecimalPipe, RouterLink, HelpLinkComponent, HighlightComponent, MapComponent, PlaceFieldComponent],
+  imports: [FormsModule, NgbDropdown, NgbDropdownToggle, NgbDropdownMenu, NgbDropdownItem, DatePipe, DecimalPipe, RouterLink, HelpLinkComponent, HighlightComponent, MapComponent, PlaceFieldComponent],
   templateUrl: './route-planning.component.html',
 })
 export class RoutePlanningComponent implements OnInit {
@@ -52,6 +55,7 @@ export class RoutePlanningComponent implements OnInit {
   private depotApi = inject(DepotService);
   private pricing = inject(PricingService);
   private tripApi = inject(TripService);
+  private confirm = inject(ConfirmService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
@@ -121,11 +125,26 @@ export class RoutePlanningComponent implements OnInit {
 
   /**
    * Legt aus dem Ergebnis ein Angebot als Entwurf an und öffnet es. Zum Server gehen nur die Kennzahlen (Kilometer, Lenkzeit,
-   * Tage), nie die Route oder die Orte. Den Kunden wählt man im Beleg.
+   * Tage), nie die Route oder die Orte. Den Kunden wählt man im Beleg. Wurde die Eingabe seit der Berechnung geändert, fragt ein
+   * Dialog, ob die Strecke neu berechnet und dann das Angebot erstellt werden soll (der Preis käme sonst von der alten Strecke).
    */
-  createQuote() {
+  async createQuote() {
+    if (this.quoting() || this.calculating()) return;
+    if (this.stale()) {
+      if (!this.canCalc()) return;
+      const ok = await this.confirm.ask({
+        title: 'Strecke neu berechnen?',
+        message:
+          'Sie haben die Eingabe geändert, das Ergebnis gehört noch zum alten Stand. Damit der Preis zur richtigen Strecke passt, muss sie zuerst neu berechnet werden. Jetzt neu berechnen und danach das Angebot erstellen?',
+        confirmLabel: 'Neu berechnen und Angebot erstellen',
+      });
+      if (!ok) return;
+      this.quoteError.set(null);
+      this.calculate(() => void this.createQuote());
+      return;
+    }
     const r = this.result();
-    if (!r || this.stale()) return;
+    if (!r) return;
     // Betitelt wird mit Von und Nach der Fahrt mit Fahrgästen; Leerfahrten zum Betriebshof gehören nicht in den Betreff.
     const label = this.tripTitle().trim() || tourTitle(r.legs, this.stops());
 
@@ -160,6 +179,7 @@ export class RoutePlanningComponent implements OnInit {
       .subscribe({
         next: (doc) => {
           this.quoting.set(false);
+          this.leaving = true;
           this.router.navigate(['/belege', doc.id]);
         },
         error: (e: HttpErrorResponse) => {
@@ -178,10 +198,41 @@ export class RoutePlanningComponent implements OnInit {
   /** Die Eingabe wurde seit dem Laden oder Speichern der Tour verändert: Das Archiv hat einen anderen Stand. */
   tripDirty = signal(false);
   /**
+   * Der Name passt nicht mehr zur berechneten Strecke (zum Beispiel nach einem geänderten Halt): Vorschlag zum Übernehmen, sonst null.
+   * Nur ein Vorschlag mit Knopf: Ein selbst gewählter Name wird nie überschrieben.
+   */
+  titleSuggestion = computed(() => {
+    const r = this.result();
+    if (!r || this.stale()) return null;
+    const suggestion = tourTitle(r.legs, this.stops());
+    const title = this.tripTitle().trim();
+    // Nur wenn sich Von oder Nach seit dem Namen geändert hat: Ein eigener Name wie „… über Salzburg“ löst nie einen Vorschlag aus.
+    return suggestion && title && title !== suggestion && suggestion !== this.titleBasis() ? suggestion : null;
+  });
+  /** Der Namensvorschlag („Von – Nach“) zu dem Zeitpunkt, als der Name geladen, gespeichert oder vorgeschlagen wurde. */
+  private titleBasis = signal('');
+
+  /** „Als Namen übernehmen“ am Vorschlag. */
+  acceptTitleSuggestion(suggestion: string) {
+    this.tripTitle.set(suggestion);
+    this.titleBasis.set(suggestion);
+  }
+
+  /** Merkt, zu welcher Strecke der aktuelle Name gehört (siehe titleSuggestion). */
+  private rememberTitleBasis() {
+    this.titleBasis.set(tourTitle(this.result()?.legs ?? [], this.stops()));
+  }
+  /**
    * Nimmt das Archiv diese Tour auf? Es braucht zwei Halte, oder einen Halt und einen Betriebshof der Firma (wie die Berechnung;
    * ein „anderer Ort“ als Betriebshof wird nicht gespeichert).
    */
-  canStore = computed(() => this.stops().filter((s) => s.key !== -1).length >= 2 || this.depots().some((d) => d.id === this.depotChoice()));
+  canStore = computed(
+    () => this.stops().filter((s) => s.key !== -1).length + this.pending().length >= 2 || this.depots().some((d) => d.id === this.depotChoice()),
+  );
+  /** Die Taste „Tour speichern“ ist nicht nutzbar: es läuft etwas, das Archiv nimmt die Tour nicht, oder die Strecke lässt sich nicht berechnen. */
+  saveDisabled = computed(
+    () => this.savingTrip() || this.calculating() || !this.canStore() || ((this.stale() || !this.result()) && !this.canCalc()),
+  );
 
   /**
    * Fahrtart, Fahrzeugtyp oder Anzahl geändert: Das Ergebnis bleibt gültig (die Route hängt nicht davon ab), aber die Tour im Archiv
@@ -304,14 +355,38 @@ export class RoutePlanningComponent implements OnInit {
     if (trip.route) this.result.set(restoredResult(trip.route, trip.geometry));
     this.stale.set(false);
     this.tripTitle.set(trip.title);
+    this.rememberTitleBasis();
     this.currentTrip.set({ id: trip.id, title: trip.title });
     this.tripDirty.set(false);
     this.tripLoadedMessage.set(`Tour „${trip.title}“ ist geladen. Sie können gleich ein Angebot erstellen oder die Strecke ändern und neu berechnen.`);
   }
 
-  /** Speichert die berechnete Tour im Archiv: als Änderung der geladenen Tour oder (asNew) als neue Tour. */
-  saveTrip(asNew = false) {
-    if (this.stale() || !this.result() || !this.tripTitle().trim() || !this.canStore()) return;
+  /**
+   * Speichert die Tour im Archiv: als Änderung der geladenen Tour oder (asNew) als neue Tour. Wurde die Eingabe seit der Berechnung
+   * geändert (zum Beispiel ein Halt), fragt ein Dialog kurz vor dem Speichern, ob die Strecke neu berechnet und dann gespeichert
+   * werden soll. Gespeichert wird nie ein Ergebnis, das nicht mehr zur Eingabe passt; neu berechnet wird nie ungefragt.
+   */
+  async saveTrip(asNew = false) {
+    if (this.savingTrip() || this.calculating() || !this.canStore()) return;
+    // Eine Kopie unter demselben Namen würde zwei gleiche Touren im Archiv ergeben: Dann bekommt sie den Zusatz „(Kopie)“.
+    if (asNew && this.tripTitle().trim() === this.currentTrip()?.title) {
+      this.tripTitle.set(`${this.tripTitle().trim().slice(0, 142)} (Kopie)`);
+    }
+    if (this.stale() || !this.result()) {
+      if (!this.canCalc()) return;
+      const fresh = !this.result();
+      const ok = await this.confirm.ask({
+        title: fresh ? 'Strecke berechnen?' : 'Strecke neu berechnen?',
+        message: fresh
+          ? 'Die Strecke ist noch nicht berechnet. Gespeichert wird die berechnete Strecke mit Zeitplan und Linie. Jetzt berechnen und danach speichern?'
+          : 'Sie haben die Angaben zur Strecke geändert, das Ergebnis gehört noch zum alten Stand. Damit die richtige Strecke gespeichert wird, muss sie zuerst neu berechnet werden. Jetzt neu berechnen und danach speichern?',
+        confirmLabel: fresh ? 'Berechnen und speichern' : 'Neu berechnen und speichern',
+      });
+      if (!ok) return;
+      this.tripError.set(null);
+      this.calculate(() => void this.saveTrip(asNew));
+      return;
+    }
     this.savingTrip.set(true);
     this.tripError.set(null);
     this.storeTrip(asNew).subscribe({
@@ -319,10 +394,12 @@ export class RoutePlanningComponent implements OnInit {
         this.savingTrip.set(false);
         this.tripLoadedMessage.set(null);
         this.tripMessage.set(`Tour „${trip.title}“ ist im Tour-Archiv gespeichert. Nächster Schritt: Angebot erstellen. Die Tour finden Sie später über „Aus Archiv laden“.`);
+        this.scrollToMessages();
       },
       error: (err: HttpErrorResponse) => {
         this.savingTrip.set(false);
         this.tripError.set(httpErrorText(err, 'Die Tour konnte nicht gespeichert werden.'));
+        this.scrollToMessages();
       },
     });
   }
@@ -358,6 +435,7 @@ export class RoutePlanningComponent implements OnInit {
       tap((trip) => {
         this.currentTrip.set({ id: trip.id, title: trip.title });
         this.tripTitle.set(trip.title);
+        this.rememberTitleBasis();
         this.tripDirty.set(false);
       }),
     );
@@ -388,13 +466,30 @@ export class RoutePlanningComponent implements OnInit {
 
   /** Text je Feld (Schlüssel des Ortes), so wie er eingegeben wurde. */
   texts = signal<Record<number, string>>({});
-  /** Beim Berechnen gefundener Ort zu einem Text (Schlüssel des Feldes). Das Feld selbst bleibt unverändert. */
+  /**
+   * Beim Berechnen gefundener Ort zu einem Text (Schlüssel des Feldes). Das Feld selbst bleibt unverändert. Der Name des Ortes ist der
+   * getippte Text: Was Sie eingeben, steht so im Archiv, im Angebot und im PDF. Vom Ortsdienst kommt nur die Lage.
+   */
   resolved = signal<Record<number, Place>>({});
+  /** Wie der Ortsdienst den gefundenen Ort selbst nennt (nur als Hinweis unter dem Feld, damit man die Lage prüfen kann). */
+  foundAs = signal<Record<number, string>>({});
+  /** Felder, zu denen die Suche keinen Ort gefunden hat: Sie werden am Feld selbst rot markiert, bis der Text geändert oder ein Ort gewählt wird. */
+  notFound = signal<Record<number, true>>({});
+
+  /** Fehlertext am Feld (leer: alles in Ordnung). */
+  problemOf(w: Waypoint): string {
+    return this.notFound()[w.key] ? 'Zu diesem Text wurde kein Ort gefunden.' : '';
+  }
   /** Felder mit Text, zu dem noch kein Ort gesucht wurde: Sie werden beim Berechnen aufgelöst. */
   pending = computed(() => [this.start(), this.via(), this.end()].flat().filter((w) => !w.place && !this.resolved()[w.key] && this.textOf(w).trim().length >= 2));
   /** Betriebshof mit Text, aber noch ohne gefundenen Ort */
   depotPending = computed(() => this.depotChoice() === 'other' && !this.depot() && this.depotText().trim().length >= 2);
 
+  /**
+   * Gibt es etwas zu berechnen? Nein, wenn schon ein Ergebnis da ist und sich seither nichts geändert hat (eine geladene Tour oder eine
+   * eben berechnete Strecke): Eine neue Anfrage lieferte dasselbe und kostet Kontingent beim Routing-Dienst.
+   */
+  needsCalc = computed(() => this.canCalc() && (this.stale() || !this.result()));
   canCalc = computed(() => canCalculate(this.stops().length + this.pending().length, !!this.depot() || this.depotPending(), this.returnToDepot()) && !this.calculating());
   selectedVehicle = computed(() => this.vehicles().find((v) => v.id === this.vehicleId()) ?? null);
 
@@ -442,10 +537,49 @@ export class RoutePlanningComponent implements OnInit {
   }
 
   setText(key: number, text: string) {
+    // Ein Halt aus einer geladenen Tour trägt seinen Ort schon: Wird der Text geändert, gilt der alte Ort nicht mehr und der neue Text
+    // wird beim Berechnen gesucht (sonst bliebe die Änderung wirkungslos).
+    const current = [this.start(), ...this.via(), this.end()].find((w) => w.key === key);
+    if (current?.place && locateKey(text) !== locateKey(current.place.label)) this.clearPlace(key);
     this.texts.update((t) => ({ ...t, [key]: text }));
     // Anderer Text: der zuvor gefundene Ort gilt nicht mehr.
     this.resolved.update(({ [key]: _gone, ...rest }) => rest);
+    this.foundAs.update(({ [key]: _gone, ...rest }) => rest);
+    this.notFound.update(({ [key]: _gone, ...rest }) => rest);
     this.changed();
+  }
+
+  /** Lage des Ortes, der für ein Feld gilt (nach dem Berechnen oder bei einer geladenen Tour), sonst null. */
+  coordsOf(w: Waypoint): { lat: number; lon: number } | null {
+    const place = this.withResolved(w).place;
+    return place ? { lat: place.lat, lon: place.lon } : null;
+  }
+
+  /**
+   * Aus der Trefferliste wurde ein anderer Ort gewählt (der erste Treffer lag falsch, zum Beispiel der Gemeinde-Mittelpunkt im Wald).
+   * Der Name bleibt der getippte Text, die Lage kommt vom gewählten Treffer. Die Wahl gilt künftig für denselben Text.
+   */
+  choosePlace(key: number, hit: GeoHit) {
+    const typed = (this.texts()[key] ?? '').replace(/\s+/g, ' ').trim();
+    const found = shortLabel(hit.label);
+    const place: Place = { label: typed || found, lat: hit.lat, lon: hit.lon };
+    const set = (w: Waypoint): Waypoint => (w.key === key ? { ...w, place } : w);
+    this.start.update(set);
+    this.end.update(set);
+    this.via.update((list) => list.map(set));
+    this.resolved.update(({ [key]: _gone, ...rest }) => rest);
+    this.foundAs.update((r) => ({ ...r, [key]: found }));
+    this.notFound.update(({ [key]: _gone, ...rest }) => rest);
+    this.api.rememberChoice(typed, { label: found, lat: hit.lat, lon: hit.lon });
+    this.changed();
+  }
+
+  /** Nimmt einem Feld den bereits bekannten Ort, ohne Aufenthalt und Fahrer-frei zu verlieren. */
+  private clearPlace(key: number) {
+    const strip = (w: Waypoint): Waypoint => (w.key === key ? { ...w, place: null } : w);
+    this.start.update(strip);
+    this.end.update(strip);
+    this.via.update((list) => list.map(strip));
   }
 
   textOf(w: Waypoint): string {
@@ -456,8 +590,26 @@ export class RoutePlanningComponent implements OnInit {
   addVia() {
     this.via.update((list) => [...list, this.blank()]);
   }
+  /**
+   * Das Ergebnis stammt aus einer Berechnung in dieser Sitzung, nicht aus einer geladenen Tour. Nur dann gibt es den Tipp zur
+   * Optimierung: Eine geladene Tour ist schon geplant, der Tipp würde zu unnötigen Anfragen verleiten.
+   */
+  calculatedHere = signal(false);
+
+  /** Zwischenhalte mit Text (leere Felder zählen nicht). */
+  viaCount = computed(() => this.via().filter((w) => this.textOf(w).trim() !== '' || !!w.place).length);
+
+  /** Der Tipp „Optimieren“: Kästchen anhaken und gleich neu berechnen. */
+  optimizeNow() {
+    this.optimize.set(true);
+    this.changed();
+    this.calculate();
+  }
+
   removeVia(index: number) {
     this.via.update((list) => list.filter((_, i) => i !== index));
+    // Optimieren gibt es erst ab zwei Zwischenhalten: Bleibt nur einer, wird das Kästchen zurückgesetzt
+    if (this.via().length < 2) this.optimize.set(false);
     this.changed();
   }
   moveVia(index: number, delta: number) {
@@ -506,18 +658,79 @@ export class RoutePlanningComponent implements OnInit {
     this.via.set([]);
     this.texts.set({});
     this.resolved.set({});
+    this.foundAs.set({});
+    this.notFound.set({});
     this.roundTrip.set(false);
     this.startAt.set('');
     this.extendedDays.set(0);
     this.optimize.set(false);
     this.result.set(null);
+    this.calculatedHere.set(false);
     this.error.set(null);
     this.stale.set(false);
     this.currentTrip.set(null);
     this.tripTitle.set('');
+    this.titleBasis.set('');
     this.tripMessage.set(null);
     this.tripLoadedMessage.set(null);
     this.tripError.set(null);
+  }
+
+  /**
+   * Gibt es Eingaben, die noch in keiner Tour im Archiv stehen? Bei einer geladenen Tour: Sie wurde seit dem Laden oder Speichern
+   * verändert. Sonst: Es steht etwas in den Feldern oder es gibt ein Ergebnis.
+   */
+  unsavedInput = computed(() =>
+    this.currentTrip() ? this.tripDirty() : Object.values(this.texts()).some((t) => t.trim() !== '') || !!this.result(),
+  );
+
+  /**
+   * Die Seite wird verlassen (anderer Menüpunkt, Zurück-Taste): Gibt es Ungespeichertes, fragt ein Dialog vorher. Nach dem Anlegen eines
+   * Angebots wird nicht gefragt, die Strecke steckt dann im Angebot.
+   */
+  canLeave(): boolean | Promise<boolean> {
+    if (this.leaving || !this.unsavedInput()) return true;
+    return this.confirm.ask({
+      title: 'Seite verlassen?',
+      message: 'Ihre Eingabe ist noch nicht im Tour-Archiv gespeichert. Wenn Sie die Seite verlassen, geht sie verloren.',
+      confirmLabel: 'Verlassen',
+      danger: true,
+    });
+  }
+  private leaving = false;
+
+  /** Neu laden oder Fenster schließen: der Browser warnt, solange etwas nicht gespeichert ist. */
+  @HostListener('window:beforeunload', ['$event'])
+  warnBeforeUnload(event: BeforeUnloadEvent) {
+    if (this.unsavedInput()) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  }
+
+  /**
+   * Zu den Meldungen über der Tastenleiste scrollen: Sie stehen weit unten im Eingabebereich und wurden sonst übersehen. Wird bei JEDER
+   * Meldung aufgerufen, auch wenn sie genauso lautet wie die vorige (ein Signal meldet gleiche Werte nicht noch einmal).
+   */
+  private scrollToMessages() {
+    setTimeout(() => document.getElementById('planMessages')?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 120);
+  }
+
+  /** „Neu beginnen“: Gibt es Ungespeichertes, fragt ein Dialog vorher. Gespeicherte Touren bleiben immer erhalten. */
+  async confirmReset() {
+    if (this.unsavedInput()) {
+      const trip = this.currentTrip();
+      const ok = await this.confirm.ask({
+        title: 'Neu beginnen?',
+        message: trip
+          ? `Ihre Änderungen an der Tour „${trip.title}“ sind noch nicht gespeichert. Wenn Sie neu beginnen, gehen sie verloren. Die gespeicherte Tour bleibt unverändert im Archiv.`
+          : 'Ihre Eingabe ist noch in keiner Tour im Archiv gespeichert. Wenn Sie neu beginnen, geht sie verloren. Gespeicherte Touren bleiben erhalten.',
+        confirmLabel: 'Neu beginnen',
+        danger: true,
+      });
+      if (!ok) return;
+    }
+    this.reset();
   }
 
   /** Jede Änderung an der Eingabe macht ein vorhandenes Ergebnis zum veralteten. */
@@ -529,37 +742,61 @@ export class RoutePlanningComponent implements OnInit {
   }
 
   // ---- Berechnung ----
-  calculate() {
+  /** @param after wird nach erfolgreicher Berechnung aufgerufen (zum Beispiel „danach speichern“) */
+  calculate(after?: () => void) {
     if (!this.canCalc()) return;
+    // Nichts geändert, Ergebnis aktuell: keine Anfrage (weder für Orte noch für die Route)
+    if (!this.needsCalc() && this.pending().length === 0 && !this.depotPending()) {
+      after?.();
+      return;
+    }
     this.calculating.set(true);
     this.error.set(null);
     // Nur Felder, deren Text seit der letzten Suche neu ist; schon einmal gesuchte Texte liefert locate() ohne Anfrage.
     const todo = this.pending();
     const texts = [...todo.map((w) => this.textOf(w).trim()), ...(this.depotPending() ? [this.depotText().trim()] : [])];
     if (!texts.length) {
-      this.run();
+      this.run(after);
       return;
     }
     forkJoin(texts.map((t) => this.api.locate(t))).subscribe({
       next: (places) => {
-        const missing = texts.find((_, i) => !places[i]);
-        if (missing) {
+        // Gefundene Orte werden immer gemerkt und angezeigt, auch wenn ein anderes Feld nicht gefunden wurde.
+        const found: Record<number, Place> = {};
+        const foundAs: Record<number, string> = {};
+        const missing: Record<number, true> = {};
+        todo.forEach((w, i) => {
+          const hit = places[i];
+          if (!hit) {
+            missing[w.key] = true;
+            return;
+          }
+          // Name = getippter Text (Leerzeichen bereinigt); die Lage kommt vom Ortsdienst
+          found[w.key] = { ...hit, label: texts[i].replace(/\s+/g, ' ') };
+          foundAs[w.key] = hit.label;
+        });
+        this.resolved.update((r) => ({ ...r, ...found }));
+        this.foundAs.update((r) => ({ ...r, ...foundAs }));
+        const depotHit = this.depotPending() ? places[texts.length - 1] : null;
+        if (depotHit) this.depot.set(depotHit);
+
+        const missingTexts = [...todo.filter((w) => missing[w.key]).map((w) => this.textOf(w).trim()), ...(this.depotPending() && !depotHit ? [this.depotText().trim()] : [])];
+        if (missingTexts.length) {
+          // Das betroffene Feld wird am Feld selbst markiert; die Meldung steht über den Tasten.
+          this.notFound.update((r) => ({ ...r, ...missing }));
           this.calculating.set(false);
-          this.error.set(`Kein Ort zu „${missing}“ gefunden. Bitte anders schreiben (zum Beispiel mit Postleitzahl oder „Ulm Hbf“).`);
+          this.error.set(
+            `Kein Ort zu ${missingTexts.map((m) => `„${m}“`).join(' und zu ')} gefunden. Bitte schreiben Sie ihn genauer (zum Beispiel ohne Ortsteil, mit Postleitzahl oder „Ulm Hbf“) oder wählen Sie beim Feld „Ort aus Trefferliste wählen“.`,
+          );
+          this.scrollToMessages();
           return;
         }
-        const found: Record<number, Place> = {};
-        todo.forEach((w, i) => (found[w.key] = places[i]!));
-        this.resolved.update((r) => ({ ...r, ...found }));
-        if (this.depotPending()) {
-          const d = places[texts.length - 1]!;
-          this.depot.set(d);
-        }
-        this.run();
+        this.run(after);
       },
       error: (err: HttpErrorResponse) => {
         this.calculating.set(false);
         this.error.set(httpErrorText(err, 'Die Orte konnten nicht gesucht werden.'));
+        this.scrollToMessages();
       },
     });
   }
@@ -570,7 +807,7 @@ export class RoutePlanningComponent implements OnInit {
     this.via.update((list) => [...list].sort((a, b) => (rank.get(a.key) ?? 1e9) - (rank.get(b.key) ?? 1e9)));
   }
 
-  private run() {
+  private run(after?: () => void) {
     const request = toRequest({
       stops: this.stops(),
       depot: this.depot(),
@@ -586,13 +823,19 @@ export class RoutePlanningComponent implements OnInit {
         if (r.optimized) this.applyOrder(sent.map((s) => s.key), r.order);
         this.result.set(r);
         this.stale.set(false);
+        this.calculatedHere.set(true);
         this.calculating.set(false);
         // Name der Tour vorschlagen, solange der Nutzer keinen eigenen eingetragen hat.
-        if (!this.tripTitle().trim()) this.tripTitle.set(tourTitle(r.legs, this.stops()));
+        if (!this.tripTitle().trim()) {
+          this.tripTitle.set(tourTitle(r.legs, this.stops()));
+          this.rememberTitleBasis();
+        }
+        after?.();
       },
       error: (err: HttpErrorResponse) => {
         this.calculating.set(false);
         this.error.set(httpErrorText(err, 'Die Berechnung ist fehlgeschlagen.'));
+        this.scrollToMessages();
       },
     });
   }
@@ -619,9 +862,10 @@ export class RoutePlanningComponent implements OnInit {
     return w.place ? w : { ...w, place: this.resolved()[w.key] ?? null };
   }
 
-  /** Hinweis unter dem Feld: welcher Ort für den getippten Text verwendet wurde. */
+  /** Hinweis unter dem Feld: wie der Ortsdienst den gefundenen Ort nennt. */
   usedFor(w: Waypoint): string {
-    return w.place ? '' : (this.resolved()[w.key]?.label ?? '');
+    // Immer, wenn ein Ort gesucht oder gewählt wurde: Der Nutzer sieht, welcher Ort für seine Eingabe gilt
+    return (w.place ?? this.resolved()[w.key]) ? (this.foundAs()[w.key] ?? '') : '';
   }
 
   private blank(): Waypoint {

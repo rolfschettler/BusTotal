@@ -39,19 +39,26 @@ class JourneyService
     }
 
     /**
-     * Ein weiterer Abschnitt der Reise mit der Strecke einer gespeicherten Tour und seinem Fahrzeugbedarf.
+     * Ein weiterer Abschnitt der Reise mit seinem Fahrzeugbedarf: mit der Strecke einer gespeicherten Tour, oder ohne Tour mit
+     * eigenen Angaben (Bezeichnung, Kilometer, Fahrzeit, Tage), zum Beispiel für eine Fahrt vor Ort.
      *
      * @param  list<array{type: ?VehicleType, count: int}>  $vehicles
+     * @param  array{title: string, loaded_km: float, drive_s: int, days: int}|null  $own  nur ohne Tour
      */
-    public function addSection(string $journeyId, SectionKind $kind, Trip $trip, array $vehicles): JourneySection
+    public function addSection(string $journeyId, SectionKind $kind, ?Trip $trip, array $vehicles, ?array $own = null): JourneySection
     {
-        return DB::transaction(function () use ($journeyId, $kind, $trip, $vehicles) {
+        return DB::transaction(function () use ($journeyId, $kind, $trip, $vehicles, $own) {
             // Die Reise sperren: Zwei gleichzeitige Aufrufe bekämen sonst dieselbe Position (eindeutiger Index, Serverfehler).
             Journey::lockForUpdate()->findOrFail($journeyId);
             $position = (int) JourneySection::where('journey_id', $journeyId)->max('position') + 1;
             $section = JourneySection::create([
-                'journey_id' => $journeyId, 'position' => $position, 'kind' => $kind, 'title' => mb_substr($trip->title, 0, 150), 'trip_id' => $trip->id,
-            ]);
+                'journey_id' => $journeyId, 'position' => $position, 'kind' => $kind,
+            ] + ($trip ? [
+                'title' => mb_substr($trip->title, 0, 150), 'trip_id' => $trip->id,
+            ] : [
+                'title' => mb_substr(trim((string) ($own['title'] ?? '')), 0, 150) ?: $kind->label(),
+                'loaded_km' => $own['loaded_km'] ?? 0, 'drive_s' => $own['drive_s'] ?? 0, 'days' => max(1, (int) ($own['days'] ?? 1)),
+            ]));
             $this->saveVehicles($section, $vehicles);
 
             return $section;
@@ -126,6 +133,7 @@ class JourneyService
             'date_to' => $journey->date_to?->toDateString(),
             'sections' => $journey->sections()->with('vehicles')->get()->map(fn (JourneySection $s) => [
                 'id' => $s->id, 'kind' => $s->kind->value, 'kind_label' => $s->kind->label(), 'title' => $s->title, 'trip_id' => $s->trip_id,
+                'own' => $s->ownFigures(),
                 'vehicles' => $s->vehicles->map(fn ($v) => ['type' => $v->vehicle_type?->value, 'label' => $v->vehicle_type?->label(), 'count' => $v->vehicle_count])->all(),
             ])->all(),
             'documents' => Document::where('journey_id', $journey->id)->orderBy('created_at')->orderBy('id')
@@ -202,6 +210,7 @@ class JourneyService
             ] : null,
             'sections' => $journey->sections->map(fn (JourneySection $sec) => [
                 'id' => $sec->id, 'kind' => $sec->kind->value, 'kind_label' => $sec->kind->label(), 'title' => $sec->title,
+                'own' => $sec->ownFigures(),
                 'vehicles' => $sec->vehicles->map(fn ($v) => ['type' => $v->vehicle_type?->value, 'label' => $v->vehicle_type?->label(), 'count' => $v->vehicle_count])->all(),
                 'trip' => isset($frozen[$sec->id]) ? [
                     // Stand beim Festschreiben (Beleg-Nummer in frozen_by); der Verweis auf die Tour bleibt zum Öffnen im Archiv

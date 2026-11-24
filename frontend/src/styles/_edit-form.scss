@@ -105,6 +105,64 @@
   }
 }
 
+// Leiste mit gleich breiten Tasten (zusätzlich zu .form-bar). Oben optional Meldungen (.form-bar-messages), darunter die Tasten
+// (.form-bar-buttons). Passen alle Tasten in eine Zeile, stehen sie nebeneinander (je 9,5 rem, die seltene Aktion rechts); sonst stehen
+// sie ALLE untereinander in voller Breite, nie halb umgebrochen. Eine Taste mit Pfeil-Menü (.btn-group) hat dieselbe Gesamtbreite,
+// ihre Haupttaste füllt den Rest neben dem Pfeil.
+.form-bar-equal {
+  display: block;
+  padding-inline: 0.75rem;
+
+  // Lange Meldungen scrollen in der Leiste, sie schieben die Tasten nie aus dem Sichtbereich
+  .form-bar-messages {
+    max-height: 40vh;
+    overflow-y: auto;
+  }
+
+  .form-bar-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+
+    > .btn,
+    > .btn-group,
+    .form-bar-right,
+    .form-bar-right .btn {
+      width: 100%;
+      min-width: 0;
+      white-space: nowrap;
+    }
+
+    .form-bar-right {
+      margin-left: 0;
+    }
+
+    > .btn-group > .btn:first-child {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    // Breit genug für eine Zeile (drei Tasten à 9,5 rem im Eingabebereich der Streckenplanung)
+    @media (min-width: 1400px) {
+      flex-direction: row;
+      align-items: center;
+
+      > .btn,
+      > .btn-group,
+      .form-bar-right .btn {
+        width: 9.5rem;
+        padding-inline: 0.5rem;
+      }
+
+      .form-bar-right {
+        width: auto;
+        margin-left: auto;
+      }
+    }
+  }
+}
+
 .form-bar-right {
   display: flex;
   gap: 0.5rem;

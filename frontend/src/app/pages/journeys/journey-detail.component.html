@@ -71,6 +71,9 @@
               <td class="text-nowrap">{{ s.kind_label }}</td>
               <td>
                 {{ s.title }}
+                @if (s.own) {
+                  <div class="small text-body-secondary">Eigene Angaben, ohne Tour</div>
+                }
                 @if (s.trip; as t) {
                   <div class="small text-body-secondary">{{ t.from }} → {{ t.to }}</div>
                   @if (t.frozen_by) {
@@ -82,9 +85,9 @@
                 @for (v of s.vehicles; track $index; let last = $last) {{{ v.count }} × {{ v.label ?? 'Fahrzeug' }}{{ last ? '' : ', ' }}}
                 @if (!s.vehicles.length) { <span class="text-body-secondary">–</span> }
               </td>
-              <td class="text-end text-nowrap">@if (s.trip; as t) { {{ t.loaded_km + t.empty_km | number: '1.0-1' : 'de-DE' }} km }</td>
-              <td class="text-end text-nowrap">@if (s.trip; as t) { {{ duration(t.drive_s) }} }</td>
-              <td class="text-end">@if (s.trip; as t) { {{ t.days }} }</td>
+              <td class="text-end text-nowrap">@if (s.trip; as t) { {{ t.loaded_km + t.empty_km | number: '1.0-1' : 'de-DE' }} km } @else if (s.own) { {{ s.own.loaded_km | number: '1.0-1' : 'de-DE' }} km }</td>
+              <td class="text-end text-nowrap">@if (s.trip; as t) { {{ duration(t.drive_s) }} } @else if (s.own) { {{ duration(s.own.drive_s) }} }</td>
+              <td class="text-end">@if (s.trip; as t) { {{ t.days }} } @else if (s.own) { {{ s.own.days }} }</td>
             </tr>
           }
         </tbody>

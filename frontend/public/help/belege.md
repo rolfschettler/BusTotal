@@ -87,9 +87,12 @@ Unter **Fahrten und Abrechnung › Reisen** sehen Sie alle [Reisen](#reise) auf 
 Ein Angebot aus der Streckenplanung enthält zunächst **eine Strecke**. Eine Reise besteht oft aus mehreren: Hinfahrt, Fahrten vor Ort, Rückfahrt, und auf einer Strecke fahren manchmal verschiedene Busse (zum Beispiel ein Doppeldecker und ein Kleinbus nach Wien). Beides bauen Sie im **Entwurf** des Angebots auf:
 
 1. Klicken Sie unter den Positionen auf **Weitere Strecke hinzufügen**.
-2. Wählen Sie die **Art** (Hinfahrt, Fahrten vor Ort, Rückfahrt) und die **Tour** aus dem Tour-Archiv. Neue Touren planen Sie vorher in der [Streckenplanung](/hilfe/strecken#tour-archiv) und speichern sie dort. Optional tragen Sie das **Datum der Fahrt** ein, dann rechnet {{app}} auch die Zuschläge für Wochenende und Feiertag.
-3. Legen Sie die **Fahrzeuge** fest: Typ und Anzahl. Mit **Weiteren Fahrzeugtyp** kommt eine Zeile dazu. Jeder Typ erscheint nur einmal.
-4. Klicken Sie **Strecke hinzufügen**.
+2. Wählen Sie die **Art**: Hinfahrt, Fahrt vor Ort oder Rückfahrt. Optional tragen Sie das **Datum der Fahrt** ein, dann rechnet {{app}} auch die Zuschläge für Wochenende und Feiertag.
+3. Wählen Sie, woher **Kilometer und Fahrzeit** kommen:
+   - **Eigene Angaben** (Vorgabe bei der Fahrt vor Ort): Sie tragen nur **Bezeichnung**, **Kilometer**, **Fahrzeit** in Stunden und **Tage** ein, ohne Route und ohne Eintrag im Tour-Archiv. Siehe [Fahrt vor Ort](#fahrt-vor-ort).
+   - **Tour aus dem Archiv** (Vorgabe bei Hin- und Rückfahrt): Sie suchen eine gespeicherte Tour. Neue Touren planen Sie vorher in der [Streckenplanung](/hilfe/strecken#tour-archiv) und speichern sie dort.
+4. Legen Sie die **Fahrzeuge** fest: Typ und Anzahl. Vorgeschlagen sind die Fahrzeuge der ersten Strecke. Mit **Weiteren Fahrzeugtyp** kommt eine Zeile dazu. Jeder Typ erscheint nur einmal.
+5. Klicken Sie **Strecke hinzufügen**.
 
 **Was entsteht:** Für jeden Fahrzeugtyp legt {{app}} Positionen aus Ihren [Preisen](/hilfe/einstellungen#preise) an, mit den **Preisen des Typs**, wo welche hinterlegt sind. Bei mehreren gleichen Bussen sind die Mengen entsprechend höher. Im Beleg stehen die Positionen **gruppiert** unter einer Überschrift mit Strecke und Fahrzeugen („Rückfahrt: Wien – München · 2 × Doppeldeckerbus“). Die Beschreibung jeder Position nennt dasselbe, damit sie auch im PDF und in der E-Rechnung für sich verständlich ist. Alle Positionen lassen sich danach ändern.
 
@@ -100,9 +103,22 @@ Ein Angebot aus der Streckenplanung enthält zunächst **eine Strecke**. Eine Re
 - Auftragsbestätigung, Anzahlung, Rechnung und Storno übernehmen die Gruppen. Festgeschriebene Belege lassen sich nicht mehr ändern.
 - Das Fahrzeug wählt später der Disponent. Hier geht es nur um Typ und Anzahl.
 
+### Fahrt vor Ort {#fahrt-vor-ort}
+
+Am Reiseziel bieten Sie oft noch eine Fahrt an, zum Beispiel einen Ausflug. Dafür brauchen Sie **keine Tour** im Archiv:
+
+**Beispiel:** Die Reise fährt von Mietingen nach Villach. Dort bieten Sie einen Ausflug zum Ossiacher See an.
+
+1. Im Entwurf des Angebots **Weitere Strecke hinzufügen** klicken.
+2. Art **Fahrt vor Ort** wählen. **Eigene Angaben** ist dann schon ausgewählt.
+3. Eintragen: Bezeichnung „Ausflug Ossiacher See“, **60** Kilometer, Fahrzeit **2,5** Stunden, **1** Tag.
+4. **Strecke hinzufügen** klicken.
+
+{{app}} legt die Positionen mit Ihren Preisen an, wie bei einer Tour. Eine **Leerfahrt** wird nicht berechnet, denn der Bus ist schon vor Ort. Im Beleg, in der Reise und im PDF steht „Fahrt vor Ort: Ausflug Ossiacher See“ mit Kilometern, Fahrzeit und Tagen. Brauchen Sie die genaue Route mit Halten im Beleg, planen Sie die Fahrt in der [Streckenplanung](/hilfe/strecken#tour-archiv), speichern sie als Tour und wählen **Tour aus dem Archiv**.
+
 ## Fahrtbeschreibung {#fahrtbeschreibung}
 
-Beim **Festschreiben** hält {{app}} die Fahrtbeschreibung der Strecken im Beleg fest: je Strecke die **Halte** (mit Aufenthalt), die **Kilometer** mit Fahrgästen und als Leerfahrt, die **Lenkzeit**, die **Tage**, die einzelnen **Teilstrecken** und die **Fahrzeuge** (Typ und Anzahl). Sie steht im Beleg unter den Positionen und im PDF nach der Summe.
+Beim **Festschreiben** hält {{app}} die Fahrtbeschreibung der Strecken im Beleg fest: je Strecke die **Halte** (mit Aufenthalt), die **Kilometer** mit Fahrgästen und als Leerfahrt, die **Lenkzeit**, die **Tage**, die einzelnen **Teilstrecken** und die **Fahrzeuge** (Typ und Anzahl). Bei einer Strecke mit eigenen Angaben (etwa einer [Fahrt vor Ort](#fahrt-vor-ort)) stehen dort Kilometer, Fahrzeit und Tage. Sie steht im Beleg unter den Positionen und im PDF nach der Summe.
 
 - **Unveränderlich:** Der Stand gilt, wie er beim Festschreiben war. Ändern Sie später die Tour im Tour-Archiv, ändert sich der Beleg nicht, und das PDF zeigt weiter, was Sie dem Kunden angeboten haben.
 - **Folgebelege:** Die Auftragsbestätigung und die Rechnung übernehmen den Stand des Angebots. Nur eine Strecke, die erst im Folgebeleg dazukommt, wird zu diesem Zeitpunkt aus dem Archiv gelesen.

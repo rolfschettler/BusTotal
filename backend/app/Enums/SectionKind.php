@@ -13,7 +13,7 @@ enum SectionKind: string
     {
         return match ($this) {
             self::Hinfahrt => 'Hinfahrt',
-            self::VorOrt => 'Fahrten vor Ort',
+            self::VorOrt => 'Fahrt vor Ort',
             self::Rueckfahrt => 'Rückfahrt',
         };
     }

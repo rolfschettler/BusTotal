@@ -61,6 +61,8 @@ class TourSnapshotService
             'kind_label' => $section->kind->label(),
             'title' => $section->title,
             'trip' => $section->trip ? $this->tripData($section->trip) : null,
+            // Strecke ohne Tour (etwa eine Fahrt vor Ort): Kilometer, Fahrzeit und Tage, wie sie eingegeben wurden
+            'own' => $section->ownFigures(),
         ];
     }
 
