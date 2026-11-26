@@ -428,6 +428,10 @@
       </button>
     }
     @if (readonly()) {
+      @if (doc()?.type === 'angebot' || doc()?.type === 'auftragsbestaetigung') {
+        <!-- Warum hier nur bestimmte Folgebelege angeboten werden -->
+        <span class="align-self-center"><app-help-link topic="belege" anchor="rechnung-nach-ab" label="Folgebelege: Warum keine Rechnung?" /></span>
+      }
       @for (t of typeInfo()?.convertible_to ?? []; track t) {
         @if (doc()?.existing_followups?.[t]; as ex) {
           <!-- Diese Art gibt es aus diesem Beleg nur einmal: statt der Taste ein Verweis auf den vorhandenen Beleg -->

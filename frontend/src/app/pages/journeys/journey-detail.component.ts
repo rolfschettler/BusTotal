@@ -242,13 +242,20 @@ export class JourneyDetailComponent implements OnInit {
     return [...docs].reverse().find((d) => !d.cancelled && d.type !== 'gutschrift') ?? docs[docs.length - 1] ?? null;
   });
 
+  /** Es wird noch geplant (kein Beleg oder nur ein Entwurf): Dann gehört „Strecke hinzufügen“ zum nächsten Schritt. */
+  planning = computed(() => this.canPlan() && (this.latest()?.status ?? 'entwurf') === 'entwurf');
+
+  /** Ist „Strecke hinzufügen“ der naheliegende Schritt (Haupttaste)? Ja, solange es keinen Beleg und keine Rückfahrt gibt. */
+  addFirst = computed(() => !this.latest() && !this.journey()?.sections.some((s) => s.kind === 'rueckfahrt'));
+
   /** Was als Nächstes zu tun ist, in einem Satz. */
   nextStep = computed(() => {
     const j = this.journey();
     const d = this.latest();
     if (!d) {
       if (!j?.sections.length) return 'Fügen Sie die erste Strecke hinzu: Hinfahrt, Fahrten vor Ort, Rückfahrt.';
-      return 'Wenn alle Strecken stehen, erstellen Sie das Angebot.';
+      if (this.addFirst()) return 'Fügen Sie die nächste Strecke hinzu, zum Beispiel die Rückfahrt. Oder erstellen Sie gleich das Angebot.';
+      return 'Erstellen Sie das Angebot. Fehlt noch eine Strecke, fügen Sie sie vorher hinzu.';
     }
     if (d.status === 'entwurf') {
       const pending = j?.quote.pending ?? 0;

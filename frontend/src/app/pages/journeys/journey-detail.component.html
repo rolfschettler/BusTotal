@@ -64,47 +64,46 @@
     <div class="alert py-2" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
   }
 
-  <!-- Nächster Schritt: ein Satz und eine Taste, die zum richtigen Beleg führt -->
+  <!-- Nächster Schritt: ein Satz und die Tasten dazu. Solange geplant wird, steht hier auch „Strecke hinzufügen“ (Kernfunktion der Reise). -->
   <div class="alert alert-info d-flex flex-wrap align-items-center gap-2 py-2" role="note">
     <i class="bi bi-arrow-right-circle" aria-hidden="true"></i>
-    <span><strong>Nächster Schritt:</strong> {{ nextStep() }}</span>
+    <span class="me-auto"><strong>Nächster Schritt:</strong> {{ nextStep() }}</span>
+    @if (planning()) {
+      <a class="btn" [class.btn-primary]="addFirst()" [class.btn-outline-primary]="!addFirst()" [class.bg-white]="!addFirst()"
+         routerLink="/streckenplanung" [queryParams]="{ journey: j.id }">
+        <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Strecke hinzufügen
+      </a>
+    }
     @if (j.quote.draft_id; as draftId) {
       <!-- Entwurf vorhanden: auf den Stand der Strecken bringen oder öffnen -->
       @if (j.quote.can_sync && canPlan()) {
-        <button type="button" class="btn btn-sm btn-primary ms-auto" [disabled]="busy()" (click)="quote()">
+        <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="quote()">
           @if (busy()) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
           Angebot aktualisieren ({{ j.quote.pending }})
         </button>
-        <a class="btn btn-sm btn-outline-secondary" [routerLink]="['/belege', draftId]">Angebot ansehen</a>
+        <a class="btn btn-outline-secondary" [routerLink]="['/belege', draftId]">Angebot ansehen</a>
       } @else {
-        <a class="btn btn-sm btn-primary ms-auto" [routerLink]="['/belege', draftId]">Angebot öffnen</a>
+        <a class="btn btn-primary" [routerLink]="['/belege', draftId]">Angebot öffnen</a>
       }
     } @else if (j.quote.can_create && canPlan()) {
-      <button type="button" class="btn btn-sm btn-primary ms-auto" [disabled]="busy()" (click)="quote()">
+      <button type="button" class="btn" [class.btn-primary]="!addFirst()" [class.btn-outline-primary]="addFirst()" [class.bg-white]="addFirst()" [disabled]="busy()" (click)="quote()">
         @if (busy()) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
         Angebot erstellen
       </button>
     } @else {
       @if (latest(); as d) {
         @if (d.type === 'auftragsbestaetigung' && orders()?.to_plan) {
-          <a class="btn btn-sm btn-primary ms-auto" [routerLink]="['/fahrtauftraege']" [queryParams]="{ journey_id: j.id }">Fahrtaufträge öffnen</a>
-          <a class="btn btn-sm btn-outline-secondary" [routerLink]="['/belege', d.id]">{{ typeLabel(d.type) }} öffnen</a>
+          <a class="btn btn-primary" [routerLink]="['/fahrtauftraege']" [queryParams]="{ journey_id: j.id }">Fahrtaufträge öffnen</a>
+          <a class="btn btn-outline-secondary" [routerLink]="['/belege', d.id]">{{ typeLabel(d.type) }} öffnen</a>
         } @else {
-          <a class="btn btn-sm btn-primary ms-auto" [routerLink]="['/belege', d.id]">{{ typeLabel(d.type) }} öffnen</a>
+          <a class="btn btn-primary" [routerLink]="['/belege', d.id]">{{ typeLabel(d.type) }} öffnen</a>
         }
       }
     }
   </div>
 
   <div class="form-area mb-3">
-    <div class="section-title d-flex align-items-center">
-      <span>Strecken</span>
-      @if (canPlan()) {
-        <a class="btn btn-sm btn-outline-primary ms-auto text-nowrap" routerLink="/streckenplanung" [queryParams]="{ journey: j.id }">
-          <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Strecke hinzufügen
-        </a>
-      }
-    </div>
+    <div class="section-title">Strecken</div>
     <div class="table-responsive">
       <table class="table table-sm align-middle bg-white border mb-0">
         <thead>
@@ -163,11 +162,18 @@
               }
             </tr>
           } @empty {
-            <tr><td [attr.colspan]="canPlan() ? 8 : 7" class="text-center text-secondary py-4 small">Noch keine Strecke. Fügen Sie die erste hinzu.</td></tr>
+            <tr><td [attr.colspan]="canPlan() ? 8 : 7" class="text-center text-secondary py-4 small">Noch keine Strecke.</td></tr>
           }
         </tbody>
       </table>
     </div>
+
+    <!-- Nach dem Festschreiben führt „Nächster Schritt“ durch die Belege; eine weitere Strecke fügt man dann hier an. -->
+    @if (canPlan() && !planning()) {
+      <a class="btn btn-outline-primary mt-2" routerLink="/streckenplanung" [queryParams]="{ journey: j.id }">
+        <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Strecke hinzufügen
+      </a>
+    }
 
     <div class="form-text">
       Strecken planen Sie hier, nicht im Angebot. Das Angebot entsteht aus den Strecken. Ändern Sie eine Strecke, rechnet „Angebot aktualisieren“ nur diese Strecke neu, die anderen bleiben, wie sie sind.

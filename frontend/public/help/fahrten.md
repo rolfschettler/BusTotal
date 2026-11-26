@@ -220,14 +220,13 @@ Die **Lenk- und Ruhezeiten** der Fahrer über mehrere Fahrten prüft {{app}} hie
 
 ## Schritt 7: Rechnung schreiben {#rechnung}
 
-**Wo:** in der festgeschriebenen Auftragsbestätigung oder im Angebot, Knopf **Rechnung erstellen**.
+**Wo:** für Rechnungen **ohne Anzahlung** unter **Belege › Neuer Beleg**, Belegart **Rechnung**. Die Rechnung aus den Fahrtaufträgen, die Anzahlungen berücksichtigt, folgt in einer späteren Etappe, siehe [Warum gibt es keine Taste „Rechnung erstellen“?](/hilfe/belege#rechnung-nach-ab).
 
-1. Es entsteht ein Entwurf mit den Positionen des Auftrags. Ersetzen Sie den vorläufigen Preis durch die tatsächlichen Werte und fügen Sie Zusatzleistungen hinzu.
+1. Wählen Sie den Kunden und tragen Sie die Positionen mit den tatsächlichen Werten und den Zusatzleistungen ein.
 2. **Leistung von (bis)** ist Pflicht: das Fahrtdatum.
-3. Gab es eine **Anzahlung**, zieht die Schlussrechnung sie **automatisch ab**: Sie zeigt die volle Leistung, die Anzahlung mit Steuer und **„Zu zahlen“**.
-4. **Festschreiben:** Die Software prüft die Pflichtangaben und nennt, was fehlt. Danach bekommt die Rechnung ihre Nummer. Fehlt etwas, wird keine Nummer verbraucht.
-5. **Drucken** oder als PDF an den Kunden.
-6. **Hat der Kunde E-Rechnung statt PDF**, steht nach dem Festschreiben in der Tastenleiste **E-Rechnung (XML)**: Das ist die Datei, die Sie dem Kunden schicken (E-Mail oder Rechnungsportal). Was dafür beim Kunden und in den Firmendaten stehen muss, steht unter [E-Rechnung](/hilfe/belege#e-rechnung). Fehlt etwas, wird nicht festgeschrieben und die Meldung nennt es.
+3. **Festschreiben:** Die Software prüft die Pflichtangaben und nennt, was fehlt. Danach bekommt die Rechnung ihre Nummer. Fehlt etwas, wird keine Nummer verbraucht.
+4. **Drucken** oder als PDF an den Kunden.
+5. **Hat der Kunde E-Rechnung statt PDF**, steht nach dem Festschreiben in der Tastenleiste **E-Rechnung (XML)**: Das ist die Datei, die Sie dem Kunden schicken (E-Mail oder Rechnungsportal). Was dafür beim Kunden und in den Firmendaten stehen muss, steht unter [E-Rechnung](/hilfe/belege#e-rechnung). Fehlt etwas, wird nicht festgeschrieben und die Meldung nennt es.
 
 **Bald:** Die Rechnung entsteht dann aus den zurückerfassten Fahrtaufträgen, als **Gesamtrechnung je Reise** oder als **Sammelrechnung** über mehrere Fahrten (zum Beispiel Werksverkehr am Monatsende).
 
@@ -247,7 +246,6 @@ Die **Lenk- und Ruhezeiten** der Fahrer über mehrere Fahrten prüft {{app}} hie
 
 - **Entwurf falsch:** einfach ändern oder **Entwurf löschen**.
 - **Festgeschriebene Rechnung falsch:** **Stornieren**. Es entsteht eine **Stornorechnung** mit negativen Beträgen und dem Verweis auf die Rechnung. Danach schreiben Sie die richtige Rechnung neu. Eine festgeschriebene Rechnung lässt sich nie ändern (GoBD).
-- **Schlussrechnung storniert:** Die Anzahlungen werden dabei wieder frei und lassen sich in der neuen Schlussrechnung erneut abziehen.
 - **Bereits Geld erhalten:** Nach dem Storno **Rückzahlung** buchen, wenn Sie das Geld zurückgeben.
 
 ## Wenn etwas nicht klappt {#probleme}

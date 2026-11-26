@@ -88,7 +88,7 @@ Unter **Fahrten und Abrechnung › Reisen** sehen Sie alle [Reisen](#reise) auf 
 
 Eine Reise besteht oft aus mehreren Strecken: Hinfahrt, Fahrten vor Ort, Rückfahrt. Auf einer Strecke fahren manchmal verschiedene Busse (zum Beispiel ein Doppeldecker und ein Kleinbus nach Wien). Beides planen Sie **auf der Reise**, Schritt für Schritt, und erstellen danach das Angebot:
 
-1. Öffnen Sie die Reise und klicken Sie **Strecke hinzufügen**. Die Streckenplanung öffnet sich.
+1. Öffnen Sie die Reise und klicken Sie oben bei **Nächster Schritt** auf **Strecke hinzufügen** (nach dem Festschreiben steht die Taste unter der Tabelle der Strecken). Die Streckenplanung öffnet sich.
 2. Wählen Sie oben die **Art**: Hinfahrt, Fahrt vor Ort oder Rückfahrt (vorgeschlagen wird die passende nächste).
 3. Legen Sie fest, **woher die Strecke kommt**:
    - **Route berechnen:** Orte eingeben, **Strecke berechnen**. Bei der Rückfahrt sind Von und Nach schon mit den vertauschten Orten der Hinfahrt belegt.
@@ -219,11 +219,25 @@ Die Software legt einen neuen **Entwurf** an und übernimmt Kunde, Texte und Pos
 
 **Aus einem Angebot gibt es nur eine Auftragsbestätigung.** Sie ist die eine Zusage des Kunden, auf ihr bauen die Fahrtaufträge auf. Gibt es schon eine, zeigt das Angebot statt der Taste „Auftragsbestätigung erstellen“ nur einen Verweis auf die vorhandene. Ein Entwurf zählt mit: Festschreiben oder löschen Sie ihn, wenn Sie neu beginnen wollen.
 
-**Die Rechnung entsteht nicht aus Angebot oder Auftragsbestätigung**, sondern aus den gefahrenen Fahrten (den Fahrtaufträgen mit ihrer Rückerfassung). Dieser Weg folgt in einer späteren Etappe. Bis dahin legen Sie eine Rechnung über **Neuer Beleg** an.
+### Warum gibt es keine Taste „Rechnung erstellen“? {#rechnung-nach-ab}
+
+Das ist Absicht. **Die Rechnung entsteht nicht aus Angebot oder Auftragsbestätigung**, sondern aus den gefahrenen Fahrten (den Fahrtaufträgen mit ihrer Rückerfassung). Die Auftragsbestätigung nennt nur den vorläufigen Preis, die Rechnung soll zeigen, was wirklich gefahren wurde. Deshalb gibt es:
+
+| Aus | entsteht |
+|---|---|
+| Angebot | die Auftragsbestätigung (nur eine) |
+| Auftragsbestätigung | die Anzahlungsrechnung (auch mehrere) |
+| Fahrtaufträge | die Rechnung (**folgt in einer späteren Etappe**) |
+
+**Anzahlung fordern:** Öffnen Sie die Auftragsbestätigung und wählen Sie **Anzahlungsrechnung erstellen**. Die Anzahlungsrechnung bleibt mit der Auftragsbestätigung verbunden. Die Rechnung aus den Fahrtaufträgen wird sie berücksichtigen.
+
+> **Bis diese Etappe da ist:** Eine Rechnung ohne Anzahlung legen Sie über **Belege › Neuer Beleg** an und tragen die Positionen selbst ein. Für eine Reise **mit Anzahlung** ist dieser Weg nicht geeignet, denn eine so angelegte Rechnung ist nicht mit der Auftragsbestätigung verbunden.
 
 Eine **Anzahlungsrechnung** gibt es nur zur Auftragsbestätigung, mehrere sind möglich. Die Software schlägt 30 % des Auftrags vor, je Steuersatz eine Position („Anzahlung 30 % auf Auftragsbestätigung …“). Den Betrag ändern Sie im Entwurf wie jede Position.
 
 ## Schlussrechnung und Anzahlungen {#schlussrechnung}
+
+Die Schlussrechnung **folgt in einer späteren Etappe**, zusammen mit der [Rechnung aus den Fahrtaufträgen](#rechnung-nach-ab). So wird sie arbeiten:
 
 Die **Schlussrechnung** ist die Rechnung, die zu derselben Auftragsbestätigung gehört wie die Anzahlungsrechnungen. Sie zeigt die **volle Leistung** und zieht die erhaltenen Anzahlungen **getrennt** ab, nicht als negative Position:
 
@@ -239,6 +253,6 @@ Welche Anzahlungen abgezogen werden:
 
 Übersteigen die Anzahlungen den Rechnungsbetrag, lässt sich die Schlussrechnung nicht festschreiben: Prüfen Sie dann die Positionen. Storniert man eine Schlussrechnung, spiegelt der Storno-Beleg auch den Abzug.
 
-> Die Steuer auf eine Anzahlung entsteht steuerlich mit dem Zahlungseingang. Die Software kennt den Zahlungseingang noch nicht und behandelt jede festgeschriebene Anzahlungsrechnung als erhalten. Klären Sie mit Ihrem Steuerberater, wie Sie Anzahlungen verbuchen.
+> Die Steuer auf eine Anzahlung entsteht steuerlich mit dem Zahlungseingang. Den Zahlungseingang erfassen Sie an der Anzahlungsrechnung. Klären Sie mit Ihrem Steuerberater, wie Sie Anzahlungen verbuchen.
 
 Noch nicht möglich sind Teilgutschriften und neue Versionen eines Angebots. PDF, E-Mail-Versand, DATEV-Export und die E-Rechnung folgen später.

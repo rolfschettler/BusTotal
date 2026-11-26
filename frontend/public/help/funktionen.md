@@ -20,7 +20,7 @@ Diese Seite zeigt, was {{app}} für Ihr Busunternehmen leistet: **von der Streck
 | Rückerfassung | Zusatzleistungen, Kosten und Grenzstände aus dem Fahrtauftrag, die Rechnung entsteht daraus | In Planung |
 | Belege nach GoBD | Unveränderbare Rechnungen, lückenlose Nummern, Storno statt Löschen | Verfügbar |
 | Archiv-PDF mit Prüfsumme | Jede festgeschriebene Rechnung wird einmal gesichert, nie neu erzeugt | Verfügbar |
-| Anzahlung und Schlussrechnung | Anzahlung, Abzug mit Steuer, Restbetrag automatisch | Verfügbar |
+| Anzahlungsrechnung | Anzahlung zur Auftragsbestätigung; die Schlussrechnung mit Abzug folgt mit der Rechnung aus Fahrtaufträgen | Verfügbar (Schlussrechnung in Planung) |
 | Richtiger Steuersatz je Fahrtart | Charter, Linie, Schulfahrt: Satz aus der Fahrtart, Hinweis bei Abweichung und bei mehr als 50 km | Verfügbar |
 | Auslandsanteil bei Fahrten über die Grenze | Inlandsanteil nach Streckenlänge, Grenzstände als Grundlage | In Planung |
 | Reiseleistungen nach § 25 UStG | Marge, Eigenleistung, Drittland und Rechnungstext berechnet | In Planung |
@@ -65,11 +65,11 @@ Diese Seite zeigt, was {{app}} für Ihr Busunternehmen leistet: **von der Streck
 ## Rechnungen nach GoBD {#rechnungen}
 
 **Verfügbar**
-- **Belegkette:** Angebot, Auftragsbestätigung, Anzahlungsrechnung, Schlussrechnung und Storno, jeweils aus dem vorigen Beleg erzeugt. Siehe [Belege](/hilfe/belege#entwurf-und-festschreiben).
+- **Belegkette:** Angebot, Auftragsbestätigung, Anzahlungsrechnung und Storno, jeweils aus dem vorigen Beleg erzeugt. Siehe [Belege](/hilfe/belege#entwurf-und-festschreiben).
 - **Festschreiben:** Eine Rechnung bekommt ihre Nummer erst beim Festschreiben, danach ist sie gesperrt (GoBD). Fehler verbrauchen keine Nummer. Nummernkreise sind lückenlos.
 - **Storno statt Löschen:** Eine Stornorechnung ist ein eigener Beleg, der die Rechnung spiegelt und auf sie verweist.
 - **Zahlungseingang:** Teilzahlungen, Rückzahlungen, überfällige Rechnungen. Buchungen werden nie gelöscht, nur mit Grund storniert. Die Rechnung selbst bleibt unverändert. Siehe [Zahlungen](/hilfe/belege#zahlungen).
-- **Anzahlung und Schlussrechnung:** Die Anzahlungsrechnung schlägt 30 % vor. Die Schlussrechnung zeigt die volle Leistung, zieht Entgelt und Steuer der Anzahlungen getrennt ab und nennt den Restbetrag.
+- **Anzahlung:** Die Anzahlungsrechnung schlägt 30 % vor. Die Schlussrechnung mit Abzug der Anzahlungen folgt mit der Rechnung aus Fahrtaufträgen.
 - **Pflichtangaben-Prüfung** vor dem Festschreiben: Anschriften, Steuernummer oder USt-IdNr., Leistungszeitpunkt, Positionen.
 - **PDF der Belege und Drucken:** Briefkopf mit Logo und Markenfarbe, Steuerhinweise, Zahlungshinweis, Bankverbindung. Drucken geht direkt aus dem Beleg: am PC über die Druckvorschau des Browsers, auf Tablets über die Vorschau in der App.
 - **Archiv-PDF mit Prüfsumme:** Beim Festschreiben wird das PDF **einmal** erzeugt und mit einer Prüfsumme (SHA-256) abgelegt. Danach liefert die Software immer genau diese Datei. Wird sie verändert, schlägt die Prüfung an.
