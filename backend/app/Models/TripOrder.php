@@ -14,7 +14,7 @@ use LogicException;
 
 /**
  * Fahrtauftrag: eine Strecke mit einem Bus. Entsteht als Entwurf aus der Auftragsbestätigung; Fahrzeug und Fahrer weist der Disponent zu.
- * Ab „ausgegeben“ gibt es eine Nummer, ab der Abrechnung ist der Auftrag gesperrt. Das Modell setzt das durch, nicht nur die Schnittstelle.
+ * Mit dem ersten Ausgeben gibt es eine Nummer (sie bleibt auch nach dem Zurücknehmen), ab der Abrechnung ist der Auftrag gesperrt. Das Modell setzt das durch, nicht nur die Schnittstelle.
  */
 class TripOrder extends Model
 {
@@ -37,6 +37,7 @@ class TripOrder extends Model
             'date_to' => 'date:Y-m-d',
             'departure_at' => 'datetime',
             'issued_at' => 'datetime',
+            'cancelled_at' => 'datetime',
             'collective_only' => 'boolean',
             'bus_no' => 'integer',
         ];
@@ -53,14 +54,26 @@ class TripOrder extends Model
 
         static::deleting(function (TripOrder $order) {
             if ($order->number !== null) {
-                throw new LogicException('Ein ausgegebener Fahrtauftrag darf nicht gelöscht werden.');
+                throw new LogicException('Ein Fahrtauftrag mit Nummer darf nicht gelöscht werden.');
             }
         });
     }
 
+    /** Mit der Reise abgesagt: wird nicht mehr disponiert, behält aber seinen Stand für den Fall, dass die Absage zurückgenommen wird. */
+    public function isCancelled(): bool
+    {
+        return $this->cancelled_at !== null;
+    }
+
+    /** Ist der Auftrag gerade an den Fahrer ausgegeben? Maßgeblich ist der Stand: Eine zurückgenommene Ausgabe behält ihre Nummer. */
     public function isIssued(): bool
     {
-        return $this->number !== null;
+        return in_array($this->status, [TripOrderStatus::Ausgegeben, TripOrderStatus::Erledigt], true);
+    }
+
+    public function isRevoked(): bool
+    {
+        return $this->number !== null && ! $this->isIssued();
     }
 
     /** Zustiegsstellen in Reihenfolge der Abholung */

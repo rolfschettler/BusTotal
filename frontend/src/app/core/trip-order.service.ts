@@ -53,6 +53,8 @@ export interface TripOrder {
   notes: string | null;
   collective_only: boolean;
   billing_status: string;
+  /** gesetzt, wenn die Reise abgesagt wurde; der Stand darunter bleibt für die Rücknahme erhalten */
+  cancelled_at?: string | null;
   /** nur im Einzelabruf */
   warnings?: TripOrderWarning[];
   document_number?: string | null;
@@ -98,6 +100,11 @@ export class TripOrderService {
     return this.http.put<TripOrder>(`${this.base}/${id}`, data);
   }
 
+  /** Ausgabe zurücknehmen: wieder frei änderbar, die Nummer bleibt. */
+  revoke(id: string, reason: string) {
+    return this.http.post<TripOrder>(`${this.base}/${id}/revoke`, { reason });
+  }
+
   issue(id: string) {
     return this.http.post<TripOrder>(`${this.base}/${id}/issue`, {});
   }
@@ -108,14 +115,17 @@ export class TripOrderService {
   }
 }
 
-export const TRIP_ORDER_STATUS: { value: TripOrderStatus; label: string }[] = [
+/** Filter der Liste: die Stände und zusätzlich „Abgesagt“. */
+export const TRIP_ORDER_STATUS: { value: TripOrderStatus | 'abgesagt'; label: string }[] = [
   { value: 'entwurf', label: 'Zu disponieren' },
   { value: 'disponiert', label: 'Disponiert' },
   { value: 'ausgegeben', label: 'Ausgegeben' },
   { value: 'erledigt', label: 'Erledigt' },
+  { value: 'abgesagt', label: 'Abgesagt' },
 ];
 
-/** Farbe des Stand-Abzeichens: offen = gelb, disponiert = blau, ausgegeben = grün, erledigt = grau */
-export function statusBadge(status: TripOrderStatus): string {
-  return { entwurf: 'text-bg-warning', disponiert: 'text-bg-info', ausgegeben: 'text-bg-success', erledigt: 'text-bg-secondary' }[status];
+/** Farbe des Stand-Abzeichens: abgesagt = rot, offen = gelb, disponiert = blau, ausgegeben = grün, erledigt = grau */
+export function statusBadge(order: { status: TripOrderStatus; cancelled_at?: string | null }): string {
+  if (order.cancelled_at) return 'text-bg-danger';
+  return { entwurf: 'text-bg-warning', disponiert: 'text-bg-info', ausgegeben: 'text-bg-success', erledigt: 'text-bg-secondary' }[order.status];
 }

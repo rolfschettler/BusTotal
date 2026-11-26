@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { BackNavigation } from '../../core/back-navigation.service';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
@@ -13,6 +14,9 @@ import { TripOrder, TripOrderBoarding, TripOrderInput, TripOrderService, statusB
 import { VehicleChoice, VehicleService } from '../../core/vehicle.service';
 import { HelpLinkComponent } from '../../help/help-link.component';
 
+import { TripOrderRevokeModalComponent } from './trip-order-revoke-modal.component';
+import { TripOrderStepsComponent } from './trip-order-steps.component';
+import { issueSummary } from './trip-order-steps';
 import { fromLocalInput, toLocalInput } from './trip-order-time';
 
 const KEY = 'fahrtauftraege';
@@ -25,7 +29,7 @@ const KEY = 'fahrtauftraege';
  */
 @Component({
   selector: 'app-trip-order-form',
-  imports: [ReactiveFormsModule, RouterLink, HelpLinkComponent],
+  imports: [ReactiveFormsModule, RouterLink, HelpLinkComponent, TripOrderStepsComponent],
   templateUrl: './trip-order-form.component.html',
   host: { class: 'form-page' },
 })
@@ -42,6 +46,7 @@ export class TripOrderFormComponent implements OnInit {
   private confirm = inject(ConfirmService);
   private memory = inject(ListMemory);
   private printPreview = inject(PrintPreviewService);
+  private modals = inject(NgbModal);
 
   canEdit = computed(() => ['admin', 'disponent'].includes(this.auth.user()?.role ?? ''));
 
@@ -57,9 +62,10 @@ export class TripOrderFormComponent implements OnInit {
   formSubmitted = signal(false);
 
   readonly badge = statusBadge;
-  /** Erledigt oder abgerechnet: gesperrt. Ohne Berechtigung zum Ändern ebenfalls. */
-  readOnly = computed(() => !this.canEdit() || this.order()?.status === 'erledigt' || this.order()?.billing_status === 'abgerechnet');
-  issued = computed(() => !!this.order()?.number);
+  /** Abgesagt, erledigt oder abgerechnet: gesperrt. Ohne Berechtigung zum Ändern ebenfalls. */
+  readOnly = computed(() => !this.canEdit() || !!this.order()?.cancelled_at || this.order()?.status === 'erledigt' || this.order()?.billing_status === 'abgerechnet');
+  /** Gerade ausgegeben (der Stand zählt: nach dem Zurücknehmen behält der Auftrag seine Nummer, ist aber wieder frei). */
+  issued = computed(() => ['ausgegeben', 'erledigt'].includes(this.order()?.status ?? ''));
 
   form = this.fb.nonNullable.group({
     vehicle_id: [''],
@@ -228,10 +234,13 @@ export class TripOrderFormComponent implements OnInit {
       this.notify(false, 'Bitte zuerst speichern, dann ausgeben.');
       return;
     }
+    const o = this.order();
+    if (!o) return;
     const ok = await this.confirm.ask({
-      title: 'Fahrtauftrag ausgeben',
-      message: 'Der Fahrtauftrag bekommt jetzt seine Nummer. Danach lassen sich Fahrzeug, Fahrer und Termine nur noch mit einer Begründung ändern.',
-      confirmLabel: 'Ausgeben',
+      title: 'An Fahrer ausgeben',
+      message: issueSummary(o),
+      confirmLabel: 'Jetzt ausgeben',
+      cancelLabel: 'Noch nicht',
     });
     if (!ok) return;
     this.issuing.set(true);
@@ -243,6 +252,23 @@ export class TripOrderFormComponent implements OnInit {
       },
       error: (e: HttpErrorResponse) => this.fail(e, 'Das Ausgeben hat nicht geklappt.', () => this.issuing.set(false)),
     });
+  }
+
+  /** Zu früh ausgegeben: Begründung im Fenster, danach ist der Auftrag wieder frei änderbar. */
+  revoke() {
+    const o = this.order();
+    if (!o || this.form.dirty) return;
+    const ref = this.modals.open(TripOrderRevokeModalComponent, { centered: true });
+    (ref.componentInstance as TripOrderRevokeModalComponent).order = o;
+    ref.result.then(
+      (updated: TripOrder) => {
+        this.formSubmitted.set(false);
+        this.fieldErrors.set({});
+        this.apply(updated);
+        this.notify(true, 'Ausgabe zurückgenommen. Der Fahrtauftrag lässt sich wieder ändern.');
+      },
+      () => undefined,
+    );
   }
 
   /** Druckvorschau der Fahrer-Fassung (ohne Preise). Zeigt den gespeicherten Stand, deshalb vorher speichern. */

@@ -160,6 +160,9 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
         Route::put('/journeys/{journey}/sections/{section}', [JourneyController::class, 'updateSection']);
         Route::delete('/journeys/{journey}/sections/{section}', [JourneyController::class, 'destroySection']);
         Route::post('/journeys/{journey}/quote', [JourneyController::class, 'quote']);
+        Route::get('/journeys/{journey}/cancellation', [JourneyController::class, 'cancellation']);
+        Route::post('/journeys/{journey}/cancel', [JourneyController::class, 'cancel']);
+        Route::post('/journeys/{journey}/reactivate', [JourneyController::class, 'reactivate']);
     });
 
     // Fahrtaufträge: lesen Admin, Disponent, Buchhaltung; disponieren und ausgeben Admin und Disponent.
@@ -170,6 +173,7 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
     Route::middleware('role:admin,disponent')->group(function () {
         Route::put('/trip-orders/{tripOrder}', [TripOrderController::class, 'update']);
         Route::post('/trip-orders/{tripOrder}/issue', [TripOrderController::class, 'issue']);
+        Route::post('/trip-orders/{tripOrder}/revoke', [TripOrderController::class, 'revoke']);
     });
 
     // Betriebshöfe: lesen Admin, Disponent und Buchhaltung, ändern nur Admin.

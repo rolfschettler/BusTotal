@@ -7,7 +7,7 @@
       Fahrtauftrag @if (o.number) { <code>{{ o.number }}</code> } @else { <span class="text-body-secondary">(noch nicht ausgegeben)</span> }
     </h1>
     <p class="mb-0 small text-body-secondary">
-      <span class="badge" [class]="badge(o.status)">{{ o.status_label }}</span>
+      <span class="badge" [class]="badge(o)">{{ o.status_label }}</span>
       {{ o.title }} · {{ o.vehicle_type_label ?? 'Fahrzeug' }}, Bus {{ o.bus_no }}
       @if (o.customer; as c) { · {{ c.display_name }} }
       @if (o.journey_id) { · <a [routerLink]="['/reisen', o.journey_id]">zur Reise</a> }
@@ -24,8 +24,17 @@
   <div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary"></div></div>
 } @else {
 
+  @if (order(); as o) { <app-trip-order-steps [order]="o" /> }
+
   @if (message(); as m) {
     <div class="alert py-2 small" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
+  }
+
+  @if (order()?.cancelled_at) {
+    <div class="alert alert-danger py-2 small" role="status">
+      <strong>Abgesagt:</strong> Die Reise ist abgesagt, diese Fahrt findet nicht statt. Der Fahrtauftrag lässt sich nicht ändern.
+      @if (order()?.journey_id; as journeyId) { <a [routerLink]="['/reisen', journeyId]">Zur Reise</a> }
+    </div>
   }
 
   @if (order()?.warnings?.length) {
@@ -205,11 +214,16 @@
     @if (form.dirty && !readOnly()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
     <div class="form-bar-right">
       @if (order(); as o) {
-        @if (canEdit() && !issued()) {
+        @if (canEdit() && !issued() && !o.cancelled_at) {
           <button type="button" class="btn btn-outline-secondary" [disabled]="issuing() || o.status !== 'disponiert' || form.dirty"
                   [attr.title]="o.status !== 'disponiert' ? 'Zuerst Fahrzeug und Fahrer zuweisen (oder einen Fremdunternehmer eintragen).' : form.dirty ? 'Bitte zuerst speichern' : 'Vergibt die Nummer'"
                   (click)="issue()">
-            <i class="bi bi-check2-circle me-1"></i>Ausgeben
+            <i class="bi bi-check2-circle me-1"></i>An Fahrer ausgeben …
+          </button>
+        }
+        @if (canEdit() && o.status === 'ausgegeben' && !o.cancelled_at) {
+          <button type="button" class="btn btn-outline-secondary" [disabled]="form.dirty" [attr.title]="form.dirty ? 'Bitte zuerst speichern' : null" (click)="revoke()">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Ausgabe zurücknehmen …
           </button>
         }
         <button type="button" class="btn btn-outline-secondary" (click)="print()" title="Fahrer-Fassung ohne Preise, mit Erfassungsblatt">

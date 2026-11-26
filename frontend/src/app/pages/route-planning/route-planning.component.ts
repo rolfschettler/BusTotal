@@ -957,8 +957,8 @@ export class RoutePlanningComponent implements OnInit {
         if (!section) open();
       },
     });
-    // Reisen für „Zur Reise hinzufügen“ (die neuesten); ohne sie bleibt „Neue Reise“
-    this.journeyApi.list('', 1).subscribe({ next: (p) => this.journeys.set(p.data), error: () => this.journeys.set([]) });
+    // Laufende Reisen für „Zur Reise hinzufügen“ (die neuesten); ohne sie bleibt „Neue Reise“
+    this.journeyApi.list('', 1, 'laufende').subscribe({ next: (p) => this.journeys.set(p.data), error: () => this.journeys.set([]) });
     this.vehicleApi.choices().subscribe({
       next: (v) => this.vehicles.set(v),
       error: (err) => this.vehiclesError.set(httpErrorText(err, 'Die Fahrzeugliste konnte nicht geladen werden.')),

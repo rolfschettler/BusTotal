@@ -172,7 +172,9 @@ Das neue Angebot weist oben darauf hin, dass Sie es von Hand anlegen, und verlin
 
 ## Schritt 4: Anzahlung verlangen (optional) {#anzahlung}
 
-**Wo:** im festgeschriebenen Angebot oder der Auftragsbestätigung.
+Auf der Seite der Reise führt beim **Nächsten Schritt** der Link **Fordern Sie eine Anzahlung** zur Auftragsbestätigung (solange es noch keine Anzahlung gibt).
+
+**Wo:** in der festgeschriebenen Auftragsbestätigung.
 
 1. **Anzahlungsrechnung erstellen**. Vorgeschlagen sind 30 % des Auftrags, je Steuersatz eine Position. Den Prozentsatz ändern Sie im Entwurf.
 2. **Festschreiben** und an den Kunden schicken (Drucken).
@@ -186,7 +188,9 @@ Sobald Sie eine **Auftragsbestätigung festschreiben**, legt {{app}} für jede S
 
 ### Der Fahrtauftrag {#fahrtauftrag}
 
-Ein neuer Fahrtauftrag hat den Stand **Zu disponieren**: Der Fahrzeugtyp steht fest (aus dem Angebot), Fahrzeug und Fahrer sind noch offen.
+Ein neuer Fahrtauftrag hat den Stand **Zu disponieren**: Der Fahrzeugtyp steht fest (aus dem Angebot), Fahrzeug und Fahrer sind noch offen. Oben im Fahrtauftrag zeigt eine **Ablaufleiste**, wo er steht (**Zu disponieren → Disponiert → Ausgegeben → Erledigt**) und was als Nächstes zu tun ist. „Erledigt“ folgt mit der Rückerfassung. Alle Fahrtaufträge einer Reise stehen auch auf der Seite der Reise.
+
+**Ausgeben ist nicht Festschreiben:** [Festschreiben](/hilfe/belege#entwurf-und-festschreiben) macht einen Beleg gesetzlich endgültig. **Ausgeben** ist die Übergabe an den Fahrer und lässt sich korrigieren.
 
 1. **Öffnen:** In der Liste auf den Namen oder den Stift klicken. Suchen können Sie nach Strecke, Nummer, Kunde oder Fremdunternehmer, filtern nach dem Stand.
 2. **Fahrzeug:** Wählen Sie ein **eigenes Fahrzeug** aus Ihrem Fuhrpark **oder** tragen Sie einen **Fremdunternehmer** mit Kennzeichen ein, wenn ein anderes Unternehmen den Bus stellt. Beides zugleich geht nicht.
@@ -194,7 +198,7 @@ Ein neuer Fahrtauftrag hat den Stand **Zu disponieren**: Der Fahrzeugtyp steht f
 4. **Termin und Hinweise:** Beginn, Ende, **Abfahrt** (Datum und Uhrzeit), **Bereitstellung** (ab dieser Uhrzeit haben die Gäste Zugang zum Bus, in der Regel zwischen Abfahrt am Betriebshof und Abfahrt am ersten Halt) und die **Personenzahl**. Die Personenzahl ist ein freier Text: „20“ oder „ca. 20 Pers.“ gehen beide. Unter „Für den Fahrer“ stehen Treffpunkt und Besonderheiten, sie kommen ins Fahrer-PDF. Die interne Notiz steht **nicht** im PDF.
 5. **Zu- und Ausstiege** (optional): Steigen unterwegs an weiteren Orten Gäste zu oder aus (Werksfahrten, Vereinsfahrten mit Abholung, Ausstiege bei der Rückreise), tragen Sie mit **Zu- oder Ausstieg hinzufügen** je Ort die **Art** (Zustieg oder Ausstieg), den **Ort**, die **Uhrzeit** und, wenn bekannt, die **Personenzahl** dort ein. Das geht von Hand und ist von der Streckenplanung unabhängig. Sie stehen im Fahrer-PDF in der Reihenfolge, in der Sie sie eingetragen haben.
 6. **Speichern.** Sind Fahrzeug und Fahrer (oder ein Fremdunternehmer) eingetragen, steht der Auftrag auf **Disponiert**.
-7. **Ausgeben:** Die Taste **Ausgeben** gibt dem Fahrtauftrag seine **Nummer** (FA-Jahr-Nummer, fortlaufend). Sie ist erst möglich, wenn der Auftrag disponiert und gespeichert ist.
+7. **An Fahrer ausgeben:** Nehmen Sie diese Taste erst, wenn der Fahrer den Auftrag bekommen soll. Eine Rückfrage zeigt Termin, Fahrzeug und Fahrer zur Kontrolle. Mit **Jetzt ausgeben** bekommt der Auftrag seine **Nummer** (FA-Jahr-Nummer, fortlaufend). Es wird nichts verschickt: Drucken Sie ihn und geben Sie ihn dem Fahrer. Die Taste ist erst möglich, wenn der Auftrag disponiert und gespeichert ist.
 8. **Drucken:** Die Taste **Drucken** öffnet die Druckvorschau mit der **Fahrer-Fassung**. Sie zeigt **keine Preise**: Auftraggeber, Termin, Bereitstellung, Personen, Fahrzeug, Fahrer, Hinweise, die Zu- und Ausstiege und die Strecke mit Halten und Teilstrecken. Der **Auftraggeber** steht auch auf dem Erfassungsblatt. Auf der letzten Seite steht ein **Erfassungsblatt** zum Ausfüllen unterwegs: Zeiten und Kilometerstände, **Grenzübertritte**, **Zusatzleistungen**, **unvorhergesehene Kosten** (Maut, Parken), Notizen und Unterschrift. Bei „Abfahrt erster Halt“ und „Ankunft Ziel“ sind **Datum und Ort** schon eingetragen (aus dem Termin und der Strecke), Uhrzeiten und Kilometerstände trägt der Fahrer ein. Bei den **Grenzübertritten** steht je Land eine Zeile mit **km-Stand Einfahrt**, **km-Stand Ausfahrt** und **km im Ausland** (der Unterschied).
 
 **Gelber Kasten „Bitte prüfen“:** {{app}} weist darauf hin, wenn etwas nicht zusammenpasst. Das sind **nur Hinweise**, Sie können trotzdem so einteilen. Geprüft wird:
@@ -206,11 +210,15 @@ Ein neuer Fahrtauftrag hat den Stand **Zu disponieren**: Der Fahrzeugtyp steht f
 
 Die **Lenk- und Ruhezeiten** der Fahrer über mehrere Fahrten prüft {{app}} hier noch nicht (kommt mit der Disposition).
 
-**Nach dem Ausgeben** lassen sich Fahrzeug, Fahrer und Termine nur noch mit einer **Begründung** ändern (Feld „Begründung“ unten im Formular). Die Änderung steht im Änderungsprotokoll. Hinweise für den Fahrer und die interne Notiz können Sie jederzeit ändern. Eine vergebene Nummer wird **nie zurückgenommen** und ein ausgegebener Fahrtauftrag nicht gelöscht. Das **PDF** wird bei jedem Druck neu aus dem aktuellen Stand erzeugt.
+**Nach dem Ausgeben** lassen sich Fahrzeug, Fahrer und Termine nur noch mit einer **Begründung** ändern (Feld „Begründung“ unten im Formular). Die Änderung steht im Änderungsprotokoll. Hinweise für den Fahrer und die interne Notiz können Sie jederzeit ändern.
+
+**Zu früh ausgegeben?** Mit **Ausgabe zurücknehmen** (mit Begründung, Administrator und Disponent) ist der Auftrag wieder frei änderbar und steht erneut auf **Disponiert**. Er **behält seine Nummer** und bekommt sie beim nächsten Ausgeben wieder, so entsteht keine Lücke. Hat der Fahrer den Auftrag schon, informieren Sie ihn: Ein jetzt gedrucktes PDF trägt „AUSGABE ZURÜCKGENOMMEN“. Ein Fahrtauftrag mit Nummer wird nie gelöscht. Das **PDF** wird bei jedem Druck neu aus dem aktuellen Stand erzeugt.
 
 **„Fahrtaufträge prüfen“:** Steht dieser Hinweis in der Reise oder oben im Beleg, passt die Zahl der Busse in der Auftragsbestätigung nicht zur Zahl der Fahrtaufträge, zum Beispiel weil ein Bus dazukam oder wegfiel. {{app}} ändert vorhandene Fahrtaufträge dann nicht von selbst. Prüfen Sie in der Liste, ob einer fehlt oder überzählig ist.
 
 **Bis die Rückerfassung kommt:** Was der Fahrer auf dem Erfassungsblatt notiert hat (Zusatzleistungen, Kosten, Grenzstände), tragen Sie wie bisher in die Rechnung ein.
+
+**Abgesagte Reise:** Wird die Reise [abgesagt](/hilfe/belege#reise-absagen), tragen ihre noch nicht erledigten Fahrtaufträge den Stand **Abgesagt**. Sie lassen sich nicht mehr ändern oder ausgeben und belegen Fahrzeug und Fahrer nicht mehr. In der Liste finden Sie sie über den Filter „Abgesagt“.
 
 ## Schritt 6: Fahrt zurückerfassen {#rueckerfassung}
 

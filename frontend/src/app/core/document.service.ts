@@ -254,6 +254,9 @@ export interface DocumentJourney {
   sections: JourneySectionInfo[];
   documents: { id: string; type: DocumentTypeValue; number: string | null; status: 'entwurf' | 'festgeschrieben'; cancelled: boolean }[];
   trip_orders?: JourneyTripOrders;
+  state?: 'laufend' | 'abgeschlossen' | 'abgesagt';
+  cancelled_on?: string | null;
+  cancel_reason?: string | null;
 }
 
 /** Die Fahrtaufträge einer Reise im Überblick. `check`: Zahl der Busse in der Auftragsbestätigung und der Fahrtaufträge weichen ab. */
@@ -262,6 +265,8 @@ export interface JourneyTripOrders {
   to_plan: number;
   planned: number;
   issued: number;
+  /** mit der Reise abgesagt */
+  cancelled?: number;
   expected: number | null;
   check: boolean;
 }

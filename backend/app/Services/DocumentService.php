@@ -81,6 +81,10 @@ class DocumentService
         return DB::transaction(function () use ($document) {
             $document = $this->lockDraft($document);
             $document->load(['lines', 'customer']);
+            // Zu einer abgesagten Reise entsteht keine Zusage mehr; Rechnungen (etwa über eine Stornogebühr) bleiben möglich.
+            if (in_array($document->type, self::PLANNING_TYPES, true)) {
+                $this->journeys->assertActive($document->journey_id, 'document');
+            }
 
             // Anzahlungen, die seit dem Anlegen des Entwurfs festgeschrieben (oder storniert) wurden, zählen jetzt.
             $this->refreshDeductions($document);
@@ -184,6 +188,9 @@ class DocumentService
         });
     }
 
+    /** Belege der Planung: Bei einer abgesagten Reise werden sie nicht mehr angelegt oder festgeschrieben. */
+    private const PLANNING_TYPES = [DocumentType::Angebot, DocumentType::Auftragsbestaetigung, DocumentType::Anzahlung];
+
     /** Arten, die es aus einem Vorgänger nur einmal (gleichzeitig gültig) geben darf. Die Auftragsbestätigung ist die eine Zusage. */
     private const SINGLE_FOLLOW_UP = [DocumentType::Auftragsbestaetigung];
 
@@ -234,6 +241,9 @@ class DocumentService
             }
             if (! in_array($target, $source->type->convertibleTo(), true)) {
                 $this->fail("Aus {$source->type->label()} kann kein(e) {$target->label()} erstellt werden.");
+            }
+            if (in_array($target, self::PLANNING_TYPES, true)) {
+                $this->journeys->assertActive($source->journey_id, 'document');
             }
             if ($existing = $this->activeFollowUp($source, $target)) {
                 $what = $existing->number ?? 'ein Entwurf';

@@ -13,6 +13,7 @@ use App\Models\JourneySection;
 use App\Models\Trip;
 use App\Models\TripOrder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Reisevorhaben: entstehen automatisch mit dem ersten Angebot aus der Streckenplanung, niemand legt sie von Hand an.
@@ -21,6 +22,33 @@ use Illuminate\Support\Facades\DB;
 class JourneyService
 {
     public function __construct(private readonly TourSnapshotService $snapshots, private readonly SectionPlanService $plans) {}
+
+    /**
+     * Eine abgesagte Reise wird nicht weiter geplant. Innerhalb einer Transaktion aufrufen: Die Reise wird gesperrt, damit eine
+     * gleichzeitige Absage nicht dazwischenkommt.
+     */
+    public function assertActive(?string $journeyId, string $field = 'journey'): void
+    {
+        if ($journeyId !== null && Journey::whereKey($journeyId)->lockForUpdate()->first()?->isCancelled()) {
+            throw ValidationException::withMessages([$field => ['Diese Reise ist abgesagt. Nehmen Sie zuerst auf der Reise die Absage zurück.']]);
+        }
+    }
+
+    /** Stand der Reise: „abgesagt“, „abgeschlossen“ oder „laufend“. */
+    public function state(Journey $journey): string
+    {
+        return match (true) {
+            $journey->isCancelled() => 'abgesagt',
+            Journey::query()->completed()->whereKey($journey->id)->exists() => 'abgeschlossen',
+            default => 'laufend',
+        };
+    }
+
+    /** @return array{state: string, cancelled_on: ?string, cancel_reason: ?string} */
+    private function stateFields(Journey $journey): array
+    {
+        return ['state' => $this->state($journey), 'cancelled_on' => $journey->cancelled_on?->toDateString(), 'cancel_reason' => $journey->cancel_reason];
+    }
 
     /**
      * Legt ein Reisevorhaben mit seinem ersten Abschnitt (Hinfahrt) an.
@@ -60,6 +88,7 @@ class JourneyService
     public function addSection(string $journeyId, SectionKind $kind, ?Trip $trip, array $vehicles, ?array $own = null, ?array $tour = null, ?string $startOn = null, float $surchargePercent = 0): JourneySection
     {
         return DB::transaction(function () use ($journeyId, $kind, $trip, $vehicles, $own, $tour, $startOn, $surchargePercent) {
+            $this->assertActive($journeyId);
             // Die Reise sperren: Zwei gleichzeitige Aufrufe bekämen sonst dieselbe Position (eindeutiger Index, Serverfehler).
             Journey::lockForUpdate()->findOrFail($journeyId);
             $position = (int) JourneySection::where('journey_id', $journeyId)->max('position') + 1;
@@ -95,6 +124,7 @@ class JourneyService
     public function updateSection(JourneySection $section, array $data, ?array $vehicles = null, ?array $tour = null, ?array $figures = null): JourneySection
     {
         return DB::transaction(function () use ($section, $data, $vehicles, $tour, $figures) {
+            $this->assertActive($section->journey_id);
             $section->fill(array_intersect_key($data, array_flip(['title', 'start_on', 'surcharge_percent'])));
             if ($tour !== null) {
                 $section->fill([
@@ -231,7 +261,7 @@ class JourneyService
                 'cancelled' => $d->cancelled_by_id !== null,
             ])->all(),
             'trip_orders' => $this->tripOrderSummary($journey, $documents),
-        ];
+        ] + $this->stateFields($journey);
     }
 
     /**
@@ -323,7 +353,32 @@ class JourneyService
                 'document_date' => $d->document_date?->toDateString(), 'gross_total' => $d->gross_total, 'subject' => $d->subject,
             ])->all(),
             'trip_orders' => $this->tripOrderSummary($journey, $documents),
-        ] + $this->overview($documents);
+            'trip_order_list' => $this->tripOrderRows($journey),
+        ] + $this->overview($documents) + $this->stateFields($journey);
+    }
+
+    /**
+     * Die Fahrtaufträge für die Reise-Seite, in der Reihenfolge der Strecken und Busse.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function tripOrderRows(Journey $journey): array
+    {
+        $positions = $journey->sections->pluck('position', 'id');
+
+        return TripOrder::whereIn('journey_section_id', $positions->keys())->with(['vehicle', 'driver', 'driver2'])->get()
+            ->sortBy([fn (TripOrder $a, TripOrder $b) => [$positions[$a->journey_section_id], $a->vehicle_type?->value, $a->bus_no]
+                <=> [$positions[$b->journey_section_id], $b->vehicle_type?->value, $b->bus_no]])
+            ->values()
+            ->map(fn (TripOrder $o) => [
+                'id' => $o->id, 'number' => $o->number, 'title' => $o->title, 'bus_no' => $o->bus_no,
+                'vehicle_type_label' => $o->vehicle_type?->label(),
+                'status' => $o->status->value, 'status_label' => $o->isCancelled() ? 'Abgesagt' : $o->status->label(),
+                'cancelled_at' => $o->cancelled_at?->toIso8601String(),
+                'date_from' => $o->date_from?->toDateString(), 'date_to' => $o->date_to?->toDateString(),
+                'vehicle' => $o->vehicle?->display_name, 'external_company' => $o->external_company,
+                'drivers' => array_values(array_filter([$o->driver?->display_name, $o->driver2?->display_name])),
+            ])->all();
     }
 
     /**
@@ -332,13 +387,14 @@ class JourneyService
      * „check“ auf true und die Oberfläche sagt „Fahrtaufträge prüfen“. Ohne Auftragsbestätigung ist nichts zu erwarten.
      *
      * @param  iterable<Document>  $documents  die Belege EINER Reise
-     * @return array{count: int, to_plan: int, planned: int, issued: int, expected: ?int, check: bool}
+     * @return array{count: int, to_plan: int, planned: int, issued: int, cancelled: int, expected: ?int, check: bool}
      */
     public function tripOrderSummary(Journey $journey, iterable $documents): array
     {
-        $byStatus = TripOrder::whereIn('journey_section_id', $journey->sections()->select('id'))
-            ->selectRaw('status, COUNT(*) as n')->groupBy('status')->pluck('n', 'status');
-        $count = (int) $byStatus->sum();
+        $orders = fn () => TripOrder::whereIn('journey_section_id', $journey->sections()->reorder()->select('id'));
+        $byStatus = $orders()->whereNull('cancelled_at')->selectRaw('status, COUNT(*) as n')->groupBy('status')->pluck('n', 'status');
+        $cancelled = $orders()->whereNotNull('cancelled_at')->count();
+        $count = (int) $byStatus->sum() + $cancelled;
 
         $confirmation = collect($documents)
             ->filter(fn (Document $d) => $d->type === DocumentType::Auftragsbestaetigung && $d->status === DocumentStatus::Festgeschrieben && $d->cancelled_by_id === null)
@@ -351,8 +407,10 @@ class JourneyService
             'to_plan' => (int) ($byStatus['entwurf'] ?? 0),
             'planned' => (int) ($byStatus['disponiert'] ?? 0),
             'issued' => (int) (($byStatus['ausgegeben'] ?? 0) + ($byStatus['erledigt'] ?? 0)),
+            'cancelled' => $cancelled,
             'expected' => $expected,
-            'check' => $expected !== null && $expected !== $count,
+            // Bei einer abgesagten Reise gibt es nichts zu prüfen.
+            'check' => ! $journey->isCancelled() && $expected !== null && $expected !== $count,
         ];
     }
 

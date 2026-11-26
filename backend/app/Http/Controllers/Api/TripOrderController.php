@@ -26,7 +26,8 @@ class TripOrderController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->validate([
-            'status' => ['nullable', Rule::enum(TripOrderStatus::class)],
+            // „abgesagt“ ist kein eigener Stand (siehe TripOrder::isCancelled), lässt sich aber wie einer filtern
+            'status' => ['nullable', Rule::in([...array_column(TripOrderStatus::cases(), 'value'), 'abgesagt'])],
             'journey_id' => ['nullable', 'uuid'],
             'vehicle_id' => ['nullable', 'uuid'],
             'driver_id' => ['nullable', 'uuid'],
@@ -37,8 +38,10 @@ class TripOrderController extends Controller
             ->with(['customer:id,customer_number,company_name,first_name,last_name,postal_code,city', 'vehicle', 'driver', 'driver2', 'section:id,journey_id', 'boardings'])
             ->leftJoin('customers as c', 'c.id', '=', 'trip_orders.customer_id');
 
-        if (! empty($filters['status'])) {
-            $query->where('trip_orders.status', $filters['status']);
+        if (($filters['status'] ?? null) === 'abgesagt') {
+            $query->whereNotNull('trip_orders.cancelled_at');
+        } elseif (! empty($filters['status'])) {
+            $query->where('trip_orders.status', $filters['status'])->whereNull('trip_orders.cancelled_at');
         }
         if (! empty($filters['journey_id'])) {
             $query->whereIn('trip_orders.journey_section_id', fn ($q) => $q->select('id')->from('journey_sections')->where('journey_id', $filters['journey_id']));
@@ -141,12 +144,23 @@ class TripOrderController extends Controller
         return response()->json($this->present($this->orders->issue($tripOrder), true));
     }
 
+    /** Ausgabe zurücknehmen, nur mit Begründung. Admin und Disponent. */
+    public function revoke(Request $request, TripOrder $tripOrder): JsonResponse
+    {
+        $data = $request->validate(['reason' => ['required', 'string', 'max:255']], [
+            'reason.required' => 'Bitte eine Begründung angeben.',
+            'reason.max' => 'Die Begründung darf höchstens 255 Zeichen lang sein.',
+        ]);
+
+        return response()->json($this->present($this->orders->revoke($tripOrder, $data['reason']), true));
+    }
+
     /** @return array<string, mixed> */
     private function present(TripOrder $order, bool $detail): array
     {
         $order->loadMissing(['customer', 'vehicle', 'driver', 'driver2', 'section', 'boardings']);
         $out = $order->toArray();
-        $out['status_label'] = $order->status->label();
+        $out['status_label'] = $order->isCancelled() ? 'Abgesagt' : $order->status->label();
         $out['vehicle_type_label'] = $order->vehicle_type?->label();
         $out['journey_id'] = $order->section?->journey_id;
         unset($out['section']);

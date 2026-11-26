@@ -182,6 +182,94 @@ class JourneyListTest extends TestCase
         $this->as(Role::Buchhaltung)->getJson('/api/journeys')->assertJsonPath('data.0.stage', 'auftragsbestaetigung')->assertJsonPath('data.0.document_count', 5);
     }
 
+    /** Reise mit festgeschriebener Rechnung (238,00 €) und gesetztem Reisezeitraum. */
+    private function invoiced(string $label, ?string $dateFrom = '2020-05-10', ?string $dateTo = '2020-05-10'): array
+    {
+        $quote = $this->quote($label, $this->customer('Reisebüro '.$label));
+        $this->as(Role::Buchhaltung)->postJson("/api/documents/{$quote['id']}/finalize")->assertOk();
+        $invoice = $this->invoiceDraftFrom($quote['id']);
+        $this->as(Role::Buchhaltung)->postJson("/api/documents/{$invoice['id']}/finalize")->assertOk();
+        DB::table('journeys')->where('id', $quote['journey_id'])->update(['date_from' => $dateFrom, 'date_to' => $dateTo]);
+
+        return ['journey' => $quote['journey_id'], 'quote' => $quote['id'], 'invoice' => $invoice['id']];
+    }
+
+    private function pay(string $documentId, string $amount, string $kind = 'eingang'): string
+    {
+        return $this->as(Role::Buchhaltung)->postJson("/api/documents/$documentId/payments", ['kind' => $kind, 'amount' => $amount, 'paid_on' => now()->toDateString()])
+            ->assertCreated()->json('id') ?? '';
+    }
+
+    /** @return list<string> */
+    private function titles(string $query = ''): array
+    {
+        return array_column($this->as(Role::Disponent)->getJson('/api/journeys'.$query)->assertOk()->json('data'), 'title');
+    }
+
+    public function test_abgeschlossen_erst_wenn_vorbei_und_die_rechnung_bezahlt_ist(): void
+    {
+        $ids = $this->invoiced('Wien');
+        $this->assertSame(['Wien'], $this->titles());
+        $this->pay($ids['invoice'], '100.00');
+        $this->assertSame(['Wien'], $this->titles());                              // nur teilweise bezahlt
+        $this->assertSame([], $this->titles('?view=abgeschlossen'));
+
+        $this->pay($ids['invoice'], '138.00');
+        $this->assertSame([], $this->titles());
+        $this->assertSame(['Wien'], $this->titles('?view=abgeschlossen'));
+        $this->assertSame(['Wien'], $this->titles('?view=alle'));
+        $this->as(Role::Disponent)->getJson('/api/journeys?view=alle')->assertJsonPath('data.0.state', 'abgeschlossen');
+        $this->as(Role::Disponent)->getJson('/api/journeys/'.$ids['journey'])->assertJsonPath('state', 'abgeschlossen');
+        // abgeschlossen: nicht mehr absagbar
+        $this->as(Role::Disponent)->postJson("/api/journeys/{$ids['journey']}/cancel", ['date' => now()->toDateString(), 'reason' => 'x'])
+            ->assertUnprocessable()->assertJsonValidationErrors(['journey']);
+
+        // Rückzahlung: wieder offen
+        $this->pay($ids['invoice'], '10.00', 'rueckzahlung');
+        $this->assertSame(['Wien'], $this->titles());
+    }
+
+    public function test_ohne_vergangenes_reisedatum_nie_abgeschlossen(): void
+    {
+        $today = now('Europe/Berlin')->toDateString();
+        foreach ([['Heute', $today, $today], ['Ohne', null, null], ['Zukunft', '2020-01-01', '2099-01-01'], ['NurBeginn', '2020-01-01', null]] as [$label, $from, $to]) {
+            $this->pay($this->invoiced($label, $from, $to)['invoice'], '238.00');
+        }
+
+        $this->assertSame(['NurBeginn'], $this->titles('?view=abgeschlossen'));
+        $this->assertEqualsCanonicalizing(['Heute', 'Ohne', 'Zukunft'], $this->titles());
+    }
+
+    public function test_ohne_gueltige_rechnung_oder_mit_rechnungsentwurf_laeuft_die_reise_weiter(): void
+    {
+        $quote = $this->quote('NurAngebot');
+        DB::table('journeys')->where('id', $quote['journey_id'])->update(['date_from' => '2020-01-01', 'date_to' => '2020-01-01']);
+
+        $storno = $this->invoiced('Storniert');
+        $this->as(Role::Buchhaltung)->postJson("/api/documents/{$storno['invoice']}/cancel")->assertCreated();
+
+        $draft = $this->invoiced('Entwurf');
+        $this->pay($draft['invoice'], '238.00');
+        $this->invoiceDraftFrom($draft['quote']);
+
+        $this->assertSame([], $this->titles('?view=abgeschlossen'));
+        $this->assertEqualsCanonicalizing(['NurAngebot', 'Storniert', 'Entwurf'], $this->titles());
+    }
+
+    public function test_ansicht_abgesagt_und_treffer_ausserhalb_der_ansicht(): void
+    {
+        $this->quote('Wien eins');
+        $gone = $this->quote('Wien zwei');
+        $this->as(Role::Disponent)->postJson("/api/journeys/{$gone['journey_id']}/cancel", ['date' => now('Europe/Berlin')->toDateString(), 'reason' => 'x'])->assertOk();
+
+        $this->assertSame(['Wien eins'], $this->titles());
+        $this->assertSame(['Wien zwei'], $this->titles('?view=abgesagt'));
+        $this->as(Role::Disponent)->getJson('/api/journeys?q=wien')->assertJsonPath('total', 1)->assertJsonPath('other_matches', 1);
+        $this->as(Role::Disponent)->getJson('/api/journeys?q=wien&view=alle')->assertJsonPath('total', 2)->assertJsonPath('other_matches', 0);
+        $this->as(Role::Disponent)->getJson('/api/journeys')->assertJsonPath('other_matches', 0);
+        $this->as(Role::Disponent)->getJson('/api/journeys?view=unsinn')->assertUnprocessable()->assertJsonValidationErrors(['view']);
+    }
+
     public function test_suche_trifft_titel_und_kunde_am_wortanfang(): void
     {
         $this->quote('München – Wien', $this->customer('Reisebüro Sonnenschein'));

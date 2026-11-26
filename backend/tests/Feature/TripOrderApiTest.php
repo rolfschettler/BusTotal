@@ -147,6 +147,35 @@ class TripOrderApiTest extends TestCase
         $this->as(Role::Disponent)->putJson("/api/trip-orders/{$order->id}", ['boardings' => [], 'reason' => 'Gruppe sagt ab'])->assertOk()->assertJsonCount(0, 'boardings');
     }
 
+    public function test_ausgabe_zuruecknehmen_behaelt_die_nummer(): void
+    {
+        $order = $this->order(['external_company' => 'Bus Huber GmbH', 'status' => TripOrderStatus::Disponiert]);
+        $url = "/api/trip-orders/{$order->id}";
+
+        $this->as(Role::Disponent)->postJson("$url/revoke", ['reason' => 'x'])->assertUnprocessable()->assertJsonValidationErrors(['assignment']);
+        $number = $this->as(Role::Disponent)->postJson("$url/issue")->assertOk()->json('number');
+        $this->as(Role::Buchhaltung)->postJson("$url/revoke", ['reason' => 'x'])->assertForbidden();
+        $this->as(Role::Disponent)->postJson("$url/revoke", ['reason' => '  '])->assertUnprocessable()->assertJsonValidationErrors(['reason']);
+
+        $this->as(Role::Disponent)->postJson("$url/revoke", ['reason' => 'zu früh ausgegeben'])->assertOk()
+            ->assertJsonPath('status', 'disponiert')->assertJsonPath('number', $number)->assertJsonPath('issued_at', null);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'issue_revoked', 'auditable_id' => $order->id]);
+        $this->assertStringContainsString('AUSGABE ZURÜCKGENOMMEN', app(\App\Services\TripOrderPdf::class)->html($order->fresh()));
+        // wieder frei änderbar, ohne Begründung
+        $this->as(Role::Disponent)->putJson($url, ['external_company' => 'Bus Maier'])->assertOk();
+
+        // erneut ausgeben: dieselbe Nummer, der nächste Auftrag bekommt die folgende
+        $this->as(Role::Disponent)->postJson("$url/issue")->assertOk()->assertJsonPath('number', $number)->assertJsonPath('status', 'ausgegeben');
+        $this->assertStringNotContainsString('ZURÜCKGENOMMEN', app(\App\Services\TripOrderPdf::class)->html($order->fresh()));
+        $next = $this->order(['external_company' => 'Bus Huber GmbH', 'status' => TripOrderStatus::Disponiert]);
+        $this->as(Role::Disponent)->postJson("/api/trip-orders/{$next->id}/issue")->assertOk()->assertJsonPath('number', 'FA-'.now()->format('Y').'-00002');
+
+        // mit Nummer nie löschbar
+        $this->as(Role::Disponent)->postJson("$url/revoke", ['reason' => 'nochmal'])->assertOk();
+        $this->expectException(\LogicException::class);
+        $order->fresh()->delete();
+    }
+
     public function test_ausgeben_vergibt_fortlaufende_nummern_und_sperrt_aenderungen(): void
     {
         $vehicle = Vehicle::factory()->create();

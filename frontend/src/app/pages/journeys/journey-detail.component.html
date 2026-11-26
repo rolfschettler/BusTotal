@@ -10,6 +10,8 @@
     @if (!editing()) {
       <h1 class="h3 mb-1 d-flex align-items-center gap-2">
         <span>{{ j.title }}</span>
+        @if (j.state === 'abgesagt') { <span class="badge text-bg-danger fs-6">Abgesagt</span> }
+        @if (j.state === 'abgeschlossen') { <span class="badge text-bg-secondary fs-6">Abgeschlossen</span> }
         <button type="button" class="btn btn-sm btn-outline-secondary" (click)="startRename()" title="Reise umbenennen" aria-label="Reise umbenennen">
           <i class="bi bi-pencil" aria-hidden="true"></i>
         </button>
@@ -64,10 +66,29 @@
     <div class="alert py-2" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
   }
 
-  <!-- Nächster Schritt: ein Satz und die Tasten dazu. Solange geplant wird, steht hier auch „Strecke hinzufügen“ (Kernfunktion der Reise). -->
-  <div class="alert alert-info d-flex flex-wrap align-items-center gap-2 py-2" role="note">
-    <i class="bi bi-arrow-right-circle" aria-hidden="true"></i>
-    <span class="me-auto"><strong>Nächster Schritt:</strong> {{ nextStep() }}</span>
+  <!-- Nächster Schritt: oben der Satz, darunter alle Tasten in EINER Reihe. Solange geplant wird, steht hier auch „Strecke hinzufügen“
+       (Kernfunktion der Reise). -->
+  @if (cancelled()) {
+  <div class="alert alert-danger d-flex flex-wrap align-items-center gap-2 py-2" role="note">
+    <i class="bi bi-x-circle" aria-hidden="true"></i>
+    <span class="me-auto"><strong>Abgesagt am {{ j.cancelled_on | date: 'dd.MM.yyyy' }}.</strong> Grund: {{ j.cancel_reason }}</span>
+    @if (canPlan()) {
+      <button type="button" class="btn btn-outline-secondary bg-white text-body" [disabled]="busy()" (click)="reactivate()">Absage zurücknehmen</button>
+    }
+  </div>
+  } @else {
+  <div class="alert alert-info py-3" role="note">
+    <div class="d-flex gap-2 mb-2">
+      <i class="bi bi-arrow-right-circle" aria-hidden="true"></i>
+      <span>
+        <strong>Nächster Schritt:</strong> {{ nextStep() }}
+        @if (confirmation(); as ab) {
+          <!-- Die Anzahlung entsteht in der Auftragsbestätigung: Der Link führt dorthin -->
+          @if (!j.quote.draft_id && !hasAdvance()) { Optional: <a class="alert-link" [routerLink]="['/belege', ab.id]">Fordern Sie eine Anzahlung</a>. }
+        }
+      </span>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
     @if (planning()) {
       <a class="btn" [class.btn-primary]="addFirst()" [class.btn-outline-primary]="!addFirst()" [class.bg-white]="!addFirst()"
          routerLink="/streckenplanung" [queryParams]="{ journey: j.id }">
@@ -91,16 +112,21 @@
         Angebot erstellen
       </button>
     } @else {
-      @if (latest(); as d) {
-        @if (d.type === 'auftragsbestaetigung' && orders()?.to_plan) {
+      @if (confirmation(); as ab) {
+        @if (orders()?.to_plan) {
           <a class="btn btn-primary" [routerLink]="['/fahrtauftraege']" [queryParams]="{ journey_id: j.id }">Fahrtaufträge öffnen</a>
-          <a class="btn btn-outline-secondary" [routerLink]="['/belege', d.id]">{{ typeLabel(d.type) }} öffnen</a>
-        } @else {
+        }
+        <a class="btn" [class.btn-primary]="!orders()?.to_plan" [class.btn-outline-secondary]="orders()?.to_plan"
+           [class.bg-white]="orders()?.to_plan" [class.text-body]="orders()?.to_plan" [routerLink]="['/belege', ab.id]">Auftragsbestätigung öffnen</a>
+      } @else {
+        @if (latest(); as d) {
           <a class="btn btn-primary" [routerLink]="['/belege', d.id]">{{ typeLabel(d.type) }} öffnen</a>
         }
       }
     }
+    </div>
   </div>
+  }
 
   <div class="form-area mb-3">
     <div class="section-title">Strecken</div>
@@ -111,7 +137,7 @@
             <th scope="col">Art</th><th scope="col">Strecke</th><th scope="col">Fahrzeuge</th>
             <th scope="col" class="text-end">Kilometer</th><th scope="col" class="text-end">Lenkzeit</th><th scope="col" class="text-end">Tage</th>
             <th scope="col">Angebot</th>
-            @if (canPlan()) { <th scope="col"><span class="visually-hidden">Aktionen</span></th> }
+            @if (canChange()) { <th scope="col"><span class="visually-hidden">Aktionen</span></th> }
           </tr>
         </thead>
         <tbody>
@@ -121,7 +147,7 @@
               <td>
                 {{ s.title }}
                 @if (s.start_on) { <div class="small text-body-secondary">{{ s.start_on | date: 'dd.MM.yyyy' }}</div> }
-                @else if (canPlan()) {
+                @else if (canChange()) {
                   <a class="d-block small" routerLink="/streckenplanung" [queryParams]="{ journey: j.id, section: s.id, focus: 'date' }">Datum eintragen</a>
                 } @else { <div class="small text-body-secondary">Kein Datum</div> }
                 @if (s.own) {
@@ -152,7 +178,7 @@
                   @case ('aktuell') { <span class="badge text-bg-light border" title="Das Angebot passt zu dieser Strecke.">aktuell</span> }
                 }
               </td>
-              @if (canPlan()) {
+              @if (canChange()) {
                 <td class="text-end text-nowrap">
                   <a class="btn-action edit" title="Strecke ändern" [attr.aria-label]="s.title + ' ändern'"
                      routerLink="/streckenplanung" [queryParams]="{ journey: j.id, section: s.id }"><i class="bi bi-pencil"></i></a>
@@ -162,14 +188,14 @@
               }
             </tr>
           } @empty {
-            <tr><td [attr.colspan]="canPlan() ? 8 : 7" class="text-center text-secondary py-4 small">Noch keine Strecke.</td></tr>
+            <tr><td [attr.colspan]="canChange() ? 8 : 7" class="text-center text-secondary py-4 small">Noch keine Strecke.</td></tr>
           }
         </tbody>
       </table>
     </div>
 
     <!-- Nach dem Festschreiben führt „Nächster Schritt“ durch die Belege; eine weitere Strecke fügt man dann hier an. -->
-    @if (canPlan() && !planning()) {
+    @if (canChange() && !planning()) {
       <a class="btn btn-outline-primary mt-2" routerLink="/streckenplanung" [queryParams]="{ journey: j.id }">
         <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Strecke hinzufügen
       </a>
@@ -180,25 +206,52 @@
       Bei Strecken mit „Stand aus …“ zeigen Kilometer, Lenkzeit und Tage, was im festgeschriebenen Beleg steht. Wiederverwendbare Vorlagen stehen im <a routerLink="/tour-archiv">Tour-Archiv</a>.
     </div>
   </div>
-  @if (orders(); as o) {
-    @if (o.count > 0 || o.check) {
-      <div class="form-area mb-3">
-        <div class="section-title">Fahrtaufträge</div>
-        <p class="mb-1">
-          {{ o.count }} {{ o.count === 1 ? 'Fahrtauftrag' : 'Fahrtaufträge' }}:
-          {{ o.to_plan }} zu disponieren, {{ o.planned }} disponiert, {{ o.issued }} ausgegeben.
-          <a [routerLink]="['/fahrtauftraege']" [queryParams]="{ journey_id: j.id }">Fahrtaufträge öffnen</a>
-          <app-help-link topic="fahrten" anchor="fahrtauftrag" label="Fahrtauftrag" />
-        </p>
-        @if (o.check) {
-          <div class="alert alert-warning py-2 small mb-0" role="status">
-            <strong>Fahrtaufträge prüfen:</strong> Die Auftragsbestätigung nennt {{ o.expected }} {{ o.expected === 1 ? 'Bus' : 'Busse' }},
-            es gibt {{ o.count }} {{ o.count === 1 ? 'Fahrtauftrag' : 'Fahrtaufträge' }}. Bitte prüfen, ob ein Fahrtauftrag fehlt oder überzählig ist.
-          </div>
-        }
+  <!-- Die Reise hält alles zusammen: ihre Fahrtaufträge stehen direkt hier -->
+  <div class="form-area mb-3">
+    <div class="section-title">Fahrtaufträge <app-help-link topic="fahrten" anchor="fahrtauftrag" label="Fahrtauftrag" /></div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle bg-white border mb-0">
+        <thead>
+          <tr>
+            <th scope="col">Fahrtauftrag</th><th scope="col">Termin</th><th scope="col">Fahrzeug</th><th scope="col">Fahrer</th><th scope="col">Stand</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of j.trip_order_list; track t.id) {
+            <tr>
+              <td>
+                <a [routerLink]="['/fahrtauftraege', t.id]">{{ t.title }}</a>
+                <div class="small text-body-secondary">@if (t.number) { <code>{{ t.number }}</code> · }{{ t.vehicle_type_label ?? 'Fahrzeug' }}, Bus {{ t.bus_no }}</div>
+              </td>
+              <td class="text-nowrap">
+                @if (t.date_from) {
+                  {{ t.date_from | date: 'dd.MM.yyyy' }}@if (t.date_to && t.date_to !== t.date_from) { – {{ t.date_to | date: 'dd.MM.yyyy' }} }
+                } @else { <span class="small text-body-secondary">Kein Datum</span> }
+              </td>
+              <td>
+                @if (t.vehicle) { {{ t.vehicle }} }
+                @else if (t.external_company) { {{ t.external_company }} <div class="small text-body-secondary">Fremdunternehmer</div> }
+                @else { <span class="small text-body-secondary">noch offen</span> }
+              </td>
+              <td>
+                @for (d of t.drivers; track $index) { <div>{{ d }}</div> }
+                @empty { <span class="small text-body-secondary">{{ t.external_company ? '–' : 'noch offen' }}</span> }
+              </td>
+              <td><span class="badge" [class]="badge(t)">{{ t.status_label }}</span></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="text-center text-secondary py-4 small">Noch keine Fahrtaufträge. Sie entstehen, sobald die Auftragsbestätigung festgeschrieben wird: je Strecke und Bus einer.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (orders()?.check) {
+      <div class="alert alert-warning py-2 small mt-2 mb-0" role="status">
+        <strong>Fahrtaufträge prüfen:</strong> Die Auftragsbestätigung nennt {{ orders()!.expected }} {{ orders()!.expected === 1 ? 'Bus' : 'Busse' }},
+        es gibt {{ orders()!.count }} {{ orders()!.count === 1 ? 'Fahrtauftrag' : 'Fahrtaufträge' }}. Bitte prüfen, ob ein Fahrtauftrag fehlt oder überzählig ist.
       </div>
     }
-  }
+  </div>
 
   <div class="form-area mb-3">
     <div class="section-title">Belege</div>
@@ -236,17 +289,24 @@
   </div>
 
   @if (canPlan()) {
-    <div class="d-flex align-items-center gap-3 mb-3">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+      @if (j.state === 'laufend') {
+        <button type="button" class="btn btn-outline-danger" [disabled]="busy()" (click)="openCancel()">
+          <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Reise absagen
+        </button>
+      }
       <button type="button" class="btn btn-outline-danger" [disabled]="busy() || !canDelete()" (click)="deleteJourney()">
         <i class="bi bi-trash me-1" aria-hidden="true"></i>Reise löschen
       </button>
-      <span class="form-text m-0">
-        @if (canDelete()) {
-          Löscht die Reise mit ihren Strecken@if (j.documents.length) { und dem Angebot, solange es nicht festgeschrieben ist }.
-        } @else {
-          Nicht möglich: Es gibt festgeschriebene Belege. Stornieren Sie den Beleg, wenn die Reise nicht stattfindet.
-        }
-      </span>
+      <app-help-link topic="belege" anchor="reise-absagen" label="Reise absagen" />
+    </div>
+    <div class="form-text mb-3">
+      @if (j.state === 'laufend') { Findet die Reise nicht statt, sagen Sie sie ab: Reise und Belege bleiben erhalten. }
+      @if (canDelete()) {
+        Löschen entfernt die Reise mit ihren Strecken@if (j.documents.length) { und dem Angebot, solange es nicht festgeschrieben ist }.
+      } @else {
+        Löschen ist nicht möglich, weil es festgeschriebene Belege gibt.
+      }
     </div>
   }
 }

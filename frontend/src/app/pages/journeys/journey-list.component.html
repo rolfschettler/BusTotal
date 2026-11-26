@@ -41,11 +41,26 @@
       <div class="col-12 col-sm-auto small text-body-secondary">
         Eine Reise planen Sie Schritt für Schritt: Strecken hinzufügen, danach das Angebot erstellen.
       </div>
+      <div class="col-12">
+        <div class="btn-group btn-group-sm" role="group" aria-label="Ansicht">
+          @for (v of views; track v.value) {
+            <button type="button" class="btn" [class.btn-primary]="view() === v.value" [class.btn-outline-primary]="view() !== v.value"
+                    [attr.aria-pressed]="view() === v.value" (click)="showView(v.value)">{{ v.label }}</button>
+          }
+        </div>
+      </div>
     </div>
   </div>
 
   @if (error()) {
     <div class="alert alert-danger py-2 mb-3" role="alert">{{ error() }}</div>
+  }
+
+  @if (otherMatches() > 0) {
+    <div class="alert alert-info py-2 small mb-3" role="status">
+      {{ otherMatches() }} {{ otherMatches() === 1 ? 'weiterer Treffer' : 'weitere Treffer' }} in anderen Ansichten.
+      <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline" (click)="showView('alle')">Alle anzeigen</button>
+    </div>
   }
 
   <div class="card table-card rounded-3" [class.dimmed]="loading()">
@@ -98,6 +113,13 @@
               }
             </td>
             <td>
+              @if (j.state !== 'laufend') {
+                <div class="mb-1">
+                  <span class="badge" [class.text-bg-danger]="j.state === 'abgesagt'" [class.text-bg-secondary]="j.state === 'abgeschlossen'">
+                    {{ j.state === 'abgesagt' ? 'Abgesagt' : 'Abgeschlossen' }}
+                  </span>
+                </div>
+              }
               @if (j.stage; as st) {
                 <a [routerLink]="['/belege', j.stage_document_id]" class="text-decoration-none"><span class="badge text-bg-light border">{{ stageLabels[st] }}</span></a>
               } @else {
@@ -112,9 +134,10 @@
               @if (!loaded()) {
                 Daten werden geladen …
               } @else if (shownQuery()) {
-                Keine Reise zu „{{ shownQuery() }}“ gefunden.
+                Keine Reise zu „{{ shownQuery() }}“ in dieser Ansicht.
               } @else {
-                Noch keine Reise. @if (canPlan()) { <a routerLink="/reisen/neu">Neue Reise planen</a>: Titel und Kunde eintragen, dann die Strecken hinzufügen. }
+                {{ emptyTexts[view()] }}
+                @if (canPlan() && (view() === 'laufende' || view() === 'alle')) { <a routerLink="/reisen/neu">Neue Reise planen</a>: Titel und Kunde eintragen, dann die Strecken hinzufügen. }
               }
             </td>
           </tr>

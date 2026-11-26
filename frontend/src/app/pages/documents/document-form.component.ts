@@ -132,13 +132,22 @@ export class DocumentFormComponent implements OnInit {
     const d = this.doc();
     return !!d && this.readonly() && !this.cancelled() && !!this.typeInfo()?.invoice && d.type !== 'gutschrift' && this.canFinalize();
   });
+  journeyCancelled = computed(() => this.doc()?.journey?.state === 'abgesagt');
+  /** Belege der Planung (nicht Rechnung und Storno): Bei einer abgesagten Reise gesperrt, der Server prüft es ebenfalls. */
+  blockedByCancellation = computed(() => this.journeyCancelled() && ['angebot', 'auftragsbestaetigung', 'anzahlung'].includes(this.doc()?.type ?? ''));
+  /** Die möglichen Folgebelege; bei einer abgesagten Reise nur noch Verweise auf vorhandene. */
+  followUpTypes = computed(() => {
+    const types = this.typeInfo()?.convertible_to ?? [];
+    return this.journeyCancelled() ? types.filter((t) => this.doc()?.existing_followups?.[t]) : types;
+  });
   /** Kurzer Hinweis zum nächsten Schritt in der Reise-Leiste (nur bei Belegen einer Reise). */
   nextStep = computed(() => {
     const d = this.doc();
-    if (!d?.journey || this.cancelled() || d.type === 'gutschrift') return null;
+    if (!d?.journey || this.cancelled() || this.journeyCancelled() || d.type === 'gutschrift') return null;
     if (d.status === 'entwurf') return 'Kunden wählen, Positionen prüfen und den Beleg festschreiben.';
     // Was es aus diesem Beleg schon gibt (Auftragsbestätigung), ist kein nächster Schritt mehr
     const next = (this.typeInfo()?.convertible_to ?? []).filter((t) => !d.existing_followups?.[t]);
+    if (d.type === 'auftragsbestaetigung' && next.includes('anzahlung')) return 'Wenn Sie eine Anzahlung verlangen möchten: „Anzahlungsrechnung erstellen“ (Taste unten). Das ist freiwillig.';
     return next.length ? `${next.map((t) => this.typeLabel(t)).join(' oder ')} erstellen (Tasten unten).` : null;
   });
   isInvoiceType = computed(() => !!this.types().find((t) => t.value === this.typeValue())?.invoice);
@@ -342,7 +351,7 @@ export class DocumentFormComponent implements OnInit {
    * Strecken plant man auf der Reise (Seite „Reise“), nicht im Beleg: Dort hinzufügen, ändern, entfernen, danach „Angebot aktualisieren“.
    * Der Beleg zeigt sie nur, und nur ein Entwurf mit Reise verweist dorthin.
    */
-  canEditSections = computed(() => !this.readonly() && !!this.doc()?.journey);
+  canEditSections = computed(() => !this.readonly() && !!this.doc()?.journey && !this.journeyCancelled());
 
   /**
    * Überschrift über einer Gruppe von Positionen: Strecke und Fahrzeugbedarf. Nur an der ersten Position der Gruppe, sonst null.

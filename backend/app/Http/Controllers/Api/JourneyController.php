@@ -12,11 +12,13 @@ use App\Models\Journey;
 use App\Models\JourneySection;
 use App\Models\Trip;
 use App\Services\DocumentService;
+use App\Services\JourneyCancellationService;
 use App\Services\JourneyPlanner;
 use App\Services\JourneyService;
 use App\Support\NameSearch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -32,35 +34,56 @@ class JourneyController extends Controller
         private readonly JourneyService $journeys,
         private readonly JourneyPlanner $planner,
         private readonly DocumentService $documents,
+        private readonly JourneyCancellationService $cancellations,
     ) {}
 
-    /** Neueste Reisen zuerst. Die Suche trifft Titel und Kunde am Wortanfang (siehe NameSearch). */
+    private const VIEWS = ['laufende', 'abgeschlossen', 'abgesagt', 'alle'];
+
+    /**
+     * Neueste Reisen zuerst, nach Ansicht (Vorgabe „laufende“). Die Suche trifft Titel und Kunde am Wortanfang (siehe NameSearch);
+     * `other_matches` zählt dann die Treffer, die in der gewählten Ansicht nicht zu sehen sind.
+     */
     public function index(Request $request): JsonResponse
     {
+        $view = $request->validate(['view' => ['nullable', Rule::in(self::VIEWS)]], ['view.in' => 'Diese Ansicht gibt es nicht.'])['view'] ?? 'laufende';
+
         $query = Journey::query()
             ->select('journeys.*')
             ->with('customer:id,customer_number,company_name,first_name,last_name,postal_code,city')
             ->withCount('sections')
             ->leftJoin('customers as c', 'c.id', '=', 'journeys.customer_id');
 
-        if ($q = trim((string) $request->query('q'))) {
+        $q = trim((string) $request->query('q'));
+        if ($q !== '') {
             NameSearch::apply($query, $q, ['last_name', 'first_name', 'city', 'postal_code', 'customer_number', 'company_name', 'email'], 'c', function ($w, string $token) {
                 $w->orWhere('journeys.title', 'like', NameSearch::start($token))
                     ->orWhere('journeys.title', 'like', '% '.NameSearch::start($token));
             });
         }
 
+        // Vor dem Filter der Ansicht zählen: alle Treffer der Suche
+        $matches = $q !== '' && $view !== 'alle' ? (clone $query)->count('journeys.id') : null;
+        match ($view) {
+            'laufende' => $query->running(),
+            'abgeschlossen' => $query->completed(),
+            'abgesagt' => $query->cancelled(),
+            default => null,
+        };
+
         $result = $query->orderByDesc('journeys.created_at')->orderByDesc('journeys.id')->paginate(20)->withQueryString();
 
         // Stand und Betrag je Reise: die Belege der ganzen Seite mit EINER Abfrage holen.
-        $docs = Document::whereIn('journey_id', $result->getCollection()->pluck('id'))->get()->groupBy('journey_id');
-        $result->getCollection()->each(function (Journey $j) use ($docs) {
+        $ids = $result->getCollection()->pluck('id');
+        $docs = Document::whereIn('journey_id', $ids)->get()->groupBy('journey_id');
+        $completed = Journey::query()->completed()->whereIn('journeys.id', $ids)->pluck('journeys.id')->flip();
+        $result->getCollection()->each(function (Journey $j) use ($docs, $completed) {
+            $j->setAttribute('state', $j->isCancelled() ? 'abgesagt' : ($completed->has($j->id) ? 'abgeschlossen' : 'laufend'));
             foreach ($this->journeys->overview($docs->get($j->id, [])) as $key => $value) {
                 $j->setAttribute($key, $value);
             }
         });
 
-        return response()->json($result);
+        return response()->json($result->toArray() + ['other_matches' => $matches === null ? 0 : max(0, $matches - $result->total())]);
     }
 
     /** Neue Reise von Hand planen: Titel und (freiwillig) Kunde. Strecken kommen danach auf der Reise hinzu. */
@@ -95,7 +118,7 @@ class JourneyController extends Controller
         $docs = Document::where('journey_id', $journey->id)->get();
         if ($docs->contains(fn (Document $d) => ! $d->isDraft())) {
             throw ValidationException::withMessages(['journey' => [
-                'Zu dieser Reise gibt es festgeschriebene Belege. Die lassen sich nicht löschen, damit auch die Reise nicht. Stornieren Sie den Beleg, wenn die Reise nicht stattfindet.',
+                'Zu dieser Reise gibt es festgeschriebene Belege. Die lassen sich nicht löschen, damit auch die Reise nicht. Findet die Reise nicht statt, nehmen Sie „Reise absagen“.',
             ]]);
         }
 
@@ -113,6 +136,37 @@ class JourneyController extends Controller
     public function show(Journey $journey): JsonResponse
     {
         return response()->json($this->payload($journey));
+    }
+
+    // ---------- Absage ----------
+
+    /** Was die Absage bewirkt: Fahrtaufträge und schon eingegangene Beträge. */
+    public function cancellation(Journey $journey): JsonResponse
+    {
+        return response()->json($this->cancellations->preview($journey));
+    }
+
+    public function cancel(Request $request, Journey $journey): JsonResponse
+    {
+        // „Heute“ ist der Tag in Deutschland, der Server rechnet in UTC.
+        $today = Carbon::today('Europe/Berlin')->toDateString();
+        $data = $request->validate([
+            'date' => ['required', 'date_format:Y-m-d', 'before_or_equal:'.$today],
+            'reason' => ['required', 'string', 'max:255'],
+        ], [
+            'date.required' => 'Bitte angeben, wann die Reise abgesagt wurde.',
+            'date.date_format' => 'Bitte ein gültiges Datum angeben.',
+            'date.before_or_equal' => 'Das Datum der Absage darf nicht in der Zukunft liegen.',
+            'reason.required' => 'Bitte einen Grund für die Absage angeben.',
+            'reason.max' => 'Der Grund darf höchstens 255 Zeichen lang sein.',
+        ]);
+
+        return response()->json($this->payload($this->cancellations->cancel($journey, $data['date'], $data['reason'])));
+    }
+
+    public function reactivate(Journey $journey): JsonResponse
+    {
+        return response()->json($this->payload($this->cancellations->reactivate($journey)));
     }
 
     // ---------- Strecken ----------

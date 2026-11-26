@@ -43,6 +43,7 @@ class TripOrderService
         return DB::transaction(function () use ($order, $data, $boardings, $reason) {
             $order = TripOrder::lockForUpdate()->findOrFail($order->id);
 
+            $this->assertNotCancelled($order);
             if ($order->status === TripOrderStatus::Erledigt || $order->billing_status === 'abgerechnet') {
                 $this->fail('Dieser Fahrtauftrag ist erledigt und kann nicht mehr geändert werden.');
             }
@@ -131,6 +132,7 @@ class TripOrderService
         return DB::transaction(function () use ($order) {
             $order = TripOrder::lockForUpdate()->findOrFail($order->id);
 
+            $this->assertNotCancelled($order);
             if ($order->isIssued()) {
                 $this->fail('Dieser Fahrtauftrag ist schon ausgegeben.');
             }
@@ -138,7 +140,8 @@ class TripOrderService
                 $this->fail('Bitte zuerst Fahrzeug und Fahrer zuweisen (oder einen Fremdunternehmer eintragen).');
             }
 
-            $number = $this->numbers->next('fahrtauftrag');
+            // Nach einem Zurücknehmen gilt die alte Nummer weiter: keine Lücke und keine zweite Nummer für denselben Auftrag.
+            $number = $order->number ?? $this->numbers->next('fahrtauftrag');
             $order->forceFill([
                 'number' => $number, 'status' => TripOrderStatus::Ausgegeben, 'issued_at' => now(), 'issued_by' => auth()->id(),
             ])->save();
@@ -146,6 +149,38 @@ class TripOrderService
 
             return $order->fresh(['vehicle', 'driver', 'driver2']);
         });
+    }
+
+    /**
+     * Ausgabe zurücknehmen (zu früh ausgegeben): Der Auftrag ist wieder frei änderbar und behält seine Nummer. Die Begründung steht
+     * mit dem Zeitpunkt der bisherigen Ausgabe im Änderungsprotokoll.
+     */
+    public function revoke(TripOrder $order, string $reason): TripOrder
+    {
+        return DB::transaction(function () use ($order, $reason) {
+            $order = TripOrder::lockForUpdate()->findOrFail($order->id);
+
+            $this->assertNotCancelled($order);
+            if ($order->status !== TripOrderStatus::Ausgegeben || $order->billing_status === 'abgerechnet') {
+                $this->fail('Zurücknehmen lässt sich nur ein ausgegebener, noch nicht erledigter Fahrtauftrag.');
+            }
+
+            $issuedAt = $order->issued_at?->toIso8601String();
+            $order->forceFill([
+                'status' => $this->isComplete($order) ? TripOrderStatus::Disponiert : TripOrderStatus::Entwurf,
+                'issued_at' => null, 'issued_by' => null,
+            ])->save();
+            AuditLog::record('issue_revoked', $order, null, ['number' => $order->number, 'reason' => trim($reason), 'issued_at' => $issuedAt]);
+
+            return $order->fresh(['vehicle', 'driver', 'driver2']);
+        });
+    }
+
+    private function assertNotCancelled(TripOrder $order): void
+    {
+        if ($order->isCancelled()) {
+            $this->fail('Dieser Fahrtauftrag ist mit der Reise abgesagt. Nehmen Sie zuerst auf der Reise die Absage zurück.');
+        }
     }
 
     /** Disponiert heißt: ein Fahrzeug (eigenes oder fremdes) und ein Fahrer sind zugewiesen, oder ein Fremdunternehmer fährt komplett. */
@@ -185,6 +220,10 @@ class TripOrderService
      */
     public function warnings(TripOrder $order): array
     {
+        // Ein abgesagter Auftrag wird nicht mehr disponiert, es gibt nichts zu prüfen.
+        if ($order->isCancelled()) {
+            return [];
+        }
         $order->loadMissing(['vehicle', 'driver', 'driver2']);
         $from = $order->date_from;
         $to = $order->date_to ?? $from;
@@ -244,6 +283,7 @@ class TripOrderService
     private function overlapping(TripOrder $order, Carbon $from, Carbon $to): Builder
     {
         return TripOrder::where('id', '!=', $order->id)
+            ->whereNull('cancelled_at')
             ->whereNotNull('date_from')
             ->whereDate('date_from', '<=', $to->toDateString())
             ->whereRaw('COALESCE(date_to, date_from) >= ?', [$from->toDateString()]);

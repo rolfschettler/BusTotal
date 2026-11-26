@@ -3,14 +3,17 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, ElementRef, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { httpErrorText } from '../../core/http-error';
 import { JourneyDetail, JourneyDetailSection, JourneyService, SectionState } from '../../core/journey.service';
+import { statusBadge } from '../../core/trip-order.service';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { CustomerPickerComponent, PickedCustomer } from '../../shared/customer-picker.component';
 import { formatDuration } from '../route-planning/route-planning-view';
 import { formatAmount } from '../documents/document-calc';
+import { JourneyCancelModalComponent } from './journey-cancel-modal.component';
 import { STAGE_LABELS } from './journey-list.component';
 
 /** Bezeichnungen der Belegarten für die Kette. */
@@ -41,6 +44,7 @@ export class JourneyDetailComponent implements OnInit {
   private router = inject(Router);
   private auth = inject(AuthService);
   private confirm = inject(ConfirmService);
+  private modals = inject(NgbModal);
 
   journey = signal<JourneyDetail | null>(null);
   loading = signal(true);
@@ -53,6 +57,10 @@ export class JourneyDetailComponent implements OnInit {
 
   /** Planen (Strecken, Kunde, Angebot) dürfen Admin und Disponent; Buchhaltung sieht nur. */
   canPlan = computed(() => ['admin', 'disponent'].includes(this.auth.user()?.role ?? ''));
+
+  cancelled = computed(() => this.journey()?.state === 'abgesagt');
+  /** Strecken und Angebot ändern: nur mit Berechtigung und solange die Reise nicht abgesagt ist. */
+  canChange = computed(() => this.canPlan() && !this.cancelled());
 
   // ---- Umbenennen ----
   editing = signal(false);
@@ -133,6 +141,48 @@ export class JourneyDetailComponent implements OnInit {
 
   // ---- Strecken ----
   busy = signal(false);
+
+  // ---- Absagen ----
+  /** Datum, Grund und Folgen stehen in einem eigenen Fenster; es liefert die abgesagte Reise zurück. */
+  openCancel() {
+    const j = this.journey();
+    if (!j || this.busy()) return;
+    const ref = this.modals.open(JourneyCancelModalComponent, { centered: true, size: 'lg' });
+    (ref.componentInstance as JourneyCancelModalComponent).journey = j;
+    ref.result.then(
+      (updated: JourneyDetail) => {
+        this.journey.set(updated);
+        this.notify(true, 'Reise abgesagt.');
+      },
+      () => undefined,
+    );
+  }
+
+  async reactivate() {
+    const j = this.journey();
+    if (!j || this.busy()) return;
+    const orders = j.trip_orders.cancelled ?? 0;
+    const ok = await this.confirm.ask({
+      title: 'Absage zurücknehmen',
+      message: `Die Reise „${j.title}“ gilt wieder als laufend.` + (orders
+        ? ` ${orders === 1 ? 'Der Fahrtauftrag gilt' : `Die ${orders} Fahrtaufträge gelten`} wieder wie vor der Absage. Bitte informieren Sie die Fahrer erneut.`
+        : ''),
+      confirmLabel: 'Absage zurücknehmen',
+    });
+    if (!ok) return;
+    this.busy.set(true);
+    this.api.reactivate(j.id).subscribe({
+      next: (d) => {
+        this.busy.set(false);
+        this.journey.set(d);
+        this.notify(true, 'Absage zurückgenommen.');
+      },
+      error: (e: HttpErrorResponse) => {
+        this.busy.set(false);
+        this.notify(false, httpErrorText(e, 'Die Absage konnte nicht zurückgenommen werden.'));
+      },
+    });
+  }
 
   stateOf(sectionId: string): SectionState | null {
     return this.journey()?.quote.sections.find((s) => s.id === sectionId)?.state ?? null;
@@ -231,6 +281,7 @@ export class JourneyDetailComponent implements OnInit {
   readonly amount = formatAmount;
   readonly duration = formatDuration;
   readonly stageLabels = STAGE_LABELS;
+  readonly badge = statusBadge;
   typeLabel = (t: string) => TYPE_LABELS[t] ?? t;
 
   /** Die Fahrtaufträge der Reise im Überblick (entstehen mit der Auftragsbestätigung). */
@@ -242,8 +293,20 @@ export class JourneyDetailComponent implements OnInit {
     return [...docs].reverse().find((d) => !d.cancelled && d.type !== 'gutschrift') ?? docs[docs.length - 1] ?? null;
   });
 
+  /**
+   * Der Auftrag, sobald er verbindlich ist: die gültige festgeschriebene Auftragsbestätigung, solange danach nur Anzahlungen kamen.
+   * Dann führt der nächste Schritt zu den Fahrtaufträgen und zur Auftragsbestätigung, dort entsteht auch die Anzahlung.
+   */
+  confirmation = computed(() => {
+    const d = this.latest();
+    if (!d || d.status === 'entwurf' || !['auftragsbestaetigung', 'anzahlung'].includes(d.type)) return null;
+    return this.journey()?.documents.find((x) => x.type === 'auftragsbestaetigung' && x.status === 'festgeschrieben' && !x.cancelled) ?? null;
+  });
+  /** Gibt es schon eine gültige Anzahlungsrechnung (auch als Entwurf)? */
+  hasAdvance = computed(() => !!this.journey()?.documents.some((x) => x.type === 'anzahlung' && !x.cancelled));
+
   /** Es wird noch geplant (kein Beleg oder nur ein Entwurf): Dann gehört „Strecke hinzufügen“ zum nächsten Schritt. */
-  planning = computed(() => this.canPlan() && (this.latest()?.status ?? 'entwurf') === 'entwurf');
+  planning = computed(() => this.canChange() && (this.latest()?.status ?? 'entwurf') === 'entwurf');
 
   /** Ist „Strecke hinzufügen“ der naheliegende Schritt (Haupttaste)? Ja, solange es keinen Beleg und keine Rückfahrt gibt. */
   addFirst = computed(() => !this.latest() && !this.journey()?.sections.some((s) => s.kind === 'rueckfahrt'));
@@ -252,6 +315,7 @@ export class JourneyDetailComponent implements OnInit {
   nextStep = computed(() => {
     const j = this.journey();
     const d = this.latest();
+    if (j?.state === 'abgeschlossen') return 'Nichts mehr zu tun: Die Reise ist vorbei und die Rechnung bezahlt.';
     if (!d) {
       if (!j?.sections.length) return 'Fügen Sie die erste Strecke hinzu: Hinfahrt, Fahrten vor Ort, Rückfahrt.';
       if (this.addFirst()) return 'Fügen Sie die nächste Strecke hinzu, zum Beispiel die Rückfahrt. Oder erstellen Sie gleich das Angebot.';
@@ -267,10 +331,10 @@ export class JourneyDetailComponent implements OnInit {
       case 'angebot': return 'Auftragsbestätigung erstellen, sobald der Kunde zusagt.';
       case 'auftragsbestaetigung': {
         const o = this.orders();
-        if (o && o.to_plan > 0) return `Fahrzeug und Fahrer für ${o.to_plan === 1 ? 'den Fahrtauftrag' : `die ${o.to_plan} Fahrtaufträge`} zuweisen. Optional eine Anzahlung verlangen, nach der Fahrt die Rechnung erstellen.`;
-        return 'Optional eine Anzahlung verlangen, nach der Fahrt die Rechnung erstellen.';
+        if (o && o.to_plan > 0) return `Teilen Sie Bus und Fahrer für ${o.to_plan === 1 ? 'den Fahrtauftrag' : `die ${o.to_plan} Fahrtaufträge`} ein.`;
+        return 'Die Fahrt ist eingeteilt.';
       }
-      case 'anzahlung': return 'Zahlungseingang erfassen, nach der Fahrt die Schlussrechnung erstellen.';
+      case 'anzahlung': return 'Erfassen Sie den Zahlungseingang in der Anzahlungsrechnung.';
       case 'rechnung': return 'Zahlungseingang erfassen.';
       default: return '';
     }

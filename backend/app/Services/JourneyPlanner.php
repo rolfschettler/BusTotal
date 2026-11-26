@@ -64,8 +64,8 @@ class JourneyPlanner
             'draft_id' => $draft?->id,
             'issued_id' => $issued?->id,
             'sections' => $sections,
-            'can_create' => $draft === null && $issued === null && count($sections) > 0,
-            'can_sync' => $draft !== null && $pending > 0,
+            'can_create' => ! $journey->isCancelled() && $draft === null && $issued === null && count($sections) > 0,
+            'can_sync' => ! $journey->isCancelled() && $draft !== null && $pending > 0,
             'pending' => $pending,
         ];
     }
@@ -97,7 +97,7 @@ class JourneyPlanner
     public function quote(Journey $journey): array
     {
         return DB::transaction(function () use ($journey) {
-            Journey::lockForUpdate()->findOrFail($journey->id);
+            $this->journeys->assertActive($journey->id);
             $draft = $this->draft($journey);
 
             if ($draft === null) {
@@ -174,6 +174,7 @@ class JourneyPlanner
     public function removeSection(JourneySection $section): void
     {
         DB::transaction(function () use ($section) {
+            $this->journeys->assertActive($section->journey_id);
             $issued = DocumentLine::where('journey_section_id', $section->id)
                 ->whereHas('document', fn ($q) => $q->where('status', '!=', DocumentStatus::Entwurf->value))->exists();
             if ($issued) {

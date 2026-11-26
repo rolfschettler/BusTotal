@@ -4,6 +4,7 @@ import { Page } from './customer.service';
 import { DocumentTypeValue, JourneyTripOrders, OwnFigures, SectionKindValue, TripKindValue } from './document.service';
 import { TourPayload } from './pricing.service';
 import { RouteResult } from './route.service';
+import { TripOrderStatus } from './trip-order.service';
 
 /** Der Kunde einer Reise in der Kurzform der Oberfläche */
 export interface JourneyCustomer {
@@ -17,6 +18,31 @@ export interface JourneyCustomer {
   city?: string | null;
 }
 
+/** Stand der Reise: abgesagt von Hand, abgeschlossen von selbst (vorbei und Rechnung bezahlt), sonst laufend. */
+export type JourneyState = 'laufend' | 'abgeschlossen' | 'abgesagt';
+
+/** Ansicht der Reisenliste (gefiltert wird auf dem Server). */
+export type JourneyView = 'laufende' | 'abgeschlossen' | 'abgesagt' | 'alle';
+
+export const JOURNEY_VIEWS: { value: JourneyView; label: string }[] = [
+  { value: 'laufende', label: 'Laufende' },
+  { value: 'abgeschlossen', label: 'Abgeschlossen' },
+  { value: 'abgesagt', label: 'Abgesagt' },
+  { value: 'alle', label: 'Alle' },
+];
+
+/** Eine Seite der Reisenliste; other_matches: Treffer der Suche außerhalb der gewählten Ansicht. */
+export type JourneyPage = Page<JourneyRow> & { other_matches: number };
+
+/** Was eine Absage bewirkt. */
+export interface CancellationPreview {
+  orders: { id: string; number: string | null; title: string; bus_no: number; status_label: string; drivers: string[] }[];
+  /** erledigte Fahrtaufträge, die unverändert bleiben */
+  kept: number;
+  payments: { id: string; number: string; type_label: string; paid: string }[];
+  paid_total: string;
+}
+
 /** Zeile der Reisenliste. Stand und Betrag sind aus den Belegen abgeleitet, nicht gespeichert. */
 export interface JourneyRow {
   id: string;
@@ -24,6 +50,7 @@ export interface JourneyRow {
   date_from: string | null;
   date_to: string | null;
   customer: JourneyCustomer | null;
+  state: JourneyState;
   sections_count: number;
   document_count: number;
   /** weitestgehender gültiger Beleg: Rechnung vor Auftragsbestätigung vor Angebot (nicht storniert); null ohne einen solchen */
@@ -64,6 +91,23 @@ export interface JourneyDetailSection {
   trip: { id: string | null; title: string; loaded_km: number; empty_km: number; drive_s: number; days: number; from: string | null; to: string | null; frozen_by: string | null } | null;
 }
 
+/** Ein Fahrtauftrag in der Tabelle auf der Reise-Seite. */
+export interface JourneyTripOrderRow {
+  id: string;
+  number: string | null;
+  title: string;
+  bus_no: number;
+  vehicle_type_label: string | null;
+  status: TripOrderStatus;
+  status_label: string;
+  cancelled_at: string | null;
+  date_from: string | null;
+  date_to: string | null;
+  vehicle: string | null;
+  external_company: string | null;
+  drivers: string[];
+}
+
 export interface JourneyDetail {
   id: string;
   title: string;
@@ -86,7 +130,11 @@ export interface JourneyDetail {
   amount: string | null;
   document_count: number;
   trip_orders: JourneyTripOrders;
+  trip_order_list: JourneyTripOrderRow[];
   quote: QuoteStatus;
+  state: JourneyState;
+  cancelled_on: string | null;
+  cancel_reason: string | null;
 }
 
 /**
@@ -173,10 +221,10 @@ export class JourneyService {
   private http = inject(HttpClient);
   private base = '/api/journeys';
 
-  list(q: string, page: number) {
-    let params = new HttpParams().set('page', page);
+  list(q: string, page: number, view: JourneyView) {
+    let params = new HttpParams().set('page', page).set('view', view);
     if (q.trim()) params = params.set('q', q.trim());
-    return this.http.get<Page<JourneyRow>>(this.base, { params });
+    return this.http.get<JourneyPage>(this.base, { params });
   }
 
   get(id: string) {
@@ -198,9 +246,23 @@ export class JourneyService {
     return this.update(id, { title });
   }
 
-  /** Eine Reise ohne Belege löschen. */
+  /** Eine Reise ohne festgeschriebene Belege löschen. */
   remove(id: string) {
     return this.http.delete<{ message: string }>(`${this.base}/${id}`);
+  }
+
+  cancellationPreview(id: string) {
+    return this.http.get<CancellationPreview>(`${this.base}/${id}/cancellation`);
+  }
+
+  /** Reise absagen: Die offenen Fahrtaufträge gelten mit ab, Belege bleiben. */
+  cancel(id: string, date: string, reason: string) {
+    return this.http.post<JourneyDetail>(`${this.base}/${id}/cancel`, { date, reason });
+  }
+
+  /** Absage zurücknehmen. */
+  reactivate(id: string) {
+    return this.http.post<JourneyDetail>(`${this.base}/${id}/reactivate`, {});
   }
 
   addSection(id: string, body: SectionBody) {

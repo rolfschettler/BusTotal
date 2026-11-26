@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { httpErrorText } from '../../core/http-error';
-import { JourneyRow, JourneyService } from '../../core/journey.service';
+import { JOURNEY_VIEWS, JourneyRow, JourneyService, JourneyView } from '../../core/journey.service';
 import { ListMemory } from '../../core/list-memory.service';
 import { CustomerNameComponent } from '../../shared/customer-name.component';
 import { HighlightComponent } from '../../shared/highlight.component';
@@ -14,7 +14,15 @@ import { StickyFilterBarDirective } from '../../shared/sticky-filter-bar.directi
 import { formatAmount } from '../documents/document-calc';
 
 const KEY = 'reisen';
-type JourneyListParams = { q: string; page: number };
+type JourneyListParams = { q: string; view?: JourneyView; page: number };
+
+/** Leertext je Ansicht (ohne Suche). */
+const EMPTY_TEXTS: Record<JourneyView, string> = {
+  laufende: 'Keine laufende Reise.',
+  abgeschlossen: 'Noch keine abgeschlossene Reise. Eine Reise ist abgeschlossen, wenn sie vorbei und ihre Rechnung bezahlt ist.',
+  abgesagt: 'Keine abgesagte Reise.',
+  alle: 'Noch keine Reise.',
+};
 
 /** Der Stand einer Reise in Worten: der weitestgehende gültige Beleg. */
 export const STAGE_LABELS: Record<string, string> = {
@@ -43,6 +51,11 @@ export class JourneyListComponent implements OnInit {
   canPlan = computed(() => ['admin', 'disponent'].includes(this.auth.user()?.role ?? ''));
 
   q = '';
+  view = signal<JourneyView>('laufende');
+  /** Treffer der Suche, die in der gewählten Ansicht nicht zu sehen sind */
+  otherMatches = signal(0);
+  readonly views = JOURNEY_VIEWS;
+  readonly emptyTexts = EMPTY_TEXTS;
   page = signal(1);
   lastPage = signal(1);
   total = signal(0);
@@ -63,7 +76,14 @@ export class JourneyListComponent implements OnInit {
   ngOnInit() {
     const saved = this.memory.params<JourneyListParams>(KEY);
     this.q = saved?.q ?? '';
+    this.view.set(saved?.view ?? 'laufende');
     this.page.set(saved?.page ?? 1);
+    this.load();
+  }
+
+  showView(view: JourneyView) {
+    this.view.set(view);
+    this.page.set(1);
     this.load();
   }
 
@@ -94,13 +114,15 @@ export class JourneyListComponent implements OnInit {
     this.error.set(null);
     const query = this.q.trim();
     const request = ++this.requestNo;
-    this.api.list(query, this.page()).subscribe({
+    const view = this.view();
+    this.api.list(query, this.page(), view).subscribe({
       next: (p) => {
         if (request !== this.requestNo) return;
         this.page.set(p.current_page);
         this.rows.set(p.data);
         this.shownQuery.set(query);
-        this.memory.saveParams(KEY, { q: query, page: this.page() } satisfies JourneyListParams);
+        this.otherMatches.set(p.other_matches);
+        this.memory.saveParams(KEY, { q: query, view, page: this.page() } satisfies JourneyListParams);
         this.lastPage.set(p.last_page);
         this.total.set(p.total);
         this.loaded.set(true);

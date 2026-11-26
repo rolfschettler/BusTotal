@@ -172,7 +172,8 @@
 // ── Aktionsspalte (immer die erste) ──────────────────────────────────
 .list-page .col-actions { text-align: center; white-space: nowrap; padding: 0.35rem 0.4rem !important; }
 
-.list-page .btn-action {
+// Die Symboltasten gelten überall, auch für Tabellen in Formularseiten (z. B. Strecken auf der Reise).
+.btn-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;

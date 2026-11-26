@@ -3,7 +3,7 @@
     $km = fn ($v) => number_format((float) $v, 1, ',', '.').' km';
     $dur = function ($s) { $m = (int) round($s / 60); return intdiv($m, 60) > 0 ? intdiv($m, 60).' Std.'.($m % 60 ? ' '.($m % 60).' Min.' : '') : $m.' Min.'; };
 
-    $issued = $order->number !== null;
+    $issued = $order->isIssued();
     $route = $order->route ?? [];
     $trip = $route['trip'] ?? null;
     $own = $route['own'] ?? null;
@@ -62,14 +62,18 @@
     <div class="right">&nbsp;</div>{{-- Platz für „Seite x von y“ (DocumentPdf::addPageNumbers) --}}
 </footer>
 
-@unless ($issued)
+@if ($order->isCancelled())
+    <div class="draft">ABGESAGT – diese Fahrt findet nicht statt</div>
+@elseif ($order->isRevoked())
+    <div class="draft">AUSGABE ZURÜCKGENOMMEN – wird geändert, nicht mehr gültig</div>
+@elseif (! $issued)
     <div class="draft">NOCH NICHT AUSGEGEBEN – ohne Fahrtauftragsnummer, nur zur Ansicht</div>
-@endunless
+@endif
 
 <table class="head">
     <tr>
         <td>
-            <h1>Fahrtauftrag @if ($issued){{ $order->number }}@endif</h1>
+            <h1>Fahrtauftrag @if ($order->number){{ $order->number }}@endif</h1>
             <div class="muted">{{ $order->title }}@if ($busLabel) · {{ $busLabel }}@endif · Bus {{ $order->bus_no }}</div>
         </td>
         <td class="right">
