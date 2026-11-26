@@ -2,10 +2,13 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, ElementRef, OnInit, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { AuthService } from '../../core/auth.service';
+import { ConfirmService } from '../../core/confirm.service';
 import { httpErrorText } from '../../core/http-error';
-import { JourneyDetail, JourneyService } from '../../core/journey.service';
+import { JourneyDetail, JourneyDetailSection, JourneyService, SectionState } from '../../core/journey.service';
 import { HelpLinkComponent } from '../../help/help-link.component';
+import { CustomerPickerComponent, PickedCustomer } from '../../shared/customer-picker.component';
 import { formatDuration } from '../route-planning/route-planning-view';
 import { formatAmount } from '../documents/document-calc';
 import { STAGE_LABELS } from './journey-list.component';
@@ -19,22 +22,37 @@ const TYPE_LABELS: Record<string, string> = {
   gutschrift: 'Stornorechnung',
 };
 
+const STATE_LABELS: Record<SectionState, string> = { neu: 'neu', geaendert: 'geändert', aktuell: 'aktuell' };
+
 /**
- * Übersicht einer Reise: Strecken mit Fahrzeugen, alle Belege mit Betrag und Stand, und der nächste Schritt. Nur der Name der
- * Reise ist hier änderbar (Stift am Titel). Alles andere bearbeitet man im Beleg (Kunde, Positionen, Strecken im Entwurf des
- * Angebots) und in der Streckenplanung (Touren).
+ * Die Reise: Hier plant man sie Schritt für Schritt. Name und Kunde ändern, Strecken hinzufügen, ändern und entfernen
+ * (Hinfahrt, Fahrten vor Ort, Rückfahrt) und aus ihnen das Angebot erstellen. Ändert man später eine Strecke, gleicht
+ * „Angebot aktualisieren“ die Positionen dieser Strecke im Entwurf ab. Dazu die Belege und der nächste Schritt.
  */
 @Component({
   selector: 'app-journey-detail',
-  imports: [DatePipe, DecimalPipe, FormsModule, RouterLink, HelpLinkComponent],
+  imports: [DatePipe, DecimalPipe, FormsModule, RouterLink, HelpLinkComponent, CustomerPickerComponent],
   templateUrl: './journey-detail.component.html',
   host: { class: 'form-page' },
 })
 export class JourneyDetailComponent implements OnInit {
   private api = inject(JourneyService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private auth = inject(AuthService);
+  private confirm = inject(ConfirmService);
 
   journey = signal<JourneyDetail | null>(null);
+  loading = signal(true);
+  error = signal<string | null>(null);
+  /** Meldung nach einer Aktion (Erfolg oder Fehler) */
+  message = signal<{ ok: boolean; text: string } | null>(
+    // Rückkehr aus der Streckenplanung nach „Speichern“
+    history.state?.sectionSaved ? { ok: true, text: 'Strecke gespeichert.' } : null,
+  );
+
+  /** Planen (Strecken, Kunde, Angebot) dürfen Admin und Disponent; Buchhaltung sieht nur. */
+  canPlan = computed(() => ['admin', 'disponent'].includes(this.auth.user()?.role ?? ''));
 
   // ---- Umbenennen ----
   editing = signal(false);
@@ -95,8 +113,120 @@ export class JourneyDetailComponent implements OnInit {
       },
     });
   }
-  loading = signal(true);
-  error = signal<string | null>(null);
+
+  // ---- Kunde ----
+  customerEditing = signal(false);
+
+  /** Kunde gewählt: sofort an der Reise speichern (er steht auf keinem festgeschriebenen Beleg, der hat seine Kopie). */
+  pickCustomer(c: PickedCustomer) {
+    const j = this.journey();
+    if (!j) return;
+    this.api.update(j.id, { title: j.title, customer_id: c.id }).subscribe({
+      next: (d) => {
+        this.journey.set(d);
+        this.customerEditing.set(false);
+        this.notify(true, 'Kunde gespeichert. Ein Angebot, das es schon gibt, behält seinen bisherigen Kunden.');
+      },
+      error: (e: HttpErrorResponse) => this.notify(false, httpErrorText(e, 'Der Kunde konnte nicht gespeichert werden.')),
+    });
+  }
+
+  // ---- Strecken ----
+  busy = signal(false);
+
+  stateOf(sectionId: string): SectionState | null {
+    return this.journey()?.quote.sections.find((s) => s.id === sectionId)?.state ?? null;
+  }
+  readonly stateLabels = STATE_LABELS;
+
+  /** Löschen geht, solange es nur Entwürfe gibt; festgeschriebene Belege bleiben erhalten. */
+  canDelete = computed(() => (this.journey()?.documents ?? []).every((d) => d.status === 'entwurf'));
+
+  async deleteJourney() {
+    const j = this.journey();
+    if (!j || this.busy() || !this.canDelete()) return;
+    const drafts = j.documents.length;
+    const parts = [
+      `${j.sections.length} ${j.sections.length === 1 ? 'Strecke' : 'Strecken'}`,
+      ...(drafts ? [`${drafts === 1 ? 'der Beleg' : `die ${drafts} Belege`} (${j.documents.map((d) => this.typeLabel(d.type)).join(', ')}), noch nicht festgeschrieben`] : []),
+    ];
+    const ok = await this.confirm.ask({
+      title: 'Reise löschen',
+      message: `Die Reise „${j.title}“ endgültig löschen? Dabei werden auch ${parts.join(' und ')} gelöscht. Das lässt sich nicht rückgängig machen.`,
+      confirmLabel: 'Reise löschen',
+      danger: true,
+    });
+    if (!ok) return;
+    this.busy.set(true);
+    this.api.remove(j.id).subscribe({
+      next: () => void this.router.navigate(['/reisen']),
+      error: (e: HttpErrorResponse) => {
+        this.busy.set(false);
+        this.notify(false, httpErrorText(e, 'Die Reise konnte nicht gelöscht werden.'));
+      },
+    });
+  }
+
+  async removeSection(s: JourneyDetailSection) {
+    const j = this.journey();
+    if (!j || this.busy()) return;
+    const inDraft = this.stateOf(s.id) !== 'neu' && !!j.quote.draft_id;
+    const ok = await this.confirm.ask({
+      title: 'Strecke entfernen',
+      message: inDraft
+        ? `Die Strecke „${s.title}“ aus der Reise und aus dem Angebot entfernen?`
+        : `Die Strecke „${s.title}“ aus der Reise entfernen?`,
+      confirmLabel: 'Entfernen',
+      danger: true,
+    });
+    if (!ok) return;
+    this.busy.set(true);
+    this.api.removeSection(j.id, s.id).subscribe({
+      next: (d) => {
+        this.busy.set(false);
+        this.journey.set(d);
+        this.notify(true, 'Strecke entfernt.');
+      },
+      error: (e: HttpErrorResponse) => {
+        this.busy.set(false);
+        this.notify(false, httpErrorText(e, 'Die Strecke konnte nicht entfernt werden.'));
+      },
+    });
+  }
+
+  // ---- Angebot ----
+  /** Titel der Strecken, die sich seit der Berechnung geändert haben (ihre Positionen werden beim Abgleich neu berechnet). */
+  changedTitles = computed(() => {
+    const j = this.journey();
+    if (!j) return [];
+    return j.sections.filter((s) => this.stateOf(s.id) === 'geaendert').map((s) => s.title);
+  });
+
+  /** „Angebot erstellen“ oder „Angebot aktualisieren“; bei geänderten Strecken erst nachfragen (Handänderungen daran gehen verloren). */
+  async quote() {
+    const j = this.journey();
+    if (!j || this.busy()) return;
+    const changed = this.changedTitles();
+    if (j.quote.draft_id && changed.length) {
+      const ok = await this.confirm.ask({
+        title: 'Angebot aktualisieren',
+        message: `Im Angebot ${changed.length === 1 ? 'wird die Strecke' : 'werden die Strecken'} ${changed.map((t) => `„${t}“`).join(', ')} neu gerechnet. Preise oder Texte, die Sie dort von Hand geändert haben, gehen dabei verloren. Alle anderen Strecken im Angebot bleiben, wie sie sind. Fortfahren?`,
+        confirmLabel: 'Aktualisieren',
+      });
+      if (!ok) return;
+    }
+    this.busy.set(true);
+    this.api.quote(j.id).subscribe({
+      next: (r) => {
+        this.busy.set(false);
+        this.router.navigate(['/belege', r.id]);
+      },
+      error: (e: HttpErrorResponse) => {
+        this.busy.set(false);
+        this.notify(false, httpErrorText(e, 'Das Angebot konnte nicht erstellt werden.'));
+      },
+    });
+  }
 
   readonly amount = formatAmount;
   readonly duration = formatDuration;
@@ -114,9 +244,17 @@ export class JourneyDetailComponent implements OnInit {
 
   /** Was als Nächstes zu tun ist, in einem Satz. */
   nextStep = computed(() => {
+    const j = this.journey();
     const d = this.latest();
-    if (!d) return 'Erstellen Sie in der Streckenplanung ein Angebot für diese Reise.';
-    if (d.status === 'entwurf') return `Den ${this.typeLabel(d.type)} prüfen, Kunden wählen und festschreiben.`;
+    if (!d) {
+      if (!j?.sections.length) return 'Fügen Sie die erste Strecke hinzu: Hinfahrt, Fahrten vor Ort, Rückfahrt.';
+      return 'Wenn alle Strecken stehen, erstellen Sie das Angebot.';
+    }
+    if (d.status === 'entwurf') {
+      const pending = j?.quote.pending ?? 0;
+      if (pending > 0) return 'Sie haben Strecken geändert oder neu hinzugefügt. Das Angebot zeigt das noch nicht. Klicken Sie auf „Angebot aktualisieren“.';
+      return `${d.type === 'angebot' ? 'Das Angebot' : `Die ${this.typeLabel(d.type)}`} prüfen, Kunden wählen und festschreiben.`;
+    }
     if (d.cancelled) return 'Dieser Beleg ist storniert. Erstellen Sie bei Bedarf einen neuen.';
     switch (d.type) {
       case 'angebot': return 'Auftragsbestätigung erstellen, sobald der Kunde zusagt.';
@@ -130,6 +268,10 @@ export class JourneyDetailComponent implements OnInit {
       default: return '';
     }
   });
+
+  private notify(ok: boolean, text: string) {
+    this.message.set({ ok, text });
+  }
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id')!;

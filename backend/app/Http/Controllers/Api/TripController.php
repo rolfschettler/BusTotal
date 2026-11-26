@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Enums\TripKind;
 use App\Enums\VehicleType;
 use App\Http\Controllers\Controller;
-use App\Models\JourneySection;
 use App\Models\Trip;
 use App\Services\TripService;
 use Illuminate\Http\JsonResponse;
@@ -62,13 +61,8 @@ class TripController extends Controller
 
     public function destroy(Trip $trip): JsonResponse
     {
-        $used = JourneySection::where('trip_id', $trip->id)->count();
-        if ($used > 0) {
-            return response()->json(['message' => $used === 1
-                ? 'Diese Tour wird in einer Reise verwendet und kann nicht gelöscht werden.'
-                : "Diese Tour wird in $used Reisen verwendet und kann nicht gelöscht werden."], 422);
-        }
-
+        // Die Tour ist nur Vorlage für künftige Angebote: Reisen und Belege haben ihre eigene Kopie (journey_sections.tour_data),
+        // der Verweis dort wird beim Löschen leer.
         $trip->delete();
 
         return response()->json(null, 204);
@@ -82,6 +76,7 @@ class TripController extends Controller
             'vehicle_type' => ['nullable', Rule::enum(VehicleType::class)],
             'vehicle_count' => ['required', 'integer', 'min:1', 'max:99'],
             'depot_id' => ['nullable', 'uuid', 'exists:depots,id'],
+            'from_depot' => ['boolean'],
             'return_to_depot' => ['boolean'],
             'round_trip' => ['boolean'],
             'loaded_km' => ['required', 'numeric', 'min:0', 'max:99999'],
@@ -108,7 +103,8 @@ class TripController extends Controller
             'stops.required' => 'Eine Tour braucht mindestens einen Halt.',
             'stops.min' => 'Eine Tour braucht mindestens einen Halt.',
         ]);
-        if (count($data['stops']) < 2 && empty($data['depot_id'])) {
+        $depotLegs = empty($data['depot_id']) ? 0 : (int) ($data['from_depot'] ?? true) + (int) ($data['return_to_depot'] ?? false);
+        if (count($data['stops']) < 2 && $depotLegs === 0) {
             throw ValidationException::withMessages(['stops' => ['Eine Tour braucht mindestens zwei Halte, oder einen Halt und einen Betriebshof.']]);
         }
 

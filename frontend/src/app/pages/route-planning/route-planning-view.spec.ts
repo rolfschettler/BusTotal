@@ -162,6 +162,7 @@ describe('Streckenplanung: Anfrage', () => {
     const r = toRequest({ ...base, depot: { label: 'Hof', lat: 49.3, lon: 10.5 }, returnToDepot: false, vehicleId: 'abc', startAt: '2027-03-01T06:00', extendedDays: 1 });
     expect(r.depot).toEqual({ lat: 49.3, lon: 10.5, label: 'Hof' });
     expect(r.return_to_depot).toBeFalse();
+    expect(r.from_depot).toBeTrue();   // ohne Angabe mit Anfahrt
     expect(r.vehicle_id).toBe('abc');
     expect(r.extended_days).toBe(1);
     // Ortszeit des Browsers wird als eindeutiger Zeitpunkt gesendet

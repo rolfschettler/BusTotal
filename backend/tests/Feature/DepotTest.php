@@ -36,7 +36,7 @@ class DepotTest extends TestCase
     /** Der Dienst findet zu jeder Anfrage einen Ort; die Koordinaten hängen am Text, damit man Orte unterscheiden kann. */
     private function geocoder(): void
     {
-        Http::fake(['*/geocode/search*' => fn ($request) => Http::response(['features' => [[
+        Http::fake(['*/pelias/v1/search*' => fn ($request) => Http::response(['features' => [[
             'geometry' => ['coordinates' => [10.0 + strlen($request['text']) / 1000, 49.0]],
             'properties' => ['label' => 'Gefunden: '.$request['text'], 'postalcode' => '91522', 'locality' => 'Ansbach', 'country_a' => 'DEU'],
         ]]])]);
@@ -145,7 +145,7 @@ class DepotTest extends TestCase
 
     public function test_unbekannte_adresse_wird_abgelehnt_und_nichts_gespeichert(): void
     {
-        Http::fake(['*/geocode/search*' => Http::response(['features' => []])]);
+        Http::fake(['*/pelias/v1/search*' => Http::response(['features' => []])]);
 
         $this->as(Role::Admin)->postJson('/api/depots', $this->body(['address' => 'Nirgendwo 99']))
             ->assertUnprocessable()->assertJsonValidationErrors(['address']);

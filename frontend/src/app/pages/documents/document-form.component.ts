@@ -3,18 +3,17 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { BackNavigation } from '../../core/back-navigation.service';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { ListMemory } from '../../core/list-memory.service';
 import { CustomerService } from '../../core/customer.service';
-import { BusDocument, DocumentInput, DocumentService, DocumentTypeInfo, DocumentTypeValue, SectionKindValue, TripKindValue } from '../../core/document.service';
+import { BusDocument, DocumentInput, DocumentService, DocumentTypeInfo, DocumentTypeValue, TripKindValue } from '../../core/document.service';
 import { fieldErrors, httpErrorText } from '../../core/http-error';
 import { PricingService, PricingSettings } from '../../core/pricing.service';
 import { SettingsService, TaxRate } from '../../core/settings.service';
 import { PrintPreviewService } from '../../core/print-preview.service';
-import { Trip, TripService } from '../../core/trip.service';
 import { CustomerNameComponent } from '../../shared/customer-name.component';
-import { HighlightComponent } from '../../shared/highlight.component';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { formatDuration, formatKm } from '../route-planning/route-planning-view';
 import { CalcLine, formatAmount, formatCents, summarize } from './document-calc';
@@ -40,7 +39,7 @@ interface PickedCustomer {
  */
 @Component({
   selector: 'app-document-form',
-  imports: [DatePipe, ReactiveFormsModule, RouterLink, CustomerNameComponent, HelpLinkComponent, HighlightComponent, DocumentPaymentsComponent],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink, CustomerNameComponent, HelpLinkComponent, DocumentPaymentsComponent],
   templateUrl: './document-form.component.html',
   host: { class: 'form-page' },
 })
@@ -53,11 +52,11 @@ export class DocumentFormComponent implements OnInit {
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private backNav = inject(BackNavigation);
   private auth = inject(AuthService);
   private confirm = inject(ConfirmService);
   private memory = inject(ListMemory);
   private printPreview = inject(PrintPreviewService);
-  private tripApi = inject(TripService);
 
   /** Festschreiben und Stornieren: nur Administrator und Buchhaltung (der Server prüft zusätzlich). */
   canFinalize = computed(() => ['admin', 'buchhaltung'].includes(this.auth.user()?.role ?? ''));
@@ -339,185 +338,17 @@ export class DocumentFormComponent implements OnInit {
 
   // ---------- Strecken der Reise ----------
 
-  readonly sectionKinds: { value: SectionKindValue; label: string }[] = [
-    { value: 'hinfahrt', label: 'Hinfahrt' },
-    { value: 'vor_ort', label: 'Fahrt vor Ort' },
-    { value: 'rueckfahrt', label: 'Rückfahrt' },
-  ];
-  vehicleTypes = computed(() => this.pricing()?.vehicle_types ?? []);
-
-  /** Das Formular „Weitere Strecke hinzufügen“ ist offen. */
-  sectionOpen = signal(false);
-  sectionKind = signal<SectionKindValue>('rueckfahrt');
-  sectionTripId = signal('');
-  /** Woher Kilometer und Fahrzeit kommen: eigene Angaben (ohne Tour, Vorgabe bei der Fahrt vor Ort) oder eine Tour aus dem Archiv */
-  sectionSource = signal<'own' | 'archive'>('archive');
-  ownTitle = signal('');
-  ownKm = signal<number | null>(null);
-  ownHours = signal<number | null>(null);
-  ownDays = signal(1);
-  sectionDate = signal('');
-  sectionVehicles = signal<{ type: string; count: number }[]>([{ type: '', count: 1 }]);
-  sectionQuery = signal('');
-  /** Der Suchbegriff, zu dem die angezeigten Touren gehören (Grundlage der Markierung) */
-  sectionShownQuery = signal('');
-  sectionTrips = signal<Trip[]>([]);
-  sectionTripsError = signal<string | null>(null);
-  sectionBusy = signal(false);
-  private sectionTimer?: ReturnType<typeof setTimeout>;
-
-  /** Strecken lassen sich nur im Entwurf eines Belegs mit Reise ändern. */
+  /**
+   * Strecken plant man auf der Reise (Seite „Reise“), nicht im Beleg: Dort hinzufügen, ändern, entfernen, danach „Angebot aktualisieren“.
+   * Der Beleg zeigt sie nur, und nur ein Entwurf mit Reise verweist dorthin.
+   */
   canEditSections = computed(() => !this.readonly() && !!this.doc()?.journey);
-
-  openSectionForm() {
-    this.sectionOpen.set(true);
-    this.setSectionKind('rueckfahrt');
-    this.sectionTripId.set('');
-    this.ownTitle.set('');
-    this.ownKm.set(null);
-    this.ownHours.set(null);
-    this.ownDays.set(1);
-    this.sectionDate.set('');
-    // Vorbelegung: die Busse der ersten Strecke (meist fahren dieselben weiter)
-    const first = (this.doc()?.journey?.sections[0]?.vehicles ?? []).filter((v) => !!v.type);
-    this.sectionVehicles.set(first.length ? first.map((v) => ({ type: v.type!, count: v.count })) : [{ type: '', count: 1 }]);
-    this.sectionQuery.set('');
-    this.loadSectionTrips();
-  }
-
-  /** Art gewählt: Bei der Fahrt vor Ort sind eigene Angaben die Vorgabe, bei Hin- und Rückfahrt die Tour aus dem Archiv. */
-  setSectionKind(kind: SectionKindValue) {
-    this.sectionKind.set(kind);
-    this.sectionSource.set(kind === 'vor_ort' ? 'own' : 'archive');
-  }
-
-  /** Zahl aus einem Eingabefeld; leer oder unlesbar = null. Komma und Punkt gelten beide als Dezimalzeichen. */
-  numberOf(text: string): number | null {
-    const t = String(text ?? '').trim();
-    const n = Number(t.replace(',', '.'));
-    return t === '' || !Number.isFinite(n) ? null : n;
-  }
-
-  onSectionQuery(text: string) {
-    this.sectionQuery.set(text);
-    clearTimeout(this.sectionTimer);
-    this.sectionTimer = setTimeout(() => this.loadSectionTrips(), 300);
-  }
-
-  private loadSectionTrips() {
-    const q = this.sectionQuery();
-    this.tripApi.list(q, 50).subscribe({
-      next: (page) => {
-        if (q !== this.sectionQuery()) return;
-        this.sectionTrips.set(page.data);
-        this.sectionShownQuery.set(q);
-        this.sectionTripsError.set(null);
-      },
-      error: (err: HttpErrorResponse) => this.sectionTripsError.set(httpErrorText(err, 'Das Tour-Archiv konnte nicht geladen werden.')),
-    });
-  }
-
-  /** Eine Tour gewählt: Fahrzeugtyp und Anzahl der Tour sind die Vorbelegung. */
-  chooseSectionTrip(id: string) {
-    this.sectionTripId.set(id);
-    const trip = this.sectionTrips().find((t) => t.id === id);
-    if (trip?.vehicle_type) this.sectionVehicles.set([{ type: trip.vehicle_type, count: trip.vehicle_count }]);
-  }
-
-  setSectionVehicle(i: number, patch: Partial<{ type: string; count: number }>) {
-    this.sectionVehicles.update((list) => list.map((v, j) => (j === i ? { ...v, ...patch } : v)));
-  }
-  addSectionVehicle() {
-    this.sectionVehicles.update((list) => [...list, { type: '', count: 1 }]);
-  }
-  removeSectionVehicle(i: number) {
-    this.sectionVehicles.update((list) => list.filter((_, j) => j !== i));
-  }
-
-  /** Fehlt noch etwas für „Strecke hinzufügen“? Der Text sagt, was. */
-  sectionProblem = computed(() => {
-    if (this.sectionSource() === 'archive') {
-      if (!this.sectionTripId()) return 'Bitte eine Tour aus dem Archiv wählen.';
-    } else {
-      if (!this.ownTitle().trim()) return 'Bitte eine Bezeichnung angeben.';
-      if (!this.ownKm() || this.ownKm()! <= 0) return 'Bitte die Kilometer angeben.';
-      if (!this.ownHours() || this.ownHours()! <= 0) return 'Bitte die Fahrzeit angeben.';
-      if (!this.ownDays() || this.ownDays() < 1) return 'Bitte die Anzahl der Tage angeben (mindestens 1).';
-    }
-    const list = this.sectionVehicles();
-    if (!list.length || list.some((v) => !v.type)) return 'Bitte zu jeder Zeile einen Fahrzeugtyp wählen.';
-    if (new Set(list.map((v) => v.type)).size !== list.length) return 'Jeder Fahrzeugtyp darf nur einmal vorkommen. Erhöhen Sie stattdessen die Anzahl.';
-    return null;
-  });
-
-  /** Ungespeicherte Änderungen zuerst speichern: Der Server schreibt die Positionen neu, sonst gingen sie verloren. */
-  private afterSave(then: () => void) {
-    if (this.form.dirty) this.save(then);
-    else then();
-  }
-
-  addSection() {
-    if (!this.id || this.sectionProblem() || this.sectionBusy()) return;
-    const id = this.id;
-    this.afterSave(() => {
-      this.sectionBusy.set(true);
-      this.api
-        .addSection(id, {
-          kind: this.sectionKind(),
-          ...(this.sectionSource() === 'archive'
-            ? { trip_id: this.sectionTripId() }
-            : {
-                own: {
-                  title: this.ownTitle().trim(),
-                  loaded_km: this.ownKm()!,
-                  drive_minutes: Math.max(1, Math.round(this.ownHours()! * 60)),
-                  days: Math.round(this.ownDays()),
-                },
-              }),
-          start_on: this.sectionDate() || null,
-          vehicles: this.sectionVehicles().map((v) => ({ type: v.type, count: Number(v.count) || 1 })),
-        })
-        .subscribe({
-          next: (d) => {
-            this.sectionBusy.set(false);
-            this.apply(d);
-            this.sectionOpen.set(false);
-            this.notify(true, 'Strecke hinzugefügt. Bitte Positionen und Preise prüfen.');
-          },
-          error: (e: HttpErrorResponse) => {
-            this.sectionBusy.set(false);
-            this.fail(e, 'Die Strecke konnte nicht hinzugefügt werden.');
-          },
-        });
-    });
-  }
-
-  async removeSection(sectionId: string, title: string) {
-    if (!this.id) return;
-    const ok = await this.confirm.ask({ title: 'Strecke entfernen', message: `Die Strecke „${title}“ mit allen ihren Positionen aus dem Beleg entfernen?`, confirmLabel: 'Entfernen', danger: true });
-    if (!ok) return;
-    const id = this.id;
-    this.afterSave(() => {
-      this.sectionBusy.set(true);
-      this.api.removeSection(id, sectionId).subscribe({
-        next: (d) => {
-          this.sectionBusy.set(false);
-          this.apply(d);
-          this.notify(true, 'Strecke entfernt.');
-        },
-        error: (e: HttpErrorResponse) => {
-          this.sectionBusy.set(false);
-          this.fail(e, 'Die Strecke konnte nicht entfernt werden.');
-        },
-      });
-    });
-  }
 
   /**
    * Überschrift über einer Gruppe von Positionen: Strecke und Fahrzeugbedarf. Nur an der ersten Position der Gruppe, sonst null.
    * Positionen ohne Strecke (von Hand angelegt) stehen unter „Weitere Positionen“, sobald der Beleg Strecken hat.
    */
-  groupHeader(i: number): { sectionId: string | null; text: string; removable: boolean } | null {
+  groupHeader(i: number): { sectionId: string | null; text: string } | null {
     const sections = this.doc()?.journey?.sections;
     if (!sections?.length) return null;
     const key = (j: number) => `${this.lines.at(j).value.journey_section_id ?? ''}|${this.lines.at(j).value.vehicle_type ?? ''}`;
@@ -525,14 +356,12 @@ export class DocumentFormComponent implements OnInit {
 
     const sectionId = (this.lines.at(i).value.journey_section_id as string | null) ?? null;
     const section = sections.find((s) => s.id === sectionId);
-    if (!section) return { sectionId: null, text: 'Weitere Positionen', removable: false };
+    if (!section) return { sectionId: null, text: 'Weitere Positionen' };
 
     const type = this.lines.at(i).value.vehicle_type as string | null;
     const vehicle = section.vehicles.find((v) => v.type === type);
     const bus = vehicle?.label ? ` · ${vehicle.count > 1 ? vehicle.count + ' × ' : ''}${vehicle.label}` : '';
-    // „Strecke entfernen“ nur an der ersten Gruppe einer Strecke (es nimmt alle ihre Fahrzeugtypen mit)
-    const first = i === 0 || (this.lines.at(i - 1).value.journey_section_id ?? null) !== sectionId;
-    return { sectionId: section.id, text: `${section.kind_label}: ${section.title}${bus}`, removable: sections.length > 1 && first };
+    return { sectionId: section.id, text: `${section.kind_label}: ${section.title}${bus}` };
   }
 
   // ---------- Positionen ----------
@@ -632,13 +461,13 @@ export class DocumentFormComponent implements OnInit {
     if (this.form.dirty) {
       const ok = await this.confirm.ask({
         title: 'Änderungen verwerfen',
-        message: 'Es gibt ungespeicherte Änderungen. Trotzdem zurück zur Liste?',
+        message: 'Es gibt ungespeicherte Änderungen. Trotzdem zurück?',
         confirmLabel: 'Verwerfen',
         danger: true,
       });
       if (!ok) return;
     }
-    this.router.navigate(['/belege']);
+    void this.backNav.back('/belege');
   }
 
   /** Eingaben verwerfen, Formular auf den gespeicherten Stand zurücksetzen. */

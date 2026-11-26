@@ -36,6 +36,7 @@
     <div class="d-flex flex-wrap align-items-baseline gap-2">
       <span class="small text-body-secondary">Reise</span>
       <span class="fw-semibold">{{ j.title }}</span>
+      <a class="small ms-auto" [routerLink]="['/reisen', j.id]">Reise öffnen: Strecken ändern</a>
       @if (j.date_from) {
         <span class="small text-body-secondary">
           · {{ j.date_from | date: 'dd.MM.yyyy' }}@if (j.date_to && j.date_to !== j.date_from) { – {{ j.date_to | date: 'dd.MM.yyyy' }} }
@@ -89,8 +90,8 @@
 
 @if (!id && typeValue() === 'angebot' && canPlan()) {
   <div class="alert alert-info py-2 small" role="note">
-    Sie legen dieses Angebot <strong>von Hand</strong> an. Für eine Fahrt mit Strecke und Preisvorschlag planen Sie die Tour zuerst in der
-    <a routerLink="/streckenplanung">Streckenplanung</a> und klicken dort auf <strong>Angebot erstellen</strong>.
+    Sie legen dieses Angebot <strong>von Hand</strong> an. Für eine Fahrt mit Strecken und Preisvorschlag planen Sie eine
+    <a routerLink="/reisen/neu">neue Reise</a> (Strecke für Strecke) oder berechnen eine einzelne Tour in der <a routerLink="/streckenplanung">Streckenplanung</a>.
     <app-help-link topic="fahrten" anchor="angebot" label="Zwei Wege zum Angebot" />
   </div>
 }
@@ -182,11 +183,6 @@
         <!-- Überschrift der Strecke (und des Fahrzeugtyps), zu der die folgenden Positionen gehören -->
         <div class="col-12 d-flex flex-wrap align-items-center gap-2 mt-2">
           <h3 class="h6 mb-0"><i class="bi bi-signpost-split me-1" aria-hidden="true"></i>{{ gh.text }}</h3>
-          @if (gh.removable && canEditSections()) {
-            <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" [disabled]="sectionBusy()" (click)="removeSection(gh.sectionId!, gh.text)">
-              <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Strecke entfernen
-            </button>
-          }
         </div>
       }
       <div class="col-12" [formGroup]="g">
@@ -263,136 +259,13 @@
       </div>
     }
 
-    @if (canEditSections()) {
-      <!-- Weitere Strecke der Reise: Positionen entstehen aus einer Tour des Archivs, je Fahrzeugtyp mit dessen Preisen -->
+    @if (canEditSections() && doc()?.journey; as jr) {
       <div class="col-12">
-        @if (!sectionOpen()) {
-          <button type="button" class="btn btn-outline-primary" (click)="openSectionForm()"><i class="bi bi-signpost-split me-1" aria-hidden="true"></i>Weitere Strecke hinzufügen</button>
-          <app-help-link topic="belege" anchor="mehrere-strecken" label="Mehrere Strecken und Fahrzeugtypen" />
-        } @else {
-          <div class="border rounded-2 p-3 bg-body">
-            <div class="row g-3">
-              <div class="col-12 d-flex align-items-center">
-                <strong>Weitere Strecke hinzufügen</strong>
-                <app-help-link topic="belege" anchor="mehrere-strecken" label="Mehrere Strecken und Fahrzeugtypen" />
-              </div>
-
-              <div class="col-12 col-lg-4">
-                <label class="form-label" for="sectionKind">Art der Strecke</label>
-                <select id="sectionKind" class="form-select" [value]="sectionKind()" (change)="setSectionKind($any($event.target).value)">
-                  @for (k of sectionKinds; track k.value) { <option [value]="k.value" [selected]="k.value === sectionKind()">{{ k.label }}</option> }
-                </select>
-              </div>
-              <div class="col-12 col-lg-4">
-                <label class="form-label" for="sectionDate">Datum der Fahrt</label>
-                <input id="sectionDate" type="date" class="form-control" [value]="sectionDate()" (input)="sectionDate.set($any($event.target).value)" />
-                <div class="form-text">Freiwillig. Für die Zuschläge an Wochenende und Feiertag.</div>
-              </div>
-
-              <div class="col-12">
-                <div class="form-label">Kilometer und Fahrzeit</div>
-                <div class="form-check form-check-inline">
-                  <input class="form-check-input" type="radio" name="sectionSource" id="sectionSourceOwn" [checked]="sectionSource() === 'own'" (change)="sectionSource.set('own')" />
-                  <label class="form-check-label" for="sectionSourceOwn">Eigene Angaben</label>
-                </div>
-                <div class="form-check form-check-inline">
-                  <input class="form-check-input" type="radio" name="sectionSource" id="sectionSourceArchive" [checked]="sectionSource() === 'archive'" (change)="sectionSource.set('archive')" />
-                  <label class="form-check-label" for="sectionSourceArchive">Tour aus dem Archiv</label>
-                </div>
-                <div class="form-text">
-                  @if (sectionSource() === 'own') {
-                    Ohne Route und ohne Eintrag im Tour-Archiv, zum Beispiel für eine Fahrt vor Ort. Der Bus ist schon da, eine Leerfahrt wird nicht berechnet.
-                  } @else {
-                    Kilometer, Fahrzeit und Tage kommen aus einer gespeicherten Tour.
-                  }
-                </div>
-              </div>
-
-              @if (sectionSource() === 'own') {
-                <div class="col-12 col-lg-8">
-                  <label class="form-label" for="ownTitle">Bezeichnung</label>
-                  <input id="ownTitle" type="text" class="form-control" maxlength="150" placeholder="zum Beispiel Ausflug Ossiacher See"
-                         [value]="ownTitle()" (input)="ownTitle.set($any($event.target).value)" />
-                </div>
-                <div class="w-100"></div>
-                <div class="col-12 col-lg-3">
-                  <label class="form-label" for="ownKm">Kilometer</label>
-                  <input id="ownKm" type="number" min="0" step="1" class="form-control" [value]="ownKm() ?? ''" (input)="ownKm.set(numberOf($any($event.target).value))" />
-                </div>
-                <div class="col-12 col-lg-3">
-                  <label class="form-label" for="ownHours">Fahrzeit (Std.)</label>
-                  <input id="ownHours" type="number" min="0" step="0.5" class="form-control" [value]="ownHours() ?? ''" (input)="ownHours.set(numberOf($any($event.target).value))" />
-                </div>
-                <div class="col-12 col-lg-3">
-                  <label class="form-label" for="ownDays">Tage</label>
-                  <input id="ownDays" type="number" min="1" max="60" step="1" class="form-control" [value]="ownDays()" (input)="ownDays.set(numberOf($any($event.target).value) ?? 0)" />
-                </div>
-                <div class="col-12"><div class="form-text mt-0">Fahrzeit zum Beispiel 2,5 für zweieinhalb Stunden. Die Preise kommen aus den Einstellungen, wie bei einer Tour.</div></div>
-              } @else {
-              <div class="col-12">
-                <label class="form-label" for="sectionSearch">Tour aus dem Archiv</label>
-                <input id="sectionSearch" type="search" class="form-control mb-2" autocomplete="off" placeholder="Name oder Ort suchen"
-                       [value]="sectionQuery()" (input)="onSectionQuery($any($event.target).value)" />
-                <div class="list-group" role="listbox" aria-label="Tour wählen" style="max-height: 15rem; overflow-y: auto">
-                  @for (t of sectionTrips(); track t.id) {
-                    <button type="button" class="list-group-item list-group-item-action" role="option"
-                            [class.active]="t.id === sectionTripId()" [attr.aria-selected]="t.id === sectionTripId()" (click)="chooseSectionTrip(t.id)">
-                      <span class="fw-semibold"><app-highlight [text]="t.title" [query]="sectionShownQuery()" mode="start" /></span>
-                      <span class="small opacity-75">{{ ' · ' }}{{ km(t.loaded_km + t.empty_km) }} · {{ t.days }} {{ t.days === 1 ? 'Tag' : 'Tage' }}</span>
-                      <div class="small opacity-75">
-                        <app-highlight [text]="t.stops[0].label" [query]="sectionShownQuery()" mode="start" />{{ ' → ' }}<app-highlight [text]="t.stops[t.stops.length - 1].label" [query]="sectionShownQuery()" mode="start" />
-                      </div>
-                    </button>
-                  }
-                </div>
-                @if (sectionTripsError(); as te) {
-                  <div class="form-text text-danger">{{ te }}</div>
-                } @else if (!sectionTrips().length) {
-                  <div class="form-text">Keine Tour gefunden. Planen Sie die Strecke zuerst in der <a routerLink="/streckenplanung">Streckenplanung</a> und speichern Sie sie dort.</div>
-                } @else {
-                  <div class="form-text">Gesucht wird im Namen am Wortanfang, bei Orten am Anfang. Neue Touren planen Sie in der <a routerLink="/streckenplanung">Streckenplanung</a>.</div>
-                }
-              </div>
-              }
-
-              <div class="col-12"><div class="form-label mb-0">Fahrzeuge für diese Strecke</div></div>
-              @for (v of sectionVehicles(); track $index; let vi = $index) {
-                <div class="col-12 col-lg-4">
-                  <label class="form-label" [for]="'svType' + vi">Fahrzeugtyp</label>
-                  <select [id]="'svType' + vi" class="form-select" [value]="v.type" (change)="setSectionVehicle(vi, { type: $any($event.target).value })">
-                    <option value="">Bitte wählen</option>
-                    @for (t of vehicleTypes(); track t.value) { <option [value]="t.value" [selected]="t.value === v.type">{{ t.label }}</option> }
-                  </select>
-                </div>
-                <div class="col-12 col-lg-4">
-                  <label class="form-label" [for]="'svCount' + vi">Anzahl</label>
-                  <input [id]="'svCount' + vi" type="number" min="1" max="99" step="1" class="form-control" [value]="v.count" (input)="setSectionVehicle(vi, { count: +$any($event.target).value })" />
-                </div>
-                <div class="col-12 col-lg-4 d-flex align-items-end">
-                  @if (sectionVehicles().length > 1) {
-                    <button type="button" class="btn btn-outline-secondary" (click)="removeSectionVehicle(vi)"><i class="bi bi-x-lg me-1" aria-hidden="true"></i>Zeile entfernen</button>
-                  }
-                </div>
-              }
-              <div class="col-12">
-                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="addSectionVehicle()"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Weiteren Fahrzeugtyp</button>
-                <div class="form-text">Zum Beispiel ein Doppeldecker und ein Kleinbus auf derselben Strecke. Jeder Typ bekommt seine Positionen mit den Preisen des Typs.</div>
-              </div>
-
-              @if (sectionProblem(); as sp) {
-                <div class="col-12"><div class="form-text text-warning-emphasis">{{ sp }}</div></div>
-              }
-              <div class="col-12 d-flex flex-wrap gap-2">
-                <button type="button" class="btn btn-primary" [disabled]="!!sectionProblem() || sectionBusy()" (click)="addSection()">
-                  @if (sectionBusy()) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
-                  Strecke hinzufügen
-                </button>
-                <button type="button" class="btn btn-outline-secondary" [disabled]="sectionBusy()" (click)="sectionOpen.set(false)">Abbrechen</button>
-              </div>
-              <div class="col-12"><div class="form-text">Ungespeicherte Änderungen am Beleg werden dabei zuerst gespeichert. Die Positionen sind ein Vorschlag aus den Preisen und lassen sich danach ändern.</div></div>
-            </div>
-          </div>
-        }
+        <div class="form-text mt-0">
+          <i class="bi bi-signpost-split me-1" aria-hidden="true"></i>
+          Strecken hinzufügen, ändern oder entfernen Sie auf der <a [routerLink]="['/reisen', jr.id]">Reise</a>. Danach gleicht dort <strong>Angebot aktualisieren</strong> die Positionen der geänderten Strecke in diesem Entwurf ab.
+          <app-help-link topic="belege" anchor="mehrere-strecken" label="Strecken der Reise" />
+        </div>
       </div>
     }
 

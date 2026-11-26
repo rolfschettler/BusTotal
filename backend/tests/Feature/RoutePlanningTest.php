@@ -88,7 +88,7 @@ class RoutePlanningTest extends TestCase
 
     public function test_adresssuche_liefert_treffer_mit_koordinaten(): void
     {
-        Http::fake(['*/geocode/search*' => Http::response(['features' => [
+        Http::fake(['*/pelias/v1/search*' => Http::response(['features' => [
             ['geometry' => ['coordinates' => [9.99, 48.40]], 'properties' => ['label' => 'Ulm, Baden-Württemberg, Deutschland', 'postalcode' => '89073', 'locality' => 'Ulm', 'country_a' => 'DEU']],
             ['geometry' => ['coordinates' => [10.01, 48.42]], 'properties' => ['label' => 'Ulm Hbf']],
             ['geometry' => ['coordinates' => []], 'properties' => ['label' => 'kaputt']], // ohne Koordinaten: wird übersprungen
@@ -103,7 +103,7 @@ class RoutePlanningTest extends TestCase
     public function test_ratetreffer_des_dienstes_werden_nicht_angeboten(): void
     {
         // Unbekannte Adresse ("Senden-Ay"): Der Dienst rät Gebiete in aller Welt mit geringer Sicherheit.
-        Http::fake(['*/geocode/search*' => Http::response(['features' => [
+        Http::fake(['*/pelias/v1/search*' => Http::response(['features' => [
             ['geometry' => ['coordinates' => [95.13, 16.79]], 'properties' => ['label' => 'Irrawaddy, Myanmar', 'confidence' => 0.3, 'match_type' => 'fallback']],
             ['geometry' => ['coordinates' => [28.0, 37.7]], 'properties' => ['label' => 'Aydın, Türkei', 'confidence' => 0.3, 'match_type' => 'fallback']],
         ]])]);
@@ -113,7 +113,7 @@ class RoutePlanningTest extends TestCase
     public function test_treffer_mit_mittlerer_oder_fehlender_sicherheit_bleiben_erhalten(): void
     {
         // Ein Ortsmittelpunkt mit mittlerer Sicherheit (0,6) und ein Treffer ohne Angabe bleiben erhalten.
-        Http::fake(['*/geocode/search*' => Http::response(['features' => [
+        Http::fake(['*/pelias/v1/search*' => Http::response(['features' => [
             ['geometry' => ['coordinates' => [13.9, 46.66]], 'properties' => ['label' => 'Sattendorf, KA, Österreich', 'confidence' => 0.6]],
             ['geometry' => ['coordinates' => [10.0, 48.3]], 'properties' => ['label' => 'Germanenstraße 4, Senden', 'confidence' => 1]],
             ['geometry' => ['coordinates' => [9.9, 48.4]], 'properties' => ['label' => 'Ohne Angabe']],
@@ -123,7 +123,7 @@ class RoutePlanningTest extends TestCase
 
     public function test_der_zugangsschluessel_geht_nur_im_header_raus_nie_in_der_adresse(): void
     {
-        Http::fake(['*/geocode/search*' => Http::response(['features' => []])]);
+        Http::fake(['*/pelias/v1/search*' => Http::response(['features' => []])]);
 
         $this->as(Role::Admin)->getJson('/api/geocode?q=Ulm')->assertOk();
 
@@ -144,7 +144,7 @@ class RoutePlanningTest extends TestCase
 
     public function test_gleiche_suche_wird_zwischengespeichert(): void
     {
-        Http::fake(['*/geocode/search*' => Http::response(['features' => []])]);
+        Http::fake(['*/pelias/v1/search*' => Http::response(['features' => []])]);
 
         $this->as(Role::Admin)->getJson('/api/geocode?q=Ulm')->assertOk();
         $this->as(Role::Admin)->getJson('/api/geocode?q=ulm')->assertOk();
@@ -154,7 +154,7 @@ class RoutePlanningTest extends TestCase
 
     public function test_leerzeichen_und_satzzeichen_am_ende_loesen_keine_neue_suche_aus(): void
     {
-        Http::fake(['*/geocode/search*' => Http::response(['features' => []])]);
+        Http::fake(['*/pelias/v1/search*' => Http::response(['features' => []])]);
 
         $user = User::factory()->create(['role' => Role::Admin]);
         foreach (['Ulm Hbf', 'ulm  hbf', ' Ulm Hbf,', 'Ulm Hbf.'] as $q) {
@@ -164,9 +164,44 @@ class RoutePlanningTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    /** Jeder Fehler des Dienstes sagt, was passiert ist, wer handeln muss und nennt einen Fehlercode (kein „Fehler gemeldet“). */
+    public function test_fehler_des_dienstes_haben_eine_klare_meldung_mit_fehlercode(): void
+    {
+        $user = User::factory()->create(['role' => Role::Disponent]);
+        $html = '<html><body>410: GONE</body></html>';
+        $cases = [
+            // [Antwort, Status, Art, Text in der Meldung, Fehlercode]
+            'adresse abgeschaltet' => [Http::response($html, 410), 'outdated', 'nicht mehr zu erreichen', 'R410'],
+            'weitergeleitet' => [Http::response('', 301), 'outdated', 'nicht mehr zu erreichen', 'R301'],
+            'pfad unbekannt' => [Http::response($html, 404), 'outdated', 'nicht mehr zu erreichen', 'R404'],
+            'schluessel abgelehnt' => [Http::response(['error' => 'Access denied'], 401), 'auth', 'Zugangsschlüssel', 'R401'],
+            'dienst gestoert' => [Http::response($html, 503), 'unavailable', 'selbst ein Problem', 'R503'],
+            'anfrage nicht passend' => [Http::response($html, 406), 'unexpected', 'nicht angenommen', 'R406'],
+            'seite statt daten' => [Http::response($html, 200), 'unexpected', 'nicht lesen kann', 'R-FORMAT'],
+        ];
+
+        foreach (array_values($cases) as $i => [$response, $reason, $text, $code]) {
+            Http::swap(new Factory); // frische Attrappe, sonst gilt die erste weiter
+            Http::fake(['*/pelias/v1/search*' => $response]);
+            Cache::flush();
+            $res = $this->actingAs($user, 'sanctum')->getJson('/api/geocode?q=Teststadt'.$i)->assertStatus(424)->assertJsonPath('reason', $reason);
+            $this->assertStringContainsString($text, $res->json('message'));
+            $this->assertStringContainsString($code, $res->json('message'));
+        }
+
+        // Zeitüberschreitung und fehlende Verbindung werden unterschieden
+        foreach ([['cURL error 28: Operation timed out', 'nicht rechtzeitig', 'R-ZEIT'], ['cURL error 6: Could not resolve host', 'nicht erreichen', 'R-VERBINDUNG']] as $i => [$msg, $text, $code]) {
+            Http::swap(new Factory);
+            Http::fake(['*/pelias/v1/search*' => fn () => throw new ConnectionException($msg)]);
+            Cache::flush();
+            $res = $this->actingAs($user, 'sanctum')->getJson('/api/geocode?q=Verbindung'.$i)->assertStatus(424)->assertJsonPath('reason', 'unavailable');
+            $this->assertStringContainsString($text, $res->json('message'));
+            $this->assertStringContainsString($code, $res->json('message'));
+        }
+    }
     public function test_aufgebrauchtes_kontingent_sperrt_die_ortssuche_bis_mitternacht(): void
     {
-        Http::fake(['*/geocode/search*' => Http::response(['error' => 'Quota exceeded'], 403)]);
+        Http::fake(['*/pelias/v1/search*' => Http::response(['error' => 'Quota exceeded'], 403)]);
         $user = User::factory()->create(['role' => Role::Disponent]);
 
         $this->actingAs($user, 'sanctum')->getJson('/api/geocode?q=Ulm')
@@ -179,7 +214,7 @@ class RoutePlanningTest extends TestCase
     public function test_gesperrte_ortssuche_laesst_die_routenberechnung_weiterlaufen(): void
     {
         Http::fake([
-            '*/geocode/search*' => Http::response(['error' => 'Quota exceeded'], 403),
+            '*/pelias/v1/search*' => Http::response(['error' => 'Quota exceeded'], 403),
             '*/v2/directions/driving-hgv/geojson' => Http::response(['features' => [[
                 'properties' => ['summary' => ['distance' => 200000, 'duration' => 9000], 'segments' => [['distance' => 200000, 'duration' => 9000]]],
                 'geometry' => ['coordinates' => [[10.57, 49.30], [11.58, 48.14]]],
@@ -193,7 +228,7 @@ class RoutePlanningTest extends TestCase
 
     public function test_anfragen_an_den_dienst_werden_je_bereich_gezaehlt(): void
     {
-        Http::fake(['*/geocode/search*' => Http::response(['features' => []])]);
+        Http::fake(['*/pelias/v1/search*' => Http::response(['features' => []])]);
         $user = User::factory()->create(['role' => Role::Admin]);
 
         $this->actingAs($user, 'sanctum')->getJson('/api/geocode?q=Ulm')->assertOk();
@@ -205,7 +240,7 @@ class RoutePlanningTest extends TestCase
 
     public function test_ortssuche_ist_je_benutzer_begrenzt(): void
     {
-        Http::fake(['*/geocode/search*' => Http::response(['features' => []])]);
+        Http::fake(['*/pelias/v1/search*' => Http::response(['features' => []])]);
         $user = User::factory()->create(['role' => Role::Admin]);
 
         for ($i = 0; $i < 30; $i++) {
@@ -231,6 +266,19 @@ class RoutePlanningTest extends TestCase
         $this->assertSame('Betriebshof Ansbach', $r['legs'][0]['from']['label']);
         $this->assertSame('München Hbf', $r['legs'][0]['to']['label']);
         $this->assertSame('Betriebshof Ansbach', $r['legs'][2]['to']['label']);
+    }
+
+    public function test_rueckfahrt_ohne_anfahrt_vom_betriebshof(): void
+    {
+        // München → Friedrichshafen → Depot (Leerfahrt)
+        $this->fakeRoute([[180, 2.0], [260, 3.0]]);
+
+        $r = $this->as(Role::Disponent)->postJson('/api/routes/calculate', $this->payload(['depot' => self::DEPOT, 'from_depot' => false, 'return_to_depot' => true]))->assertOk()->json();
+
+        // Nur die letzte Teilstrecke (zum Betriebshof) ist leer, die Fahrt beginnt beim ersten Halt.
+        $this->assertFalse($r['legs'][0]['empty']);
+        $this->assertTrue($r['legs'][count($r['legs']) - 1]['empty']);
+        $this->assertCount(1, array_filter($r['legs'], fn (array $l) => $l['empty']));
     }
 
     public function test_ohne_rueckfahrt_gibt_es_nur_eine_leerfahrt(): void
@@ -333,7 +381,7 @@ class RoutePlanningTest extends TestCase
         Cache::forgetDriver();
 
         try {
-            Http::fake(['*/geocode/search*' => Http::response(['features' => [['geometry' => ['coordinates' => [9.99, 48.4]], 'properties' => ['label' => 'Ulm, BW, Deutschland', 'locality' => 'Ulm']]]])]);
+            Http::fake(['*/pelias/v1/search*' => Http::response(['features' => [['geometry' => ['coordinates' => [9.99, 48.4]], 'properties' => ['label' => 'Ulm, BW, Deutschland', 'locality' => 'Ulm']]]])]);
             foreach ([1, 2, 3] as $durchlauf) {
                 $hits = $this->as(Role::Disponent)->getJson('/api/geocode?q=Ulm')->assertOk()->json('data');
                 $this->assertSame('Ulm, BW, Deutschland', $hits[0]['label'], "Suche, Durchlauf $durchlauf");
@@ -363,7 +411,7 @@ class RoutePlanningTest extends TestCase
         Cache::flush();
         $key = 'ors:v2:geocode:'.sha1('ulm|5');
         Cache::put($key, new \stdClass, 60);
-        Http::fake(['*/geocode/search*' => Http::response(['features' => []])]);
+        Http::fake(['*/pelias/v1/search*' => Http::response(['features' => []])]);
 
         $this->as(Role::Disponent)->getJson('/api/geocode?q=Ulm')->assertOk()->assertJsonPath('data', []);
     }
@@ -493,7 +541,7 @@ class RoutePlanningTest extends TestCase
     public function test_dienstfehler_werden_nie_als_5xx_weitergegeben(): void
     {
         // 502/503/504 würde das Frontend als "Server nicht erreichbar" deuten; hier ist aber nur der Fremddienst gestört.
-        foreach ([[429, 'limit'], [500, 'unavailable'], [502, 'unavailable'], [503, 'unavailable'], [401, 'not_configured'], [403, 'not_configured']] as [$status, $reason]) {
+        foreach ([[429, 'limit'], [500, 'unavailable'], [502, 'unavailable'], [503, 'unavailable'], [401, 'auth'], [403, 'auth']] as [$status, $reason]) {
             Cache::flush();
             Http::swap(new Factory); // frische Attrappe: Sonst gilt die erste Attrappe weiter
             Http::fake(['*' => Http::response('boom', $status)]);
@@ -522,7 +570,7 @@ class RoutePlanningTest extends TestCase
         Http::fake(fn () => throw new ConnectionException('timeout'));
 
         $this->as(Role::Disponent)->postJson('/api/routes/calculate', $this->payload())
-            ->assertStatus(424)->assertJsonPath('reason', 'unavailable')->assertJsonPath('message', fn ($m) => str_contains($m, 'antwortet nicht'));
+            ->assertStatus(424)->assertJsonPath('reason', 'unavailable')->assertJsonPath('message', fn ($m) => str_contains($m, 'nicht rechtzeitig') && str_contains($m, 'R-ZEIT'));
     }
 
     public function test_abgelehnte_route_ist_ein_eingabefehler(): void

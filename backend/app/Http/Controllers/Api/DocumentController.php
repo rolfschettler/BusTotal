@@ -8,6 +8,7 @@ use App\Enums\SectionKind;
 use App\Enums\VehicleType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\DocumentRequest;
+use App\Http\Requests\TourPayload;
 use App\Models\AuditLog;
 use App\Models\Document;
 use App\Models\JourneySection;
@@ -81,7 +82,7 @@ class DocumentController extends Controller
         ]);
 
         $query = Document::query()
-            ->with(['customer:id,customer_number,company_name,first_name,last_name,postal_code,city', 'source:id,type,number'])
+            ->with(['customer:id,customer_number,company_name,first_name,last_name,street,postal_code,city', 'source:id,type,number'])
             ->select('documents.*')
             ->leftJoin('customers as c', 'c.id', '=', 'documents.customer_id');
 
@@ -163,7 +164,7 @@ class DocumentController extends Controller
             ) SELECT id, root_id, depth FROM chain)
             SQL;
 
-        $query->addSelect('chain.depth as chain_depth')
+        $query->addSelect('chain.depth as chain_depth', 'chain.root_id as chain_root_id')
             ->join(DB::raw($chain.' AS chain'), 'chain.id', '=', 'documents.id')
             ->join('documents as root', 'root.id', '=', 'chain.root_id')
             ->orderByRaw('c.id IS NULL')
@@ -193,73 +194,6 @@ class DocumentController extends Controller
         $data = $request->validated();
 
         return response()->json($this->withHints($this->documents->updateDraft($document, $data, $data['lines'])));
-    }
-
-    /**
-     * Eine weitere Strecke der Reise in den Entwurf aufnehmen: Aus einer gespeicherten Tour (trip_id) oder aus eigenen Angaben ohne
-     * Tour (own: Bezeichnung, Kilometer, Fahrzeit in Minuten, Tage; etwa für eine Fahrt vor Ort) entstehen die Positionen je
-     * Fahrzeugtyp. Der Beleg muss ein Entwurf mit Reise sein; die Positionen kommen mit den Preisen der Firma (Einstellungen › Preise).
-     */
-    public function addSection(Request $request, Document $document, QuoteService $quotes): JsonResponse
-    {
-        $data = $request->validate([
-            'kind' => ['required', Rule::enum(SectionKind::class)],
-            'trip_id' => ['required_without:own', 'prohibits:own', 'nullable', 'uuid', 'exists:trips,id'],
-            'own' => ['required_without:trip_id', 'array'],
-            'own.title' => ['required_with:own', 'string', 'max:150'],
-            'own.loaded_km' => ['required_with:own', 'numeric', 'min:0.1', 'max:5000'],
-            'own.drive_minutes' => ['required_with:own', 'integer', 'min:1', 'max:6000'],
-            'own.days' => ['required_with:own', 'integer', 'min:1', 'max:60'],
-            'start_on' => ['nullable', 'date_format:Y-m-d'],
-            'surcharge_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'vehicles' => ['required', 'array', 'min:1', 'max:6'],
-            'vehicles.*.type' => ['required', 'distinct', Rule::enum(VehicleType::class)],
-            'vehicles.*.count' => ['required', 'integer', 'min:1', 'max:99'],
-        ], [
-            'vehicles.required' => 'Bitte mindestens einen Fahrzeugtyp wählen.',
-            'vehicles.*.type.distinct' => 'Jeder Fahrzeugtyp darf nur einmal vorkommen. Erhöhen Sie stattdessen die Anzahl.',
-            'trip_id.required_without' => 'Bitte eine Tour aus dem Archiv wählen oder eigene Angaben machen.',
-            'own.title.required_with' => 'Bitte eine Bezeichnung angeben, zum Beispiel „Ausflug zum Ossiacher See“.',
-            'own.loaded_km.required_with' => 'Bitte die Kilometer angeben.',
-            'own.loaded_km.min' => 'Bitte die Kilometer angeben.',
-            'own.drive_minutes.required_with' => 'Bitte die Fahrzeit angeben.',
-            'own.drive_minutes.min' => 'Bitte die Fahrzeit angeben.',
-        ]);
-
-        $vehicles = array_map(fn (array $v) => ['type' => VehicleType::from($v['type']), 'count' => (int) $v['count']], $data['vehicles']);
-        $trip = ! empty($data['trip_id']) ? Trip::findOrFail($data['trip_id']) : null;
-        $own = $trip ? null : [
-            'title' => $data['own']['title'], 'loaded_km' => round((float) $data['own']['loaded_km'], 1),
-            'drive_s' => (int) $data['own']['drive_minutes'] * 60, 'days' => (int) $data['own']['days'],
-        ];
-
-        $updated = $quotes->addSection(
-            $document, SectionKind::from($data['kind']), $trip, $vehicles,
-            $data['start_on'] ?? null, (float) ($data['surcharge_percent'] ?? 0), null, $own,
-        );
-
-        return response()->json($this->withHints($updated->load(['lines', 'customer', 'source:id,type,number'])), 201);
-    }
-
-    /** Eine Strecke samt ihren Positionen aus dem Entwurf nehmen. Die erste Strecke bleibt, dann gehört der Entwurf gelöscht. */
-    public function removeSection(Document $document, JourneySection $section): JsonResponse
-    {
-        if ($document->journey_id === null || $section->journey_id !== $document->journey_id) {
-            throw ValidationException::withMessages(['section' => ['Diese Strecke gehört nicht zur Reise dieses Belegs.']]);
-        }
-        if (JourneySection::where('journey_id', $document->journey_id)->count() <= 1) {
-            throw ValidationException::withMessages(['section' => ['Die einzige Strecke der Reise kann nicht entfernt werden. Löschen Sie stattdessen den Entwurf.']]);
-        }
-
-        $updated = DB::transaction(function () use ($document, $section) {
-            $updated = $this->documents->removeSectionLines($document, $section->id);
-            // Der Abschnitt verschwindet nur, wenn kein anderer Beleg der Reise noch Positionen darauf hat.
-            app(JourneyService::class)->removeSectionIfUnused($section);
-
-            return $updated;
-        });
-
-        return response()->json($this->withHints($updated->load(['lines', 'customer', 'source:id,type,number'])));
     }
 
     public function destroy(Document $document): JsonResponse

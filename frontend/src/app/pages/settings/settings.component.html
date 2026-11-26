@@ -10,6 +10,9 @@
   <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'nummern'" (click)="show('nummern')">Nummernkreise</button></li>
   <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'preise'" (click)="show('preise')">Preise</button></li>
   <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'betriebshoefe'" (click)="show('betriebshoefe')">Betriebshöfe</button></li>
+  @if (canEdit()) {
+    <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'dienste'" (click)="show('dienste')">Dienste</button></li>
+  }
 </ul>
 
 @if (message(); as m) {
@@ -321,6 +324,78 @@
     </p>
   }
 
+  @case ('dienste') {
+    <!-- Formular-Muster (docs/ClaudeCodePatterns/EditFormPattern.md), Drittelraster -->
+    <div class="form-page">
+      <form id="servicesForm" class="form-area" (ngSubmit)="saveServiceKey()" novalidate>
+        <div class="row g-3">
+
+          <div class="col-12"><div class="section-title">Routing und Adresssuche <app-help-link topic="einstellungen" anchor="dienste" label="Dienste" /></div></div>
+
+          <div class="col-12">
+            <div class="form-text mt-0">
+              Die Streckenplanung nutzt den Dienst openrouteservice. Mit einem eigenen Schlüssel hat Ihre Firma ein eigenes Kontingent und teilt es mit niemandem.
+            </div>
+          </div>
+
+          <div class="col-12">
+            @if (routing(); as r) {
+              @switch (r.source) {
+                @case ('own') {
+                  <div class="alert alert-success py-2 mb-0"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Es gilt <strong>Ihr eigener Schlüssel</strong> ({{ r.own_hint }}).</div>
+                }
+                @case ('shared') {
+                  <div class="alert alert-warning py-2 mb-0"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>Es gilt der <strong>allgemeine Schlüssel des Servers</strong>, den sich mehrere Firmen teilen. Tragen Sie einen eigenen Schlüssel ein, damit Ihr Kontingent nur Ihnen gehört.</div>
+                }
+                @default {
+                  <div class="alert alert-danger py-2 mb-0"><i class="bi bi-x-circle me-1" aria-hidden="true"></i><strong>Kein Schlüssel hinterlegt.</strong> Die Streckenplanung ist nicht verfügbar, bis ein Schlüssel eingetragen ist.</div>
+                }
+              }
+            } @else {
+              <div class="text-body-secondary small">Wird geladen …</div>
+            }
+          </div>
+
+          <div class="col-12 col-lg-8">
+            <label class="form-label" for="s_ors_key">Eigener Schlüssel</label>
+            <input class="form-control" id="s_ors_key" name="serviceKey" type="password" autocomplete="new-password" [(ngModel)]="serviceKey" [disabled]="!canEdit() || serviceBusy()" />
+            <div class="form-text">
+              Kostenlos beantragen bei openrouteservice.org (Konto, Dashboard, Token). Der Schlüssel wird verschlüsselt gespeichert und nie wieder angezeigt.
+              Ein neuer Schlüssel ersetzt den bisherigen.
+            </div>
+          </div>
+
+          @if (serviceTest(); as t) {
+            <div class="col-12">
+              <div class="alert py-2 mb-0" [class.alert-success]="t.ok" [class.alert-danger]="!t.ok" role="status">{{ t.text }}</div>
+            </div>
+          }
+        </div>
+      </form>
+
+      <!-- Tastenleiste (Muster): links Speichern, Zurück; rechts seltene Aktionen, Abbrechen. Klebt unten. -->
+      <div class="form-bar">
+        @if (canEdit()) {
+          <button type="submit" form="servicesForm" class="btn btn-primary" [disabled]="serviceBusy() || serviceKey.trim() === ''">
+            @if (serviceBusy()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+            {{ serviceBusy() ? 'Bitte warten …' : 'Speichern' }}
+          </button>
+        }
+        <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
+        @if (serviceKey.trim() !== '' && canEdit()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
+        @if (canEdit()) {
+          <div class="form-bar-right">
+            <button type="button" class="btn btn-outline-secondary" [disabled]="serviceBusy() || routing()?.source === 'none'"
+                    title="Eine kleine Anfrage mit dem Schlüssel, der gerade gilt (zählt eine Anfrage vom Kontingent)" (click)="testRouting()">Verbindung prüfen</button>
+            @if (routing()?.source === 'own') {
+              <button type="button" class="btn btn-outline-secondary" [disabled]="serviceBusy()" (click)="removeServiceKey()">Eigenen Schlüssel entfernen</button>
+            }
+            <button type="button" class="btn btn-outline-secondary" [disabled]="serviceKey.trim() === ''" [attr.title]="serviceKey.trim() !== '' ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancelService()">Abbrechen</button>
+          </div>
+        }
+      </div>
+    </div>
+  }
   @case ('preise') {
     <!-- Formular-Muster, siehe docs/ClaudeCodePatterns/EditFormPattern.md -->
     <div class="form-page">

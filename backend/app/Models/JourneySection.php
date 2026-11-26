@@ -16,17 +16,21 @@ class JourneySection extends Model
 {
     use HasUuids;
 
-    protected $fillable = ['journey_id', 'position', 'kind', 'title', 'trip_id', 'loaded_km', 'drive_s', 'days'];
+    protected $fillable = ['journey_id', 'position', 'kind', 'title', 'trip_id', 'tour_data', 'plan', 'loaded_km', 'drive_s', 'days', 'start_on', 'surcharge_percent', 'priced_signature'];
 
     protected function casts(): array
     {
-        return ['kind' => SectionKind::class, 'loaded_km' => 'float', 'drive_s' => 'integer', 'days' => 'integer'];
+        // tour_data: eigene Kopie der Tour, wie sie beim Anlegen der Strecke war (siehe TourSnapshotService::tripData)
+        return ['kind' => SectionKind::class, 'tour_data' => 'array', 'plan' => 'array', 'start_on' => 'date:Y-m-d', 'surcharge_percent' => 'float', 'loaded_km' => 'float', 'drive_s' => 'integer', 'days' => 'integer'];
     }
+
+    // Der Plan (mit Kartenlinie) gehört nur in den Einzelabruf der Strecke.
+    protected $hidden = ['plan'];
 
     /** Eigene Angaben der Strecke ohne Tour, sonst null. @return array{loaded_km: float, drive_s: int, days: int}|null */
     public function ownFigures(): ?array
     {
-        return $this->trip_id === null && $this->loaded_km !== null
+        return $this->tour_data === null && $this->loaded_km !== null
             ? ['loaded_km' => $this->loaded_km, 'drive_s' => (int) $this->drive_s, 'days' => max(1, (int) $this->days)]
             : null;
     }

@@ -23,7 +23,7 @@ const VEHICLE_LABELS: Record<string, string> = {
 /**
  * Tour-Archiv nach dem Tabellen-Muster (docs/ClaudeCodePatterns/TableViewPattern.md): gespeicherte Touren suchen, in der
  * Streckenplanung öffnen und löschen. Der SERVER sucht und blättert. Abweichung vom Muster wie bei den Belegen: feste Reihenfolge
- * (zuletzt geändert zuerst), keine sortierbaren Spaltenköpfe. Touren entstehen in der Streckenplanung (Tour speichern).
+ * (zuletzt geändert zuerst), keine sortierbaren Spaltenköpfe. Touren entstehen in der Streckenplanung (Als Vorlage speichern).
  */
 @Component({
   selector: 'app-trip-list',

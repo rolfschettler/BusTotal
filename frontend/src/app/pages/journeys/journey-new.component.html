@@ -1,0 +1,48 @@
+<a routerLink="/reisen" class="small text-decoration-none">‹ Alle Reisen</a>
+<h1 class="h3 mb-3">Neue Reise planen</h1>
+
+@if (error(); as e) {
+  <div class="alert alert-danger py-2" role="alert">{{ e }}</div>
+}
+
+<form id="journeyForm" class="form-area" (ngSubmit)="save()" novalidate>
+  <div class="row g-3">
+
+    <div class="col-12"><div class="section-title">Reise</div></div>
+
+    <div class="col-12 col-lg-8">
+      <label class="form-label" for="jTitle">Name <span class="text-danger">*</span></label>
+      <input id="jTitle" name="title" class="form-control" maxlength="150" autocomplete="off" [(ngModel)]="title"
+             [class.is-invalid]="submitted() && !title.trim()" />
+      <div class="invalid-feedback">Bitte einen Namen für die Reise eingeben.</div>
+      <div class="form-text">Zum Beispiel „Klassenfahrt Realschule Mai“. Der Name erscheint in der Liste und oben im Beleg, nicht auf dem PDF.</div>
+    </div>
+
+    <div class="col-12 col-lg-8">
+      <label class="form-label" for="jCustomer">Kunde</label>
+      <app-customer-picker inputId="jCustomer" [customer]="customer()" (picked)="customer.set($event)" (cleared)="customer.set(null)" />
+      <div class="form-text">Freiwillig. Das Angebot übernimmt den Kunden; sonst wählen Sie ihn später im Angebot.</div>
+    </div>
+
+    <div class="col-12">
+      <div class="form-text mt-0">
+        <strong>Anlegen und Hinfahrt planen</strong> öffnet gleich die Streckenplanung für die Hinfahrt. Mit <strong>Nur anlegen</strong> öffnet sich die Reise,
+        dort fügen Sie die Strecken hinzu (Hinfahrt, Fahrten vor Ort, Rückfahrt). Aus den Strecken erstellen Sie danach das Angebot.
+      </div>
+    </div>
+  </div>
+</form>
+
+<!-- Tastenleiste (Muster): links Speichern, Zurück; rechts Abbrechen. Klebt unten. -->
+<div class="form-bar">
+  <button type="submit" form="journeyForm" class="btn btn-primary" [disabled]="saving()">
+    @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+    {{ saving() ? 'Legt an …' : 'Anlegen und Hinfahrt planen' }}
+  </button>
+  <button type="button" class="btn btn-outline-secondary" [disabled]="saving()" (click)="save(false)">Nur anlegen</button>
+  <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
+  @if (dirty) { <span class="form-bar-hint">Ungespeicherte Eingaben</span> }
+  <div class="form-bar-right">
+    <button type="button" class="btn btn-outline-secondary" [disabled]="!dirty" [attr.title]="dirty ? null : 'Keine Eingaben zum Verwerfen'" (click)="cancel()">Abbrechen</button>
+  </div>
+</div>

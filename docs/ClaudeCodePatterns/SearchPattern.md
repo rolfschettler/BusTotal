@@ -27,7 +27,7 @@ Reiseziele …). Die Datenbank kann Millionen Adressen enthalten, die Suche muss
   und trennt Wörter an Leerzeichen und Komma. Nummern in Belegen (Treffer mittendrin): `mode="words"`.
 - **Kunden zeigen `<app-customer-name [customer]="…" [query]="…">`:** Zeile 1 fett „Nachname, Vorname“ (Privatkunden haben keine Firma, die Person steht
   vorn; nur ohne Person die Firma), Zeile 2 klein Firma · PLZ Ort · Kundennummer (`[showNumber]`, `[showPlace]="false"` wenn die Liste eine Ortsspalte hat).
-  Gilt für Liste UND Auswahlliste (Autocomplete). Bei festgeschriebenen Belegen den Empfänger-Schnappschuss übergeben (`d.recipient ?? d.customer`).
+  Gilt für Liste UND Auswahlliste (Autocomplete). In der Belegliste kommt der Kunde immer aus dem aktuellen Kundenstamm (`d.customer`, mit `[showStreet]="true"`), auch bei festgeschriebenen Belegen; der Empfänger-Schnappschuss gilt nur für das PDF.
 - Felder, die die Liste nicht zeigt, aber treffen können: „Treffer in …“ (`hiddenHits`). Alles Sichtbare vorher ausschöpfen.
 - **Sortierung nach Name folgt der Anzeige:** `COALESCE(NULLIF(last_name,''), NULLIF(company_name,''), customer_number)`, dann `first_name`.
 - Suchfeld: Platzhalter nennt die Felder („Nachname, Kundennr., Ort …“), `title` nennt die Komma-Schreibweise.

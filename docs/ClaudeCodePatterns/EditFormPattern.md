@@ -81,7 +81,7 @@ Klebt am unteren Rand des Sichtbereichs (`position: sticky`) in Formularbreite, 
 | Position | Taste | Aussehen |
 |---|---|---|
 | links, erste | **Speichern** (beim Anlegen „Kunde anlegen“) | `btn-primary` (Firmenfarbe), einzige gefüllte Taste. Beim Speichern Spinner und „Speichert …“ |
-| links, zweite | **Zurück** | `btn-outline-secondary`. Bei ungespeicherten Änderungen Rückfrage (`ConfirmService`) |
+| links, zweite | **Zurück** | `btn-outline-secondary`. Führt **dorthin, wo man hergekommen ist**: `BackNavigation.back('/liste')`, die Liste ist nur der Ersatz. Nie fest zur Liste navigieren. Bei ungespeicherten Änderungen Rückfrage (`ConfirmService`) |
 | links, Hinweis | „Ungespeicherte Änderungen“ | nur wenn `form.dirty` |
 | rechts (`.form-bar-right`) | seltene Aktion: **Archivieren** / **Wiederherstellen** | `btn-outline-secondary`, nie Löschen (GoBD) |
 | rechts, ganz außen | **Abbrechen** | verwirft Eingaben, setzt das Formular auf den gespeicherten Stand zurück. Deaktiviert, solange nichts geändert ist |
@@ -93,6 +93,8 @@ Klebt am unteren Rand des Sichtbereichs (`position: sticky`) in Formularbreite, 
   2026-11-22: Die Regel galt nur in `.form-bar`, eine Taste im Formular sah in der blassen Bootstrap-Optik deaktiviert aus.)
 - **Deaktiviert** (`[disabled]`) = graue Fläche, gestrichelter Rand, Mauszeiger „verboten“, `title` mit dem Grund. Wo möglich
   bleibt eine Taste aktiv und meldet das Problem erst beim Klick (Speichern ist nie deaktiviert, außer während des Speicherns).
+
+Tasten werden **nie auf feste Breiten gezwungen**: Sie brechen nicht um und werden nicht gestaucht, bei Platzmangel bricht die Leiste um, unter 576 px stehen alle untereinander. Meldungen in der Leiste stehen in `.form-bar-messages` über den Tasten. (Fehler 2026-11-26: gleich breite Tasten in einer halben Spalte liefen über.)
 
 ## Meldungen
 
@@ -108,6 +110,7 @@ Ein `message`-Signal, Hinweis unter der Titelzeile. Weil die Seite lang sein kan
 | Kurzes Inline-Formular auf einer Listenseite | Wie ein normales Formular (`.form-area`, Labels oben), aber Leiste mit `form-bar form-bar-static` (nicht klebend, die Liste scrollt selbst). Nur **Speichern** links, **Abbrechen** rechts. | Benutzer anlegen und bearbeiten |
 | Pflichtänderung | Taste „Zurück“ entfällt, solange der Nutzer nichts anderes tun darf. | Mein Konto bei vorläufigem Passwort |
 | Tabellen-Bearbeitung (Werte direkt in der Zeile) | Kein Formular-Muster. Felder `form-control-sm`, je Zeile eine Taste „Speichern“. | Steuersätze, Nummernkreise |
+| Planungsseite mit Karte | `form-page form-page-wide` (volle Breite). Oben zwei Spalten: Eingabe als `.form-area` neben der Karte (`.app-map-fill`), darunter Formularflächen nebeneinander (`col-lg-7` / `col-lg-5`), je Fläche ein Raster. **Die Tastenleiste steht als letztes Element über die ganze Seite**, nie in einer Spalte. | Streckenplanung |
 | Anmeldeseite | Eigenes Layout (zentrierte Karte, volle Tastenbreite). Label oben und `invalid-feedback` wie im Muster. | Login |
 
 Weitere lebende Referenzen: `pages/settings` (mehrere Abschnitte in einem Formular, Logo-Upload im Formular),

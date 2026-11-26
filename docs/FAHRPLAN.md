@@ -388,6 +388,8 @@ Quellen: Mittwald-Antworten (Ticket #6077836) und [Mittwald-Entwicklerdoku: PHP-
 - **Später:** gespeicherte Orte je Firma (Betriebshof, häufige Kunden) zuerst lokal suchen; für viele Firmen eigener oder bezahlter Geocoder hinter `GeocodingProvider`.
 
 
+- [x] **Reise Schritt für Schritt planen (2026-11-25, Tests grün, im Browser noch nicht geprüft):** Die Reise ist der Ort der Planung statt „Weitere Strecke hinzufügen“ im Beleg. Reisen › „Neue Reise planen“ (Name, Kunde), auf der Reise Strecken hinzufügen/ändern/entfernen (Quelle: Jetzt planen = Streckenplanung im Reise-Modus, Tour aus dem Archiv, eigene Angaben), „Angebot erstellen“ aus allen Strecken und „Angebot aktualisieren“ (Abgleich nur geänderter und neuer Strecken über `priced_signature`; unveränderte Strecken behalten Handänderungen). Kurzweg „Angebot erstellen“ bleibt. Migration `2026_12_14_100000` (`start_on`, `surcharge_percent`, `priced_signature`, `journeys.manual`). Neu: `JourneyPlanner`, `JourneyController` (Anlegen, Strecken, Angebot), `JourneyPlanningTest`; entfernt: `DocumentController::addSection/removeSection`. Konzept: `docs/fachlich/workflow-reisevorhaben.md` Abschnitt 2. Offen: Strecke in der Streckenplanung wieder öffnen und bearbeiten (die Kopie `tour_data` hat keine Koordinaten), Nachtrag zu einer festgeschriebenen Auftragsbestätigung.
+
 **Nächster Schritt:** Streckenplanung im Browser mit dem echten Dienst ansehen (`ng serve` neu starten), Kachelanbieter wählen, Fahrzeit mit echter Fahrt abgleichen, dann Betriebshof als Firmeneinstellung und Tour speichern. Parallel: Hilfetexte fachlich prüfen lassen, Phase 0 nachholen (Kalkulationsschema, DATEV-Daten vom Steuerberater, Mittwald-Klärungen).
 
 

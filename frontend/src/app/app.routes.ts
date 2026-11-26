@@ -67,7 +67,8 @@ export const routes: Routes = [
       },
       {
         path: 'reisen',
-        // Nur lesen: Admin, Disponent, Buchhaltung. Reisen entstehen mit dem ersten Angebot aus der Streckenplanung.
+        // Lesen: Admin, Disponent, Buchhaltung. Planen (anlegen, Strecken, Angebot): Admin und Disponent. Eine Reise wird von Hand geplant
+        // oder entsteht mit dem Kurzweg „Angebot erstellen“ aus der Streckenplanung.
         canActivate: [roleGuard('admin', 'disponent', 'buchhaltung')],
         children: [
           {
@@ -75,6 +76,13 @@ export const routes: Routes = [
             pathMatch: 'full',
             data: { help: 'belege#reisen', fullPage: true },
             loadComponent: () => import('./pages/journeys/journey-list.component').then((m) => m.JourneyListComponent),
+          },
+          {
+            // Neue Reise von Hand planen: nur Admin und Disponent
+            path: 'neu',
+            canActivate: [roleGuard('admin', 'disponent')],
+            data: { help: 'belege#reisen' },
+            loadComponent: () => import('./pages/journeys/journey-new.component').then((m) => m.JourneyNewComponent),
           },
           {
             path: ':id',

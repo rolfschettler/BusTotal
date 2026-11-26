@@ -88,4 +88,28 @@ export class SettingsService {
       next_number: r.next_number,
     });
   }
+
+  // ---------- Dienste (Zugangsschlüssel der Firma, nur Administratoren) ----------
+
+  getServices() {
+    return this.http.get<{ data: ServiceState[] }>('/api/settings/services');
+  }
+  saveServiceKey(service: string, apiKey: string) {
+    return this.http.put<ServiceState>(`/api/settings/services/${service}`, { api_key: apiKey });
+  }
+  removeServiceKey(service: string) {
+    return this.http.delete<ServiceState>(`/api/settings/services/${service}`);
+  }
+  testService(service: string) {
+    return this.http.post<ServiceState & { ok: boolean; message: string }>(`/api/settings/services/${service}/test`, {});
+  }
+}
+
+/** Stand der Zugangsdaten eines Dienstes: eigener Schlüssel der Firma, allgemeiner Schlüssel des Servers (Rückfall) oder keiner. */
+export interface ServiceState {
+  service: string;
+  source: 'own' | 'shared' | 'none';
+  /** letzte vier Zeichen des eigenen Schlüssels, nie der ganze Schlüssel */
+  own_hint: string | null;
+  shared_available: boolean;
 }

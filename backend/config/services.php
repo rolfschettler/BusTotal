@@ -32,7 +32,10 @@ return [
     // Der Schlüssel gehört nur in die .env des Servers (ORS_API_KEY), nie ins Frontend oder in die Datenbank.
     'openrouteservice' => [
         'key' => env('ORS_API_KEY'),
-        'base_url' => env('ORS_BASE_URL', 'https://api.openrouteservice.org'),
+        // api.openrouteservice.org ist seit 2026-11-24 abgeschaltet (410), der Dienst läuft unter api.heigit.org (gleicher Schlüssel).
+        'base_url' => env('ORS_BASE_URL', 'https://api.heigit.org'),
+        'routing_prefix' => env('ORS_ROUTING_PREFIX', '/openrouteservice'),   // davor: Routenberechnung unter /v2/…
+        'geocode_prefix' => env('ORS_GEOCODE_PREFIX', '/pelias/v1'),          // Adresssuche (früher /geocode)
         'timeout' => (int) env('ORS_TIMEOUT', 15),
         // Faktor auf die berechnete Fahrzeit. Mit echten Fahrten abgleichen (Fahrplan, Verifikation):
         // Das Lkw-Profil rechnet eher langsamer als ein Reisebus, der auf der Autobahn 100 km/h fahren darf.

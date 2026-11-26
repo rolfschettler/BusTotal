@@ -2,6 +2,7 @@
 
 namespace App\Routing;
 
+use App\Services\ServiceKeys;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
@@ -14,14 +15,22 @@ use Throwable;
  * Routing und Adresssuche über openrouteservice.org (Daten von OpenStreetMap). Das Bus-/Lkw-Profil
  * (driving-hgv) berücksichtigt Höhe, Breite, Länge und Gewicht des Fahrzeugs.
  *
- * Der Zugangsschlüssel steht nur in der Server-Umgebung (ORS_API_KEY in .env), nie in der Datenbank, im Frontend
- * oder in Fehlermeldungen. Er wird im Header gesendet, nicht in der Adresse (Adressen landen in Protokollen).
+ * Der Zugangsschlüssel kommt zuerst aus der Firmen-Datenbank (Einstellungen › Dienste, verschlüsselt), sonst als Rückfall aus der
+ * Server-Umgebung (ORS_API_KEY in .env), siehe ServiceKeys. Er steht nie im Frontend oder in Fehlermeldungen und wird im Header
+ * gesendet, nicht in der Adresse (Adressen landen in Protokollen).
  *
  * Gleiche Anfragen werden zwischengespeichert: Das schont das Tageskontingent des Dienstes. Der Zwischenspeicher
  * ist nur eine Beschleunigung; fällt er aus, wird ohne ihn gerechnet.
  */
 class OpenRouteService implements GeocodingProvider, RoutingProvider
 {
+    public function __construct(private readonly ServiceKeys $keys) {}
+
+    /** Ob der Schlüssel dieser Firma (nicht der allgemeine) gilt: bestimmt, wer bei Schlüsselproblemen handeln muss. */
+    private function ownKey(): bool
+    {
+        return $this->keys->resolve(ServiceKeys::OPENROUTESERVICE)['source'] === 'own';
+    }
     private const ROUTE_TTL = 12 * 3600;
 
     private const GEOCODE_TTL = 7 * 86400;
@@ -171,9 +180,9 @@ class OpenRouteService implements GeocodingProvider, RoutingProvider
     /** @return array<string, mixed> */
     private function send(string $method, string $path, array $data, string $accept = 'application/json'): array
     {
-        $key = config('services.openrouteservice.key');
+        $key = $this->keys->resolve(ServiceKeys::OPENROUTESERVICE)['key'];
         if (! $key) {
-            throw new RoutingException('Die Streckenplanung ist noch nicht eingerichtet (es fehlt der Zugang zum Routing-Dienst). Bitte den Betreiber informieren.', RoutingException::NOT_CONFIGURED);
+            throw new RoutingException('Die Streckenplanung ist noch nicht eingerichtet: Es fehlt der Zugangsschlüssel zum Routing-Dienst. Ein Administrator trägt ihn unter Einstellungen › Dienste ein.', RoutingException::NOT_CONFIGURED);
         }
 
         // Kontingente gelten beim Dienst je Bereich (Ortssuche, Route, Fahrzeitmatrix). Ist eines aufgebraucht, gehen bis zum
@@ -192,15 +201,29 @@ class OpenRouteService implements GeocodingProvider, RoutingProvider
                 ->timeout((int) config('services.openrouteservice.timeout', 15))
                 // Insgesamt 2 Versuche (einmal wiederholen), nur bei Verbindungsproblemen und Serverfehlern des Dienstes. Nie bei 4xx
                 // (falscher Schlüssel, kein Weg, Kontingent erreicht): Das ändert sich durch Wiederholen nicht und kostet Kontingent.
-                ->retry(2, 300, fn (Throwable $e) => $e instanceof ConnectionException
+                ->retry(2, 300, fn (?Throwable $e) => $e instanceof ConnectionException
                     || ($e instanceof RequestException && $e->response->serverError()), throw: false);
 
-            $response = $method === 'get' ? $request->get($path, $data) : $request->post($path, $data);
-        } catch (ConnectionException) {
-            throw new RoutingException('Der Routing-Dienst antwortet nicht. Bitte später noch einmal versuchen.', RoutingException::UNAVAILABLE);
+            $url = $this->endpoint($path);
+            $response = $method === 'get' ? $request->get($url, $data) : $request->post($url, $data);
+        } catch (ConnectionException $e) {
+            // cURL 28 = Zeitüberschreitung, cURL 6/7 = Name oder Server nicht erreichbar. Im Protokoll steht nur die Art, nie die Adresse.
+            $timeout = str_contains($e->getMessage(), 'cURL error 28') || stripos($e->getMessage(), 'timed out') !== false || stripos($e->getMessage(), 'timeout') !== false;
+            Log::warning('Routing-Dienst nicht erreichbar', ['area' => $area, 'art' => $timeout ? 'zeitueberschreitung' : 'keine_verbindung']);
+
+            throw $timeout
+                ? new RoutingException('Der Routing-Dienst hat nicht rechtzeitig geantwortet (er ist gerade sehr langsam oder überlastet). Bitte in einer Minute noch einmal versuchen. [Fehlercode R-ZEIT]', RoutingException::UNAVAILABLE)
+                : new RoutingException('Der Server kann den Routing-Dienst nicht erreichen (Internetverbindung des Servers oder Störung beim Anbieter). Bitte in ein paar Minuten noch einmal versuchen. Hilft das nicht, den Betreiber informieren. [Fehlercode R-VERBINDUNG]', RoutingException::UNAVAILABLE);
         }
 
         if ($response->successful()) {
+            // Eine Seite statt Daten (zum Beispiel die Hinweisseite eines Anbieters) ist kein gültiges Ergebnis.
+            if (! is_array($response->json())) {
+                Log::warning('Routing-Dienst antwortet ohne Daten', ['status' => $response->status(), 'area' => $area, 'typ' => $response->header('Content-Type')]);
+
+                throw new RoutingException('Der Routing-Dienst hat eine Antwort geschickt, die die Anwendung nicht lesen kann. Das liegt nicht an Ihrer Eingabe. Bitte den Betreiber informieren. [Fehlercode R-FORMAT]', RoutingException::UNEXPECTED);
+            }
+
             return (array) $response->json();
         }
 
@@ -215,6 +238,29 @@ class OpenRouteService implements GeocodingProvider, RoutingProvider
             str_contains($path, '/matrix') => 'matrix',
             default => 'directions',
         };
+    }
+
+    /**
+     * Verbindungsprüfung (Einstellungen › Dienste): EINE kleine Ortssuche, bewusst am Zwischenspeicher vorbei, sonst würde ein
+     * früheres Ergebnis „funktioniert“ vortäuschen. Kostet eine Anfrage.
+     *
+     * @throws RoutingException
+     */
+    public function ping(): void
+    {
+        $this->send('get', '/geocode/search', ['text' => 'Berlin', 'size' => 1, 'lang' => 'de']);
+    }
+
+    /** Hebt die Kontingent-Sperre auf (nach einem neuen Schlüssel: Die Sperre gehörte zum alten). */
+    public function resetQuota(): void
+    {
+        foreach (['geocode', 'directions', 'matrix'] as $area) {
+            try {
+                Cache::forget($this->quotaKey($area));
+            } catch (Throwable) {
+                // ohne Zwischenspeicher gibt es auch keine Sperre
+            }
+        }
     }
 
     private function quotaKey(string $area): string
@@ -273,9 +319,24 @@ class OpenRouteService implements GeocodingProvider, RoutingProvider
         return $out;
     }
 
+    /**
+     * Pfad beim Dienst. Der Code kennt die Pfade der alten Adresse (/v2/directions …, /geocode/search …). Seit dem 24.11.2026 liegen
+     * sie bei api.heigit.org unter /openrouteservice/v2/… und /pelias/v1/search (Vorsatz je Bereich in config/services.php).
+     */
+    private function endpoint(string $path): string
+    {
+        if (str_starts_with($path, '/geocode')) {
+            return rtrim((string) config('services.openrouteservice.geocode_prefix'), '/').substr($path, strlen('/geocode'));
+        }
+
+        return rtrim((string) config('services.openrouteservice.routing_prefix'), '/').$path;
+    }
+
     private function quotaException(): RoutingException
     {
-        return new RoutingException('Das Tageskontingent des Routing-Dienstes ist aufgebraucht. Es wird nach Mitternacht (UTC) zurückgesetzt. Bis dahin gehen nur Orte, die schon einmal gesucht wurden. Bitte später noch einmal versuchen.', RoutingException::LIMIT);
+        $who = $this->ownKey() ? 'Ihres Schlüssels' : 'des allgemeinen Schlüssels (mit anderen Firmen geteilt, ein eigener Schlüssel unter Einstellungen › Dienste vermeidet das)';
+
+        return new RoutingException('Das Tageskontingent '.$who.' beim Routing-Dienst ist aufgebraucht. Es wird nach Mitternacht (UTC) zurückgesetzt. Bis dahin gehen nur Orte, die schon einmal gesucht wurden. Bitte später noch einmal versuchen.', RoutingException::LIMIT);
     }
 
     private function failure(Response $response, string $area): RoutingException
@@ -283,7 +344,7 @@ class OpenRouteService implements GeocodingProvider, RoutingProvider
         $status = $response->status();
         $code = $response->json('error.code');
         // Ins Protokoll nur Status und Fehlercode des Dienstes, weder Schlüssel noch Adressen.
-        Log::warning('Routing-Dienst lehnt ab', ['status' => $status, 'code' => $code, 'area' => $area]);
+        Log::warning('Routing-Dienst lehnt ab', ['status' => $status, 'code' => $code, 'area' => $area, 'typ' => $response->header('Content-Type')]);
 
         // "Quota exceeded" kommt als 403 (nicht 429): Das Tageskontingent ist aufgebraucht, der Schlüssel ist in Ordnung.
         if ($status === 403 && stripos((string) $response->body(), 'quota') !== false) {
@@ -296,12 +357,19 @@ class OpenRouteService implements GeocodingProvider, RoutingProvider
             // 2009: Zwischen den Punkten gibt es keinen Weg. Mit Fahrzeugmaßen liegt das oft an einem Ort hinter einer niedrigen
             // Unterführung oder Gewichtsgrenze (Erfahrung: Bahnhofsvorplatz München mit 3,65 m Höhe).
             $code === 2009 => new RoutingException('Zwischen den Orten wurde keine Route gefunden. Mit den Maßen des Fahrzeugs (Höhe, Breite, Länge, Gewicht) kann ein Ort unerreichbar sein, zum Beispiel hinter einer niedrigen Unterführung. Bitte einen Ort in der Nähe wählen (zum Beispiel einen Busparkplatz statt des Bahnhofs) oder ein anderes Fahrzeug.', RoutingException::NO_ROUTE),
-            $status === 404 || $code === 2010 => new RoutingException('Für einen der Orte wurde keine befahrbare Straße in der Nähe gefunden. Bitte den Ort genauer wählen.', RoutingException::NO_ROUTE),
-            $status === 401 || $status === 403 => new RoutingException('Der Zugang zum Routing-Dienst wurde abgelehnt. Bitte den Betreiber informieren.', RoutingException::NOT_CONFIGURED),
+            $code === 2010 || ($status === 404 && $code !== null) => new RoutingException('Für einen der Orte wurde keine befahrbare Straße in der Nähe gefunden. Bitte den Ort genauer wählen.', RoutingException::NO_ROUTE),
+            // Die Adresse des Dienstes gibt es nicht mehr (abgeschaltet oder verlegt). Der Anwender kann nichts tun, der Betreiber muss die Einstellung ändern.
+            $status === 410 || ($status === 404 && $code === null) || ($status >= 300 && $status < 400) => new RoutingException("Der Routing-Dienst ist unter der eingestellten Adresse nicht mehr zu erreichen (der Anbieter hat sie abgeschaltet oder verlegt). Das lässt sich in der Anwendung nicht beheben: Bitte den Betreiber informieren. [Fehlercode R{$status}]", RoutingException::OUTDATED),
+            $status === 401 || $status === 403 => new RoutingException($this->ownKey()
+                ? "Der Zugangsschlüssel Ihrer Firma für den Routing-Dienst wurde abgelehnt (abgelaufen, gesperrt oder falsch). Ein Administrator prüft ihn unter Einstellungen › Dienste (dort auch „Verbindung prüfen“). [Fehlercode R{$status}]"
+                : "Der allgemeine Zugangsschlüssel für den Routing-Dienst wurde abgelehnt (abgelaufen, gesperrt oder falsch). Bitte den Betreiber informieren, oder ein Administrator trägt unter Einstellungen › Dienste einen eigenen Schlüssel ein. [Fehlercode R{$status}]", RoutingException::AUTH),
             // 429: zu viele Anfragen pro Minute beim Dienst. Kurzfristig, daher keine Sperre bis Mitternacht.
             $status === 429 => new RoutingException('Der Routing-Dienst ist gerade ausgelastet. Bitte in einer Minute noch einmal versuchen.', RoutingException::LIMIT),
-            $status === 400 => new RoutingException('Der Routing-Dienst kann diese Route nicht berechnen (zum Beispiel zu weit oder zu viele Halte).', RoutingException::REJECTED),
-            default => new RoutingException('Der Routing-Dienst hat einen Fehler gemeldet. Bitte später noch einmal versuchen.', RoutingException::UNAVAILABLE),
+            $status === 400 => new RoutingException('Der Routing-Dienst kann diese Route nicht berechnen (zum Beispiel zu weit oder zu viele Halte). Bitte Orte näher beieinander wählen oder Zwischenhalte entfernen.', RoutingException::REJECTED),
+            // 5xx: der Dienst selbst hat ein Problem, später klappt es meist wieder.
+            $status >= 500 => new RoutingException("Der Routing-Dienst hat selbst ein Problem (Fehler auf Seiten des Anbieters). Bitte in ein paar Minuten noch einmal versuchen. Hilft das nicht, den Betreiber informieren. [Fehlercode R{$status}]", RoutingException::UNAVAILABLE),
+            // Alles andere (406, 415, 405 …): Die Anfrage der Anwendung passt nicht zum Dienst. Das ist kein Eingabefehler.
+            default => new RoutingException("Der Routing-Dienst hat die Anfrage der Anwendung nicht angenommen. Das liegt nicht an Ihrer Eingabe. Bitte den Betreiber informieren und den Fehlercode nennen. [Fehlercode R{$status}]", RoutingException::UNEXPECTED),
         };
     }
 

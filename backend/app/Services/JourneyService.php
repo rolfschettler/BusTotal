@@ -20,20 +20,28 @@ use Illuminate\Support\Facades\DB;
  */
 class JourneyService
 {
+    public function __construct(private readonly TourSnapshotService $snapshots, private readonly SectionPlanService $plans) {}
+
     /**
      * Legt ein Reisevorhaben mit seinem ersten Abschnitt (Hinfahrt) an.
      *
      * @param  list<array{type: ?VehicleType, count: int}>  $vehicles  Fahrzeugbedarf der Hinfahrt
+     * @param  array<string, mixed>|null  $tour  berechnete Tour ohne Archiv-Eintrag (nur wenn $tripId fehlt), siehe TourSnapshotService::fromRequest
      */
-    public function start(string $title, ?string $customerId, ?string $dateFrom, ?string $dateTo, ?string $tripId, array $vehicles = []): Journey
+    public function start(string $title, ?string $customerId, ?string $dateFrom, ?string $dateTo, ?string $tripId, array $vehicles = [], ?array $tour = null): Journey
     {
-        return DB::transaction(function () use ($title, $customerId, $dateFrom, $dateTo, $tripId, $vehicles) {
+        return DB::transaction(function () use ($title, $customerId, $dateFrom, $dateTo, $tripId, $vehicles, $tour) {
             $title = mb_substr(trim($title) !== '' ? trim($title) : 'Reise', 0, 150);
             $journey = Journey::create(['title' => $title, 'customer_id' => $customerId, 'date_from' => $dateFrom, 'date_to' => $dateTo]);
             // Die Strecke heißt wie ihre Tour (wie jede weitere Strecke); ohne gespeicherte Tour wie die Reise.
-            $tripTitle = $tripId ? Trip::whereKey($tripId)->value('title') : null;
+            // Mit der Tour entsteht auch die eigene Kopie der Strecke: Das Archiv ist danach nur noch Vorlage (siehe tour_data).
+            $trip = $tripId ? Trip::with('stops')->find($tripId) : null;
             $section = $journey->sections()->create([
-                'position' => 1, 'kind' => SectionKind::Hinfahrt, 'title' => mb_substr($tripTitle ?? $title, 0, 150), 'trip_id' => $tripId,
+                'position' => 1, 'kind' => SectionKind::Hinfahrt, 'title' => mb_substr($trip?->title ?? $title, 0, 150),
+                'trip_id' => $trip?->id,
+                // Aus dem Archiv, sonst aus den Angaben der Berechnung (das Angebot legt nichts im Tour-Archiv an)
+                'tour_data' => $trip ? $this->snapshots->tripData($trip) : ($tour ? $this->snapshots->fromRequest($tour, $title) : null),
+                'plan' => $trip ? $this->plans->fromTrip($trip) : $this->plans->fromRequest($tour),
             ]);
             $this->saveVehicles($section, $vehicles);
 
@@ -47,44 +55,121 @@ class JourneyService
      *
      * @param  list<array{type: ?VehicleType, count: int}>  $vehicles
      * @param  array{title: string, loaded_km: float, drive_s: int, days: int}|null  $own  nur ohne Tour
+     * @param  array<string, mixed>|null  $tour  berechnete Tour ohne Archiv-Eintrag (nur ohne $trip), siehe TourSnapshotService::fromRequest
      */
-    public function addSection(string $journeyId, SectionKind $kind, ?Trip $trip, array $vehicles, ?array $own = null): JourneySection
+    public function addSection(string $journeyId, SectionKind $kind, ?Trip $trip, array $vehicles, ?array $own = null, ?array $tour = null, ?string $startOn = null, float $surchargePercent = 0): JourneySection
     {
-        return DB::transaction(function () use ($journeyId, $kind, $trip, $vehicles, $own) {
+        return DB::transaction(function () use ($journeyId, $kind, $trip, $vehicles, $own, $tour, $startOn, $surchargePercent) {
             // Die Reise sperren: Zwei gleichzeitige Aufrufe bekämen sonst dieselbe Position (eindeutiger Index, Serverfehler).
             Journey::lockForUpdate()->findOrFail($journeyId);
             $position = (int) JourneySection::where('journey_id', $journeyId)->max('position') + 1;
             $section = JourneySection::create([
                 'journey_id' => $journeyId, 'position' => $position, 'kind' => $kind,
+                'start_on' => $startOn, 'surcharge_percent' => $surchargePercent,
             ] + ($trip ? [
-                'title' => mb_substr($trip->title, 0, 150), 'trip_id' => $trip->id,
+                'title' => mb_substr($trip->title, 0, 150), 'trip_id' => $trip->id, 'tour_data' => $this->snapshots->tripData($trip), 'plan' => $this->plans->fromTrip($trip),
+            ] : ($tour ? [
+                // In der Streckenplanung berechnet, ohne Archiv-Eintrag: eigene Kopie, kein trip_id
+                'title' => mb_substr(trim((string) ($tour['title'] ?? '')) ?: $kind->label(), 0, 150),
+                'tour_data' => $this->snapshots->fromRequest($tour, $kind->label()),
+                'plan' => $this->plans->fromRequest($tour),
             ] : [
                 'title' => mb_substr(trim((string) ($own['title'] ?? '')), 0, 150) ?: $kind->label(),
                 'loaded_km' => $own['loaded_km'] ?? 0, 'drive_s' => $own['drive_s'] ?? 0, 'days' => max(1, (int) ($own['days'] ?? 1)),
-            ]));
+            ])));
             $this->saveVehicles($section, $vehicles);
+            $this->refreshDates(Journey::findOrFail($journeyId));
 
             return $section;
         });
     }
 
     /**
-     * Entfernt einen Abschnitt, wenn keine Position eines Belegs mehr auf ihn zeigt. Der erste und einzige Abschnitt bleibt.
-     * Die Positionen des Entwurfs muss der Aufrufer vorher entfernt haben.
+     * Strecke ändern: Titel, Datum, Zuschlag, Fahrzeugbedarf, eine neu berechnete Route und von Hand überschriebene Kennzahlen. Die Art
+     * bleibt. Die Positionen im Angebot ändern sich erst mit „Angebot aktualisieren“.
      *
-     * @return bool ob der Abschnitt entfernt wurde
+     * @param  list<array{type: ?VehicleType, count: int}>|null  $vehicles  null: unverändert
+     * @param  array<string, mixed>|null  $tour  neu berechnete Route (siehe TourPayload); ersetzt Kopie und Plan der Strecke
+     * @param  array{loaded_km: float, empty_km: float, drive_s: int, days: int}|null  $figures  gültige Kennzahlen, auch von Hand
      */
-    public function removeSectionIfUnused(JourneySection $section): bool
+    public function updateSection(JourneySection $section, array $data, ?array $vehicles = null, ?array $tour = null, ?array $figures = null): JourneySection
     {
-        if (DocumentLine::where('journey_section_id', $section->id)->exists()
-            || JourneySection::where('journey_id', $section->journey_id)->count() <= 1) {
-            return false;
-        }
-        $section->delete();
+        return DB::transaction(function () use ($section, $data, $vehicles, $tour, $figures) {
+            $section->fill(array_intersect_key($data, array_flip(['title', 'start_on', 'surcharge_percent'])));
+            if ($tour !== null) {
+                $section->fill([
+                    'tour_data' => $this->snapshots->fromRequest($tour, $section->title),
+                    'plan' => $this->plans->fromRequest($tour),
+                    // Die Route kommt nicht mehr aus der Tour im Archiv, und eigene Angaben gelten nicht mehr.
+                    'trip_id' => null, 'loaded_km' => null, 'drive_s' => null, 'days' => null,
+                ]);
+            }
+            if ($figures !== null) {
+                if ($section->tour_data !== null) {
+                    $section->tour_data = array_merge($section->tour_data, $figures);
+                } else {
+                    // Strecke ohne Route: Eigene Angaben kennen keine Leerfahrt.
+                    $section->fill(array_intersect_key($figures, array_flip(['loaded_km', 'drive_s', 'days'])));
+                }
+            }
+            if (isset($data['trip_kind']) && $section->tour_data !== null) {
+                $section->tour_data = array_merge($section->tour_data, ['trip_kind' => $data['trip_kind']->value, 'trip_kind_label' => $data['trip_kind']->label()]);
+            }
+            $section->save();
+            if ($vehicles !== null) {
+                $section->vehicles()->delete();
+                $this->saveVehicles($section, $vehicles);
+            }
+            $this->refreshDates(Journey::findOrFail($section->journey_id));
 
-        return true;
+            return $section->fresh('vehicles');
+        });
     }
 
+    /**
+     * Eine Strecke zum Bearbeiten in der Streckenplanung: immer der aktuelle Stand. Steht sie in einem festgeschriebenen Beleg,
+     * kommt dessen Nummer für den Hinweis mit (der Beleg behält seinen Stand).
+     *
+     * @return array<string, mixed>
+     */
+    public function sectionForEdit(Journey $journey, JourneySection $section): array
+    {
+        $section->load('vehicles');
+        $td = $section->tour_data;
+        $detail = collect($this->detail($journey)['sections'])->firstWhere('id', $section->id);
+
+        return [
+            'journey' => ['id' => $journey->id, 'title' => $journey->title],
+            'id' => $section->id, 'kind' => $section->kind->value, 'kind_label' => $section->kind->label(), 'title' => $section->title,
+            'start_on' => $section->start_on?->toDateString(), 'surcharge_percent' => (float) $section->surcharge_percent,
+            'vehicles' => $section->vehicles->map(fn ($v) => ['type' => $v->vehicle_type?->value, 'count' => $v->vehicle_count])->all(),
+            'figures' => $td ? [
+                'loaded_km' => (float) $td['loaded_km'], 'empty_km' => (float) $td['empty_km'], 'drive_s' => (int) $td['drive_s'], 'days' => (int) $td['days'],
+            ] : [
+                'loaded_km' => (float) ($section->loaded_km ?? 0), 'empty_km' => 0.0, 'drive_s' => (int) ($section->drive_s ?? 0), 'days' => max(1, (int) ($section->days ?? 1)),
+            ],
+            'tour' => $td,
+            'plan' => $this->plans->forClient($section->plan),
+            'frozen_by' => $detail['trip']['frozen_by'] ?? null,
+        ];
+    }
+
+    /**
+     * Der Zeitraum der Reise aus den Daten ihrer Strecken (erster Tag bis letzter Einsatztag). Strecken ohne Datum zählen nicht;
+     * gibt es keines, bleibt der Zeitraum, wie er ist (zum Beispiel aus dem Kurzweg).
+     */
+    public function refreshDates(Journey $journey): void
+    {
+        $sections = JourneySection::where('journey_id', $journey->id)->whereNotNull('start_on')->get();
+        if ($sections->isEmpty()) {
+            return;
+        }
+
+        $journey->update([
+            'date_from' => $sections->min('start_on'),
+            'date_to' => $sections->map(fn (JourneySection $s) => $s->start_on->copy()->addDays(max(1, (int) ($s->tour_data['days'] ?? $s->days ?? 1)) - 1))->max(),
+        ]);
+    }
     /** @param  list<array{type: ?VehicleType, count: int}>  $vehicles */
     private function saveVehicles(JourneySection $section, array $vehicles): void
     {
@@ -187,7 +272,7 @@ class JourneyService
      */
     public function detail(Journey $journey): array
     {
-        $journey->load(['customer', 'sections.vehicles', 'sections.trip.stops']);
+        $journey->load(['customer', 'sections.vehicles']);
         $documents = Document::where('journey_id', $journey->id)->orderBy('created_at')->orderBy('id')->get();
 
         // Festgehaltener Stand je Strecke: aus dem neuesten gültigen festgeschriebenen Beleg, der sie beschreibt. So zeigt die Reise
@@ -214,6 +299,7 @@ class JourneyService
             ] : null,
             'sections' => $journey->sections->map(fn (JourneySection $sec) => [
                 'id' => $sec->id, 'kind' => $sec->kind->value, 'kind_label' => $sec->kind->label(), 'title' => $sec->title,
+                'start_on' => $sec->start_on?->toDateString(), 'surcharge_percent' => (float) $sec->surcharge_percent,
                 'own' => $sec->ownFigures(),
                 'vehicles' => $sec->vehicles->map(fn ($v) => ['type' => $v->vehicle_type?->value, 'label' => $v->vehicle_type?->label(), 'count' => $v->vehicle_count])->all(),
                 'trip' => isset($frozen[$sec->id]) ? [
@@ -224,10 +310,11 @@ class JourneyService
                     'from' => $frozen[$sec->id]['trip']['stops'][0]['label'] ?? null,
                     'to' => collect($frozen[$sec->id]['trip']['stops'])->last()['label'] ?? null,
                     'frozen_by' => $frozen[$sec->id]['number'],
-                ] : ($sec->trip ? [
-                    'id' => $sec->trip->id, 'title' => $sec->trip->title, 'loaded_km' => $sec->trip->loaded_km, 'empty_km' => $sec->trip->empty_km,
-                    'drive_s' => $sec->trip->drive_s, 'days' => $sec->trip->days,
-                    'from' => $sec->trip->stops->first()?->label, 'to' => $sec->trip->stops->last()?->label,
+                ] : ($sec->tour_data ? [
+                    // Noch kein festgeschriebener Beleg: die Kopie der Strecke aus dem Angebot, nie die Tour im Archiv
+                    'id' => $sec->trip_id, 'title' => $sec->tour_data['title'], 'loaded_km' => $sec->tour_data['loaded_km'], 'empty_km' => $sec->tour_data['empty_km'],
+                    'drive_s' => $sec->tour_data['drive_s'], 'days' => $sec->tour_data['days'],
+                    'from' => $sec->tour_data['stops'][0]['label'] ?? null, 'to' => collect($sec->tour_data['stops'])->last()['label'] ?? null,
                     'frozen_by' => null,
                 ] : null),
             ])->all(),
@@ -269,13 +356,17 @@ class JourneyService
         ];
     }
 
-    /** Ein Entwurf wurde gelöscht: Eine Reise ohne Belege bleibt nicht übrig. */
+    /** Ein Entwurf wurde gelöscht: Eine Reise des Kurzwegs ohne Belege bleibt nicht übrig, eine von Hand geplante schon. */
     public function removeIfEmpty(?string $journeyId): void
     {
         if ($journeyId === null || Document::where('journey_id', $journeyId)->exists()) {
             return;
         }
 
-        Journey::whereKey($journeyId)->first()?->delete();
+        // Eine von Hand geplante Reise (Neue Reise planen) bleibt auch ohne Entwurf bestehen; nur die des Kurzwegs verschwindet.
+        $journey = Journey::whereKey($journeyId)->first();
+        if ($journey && ! $journey->manual) {
+            $journey->delete();
+        }
     }
 }

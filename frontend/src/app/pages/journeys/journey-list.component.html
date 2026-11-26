@@ -17,11 +17,13 @@
             <i class="bi bi-arrow-clockwise"></i><span class="ms-1">Aktualisieren</span>
           </button>
         </div>
-        <div class="col">
-          <a routerLink="/streckenplanung" class="btn btn-sm btn-header-new w-100">
-            <i class="bi bi-signpost-split"></i><span class="ms-1">Neue Reise planen</span>
-          </a>
-        </div>
+        @if (canPlan()) {
+          <div class="col">
+            <a routerLink="/reisen/neu" class="btn btn-sm btn-header-new w-100">
+              <i class="bi bi-signpost-split"></i><span class="ms-1">Neue Reise planen</span>
+            </a>
+          </div>
+        }
       </div>
     </div>
   </div>
@@ -37,7 +39,7 @@
                [(ngModel)]="q" (ngModelChange)="onSearch()" />
       </div>
       <div class="col-12 col-sm-auto small text-body-secondary">
-        Eine Reise entsteht mit dem ersten Angebot aus der Streckenplanung.
+        Eine Reise planen Sie Schritt für Schritt: Strecken hinzufügen, danach das Angebot erstellen.
       </div>
     </div>
   </div>
@@ -112,7 +114,7 @@
               } @else if (shownQuery()) {
                 Keine Reise zu „{{ shownQuery() }}“ gefunden.
               } @else {
-                Noch keine Reise. Planen Sie eine Strecke in der <a routerLink="/streckenplanung">Streckenplanung</a> und erstellen Sie daraus ein Angebot: Dabei entsteht die Reise.
+                Noch keine Reise. @if (canPlan()) { <a routerLink="/reisen/neu">Neue Reise planen</a>: Titel und Kunde eintragen, dann die Strecken hinzufügen. }
               }
             </td>
           </tr>

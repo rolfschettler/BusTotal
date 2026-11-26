@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\DepotController;
 use App\Http\Controllers\Api\PricingController;
 use App\Http\Controllers\Api\RouteController;
+use App\Http\Controllers\Api\ServiceSettingsController;
 use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\Superadmin\AuthController as SuperadminAuthController;
 use App\Http\Controllers\Api\Superadmin\TenantController as SuperadminTenantController;
@@ -145,10 +146,21 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
         Route::delete('/trips/{trip}', [TripController::class, 'destroy']);
     });
 
-    // Reisen: lesen und umbenennen (Admin, Disponent, Buchhaltung). Sie entstehen mit dem ersten Angebot aus der Streckenplanung.
+    // Reisen: lesen Admin, Disponent, Buchhaltung; planen (anlegen, Strecken, Angebot) Admin und Disponent. Eine Reise wird von Hand
+    // geplant oder entsteht mit dem Kurzweg „Angebot erstellen“ aus der Streckenplanung.
     Route::get('/journeys', [JourneyController::class, 'index'])->middleware('role:admin,disponent,buchhaltung');
     Route::get('/journeys/{journey}', [JourneyController::class, 'show'])->middleware('role:admin,disponent,buchhaltung');
+    Route::get('/journeys/{journey}/sections/{section}', [JourneyController::class, 'showSection'])->middleware('role:admin,disponent,buchhaltung');
+    Route::get('/journeys/{journey}/quote-status', [JourneyController::class, 'quoteStatus'])->middleware('role:admin,disponent,buchhaltung');
     Route::put('/journeys/{journey}', [JourneyController::class, 'update'])->middleware('role:admin,disponent,buchhaltung');
+    Route::middleware('role:admin,disponent')->group(function () {
+        Route::post('/journeys', [JourneyController::class, 'store']);
+        Route::delete('/journeys/{journey}', [JourneyController::class, 'destroy']);
+        Route::post('/journeys/{journey}/sections', [JourneyController::class, 'storeSection']);
+        Route::put('/journeys/{journey}/sections/{section}', [JourneyController::class, 'updateSection']);
+        Route::delete('/journeys/{journey}/sections/{section}', [JourneyController::class, 'destroySection']);
+        Route::post('/journeys/{journey}/quote', [JourneyController::class, 'quote']);
+    });
 
     // Fahrtaufträge: lesen Admin, Disponent, Buchhaltung; disponieren und ausgeben Admin und Disponent.
     // Sie entstehen mit der festgeschriebenen Auftragsbestätigung, hier wird nichts angelegt.
@@ -186,9 +198,6 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
         Route::get('/{document}/zugferd', [DocumentController::class, 'zugferd']);
         Route::put('/{document}', [DocumentController::class, 'update']);
         Route::delete('/{document}', [DocumentController::class, 'destroy']);
-        // Weitere Strecken der Reise im Entwurf: hinzufügen (aus dem Tour-Archiv) und entfernen
-        Route::post('/{document}/sections', [DocumentController::class, 'addSection']);
-        Route::delete('/{document}/sections/{section}', [DocumentController::class, 'removeSection']);
         Route::post('/{document}/convert', [DocumentController::class, 'convert']);
         Route::get('/{document}/payments', [DocumentPaymentController::class, 'index']);
     });
@@ -221,5 +230,11 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
         Route::post('/settings/tax-rates', [SettingsController::class, 'storeTaxRate']);
         Route::put('/settings/tax-rates/{taxRate}', [SettingsController::class, 'updateTaxRate']);
         Route::put('/settings/number-ranges/{numberRange}', [SettingsController::class, 'updateNumberRange']);
+
+        // Zugangsschlüssel der Firma zu externen Diensten (Rückfall: allgemeiner Schlüssel des Servers)
+        Route::get('/settings/services', [ServiceSettingsController::class, 'index']);
+        Route::put('/settings/services/{service}', [ServiceSettingsController::class, 'update']);
+        Route::delete('/settings/services/{service}', [ServiceSettingsController::class, 'destroy']);
+        Route::post('/settings/services/{service}/test', [ServiceSettingsController::class, 'test'])->middleware('throttle:10,1');
     });
 });

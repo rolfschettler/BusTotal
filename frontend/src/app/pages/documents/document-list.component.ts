@@ -1,11 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { httpErrorText } from '../../core/http-error';
 import { BusDocument, DocumentService, DocumentTypeInfo } from '../../core/document.service';
 import { hasHit } from '../../shared/highlight';
+import { CustomerService } from '../../core/customer.service';
 import { PrintPreviewService } from '../../core/print-preview.service';
 import { CustomerNameComponent } from '../../shared/customer-name.component';
 import { HighlightComponent } from '../../shared/highlight.component';
@@ -15,8 +16,15 @@ import { ListMemory } from '../../core/list-memory.service';
 import { formatAmount } from './document-calc';
 
 const KEY = 'belege';
+
+/** Der gewählte Kunde, dessen Belege die Liste zeigt (Auswahl wie im Belegformular). */
+interface PickedCustomer {
+  id: string; display_name: string; customer_number: string;
+  company_name?: string | null; first_name?: string | null; last_name?: string | null; postal_code?: string | null; city?: string | null;
+  archived?: boolean;
+}
 type DocListParams = {
-  q: string; type: string; status: string; page: number; order: 'column' | 'chain'; sortCol: string; sortDir: 'asc' | 'desc';
+  q: string; customer: PickedCustomer | null; type: string; status: string; page: number; order: 'column' | 'chain'; sortCol: string; sortDir: 'asc' | 'desc';
 };
 
 /**
@@ -26,15 +34,21 @@ type DocListParams = {
   selector: 'app-document-list',
   imports: [DatePipe, FormsModule, RouterLink, CustomerNameComponent, HighlightComponent, StickyFilterBarDirective, RevealCurrentDirective],
   templateUrl: './document-list.component.html',
-  host: { class: 'list-page', style: '--sheet-w: 964px' },
+  host: { class: 'list-page', style: '--sheet-w: 1184px' },
 })
 export class DocumentListComponent implements OnInit {
   private api = inject(DocumentService);
   private route = inject(ActivatedRoute);
   private memory = inject(ListMemory);
   private printPreview = inject(PrintPreviewService);
+  private customers = inject(CustomerService);
 
   q = '';
+  /** Kundensuche, getrennt von der Tabelle: erst Trefferliste, dann Auswahl, dann nur noch dessen Belege. */
+  customer = signal<PickedCustomer | null>(null);
+  customerQuery = signal('');
+  customerHits = signal<PickedCustomer[]>([]);
+  private customerTimer?: ReturnType<typeof setTimeout>;
   type = '';
   status = '';
   /** „column“: nach der gewählten Spalte. „chain“: je Kunde untereinander, darin die Belegketten (Entstehungsgeschichte). */
@@ -66,6 +80,7 @@ export class DocumentListComponent implements OnInit {
     const fromUrl = this.route.snapshot.queryParamMap.get('q');
     const saved = fromUrl === null ? this.memory.params<DocListParams>(KEY) : null;
     this.q = fromUrl ?? saved?.q ?? '';
+    this.customer.set(saved?.customer ?? null);
     this.type = saved?.type ?? '';
     this.status = saved?.status ?? '';
     this.order = saved?.order ?? 'column';
@@ -75,6 +90,35 @@ export class DocumentListComponent implements OnInit {
     this.locate = this.currentId();
     this.api.types().subscribe((t) => this.types.set(t));
     this.load();
+  }
+
+  onCustomerSearch(q: string) {
+    this.customerQuery.set(q);
+    clearTimeout(this.customerTimer);
+    if (q.trim().length < 2) {
+      this.customerHits.set([]);
+      return;
+    }
+    this.customerTimer = setTimeout(() => {
+      this.customers.list({ q: q.trim(), type: '', archived: false, withArchived: true, page: 1, sort: 'name', dir: 'asc' }).subscribe((p) =>
+        this.customerHits.set(p.data.slice(0, 8).map((c) => ({
+          id: c.id, display_name: c.display_name, customer_number: c.customer_number, company_name: c.company_name,
+          first_name: c.first_name, last_name: c.last_name, postal_code: c.postal_code, city: c.city, archived: !!c.deleted_at,
+        }))),
+      );
+    }, 300);
+  }
+
+  pickCustomer(c: PickedCustomer) {
+    this.customer.set(c);
+    this.customerQuery.set('');
+    this.customerHits.set([]);
+    this.filterChanged();
+  }
+
+  clearCustomer() {
+    this.customer.set(null);
+    this.filterChanged();
   }
 
   select(id: string) {
@@ -149,13 +193,22 @@ export class DocumentListComponent implements OnInit {
     return this.rows()[i].customer_id !== this.rows()[i - 1].customer_id;
   }
 
+  /** Jede zweite Kette (in der Ansicht „je Kunde“) bekommt einen leicht getönten Hintergrund. */
+  chainAlt = computed(() => {
+    let n = 0;
+    return this.rows().map((d, i, all) => {
+      if (i > 0 && d.chain_root_id !== all[i - 1].chain_root_id) n++;
+      return n % 2 === 1;
+    });
+  });
+
   typeLabel(value: string) {
     return this.types().find((t) => t.value === value)?.label ?? value;
   }
 
-  /** Beim Festschreiben wird der Empfänger kopiert, davor folgt der Beleg dem Kundenstamm. */
+  /** Die Liste zeigt immer den aktuellen Kundenstamm; der beim Festschreiben kopierte Empfänger gilt nur für das PDF des Belegs. */
   recipientName(d: BusDocument): string {
-    return d.recipient?.name ?? d.customer?.display_name ?? '';
+    return d.customer?.display_name ?? d.recipient?.name ?? '';
   }
 
   /** Treffer in Feldern, die die Liste nicht zeigt (hier: die Kundennummer). */
@@ -174,14 +227,14 @@ export class DocumentListComponent implements OnInit {
     // Beim ersten Laden fragt die Liste nach der Seite, auf der die aktuelle Zeile steht (Rücksprung aus einem Beleg, auch aus
     // einem Folgebeleg, der erst jetzt in die Liste kam). Danach blättert wieder der Nutzer.
     const locate = this.locate;
-    this.api.list({ q: query, type: this.type, status: this.status, page: this.page(), order: this.order, sort: this.sortCol(), dir: this.sortDir(), locate }).subscribe({
+    this.api.list({ q: query, customerId: this.customer()?.id ?? '', type: this.type, status: this.status, page: this.page(), order: this.order, sort: this.sortCol(), dir: this.sortDir(), locate }).subscribe({
       next: (p) => {
         if (request !== this.requestNo) return;
         this.locate = null;
         this.page.set(p.current_page);
         this.rows.set(p.data);
         this.shownQuery.set(query);
-        this.memory.saveParams(KEY, { q: query, type: this.type, status: this.status, page: this.page(), order: this.order, sortCol: this.sortCol(), sortDir: this.sortDir() } satisfies DocListParams);
+        this.memory.saveParams(KEY, { q: query, customer: this.customer(), type: this.type, status: this.status, page: this.page(), order: this.order, sortCol: this.sortCol(), sortDir: this.sortDir() } satisfies DocListParams);
         this.lastPage.set(p.last_page);
         this.total.set(p.total);
         this.loaded.set(true);

@@ -39,7 +39,7 @@
                [(ngModel)]="q" (ngModelChange)="onSearch()" />
       </div>
       <div class="col-12 col-sm-auto small text-body-secondary">
-        Touren speichern Sie in der Streckenplanung mit „Tour speichern“.
+        Touren speichern Sie in der Streckenplanung mit „Als Vorlage speichern“.
       </div>
     </div>
   </div>
@@ -84,11 +84,7 @@
                 <i class="bi bi-signpost-split"></i>
               </a>
               @if (canEdit()) {
-                @if ((t.sections_count ?? 0) > 0) {
-                  <span class="btn-action text-body-tertiary" title="Wird in einer Reise verwendet und lässt sich nicht löschen" aria-label="Tour wird verwendet, Löschen nicht möglich"><i class="bi bi-lock"></i></span>
-                } @else {
-                  <button type="button" class="btn-action delete" (click)="remove(t)" title="Löschen" [attr.aria-label]="'Tour ' + t.title + ' löschen'"><i class="bi bi-trash"></i></button>
-                }
+                <button type="button" class="btn-action delete" (click)="remove(t)" title="Löschen" [attr.aria-label]="'Tour ' + t.title + ' löschen'"><i class="bi bi-trash"></i></button>
               }
             </td>
             <td>
@@ -127,7 +123,7 @@
               } @else if (shownQuery()) {
                 Keine Tour zu „{{ shownQuery() }}“ gefunden.
               } @else {
-                Noch keine Tour gespeichert. Berechnen Sie eine Strecke in der <a routerLink="/streckenplanung">Streckenplanung</a> und wählen Sie darunter <strong>Tour speichern</strong>.
+                Noch keine Tour gespeichert. Berechnen Sie eine Strecke in der <a routerLink="/streckenplanung">Streckenplanung</a> und wählen Sie <strong>Als Vorlage speichern</strong>.
               }
             </td>
           </tr>

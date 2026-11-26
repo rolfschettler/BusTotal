@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { APP_NAME, isSuperadminHost } from './core/app-info';
+import { BackNavigation } from './core/back-navigation.service';
 import { BrandService } from './core/brand.service';
 import { PrintPreviewComponent } from './shared/print-preview.component';
 
@@ -15,6 +16,7 @@ const OPERATOR_COLOR = '#2b3440';
 })
 export class AppComponent {
   constructor() {
+    inject(BackNavigation); // merkt sich ab der ersten Seite den Weg für „Zurück“
     const brand = inject(BrandService);
     if (isSuperadminHost()) {
       // Die Betreiber-Adresse hat keine Firma, also auch kein Branding vom Server.

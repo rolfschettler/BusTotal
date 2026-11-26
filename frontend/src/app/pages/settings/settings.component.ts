@@ -11,9 +11,9 @@ import { httpErrorText } from '../../core/http-error';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { HelpService } from '../../help/help.service';
 import { PricingService, PricingSettings, VehicleRateField } from '../../core/pricing.service';
-import { NumberRange, SettingsService, TaxRate } from '../../core/settings.service';
+import { NumberRange, ServiceState, SettingsService, TaxRate } from '../../core/settings.service';
 
-type Tab = 'firma' | 'steuern' | 'nummern' | 'preise' | 'betriebshoefe';
+type Tab = 'firma' | 'steuern' | 'nummern' | 'preise' | 'betriebshoefe' | 'dienste';
 
 /** Eine Zeile der Betriebshof-Tabelle: die Eingaben, dazu der zuletzt gespeicherte Stand und der gefundene Ort. */
 interface DepotRow extends Depot {
@@ -118,6 +118,13 @@ export class SettingsComponent implements OnInit {
   newDepotError = signal<string | null>(null);
   newDepotBusy = signal(false);
 
+  /** Dienste: Stand des Routing- und Adressdienstes, das Eingabefeld für den neuen Schlüssel und das Ergebnis von „Verbindung prüfen“ */
+  readonly ORS = 'openrouteservice';
+  routing = signal<ServiceState | null>(null);
+  serviceKey = '';
+  serviceBusy = signal(false);
+  serviceTest = signal<{ ok: boolean; text: string } | null>(null);
+
   taxRates = signal<TaxRate[]>([]);
   newTax = { name: '', rate: 0 };
   ranges = signal<NumberRange[]>([]);
@@ -143,6 +150,7 @@ export class SettingsComponent implements OnInit {
     this.loadTaxRates();
     this.loadRanges();
     this.loadDepots();
+    if (this.canEdit()) this.loadServices();
     this.pricingApi.get().subscribe({
       next: (p) => {
         this.applyPricing(p);
@@ -194,6 +202,7 @@ export class SettingsComponent implements OnInit {
 
   /** Ist im aktuellen Reiter etwas ungespeichert? (Nur Firmendaten und Preise sind Formulare.) */
   get dirty(): boolean {
+    if (this.tab() === 'dienste') return this.serviceKey.trim() !== '';
     return this.tab() === 'preise' ? this.pricing.dirty : this.company.dirty;
   }
 
@@ -235,6 +244,81 @@ export class SettingsComponent implements OnInit {
   private loadRanges() {
     this.api.getNumberRanges().subscribe((r) => this.ranges.set(r));
   }
+  private loadServices() {
+    this.api.getServices().subscribe({
+      next: (r) => this.routing.set(r.data.find((x) => x.service === this.ORS) ?? null),
+      error: (e) => this.notify(false, httpErrorText(e, 'Die Dienste konnten nicht geladen werden.')),
+    });
+  }
+
+  /** Eigenen Schlüssel speichern; danach das Feld leeren (der Schlüssel wird nie wieder angezeigt). */
+  saveServiceKey() {
+    const key = this.serviceKey.trim();
+    if (!key) return;
+    this.serviceBusy.set(true);
+    this.serviceTest.set(null);
+    this.api.saveServiceKey(this.ORS, key).subscribe({
+      next: (s) => {
+        this.serviceBusy.set(false);
+        this.routing.set(s);
+        this.serviceKey = '';
+        this.notify(true, 'Schlüssel gespeichert. Mit „Verbindung prüfen“ können Sie ihn testen.');
+      },
+      error: (e) => {
+        this.serviceBusy.set(false);
+        this.notify(false, httpErrorText(e, 'Der Schlüssel konnte nicht gespeichert werden.'));
+      },
+    });
+  }
+
+  async removeServiceKey() {
+    const shared = this.routing()?.shared_available;
+    const ok = await this.confirm.ask({
+      title: 'Eigenen Schlüssel entfernen',
+      message: shared
+        ? 'Danach gilt wieder der allgemeine Schlüssel des Servers, den sich mehrere Firmen teilen. Fortfahren?'
+        : 'Danach gibt es keinen Schlüssel mehr, und die Streckenplanung ist nicht verfügbar, bis ein neuer eingetragen wird. Fortfahren?',
+      confirmLabel: 'Entfernen',
+      danger: true,
+    });
+    if (!ok) return;
+    this.serviceBusy.set(true);
+    this.serviceTest.set(null);
+    this.api.removeServiceKey(this.ORS).subscribe({
+      next: (s) => {
+        this.serviceBusy.set(false);
+        this.routing.set(s);
+        this.notify(true, 'Eigener Schlüssel entfernt.');
+      },
+      error: (e) => {
+        this.serviceBusy.set(false);
+        this.notify(false, httpErrorText(e, 'Der Schlüssel konnte nicht entfernt werden.'));
+      },
+    });
+  }
+
+  /** „Verbindung prüfen“: eine kleine Anfrage mit dem Schlüssel, der gerade gilt (kostet eine Anfrage beim Dienst). */
+  testRouting() {
+    this.serviceBusy.set(true);
+    this.serviceTest.set(null);
+    this.api.testService(this.ORS).subscribe({
+      next: (r) => {
+        this.serviceBusy.set(false);
+        this.serviceTest.set({ ok: r.ok, text: r.message });
+      },
+      error: (e) => {
+        this.serviceBusy.set(false);
+        this.serviceTest.set({ ok: false, text: httpErrorText(e, 'Die Verbindung konnte nicht geprüft werden.') });
+      },
+    });
+  }
+
+  cancelService() {
+    this.serviceKey = '';
+    this.serviceTest.set(null);
+    this.message.set(null);
+  }
+
   private loadDepots() {
     this.depotApi.list().subscribe({
       next: (list) => this.depots.set(list.map(toRow)),
@@ -245,7 +329,7 @@ export class SettingsComponent implements OnInit {
   show(tab: Tab) {
     this.tab.set(tab);
     // Das Hilfefenster folgt dem Reiter.
-    this.help.setAnchor({ firma: 'firmendaten', steuern: 'steuersaetze', nummern: 'nummernkreise', preise: 'preise', betriebshoefe: 'betriebshoefe' }[tab]);
+    this.help.setAnchor({ firma: 'firmendaten', steuern: 'steuersaetze', nummern: 'nummernkreise', preise: 'preise', betriebshoefe: 'betriebshoefe', dienste: 'dienste' }[tab]);
     this.message.set(null);
     this.fieldErrors.set({});
   }

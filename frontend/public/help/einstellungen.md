@@ -84,6 +84,16 @@ Der Reiter **Betriebshöfe** enthält die Standorte Ihrer Firma, von denen aus F
 - **Ändern:** Ändern Sie nur den Namen, wird nichts neu gesucht. Ändern Sie die Adresse, wird der neue Ort gesucht.
 - **Dieselbe Adresse nie zweimal:** Eine Adresse, die schon einmal gesucht wurde, wird nicht erneut beim Adressdienst angefragt, auch nicht bei einem anderen Betriebshof.
 
+## Dienste {#dienste}
+
+Unter **Dienste** (nur Administratoren) tragen Sie den Zugangsschlüssel für den Routing- und Adressdienst ein, den die Streckenplanung nutzt.
+
+- **Eigener Schlüssel:** Ihre Firma hat ein eigenes Kontingent und teilt es mit niemandem. Läuft der Schlüssel ab oder ist das Kontingent erschöpft, betrifft das nur Ihre Firma, und Sie beheben es hier selbst.
+- **Ohne eigenen Schlüssel** gilt als Rückfall der allgemeine Schlüssel des Servers. Den teilen sich mehrere Firmen, das Kontingent kann dann schneller erschöpft sein.
+- **Verbindung prüfen** schickt eine kleine Anfrage und sagt, ob der Schlüssel funktioniert, oder nennt die Ursache. Das zählt eine Anfrage vom Kontingent.
+- Der Schlüssel wird verschlüsselt gespeichert und nie wieder angezeigt, nur seine letzten vier Zeichen. Er steht auch nicht im Änderungsprotokoll.
+- Einen Schlüssel erhalten Sie kostenlos bei openrouteservice.org (Konto, Dashboard, Token).
+
 ## Preise {#preise}
 
 Der Reiter **Preise** legt fest, wie die Software beim [Angebot aus der Streckenplanung](/hilfe/strecken#angebot-aus-tour) die Positionen vorschlägt. Alle Preise sind netto, ein Preis von **0** schaltet den Bestandteil aus. Nur der Administrator kann sie ändern.

@@ -5,6 +5,8 @@ export interface ConfirmOptions {
   title: string;
   message: string;
   confirmLabel?: string;
+  /** Beschriftung der zweiten Taste, wenn „Abbrechen“ nicht passt */
+  cancelLabel?: string;
   /** Rot hervorgehoben bei unwiderruflichen Aktionen. */
   danger?: boolean;
 }
@@ -18,7 +20,7 @@ export interface ConfirmOptions {
     </div>
     <div class="modal-body" style="white-space: pre-line">{{ message }}</div>
     <div class="modal-footer">
-      <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss()">Abbrechen</button>
+      <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss()">{{ cancelLabel }}</button>
       <button type="button" class="btn" [class.btn-danger]="danger" [class.btn-primary]="!danger" (click)="modal.close(true)">
         {{ confirmLabel }}
       </button>
@@ -30,6 +32,7 @@ export class ConfirmModalComponent {
   @Input() title = '';
   @Input() message = '';
   @Input() confirmLabel = 'OK';
+  @Input() cancelLabel = 'Abbrechen';
   @Input() danger = false;
 }
 
@@ -44,6 +47,7 @@ export class ConfirmService {
       title: o.title,
       message: o.message,
       confirmLabel: o.confirmLabel ?? 'OK',
+      cancelLabel: o.cancelLabel ?? 'Abbrechen',
       danger: o.danger ?? false,
     });
     return ref.result.then(

@@ -15,6 +15,9 @@ class RoutingException extends RuntimeException
     public const REJECTED = 'rejected';             // Anfrage vom Dienst abgelehnt (zu lang, zu viele Punkte ...)
     public const LIMIT = 'limit';                   // Kontingent oder Anfragegrenze erreicht
     public const UNAVAILABLE = 'unavailable';       // Dienst antwortet nicht oder mit einem Fehler
+    public const OUTDATED = 'outdated';             // Adresse des Dienstes abgeschaltet oder verlegt (410, Weiterleitung): nur der Betreiber kann es beheben
+    public const AUTH = 'auth';                     // Zugangsschlüssel abgelehnt (abgelaufen, gesperrt, falsch)
+    public const UNEXPECTED = 'unexpected';         // Anfrage vom Dienst nicht verstanden oder Antwort nicht lesbar: Fehler der Anwendung
 
     public function __construct(string $message, public readonly string $kind)
     {

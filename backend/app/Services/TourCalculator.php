@@ -25,12 +25,12 @@ class TourCalculator
 
     /**
      * @param  list<array{lat: float|int|string, lon: float|int|string, label?: ?string, dwell_minutes?: ?int, driver_free?: ?bool}>  $stops  Halte in Reihenfolge; Start und Ziel eingeschlossen
-     * @param  array{lat: float|int|string, lon: float|int|string, label?: ?string}|null  $depot  Betriebshof; Leerfahrten dorthin und zurück
+     * @param  array{lat: float|int|string, lon: float|int|string, label?: ?string}|null  $depot  Betriebshof; Leerfahrten von dort zum Start ($fromDepot) und am Ende zurück ($returnToDepot)
      * @return array<string, mixed>
      *
      * @throws RoutingException
      */
-    public function calculate(array $stops, ?array $depot = null, bool $returnToDepot = true, ?Vehicle $vehicle = null, ?CarbonImmutable $startAt = null, int $extendedDays = 0, bool $optimize = false): array
+    public function calculate(array $stops, ?array $depot = null, bool $returnToDepot = true, ?Vehicle $vehicle = null, ?CarbonImmutable $startAt = null, int $extendedDays = 0, bool $optimize = false, bool $fromDepot = true): array
     {
         // Reihenfolge der Zwischenhalte (Halte mit "movable") nach kürzester Fahrzeit; Von und Nach bleiben stehen.
         $order = array_keys($stops);
@@ -42,7 +42,7 @@ class TourCalculator
 
         // Alle Punkte in Fahrtreihenfolge. Das Depot hat keinen Halt (Aufenthalt 0).
         $points = [];
-        if ($depot) {
+        if ($depot && $fromDepot) {
             $points[] = $this->point($depot, 'Betriebshof', true);
         }
         foreach ($stops as $i => $stop) {

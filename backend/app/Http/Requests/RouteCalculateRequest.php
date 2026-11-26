@@ -32,6 +32,7 @@ class RouteCalculateRequest extends FormRequest
             'depot.lat' => ['required_with:depot', 'numeric', 'between:-90,90'],
             'depot.lon' => ['required_with:depot', 'numeric', 'between:-180,180'],
             'depot.label' => ['nullable', 'string', 'max:255'],
+            'from_depot' => ['nullable', 'boolean'],
             'return_to_depot' => ['nullable', 'boolean'],
             'vehicle_id' => ['nullable', 'uuid', Rule::exists('vehicles', 'id')->whereNull('deleted_at')],
             'start_at' => ['nullable', 'date'],
@@ -42,7 +43,7 @@ class RouteCalculateRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $v) {
-            $points = count((array) $this->input('stops')) + ($this->input('depot') ? ($this->boolean('return_to_depot', true) ? 2 : 1) : 0);
+            $points = count((array) $this->input('stops')) + ($this->input('depot') ? (int) $this->boolean('from_depot', true) + (int) $this->boolean('return_to_depot', true) : 0);
             if ($points < 2 && ! $v->errors()->has('stops')) {
                 $v->errors()->add('stops', 'Für eine Route braucht es mindestens zwei Orte (mit Betriebshof reicht ein Halt).');
             }

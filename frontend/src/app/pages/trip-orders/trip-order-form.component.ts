@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { BackNavigation } from '../../core/back-navigation.service';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { DriverChoice, DriverService } from '../../core/driver.service';
@@ -36,6 +37,7 @@ export class TripOrderFormComponent implements OnInit {
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private backNav = inject(BackNavigation);
   private auth = inject(AuthService);
   private confirm = inject(ConfirmService);
   private memory = inject(ListMemory);
@@ -262,13 +264,13 @@ export class TripOrderFormComponent implements OnInit {
     if (this.form.dirty) {
       const ok = await this.confirm.ask({
         title: 'Änderungen verwerfen',
-        message: 'Es gibt ungespeicherte Änderungen. Trotzdem zurück zur Liste?',
+        message: 'Es gibt ungespeicherte Änderungen. Trotzdem zurück?',
         confirmLabel: 'Verwerfen',
         danger: true,
       });
       if (!ok) return;
     }
-    this.router.navigate(['/fahrtauftraege']);
+    void this.backNav.back('/fahrtauftraege');
   }
 
   /** Eingaben verwerfen, Formular auf den gespeicherten Stand zurücksetzen. */

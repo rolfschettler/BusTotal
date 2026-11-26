@@ -19,7 +19,7 @@ class Trip extends Model
     use Auditable, HasUuids;
 
     protected $fillable = [
-        'title', 'trip_kind', 'vehicle_type', 'vehicle_count', 'depot_id', 'return_to_depot', 'round_trip',
+        'title', 'trip_kind', 'vehicle_type', 'vehicle_count', 'depot_id', 'from_depot', 'return_to_depot', 'round_trip',
         'loaded_km', 'empty_km', 'drive_s', 'elapsed_s', 'days', 'route', 'geometry',
     ];
 
@@ -34,6 +34,7 @@ class Trip extends Model
         return [
             'trip_kind' => TripKind::class,
             'vehicle_type' => VehicleType::class,
+            'from_depot' => 'boolean',
             'return_to_depot' => 'boolean',
             'round_trip' => 'boolean',
             'loaded_km' => 'float',

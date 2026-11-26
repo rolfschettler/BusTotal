@@ -1,8 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../../core/auth.service';
 import { httpErrorText } from '../../core/http-error';
 import { JourneyRow, JourneyService } from '../../core/journey.service';
 import { ListMemory } from '../../core/list-memory.service';
@@ -25,7 +26,7 @@ export const STAGE_LABELS: Record<string, string> = {
 /**
  * Reisen nach dem Tabellen-Muster (docs/ClaudeCodePatterns/TableViewPattern.md). Der SERVER sucht und blättert.
  * Abweichung vom Muster wie bei den Belegen: feste Reihenfolge (neueste zuerst), keine sortierbaren Spaltenköpfe.
- * Reisen werden nicht von Hand angelegt: Sie entstehen mit dem ersten Angebot aus der Streckenplanung.
+ * Eine Reise wird von Hand geplant („Neue Reise planen“, nur Admin und Disponent) oder entsteht mit dem Kurzweg „Angebot erstellen“.
  */
 @Component({
   selector: 'app-journey-list',
@@ -36,6 +37,10 @@ export const STAGE_LABELS: Record<string, string> = {
 export class JourneyListComponent implements OnInit {
   private api = inject(JourneyService);
   private memory = inject(ListMemory);
+  private auth = inject(AuthService);
+
+  /** Reisen planen dürfen Admin und Disponent (der Server prüft es ebenfalls). */
+  canPlan = computed(() => ['admin', 'disponent'].includes(this.auth.user()?.role ?? ''));
 
   q = '';
   page = signal(1);

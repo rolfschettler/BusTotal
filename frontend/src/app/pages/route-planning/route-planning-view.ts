@@ -102,9 +102,9 @@ export function moveItem<T>(list: readonly T[], index: number, delta: number): T
   return copy;
 }
 
-/** Reicht die Eingabe für eine Berechnung? Wie auf dem Server: mindestens zwei Orte, mit Betriebshof und Rückfahrt genügt ein Halt. */
-export function canCalculate(stopCount: number, hasDepot: boolean, returnToDepot: boolean): boolean {
-  return stopCount + (hasDepot ? (returnToDepot ? 2 : 1) : 0) >= 2;
+/** Reicht die Eingabe für eine Berechnung? Wie auf dem Server: mindestens zwei Orte, Anfahrt und Rückfahrt zum Betriebshof zählen mit. */
+export function canCalculate(stopCount: number, hasDepot: boolean, returnToDepot: boolean, fromDepot = true): boolean {
+  return stopCount + (hasDepot ? Number(fromDepot) + Number(returnToDepot) : 0) >= 2;
 }
 
 /** Aufenthalt in Minuten, ganzzahlig und 0 bis 1440 (der Server lehnt alles andere ab). */
@@ -117,6 +117,8 @@ export interface PlanInput {
   stops: PlannedStop[];
   depot: Place | null;
   returnToDepot: boolean;
+  /** Anfahrt vom Betriebshof zum ersten Halt (Vorgabe: ja) */
+  fromDepot?: boolean;
   vehicleId: string;
   /** Wert eines datetime-local-Feldes ("2027-03-01T06:00", Ortszeit des Browsers) oder leer */
   startAt: string;
@@ -140,6 +142,7 @@ export function toRequest(input: PlanInput): RouteRequest {
   };
   if (input.depot) {
     request.depot = { lat: input.depot.lat, lon: input.depot.lon, label: input.depot.label };
+    request.from_depot = input.fromDepot ?? true;
     request.return_to_depot = input.returnToDepot;
   }
   if (input.optimize) request.optimize = true;

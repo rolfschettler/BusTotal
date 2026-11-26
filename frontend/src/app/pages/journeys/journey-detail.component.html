@@ -34,41 +34,86 @@
         <div class="form-text">Zum Beispiel „Klassenfahrt Realschule Mai“. Der Name erscheint in der Liste, in der Suche und oben im Beleg, aber nicht auf Belegen und PDFs.</div>
       </div>
     }
-    <p class="mb-0 small text-body-secondary">
-      @if (j.customer; as c) {
-        Kunde: <a [routerLink]="['/kunden', c.id]">{{ c.display_name }}</a>
-      } @else {
-        Noch kein Kunde gewählt (im Angebot wählen)
-      }
+    @if (j.customer && !customerEditing()) {
+      <p class="mb-0 small text-body-secondary">
+        Kunde: <a [routerLink]="['/kunden', j.customer.id]">{{ j.customer.display_name }}</a>
+        @if (canPlan()) { <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline" (click)="customerEditing.set(true)">Ändern</button> }
+        <app-help-link topic="belege" anchor="reisen" label="Reisen" />
+      </p>
+    } @else if (canPlan()) {
+      <div style="max-width: 40rem">
+        <label class="form-label small mb-1" for="journeyCustomer">Kunde</label>
+        <app-customer-picker inputId="journeyCustomer" [customer]="null" (picked)="pickCustomer($event)" hint="Freiwillig. Das Angebot übernimmt den Kunden; sonst wählen Sie ihn später im Angebot." />
+        @if (customerEditing()) { <button type="button" class="btn btn-link btn-sm p-0 mt-1" (click)="customerEditing.set(false)">Abbrechen</button> }
+      </div>
+    } @else {
+      <p class="mb-0 small text-body-secondary">Noch kein Kunde gewählt <app-help-link topic="belege" anchor="reisen" label="Reisen" /></p>
+    }
+    <!-- Reisezeitraum: aus den Fahrtdaten der Strecken, steht immer da (auch ohne Kunde) -->
+    <p class="mb-0 mt-1 small">
+      <strong>Reisedatum:</strong>
       @if (j.date_from) {
-        · {{ j.date_from | date: 'dd.MM.yyyy' }}@if (j.date_to && j.date_to !== j.date_from) { – {{ j.date_to | date: 'dd.MM.yyyy' }} }
+        {{ j.date_from | date: 'dd.MM.yyyy' }}@if (j.date_to && j.date_to !== j.date_from) { – {{ j.date_to | date: 'dd.MM.yyyy' }} }
+      } @else {
+        <span class="text-body-secondary">noch keins. Es ergibt sich aus den Fahrtdaten der Strecken: „Datum eintragen“ bei einer Strecke.</span>
       }
-      <app-help-link topic="belege" anchor="reisen" label="Reisen" />
     </p>
   </div>
+
+  @if (message(); as m) {
+    <div class="alert py-2" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
+  }
 
   <!-- Nächster Schritt: ein Satz und eine Taste, die zum richtigen Beleg führt -->
   <div class="alert alert-info d-flex flex-wrap align-items-center gap-2 py-2" role="note">
     <i class="bi bi-arrow-right-circle" aria-hidden="true"></i>
     <span><strong>Nächster Schritt:</strong> {{ nextStep() }}</span>
-    @if (latest(); as d) {
-      @if (d.type === 'auftragsbestaetigung' && orders()?.to_plan) {
-        <a class="btn btn-sm btn-primary ms-auto" [routerLink]="['/fahrtauftraege']" [queryParams]="{ journey_id: j.id }">Fahrtaufträge öffnen</a>
-        <a class="btn btn-sm btn-outline-secondary" [routerLink]="['/belege', d.id]">{{ typeLabel(d.type) }} öffnen</a>
+    @if (j.quote.draft_id; as draftId) {
+      <!-- Entwurf vorhanden: auf den Stand der Strecken bringen oder öffnen -->
+      @if (j.quote.can_sync && canPlan()) {
+        <button type="button" class="btn btn-sm btn-primary ms-auto" [disabled]="busy()" (click)="quote()">
+          @if (busy()) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+          Angebot aktualisieren ({{ j.quote.pending }})
+        </button>
+        <a class="btn btn-sm btn-outline-secondary" [routerLink]="['/belege', draftId]">Angebot ansehen</a>
       } @else {
-        <a class="btn btn-sm btn-primary ms-auto" [routerLink]="['/belege', d.id]">{{ typeLabel(d.type) }} öffnen</a>
+        <a class="btn btn-sm btn-primary ms-auto" [routerLink]="['/belege', draftId]">Angebot öffnen</a>
       }
+    } @else if (j.quote.can_create && canPlan()) {
+      <button type="button" class="btn btn-sm btn-primary ms-auto" [disabled]="busy()" (click)="quote()">
+        @if (busy()) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
+        Angebot erstellen
+      </button>
     } @else {
-      <a class="btn btn-sm btn-primary ms-auto" routerLink="/streckenplanung">Zur Streckenplanung</a>
+      @if (latest(); as d) {
+        @if (d.type === 'auftragsbestaetigung' && orders()?.to_plan) {
+          <a class="btn btn-sm btn-primary ms-auto" [routerLink]="['/fahrtauftraege']" [queryParams]="{ journey_id: j.id }">Fahrtaufträge öffnen</a>
+          <a class="btn btn-sm btn-outline-secondary" [routerLink]="['/belege', d.id]">{{ typeLabel(d.type) }} öffnen</a>
+        } @else {
+          <a class="btn btn-sm btn-primary ms-auto" [routerLink]="['/belege', d.id]">{{ typeLabel(d.type) }} öffnen</a>
+        }
+      }
     }
   </div>
 
   <div class="form-area mb-3">
-    <div class="section-title">Strecken</div>
+    <div class="section-title d-flex align-items-center">
+      <span>Strecken</span>
+      @if (canPlan()) {
+        <a class="btn btn-sm btn-outline-primary ms-auto text-nowrap" routerLink="/streckenplanung" [queryParams]="{ journey: j.id }">
+          <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Strecke hinzufügen
+        </a>
+      }
+    </div>
     <div class="table-responsive">
       <table class="table table-sm align-middle bg-white border mb-0">
         <thead>
-          <tr><th scope="col">Art</th><th scope="col">Strecke</th><th scope="col">Fahrzeuge</th><th scope="col" class="text-end">Kilometer</th><th scope="col" class="text-end">Lenkzeit</th><th scope="col" class="text-end">Tage</th></tr>
+          <tr>
+            <th scope="col">Art</th><th scope="col">Strecke</th><th scope="col">Fahrzeuge</th>
+            <th scope="col" class="text-end">Kilometer</th><th scope="col" class="text-end">Lenkzeit</th><th scope="col" class="text-end">Tage</th>
+            <th scope="col">Angebot</th>
+            @if (canPlan()) { <th scope="col"><span class="visually-hidden">Aktionen</span></th> }
+          </tr>
         </thead>
         <tbody>
           @for (s of j.sections; track s.id) {
@@ -76,8 +121,12 @@
               <td class="text-nowrap">{{ s.kind_label }}</td>
               <td>
                 {{ s.title }}
+                @if (s.start_on) { <div class="small text-body-secondary">{{ s.start_on | date: 'dd.MM.yyyy' }}</div> }
+                @else if (canPlan()) {
+                  <a class="d-block small" routerLink="/streckenplanung" [queryParams]="{ journey: j.id, section: s.id, focus: 'date' }">Datum eintragen</a>
+                } @else { <div class="small text-body-secondary">Kein Datum</div> }
                 @if (s.own) {
-                  <div class="small text-body-secondary">Eigene Angaben, ohne Tour</div>
+                  <div class="small text-body-secondary">Von Hand eingetragen, ohne Tour</div>
                 }
                 @if (s.trip; as t) {
                   <div class="small text-body-secondary">{{ t.from }} → {{ t.to }}</div>
@@ -93,14 +142,38 @@
               <td class="text-end text-nowrap">@if (s.trip; as t) { {{ t.loaded_km + t.empty_km | number: '1.0-1' : 'de-DE' }} km } @else if (s.own) { {{ s.own.loaded_km | number: '1.0-1' : 'de-DE' }} km }</td>
               <td class="text-end text-nowrap">@if (s.trip; as t) { {{ duration(t.drive_s) }} } @else if (s.own) { {{ duration(s.own.drive_s) }} }</td>
               <td class="text-end">@if (s.trip; as t) { {{ t.days }} } @else if (s.own) { {{ s.own.days }} }</td>
+              <td class="text-nowrap">
+                @switch (stateOf(s.id)) {
+                  @case ('neu') { <span class="badge text-bg-info" title="Diese Strecke ist noch nicht im Angebot.">neu</span> }
+                  @case ('geaendert') {
+                    <span class="badge text-bg-warning" [title]="j.quote.draft_id
+                      ? 'Diese Strecke wurde geändert. Im Angebot stehen noch die alten Preise. „Angebot aktualisieren“ rechnet sie neu.'
+                      : 'Diese Strecke wurde nach dem Festschreiben geändert. Das festgeschriebene Angebot behält seinen Stand.'">geändert</span>
+                  }
+                  @case ('aktuell') { <span class="badge text-bg-light border" title="Das Angebot passt zu dieser Strecke.">aktuell</span> }
+                }
+              </td>
+              @if (canPlan()) {
+                <td class="text-end text-nowrap">
+                  <a class="btn-action edit" title="Strecke ändern" [attr.aria-label]="s.title + ' ändern'"
+                     routerLink="/streckenplanung" [queryParams]="{ journey: j.id, section: s.id }"><i class="bi bi-pencil"></i></a>
+                  <button type="button" class="btn-action delete" title="Strecke entfernen" [attr.aria-label]="s.title + ' entfernen'" [disabled]="busy()"
+                          (click)="removeSection(s)"><i class="bi bi-trash"></i></button>
+                </td>
+              }
             </tr>
+          } @empty {
+            <tr><td [attr.colspan]="canPlan() ? 8 : 7" class="text-center text-secondary py-4 small">Noch keine Strecke. Fügen Sie die erste hinzu.</td></tr>
           }
         </tbody>
       </table>
     </div>
-    <div class="form-text">Bei Strecken mit „Stand aus …“ zeigen Kilometer, Lenkzeit und Tage, was im festgeschriebenen Beleg steht, auch wenn die Tour im Archiv inzwischen geändert wurde. Strecken fügen Sie im Entwurf des Angebots hinzu („Weitere Strecke hinzufügen“). Die Touren selbst stehen im <a routerLink="/tour-archiv">Tour-Archiv</a>.</div>
-  </div>
 
+    <div class="form-text">
+      Strecken planen Sie hier, nicht im Angebot. Das Angebot entsteht aus den Strecken. Ändern Sie eine Strecke, rechnet „Angebot aktualisieren“ nur diese Strecke neu, die anderen bleiben, wie sie sind.
+      Bei Strecken mit „Stand aus …“ zeigen Kilometer, Lenkzeit und Tage, was im festgeschriebenen Beleg steht. Wiederverwendbare Vorlagen stehen im <a routerLink="/tour-archiv">Tour-Archiv</a>.
+    </div>
+  </div>
   @if (orders(); as o) {
     @if (o.count > 0 || o.check) {
       <div class="form-area mb-3">
@@ -155,4 +228,19 @@
       <div class="form-text">Stand der Reise: {{ stageLabels[st] }}@if (j.amount) { über {{ amount(j.amount) }} brutto }. Der Stand folgt dem weitestgehenden gültigen Beleg, gespeichert wird er nicht.</div>
     }
   </div>
+
+  @if (canPlan()) {
+    <div class="d-flex align-items-center gap-3 mb-3">
+      <button type="button" class="btn btn-outline-danger" [disabled]="busy() || !canDelete()" (click)="deleteJourney()">
+        <i class="bi bi-trash me-1" aria-hidden="true"></i>Reise löschen
+      </button>
+      <span class="form-text m-0">
+        @if (canDelete()) {
+          Löscht die Reise mit ihren Strecken@if (j.documents.length) { und dem Angebot, solange es nicht festgeschrieben ist }.
+        } @else {
+          Nicht möglich: Es gibt festgeschriebene Belege. Stornieren Sie den Beleg, wenn die Reise nicht stattfindet.
+        }
+      </span>
+    </div>
+  }
 }

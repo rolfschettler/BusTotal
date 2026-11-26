@@ -38,6 +38,7 @@ class CustomerController extends Controller
             'q' => ['nullable', 'string', 'max:100'],
             'type' => ['nullable', 'string'],
             'archived' => ['nullable', 'boolean'],
+            'with_archived' => ['nullable', 'boolean'],
             'sort' => ['nullable', Rule::in(array_keys(self::SORTS))],
             'dir' => ['nullable', Rule::in(['asc', 'desc'])],
         ]);
@@ -46,6 +47,9 @@ class CustomerController extends Controller
 
         if ($request->boolean('archived')) {
             $query->onlyTrashed();
+        } elseif ($request->boolean('with_archived')) {
+            // aktive und archivierte Kunden zusammen (Kundenauswahl in der Belegliste)
+            $query->withTrashed();
         }
 
         if ($type = $request->query('type')) {

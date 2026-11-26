@@ -31,9 +31,33 @@
 
   <div class="filter-bar" appStickyFilterBar>
     <div class="row g-2 align-items-center">
-      <div class="col-12 col-sm-6 col-lg-4">
+      <div class="col-12 col-sm-6 col-lg-4 position-relative">
+        @if (customer(); as c) {
+          <div class="input-group input-group-sm">
+            <input class="form-control filter-active" [value]="c.display_name + ' (' + c.customer_number + ')'" readonly aria-label="Gewählter Kunde" />
+            <button type="button" class="btn btn-outline-secondary" (click)="clearCustomer()" title="Auswahl aufheben, alle Kunden zeigen">
+              <i class="bi bi-x-lg"></i><span class="ms-1">Ändern</span>
+            </button>
+          </div>
+        } @else {
+          <input type="search" class="form-control form-control-sm" autocomplete="off"
+                 placeholder="Kunde suchen: Nachname, Kundennr., Ort …" title="Mit Komma nach Nachname und Vorname: Mustermann,Max" aria-label="Kunde suchen"
+                 [value]="customerQuery()" (input)="onCustomerSearch($any($event.target).value)" />
+          @if (customerHits().length) {
+            <div class="list-group position-absolute shadow" style="z-index: 20; left: 0; right: 0">
+              @for (h of customerHits(); track h.id) {
+                <button type="button" class="list-group-item list-group-item-action" (click)="pickCustomer(h)">
+                  <app-customer-name [customer]="h" [query]="customerQuery()" [showNumber]="true" />
+                  @if (h.archived) { <span class="badge text-bg-secondary">archiviert</span> }
+                </button>
+              }
+            </div>
+          }
+        }
+      </div>
+      <div class="col-12 col-sm-6 col-lg-3">
         <input type="search" class="form-control form-control-sm" [class.filter-active]="q.trim() !== ''"
-               placeholder="Suche: Belegnr., Nachname, Betreff, Ort …" title="Mit Komma nach Nachname und Vorname: Mustermann,Max" aria-label="Suche"
+               placeholder="Belegnr. oder Betreff" aria-label="Belegnummer oder Betreff"
                [(ngModel)]="q" (ngModelChange)="onSearch()" />
       </div>
       <div class="col-6 col-sm-auto">
@@ -75,6 +99,7 @@
         <col style="width:130px">  <!-- Nr. -->
         <col style="width:170px">  <!-- Art -->
         <col style="width:228px">  <!-- Kunde -->
+        <col style="width:220px">  <!-- Betreff -->
         <col style="width:100px">  <!-- Datum -->
         <col style="width:110px">  <!-- Brutto -->
         <col style="width:150px">  <!-- Status und Zahlstand -->
@@ -89,6 +114,7 @@
               (click)="sort('type')" (keydown.enter)="sort('type')">Art <i class="bi {{ sortIcon('type') }}"></i></th>
           <th class="sortable" [class.sort-active]="isSorted('customer')" [attr.aria-sort]="ariaSort('customer')" tabindex="0"
               (click)="sort('customer')" (keydown.enter)="sort('customer')">Kunde <i class="bi {{ sortIcon('customer') }}"></i></th>
+          <th>Betreff</th>
           <th class="sortable" [class.sort-active]="isSorted('date')" [attr.aria-sort]="ariaSort('date')" tabindex="0"
               (click)="sort('date')" (keydown.enter)="sort('date')">Datum <i class="bi {{ sortIcon('date') }}"></i></th>
           <th class="sortable text-end" [class.sort-active]="isSorted('gross')" [attr.aria-sort]="ariaSort('gross')" tabindex="0"
@@ -98,9 +124,9 @@
         </tr>
       </thead>
 
-      <tbody>
+      <tbody [class.by-chain]="order === 'chain'">
         @for (d of rows(); track d.id; let i = $index) {
-          <tr (click)="select(d.id)" [class.group-start]="groupStart(i)" [class.row-current]="d.id === currentId()" [appRevealCurrent]="d.id === currentId()">
+          <tr (click)="select(d.id)" [class.group-start]="groupStart(i)" [class.chain-alt]="order === 'chain' && chainAlt()[i]" [class.row-current]="d.id === currentId()" [appRevealCurrent]="d.id === currentId()">
             <td class="col-actions">
               <a class="btn-action edit" [routerLink]="['/belege', d.id]" title="Öffnen" [attr.aria-label]="typeLabel(d.type) + ' öffnen'">
                 <i class="bi bi-pencil"></i>
@@ -124,13 +150,13 @@
               }
             </td>
             <td [title]="recipientName(d)">
-              <app-customer-name [customer]="d.recipient ?? d.customer" [query]="shownQuery()" />
-              @if (d.subject) {
-                <div class="small text-body-secondary text-truncate"><app-highlight [text]="d.subject" [query]="shownQuery()" mode="start" /></div>
-              }
+              <app-customer-name [customer]="d.customer ?? d.recipient" [query]="shownQuery()" [showStreet]="true" />
               @for (h of hiddenHits(d); track h.label) {
                 <div class="small text-body-secondary">Treffer in {{ h.label }}: <app-highlight [text]="h.value" [query]="shownQuery()" mode="start" /></div>
               }
+            </td>
+            <td class="text-truncate" [title]="d.subject ?? ''">
+              @if (d.subject) { <app-highlight [text]="d.subject" [query]="shownQuery()" mode="start" /> }
             </td>
             <td class="dim">{{ d.document_date ? (d.document_date | date: 'dd.MM.yyyy') : '' }}</td>
             <td class="text-end">{{ amount(d.gross_total) }}</td>
@@ -157,7 +183,7 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="7" class="text-center text-secondary py-5 small">
+            <td colspan="8" class="text-center text-secondary py-5 small">
               {{ loaded() ? 'Keine Belege gefunden.' : 'Daten werden geladen …' }}
             </td>
           </tr>

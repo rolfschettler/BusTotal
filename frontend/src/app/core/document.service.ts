@@ -153,6 +153,8 @@ export interface BusDocument {
   } | null;
   /** Stufe in der Belegkette (0 = Ursprung), nur in der Ansicht „je Kunde“ */
   chain_depth?: number;
+  /** Ursprungsbeleg der Kette (nur in der Ansicht „je Kunde“): Belege mit gleichem Wert gehören zu einer Kette. */
+  chain_root_id?: string;
   source?: { id: string; type: DocumentTypeValue; number: string | null } | null;
   cancelled_by?: { id: string; number: string | null } | null;
   /** Arten, die es aus diesem Beleg nur einmal geben darf, mit dem schon vorhandenen Beleg (statt der Taste „erstellen“) */
@@ -178,9 +180,10 @@ export class DocumentService {
   private http = inject(HttpClient);
   private base = '/api/documents';
 
-  list(opts: { q: string; type: string; status: string; page: number; order?: 'column' | 'chain'; sort?: string; dir?: 'asc' | 'desc'; locate?: string | null }) {
+  list(opts: { q: string; customerId?: string; type: string; status: string; page: number; order?: 'column' | 'chain'; sort?: string; dir?: 'asc' | 'desc'; locate?: string | null }) {
     let params = new HttpParams().set('page', opts.page);
     if (opts.q) params = params.set('q', opts.q);
+    if (opts.customerId) params = params.set('customer_id', opts.customerId);
     if (opts.type) params = params.set('type', opts.type);
     if (opts.status) params = params.set('status', opts.status);
     if (opts.locate) params = params.set('locate', opts.locate);
@@ -221,14 +224,6 @@ export class DocumentService {
   }
   cancel(id: string) {
     return this.http.post<BusDocument>(`${this.base}/${id}/cancel`, {});
-  }
-  /** Eine weitere Strecke der Reise in den Entwurf aufnehmen; der Server berechnet die Positionen je Fahrzeugtyp. */
-  addSection(id: string, data: SectionInput) {
-    return this.http.post<BusDocument>(`${this.base}/${id}/sections`, data);
-  }
-  /** Eine Strecke mit ihren Positionen aus dem Entwurf nehmen. */
-  removeSection(id: string, sectionId: string) {
-    return this.http.delete<BusDocument>(`${this.base}/${id}/sections/${sectionId}`);
   }
   /** `percent` gilt nur für die Anzahlungsrechnung (Anteil am Auftrag, Vorbelegung 30). */
   convert(id: string, type: DocumentTypeValue, percent?: number) {
@@ -289,18 +284,6 @@ export interface OwnFigures {
   loaded_km: number;
   drive_s: number;
   days: number;
-}
-
-/**
- * Eine weitere Strecke für den Entwurf: Art, Tour aus dem Archiv ODER eigene Angaben (Bezeichnung, Kilometer, Fahrzeit in Minuten,
- * Tage), Fahrzeugbedarf und freiwillig das Fahrtdatum (für Zuschläge).
- */
-export interface SectionInput {
-  kind: SectionKindValue;
-  trip_id?: string;
-  own?: { title: string; loaded_km: number; drive_minutes: number; days: number };
-  start_on?: string | null;
-  vehicles: { type: string; count: number }[];
 }
 
 /** Die beim Festschreiben festgehaltene Fahrtbeschreibung eines Belegs. Spätere Änderungen am Tour-Archiv ändern sie nicht. */

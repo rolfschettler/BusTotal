@@ -6,6 +6,7 @@ export interface NameParts {
   company_name?: string | null;
   first_name?: string | null;
   last_name?: string | null;
+  street?: string | null;
   postal_code?: string | null;
   city?: string | null;
   customer_number?: string | null;
@@ -53,6 +54,8 @@ export class CustomerNameComponent {
   showNumber = input(false);
   /** Ort in Zeile 2 mitzeigen (aus, wenn die Liste dafür eine eigene Spalte hat) */
   showPlace = input(true);
+  /** Straße vor PLZ und Ort mitzeigen (Anschrift, wie sie auf dem Beleg steht) */
+  showStreet = input(false);
 
   protected c = computed<NameParts>(() => this.customer() ?? {});
 
@@ -65,6 +68,7 @@ export class CustomerNameComponent {
     const c = this.c();
     const parts: string[] = [];
     if (this.hasPerson() && c.company_name) parts.push(c.company_name);
+    if (this.showStreet() && c.street) parts.push(c.street);
     const place = [c.postal_code, c.city].filter(Boolean).join(' ');
     if (this.showPlace() && place) parts.push(place);
     if (this.showNumber() && c.customer_number) parts.push(c.customer_number);

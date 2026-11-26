@@ -133,8 +133,10 @@ Seite `/streckenplanung` (Menü „Planung“, nur Admin und Disponent), Hilfeth
   verschieben, Anfrage bauen) mit Testfällen in `route-planning-view.spec.ts` (lauffähig mit `ng test` bzw. ohne Browser per Hilfsskript).
 - `shared/map.component.ts`: Kartenbaustein mit Leaflet (nummerierte Markierungen als HTML-Symbole, Linienzug, Texte nur als Text).
 - `core/route.service.ts`: `geocode()` und `calculate()`; `VehicleService.choices()` (neu: `GET /api/vehicles/choices`, alle aktiven Fahrzeuge ohne Seiten).
-- Eingabe **Von – Über – Nach** (2026-11-22 vereinfacht auf Wunsch des Nutzers): je Ort ein Suchfeld (`place-search.component.ts`), Treffer direkt anklicken; Suche 0,5 s nach dem Tippen (ab 3 Zeichen) oder mit Enter, Treffer mit `<app-highlight>` markiert, gleiche Suchen kommen aus dem Zwischenspeicher. Ein gewählter Ort bleibt ein normales Eingabefeld: Klick markiert den Text, Tippen ersetzt ihn und startet die Suche neu (kein gesperrtes Feld). Betriebshof, Aufenthalte und lange Tage stehen eingeklappt unter „Weitere Angaben“. Marker: A = Von, Zahlen = Über, Z = Nach, H = Betriebshof. Die Halteliste baut `buildStops()` (mit Tests).
-- Der Betriebshof kommt aus den Einstellungen (Auswahl, Standard vorgewählt) oder als „Anderer Ort“ aus einem Textfeld. Ändert sich die Eingabe nach einer Berechnung, gilt das Ergebnis als „veraltet“.
+- Eingabe **Von – Über – Nach** (2026-11-22 vereinfacht auf Wunsch des Nutzers): je Ort ein Suchfeld (`place-search.component.ts`), Treffer direkt anklicken; Suche 0,5 s nach dem Tippen (ab 3 Zeichen) oder mit Enter, Treffer mit `<app-highlight>` markiert, gleiche Suchen kommen aus dem Zwischenspeicher. Ein gewählter Ort bleibt ein normales Eingabefeld: Klick markiert den Text, Tippen ersetzt ihn und startet die Suche neu (kein gesperrtes Feld). Der Betriebshof steht über „Von“ (seit 2026-11-26 immer sichtbar), Aufenthalte und lange Tage eingeklappt unter „Weitere Angaben“. Marker: A = Von, Zahlen = Über, Z = Nach, H = Betriebshof. Die Halteliste baut `buildStops()` (mit Tests).
+- Der Betriebshof kommt aus den Einstellungen (Auswahl, Standard vorgewählt; bei „Fahrt vor Ort“ aus einer Reise ist keiner vorgewählt) oder als „Anderer Ort“ aus einem Textfeld. Ändert sich die Eingabe nach einer Berechnung, gilt das Ergebnis als „veraltet“.
+- **Strecke einer Reise ändern** (2026-11-26): Aufruf `/streckenplanung?journey=…&section=…`. `journey_sections.plan` hält Betriebshof, Halte (`place_id`), Ergebnis, Kartenlinie und berechnete Werte (`SectionPlanService`), getrennt von `tour_data`, damit die Linie nie in einen Beleg gelangt. Die gültigen Werte stehen in `tour_data` (ohne Route in den Spalten der Strecke); weichen sie von `plan.calculated` ab, sind sie von Hand geändert. Frontend: `section-edit.ts` und `section-edit-fields.component.ts`. Seit Schritt 2 läuft auch „Strecke hinzufügen“ dort (`?journey=…`, ohne `section`); das frühere Formular auf der Reise gibt es nicht mehr. Tasten stehen nur in der Tastenleiste: freie Planung „Angebot erstellen“ (Menü „Zur Reise hinzufügen“), „Strecke berechnen“, rechts „Als Vorlage speichern“ und „Neu beginnen“. Anfahrt (`from_depot`, Vorgabe ja) und Rückfahrt zum Betriebshof sind getrennt wählbar; neue Rückfahrt: nur Rückfahrt, neue Fahrt vor Ort: ohne Betriebshof. Fehlerhafte Felder werden nach dem ersten Speichern-Versuch markiert (Formular-Muster).
+- **Seitenaufbau** (2026-11-26): Route neben Karte, darunter Ergebnis, dann zwei Formularflächen (freie Planung: Fahrt | Angebot und Vorlage; Strecke einer Reise: Angaben | Werte), Tastenleiste über die ganze Seite (Sonderfall im Formular-Muster).
 - **Kartenkacheln:** `core/map-config.ts` nutzt vorerst `tile.openstreetmap.org` (nur zum Entwickeln und Ausprobieren). **Vor dem Produktivbetrieb
   Anbieter wählen** und URL und Quellenangabe dort eintragen.
 - Im Browser mit erfundenen Antworten geprüft; nach dem Einbau von Leaflet `ng serve` neu starten (`angular.json` bindet das CSS ein).
@@ -175,3 +177,28 @@ nach Veröffentlichung); vor dem Produktivbetrieb erneut lesen. Das ist keine Re
 
 **Zur Postleitzahl:** Der Dienst wertet sie aus, wenn die Eingabe eine Adresse ist: „Marktplatz 1, 88400 Biberach an der Riß“ und „Hauptstraße 5, 91522 Ansbach“ treffen exakt
 (mit PLZ). Nur bei einem unvollständigen Ortsnamen („88400 biberach“) richten sich die Treffer allein nach dem Ortsnamen; „Biberach an der Riß 88400“ trifft eindeutig.
+
+## Fehlermeldungen des Routing- und Adressdienstes
+
+Jede Meldung sagt, **was passiert ist, wer handeln muss** und nennt bei Fehlern, die der Anwender nicht selbst beheben kann, einen **Fehlercode** (`[Fehlercode R410]`), den der Betreiber im Protokoll (`storage/logs`, „Routing-Dienst lehnt ab“) wiederfindet. Nie wieder „Fehler gemeldet“ ohne Ursache. Quelle: `OpenRouteService::failure()` und `send()`, Art in `RoutingException`.
+
+| Art (`reason`) | Auslöser | Wer handelt |
+|---|---|---|
+| `no_route`, `rejected` (422) | Ort nicht erreichbar, Route zu weit | Anwender ändert die Eingabe |
+| `limit` (424) | Tageskontingent oder Minutengrenze | warten |
+| `unavailable` (424) | Dienst langsam (`R-ZEIT`), vom Server nicht erreichbar (`R-VERBINDUNG`), Fehler beim Anbieter (`R5xx`) | später noch einmal, sonst Betreiber |
+| `outdated` (424) | Adresse abgeschaltet oder verlegt (`R410`, `R404` ohne Fehlerantwort, `R3xx`) | **Betreiber** (`ORS_BASE_URL` und Vorsätze in `config/services.php`) |
+| `auth` (424) | Schlüssel abgelehnt (`R401`, `R403`) | **Betreiber** |
+| `unexpected` (424) | Anfrage nicht angenommen (`R406` …) oder Antwort nicht lesbar (`R-FORMAT`) | **Betreiber**, Fehler der Anwendung |
+| `not_configured` (424) | kein Schlüssel eingetragen | **Betreiber** |
+
+**Seit 2026-11-24:** `api.openrouteservice.org` ist abgeschaltet (410). Der Dienst läuft unter `https://api.heigit.org` (`/openrouteservice/v2/…`, Adresssuche `/pelias/v1/search`), gleicher Schlüssel.
+
+## Zugangsschlüssel je Firma (Einstellungen › Dienste, seit 2026-11-25)
+
+- Jede Firma kann einen **eigenen Schlüssel** hinterlegen (Tabelle `service_credentials` in der Firmen-Datenbank, mit `APP_KEY` verschlüsselt, Modell `ServiceCredential`, **ohne** `Auditable`, damit der Schlüssel nie im Protokoll steht). Der **allgemeine Schlüssel** (`ORS_API_KEY` in der `.env`) gilt nur als **Rückfall**. Auflösung: `App\Services\ServiceKeys::resolve()`.
+- Oberfläche: nur Administratoren (`GET/PUT/DELETE /api/settings/services`, `POST …/test` = „Verbindung prüfen“, eine Anfrage ohne Zwischenspeicher). Der Schlüssel wird nie zurückgegeben, nur die letzten vier Zeichen. Ein neuer oder entfernter Schlüssel hebt die Kontingent-Sperre auf.
+- Die Fehlermeldungen unterscheiden „eigener Schlüssel“ (die Firma prüft Einstellungen › Dienste) und „allgemeiner Schlüssel“ (Betreiber).
+- **Spätere Option, ganz am Ende des Projekts:** Die Firma wählt den Dienst selbst (kostenlos openrouteservice oder z. B. HERE). Der Weg ist offen gehalten: Die Anwendung kennt nur `RoutingProvider` und `GeocodingProvider`, die Tabelle trägt das Feld `service`. Vorher klären: Lizenz von HERE zum dauerhaften Speichern der Orte (`places`) und die Fahrzeugmaße des Lkw-Profils.
+
+**„Angebot erstellen“ schreibt nichts ins Tour-Archiv (seit 2026-11-25).** Die Streckenplanung schickt die berechnete Tour mit (`tour` in `POST /api/quotes/from-tour`), die Strecke der Reise speichert sie als eigene Kopie (`TourSnapshotService::fromRequest`). `trip_id` wird nur mitgegeben, wenn die Tour unverändert aus dem Archiv kommt (Herkunft, kein Muss). Ins Archiv kommt eine Tour ausschließlich mit „Tour speichern“.

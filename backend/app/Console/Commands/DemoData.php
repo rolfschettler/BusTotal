@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Console\Commands\Concerns\SelectsTenant;
 use App\Services\DemoDataService;
+use App\Services\DemoDocumentService;
 use App\Services\DemoFleetService;
 use Illuminate\Console\Command;
 
@@ -12,13 +13,14 @@ use Illuminate\Console\Command;
  *
  *   php artisan bustotal:demo-daten                  200 Kunden, 14 Fahrzeuge, 20 Fahrer
  *   php artisan bustotal:demo-daten --art=fuhrpark   nur Fahrzeuge und Fahrer
+ *   php artisan bustotal:demo-daten --art=belege     10 Belegketten (Angebot bis Rechnung, Zahlungen, Storno) für die Demo-Kunden
  *   php artisan bustotal:demo-daten --anzahl=500     500 Kunden (die ersten 200 bleiben dieselben)
  *   php artisan bustotal:demo-daten --entfernen      entfernt alle Demo-Daten wieder (mit --art nur eine Art)
  */
 class DemoData extends Command
 {
     protected $signature = 'bustotal:demo-daten
-        {--art=alles : Was: kunden, fuhrpark oder alles}
+        {--art=alles : Was: kunden, fuhrpark, belege oder alles = Kunden und Fuhrpark (Belege nur mit --art=belege, brauchen Demo-Kunden)}
         {--anzahl=200 : Wie viele Demo-Kunden es insgesamt geben soll (1 bis 5000)}
         {--fahrzeuge=14 : Wie viele Demo-Fahrzeuge es insgesamt geben soll (0 bis 200)}
         {--fahrer=20 : Wie viele Demo-Fahrer es insgesamt geben soll (0 bis 500)}
@@ -30,20 +32,21 @@ class DemoData extends Command
 
     use SelectsTenant;
 
-    public function handle(DemoDataService $demo, DemoFleetService $fleet): int
+    public function handle(DemoDataService $demo, DemoFleetService $fleet, DemoDocumentService $documents): int
     {
         if ($code = $this->selectTenant()) {
             return $code;
         }
 
         $art = (string) $this->option('art');
-        if (! in_array($art, ['kunden', 'fuhrpark', 'alles'], true)) {
-            $this->error('--art muss kunden, fuhrpark oder alles sein.');
+        if (! in_array($art, ['kunden', 'fuhrpark', 'belege', 'alles'], true)) {
+            $this->error('--art muss kunden, fuhrpark, belege oder alles sein.');
 
             return self::FAILURE;
         }
-        $withCustomers = $art !== 'fuhrpark';
-        $withFleet = $art !== 'kunden';
+        $withCustomers = in_array($art, ['kunden', 'alles'], true);
+        $withFleet = in_array($art, ['fuhrpark', 'alles'], true);
+        $withDocuments = $art === 'belege';
 
         // Schutz: Auf dem echten Server sollen Demo-Kunden nicht versehentlich die Nummernkreise verbrauchen.
         if (app()->environment('production') && ! $this->option('force')) {
@@ -54,6 +57,16 @@ class DemoData extends Command
         }
 
         if ($this->option('entfernen')) {
+            if ($withDocuments && $documents->exists()) {
+                $this->error('Festgeschriebene Demo-Belege lassen sich nicht löschen (Absicht, GoBD). Zum Neubeginn die Firmen-Datenbank neu aufbauen.');
+
+                return self::FAILURE;
+            }
+            if ($withCustomers && $documents->exists()) {
+                $this->error('Demo-Kunden mit Belegen lassen sich nicht entfernen. Zum Neubeginn die Firmen-Datenbank neu aufbauen.');
+
+                return self::FAILURE;
+            }
             if ($withCustomers) {
                 $result = $demo->remove();
                 $this->info("{$result['removed']} Demo-Kunden entfernt.");
@@ -104,6 +117,14 @@ class DemoData extends Command
             $this->info("{$stats['vehicles']} Demo-Fahrzeuge und {$stats['drivers']} Demo-Fahrer angelegt, dazu {$stats['absences']} Abwesenheiten ({$stats['skipped']} waren schon vorhanden).");
             if ($stats['conflicts'] > 0) {
                 $this->warn("{$stats['conflicts']} übersprungen, weil Fuhrpark-/Personalnummer oder Kennzeichen schon an einen echten Datensatz vergeben sind.");
+            }
+        }
+        if ($withDocuments) {
+            if ($documents->exists()) {
+                $this->line('Es gibt schon Demo-Belege, es werden keine weiteren angelegt.');
+            } else {
+                $stats = $documents->generate();
+                $this->info("{$stats['chains']} Belegketten mit {$stats['documents']} Belegen angelegt ({$stats['skipped']} Ketten übersprungen).");
             }
         }
         $this->line('Entfernen: php artisan bustotal:demo-daten --entfernen');

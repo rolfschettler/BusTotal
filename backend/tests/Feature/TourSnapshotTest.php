@@ -178,17 +178,20 @@ class TourSnapshotTest extends TestCase
         $this->assertEquals(400, $doc['tour_snapshot']['sections'][0]['trip']['loaded_km'], 'Die AB beschreibt, was angeboten wurde.');
     }
 
-    public function test_neue_strecke_in_der_ab_kommt_aus_dem_aktuellen_archiv(): void
+    public function test_neue_strecke_traegt_die_kopie_vom_anlegen_nicht_den_stand_des_archivs_beim_festschreiben(): void
     {
         $quote = $this->quote();
-        $this->finalize($quote['id']);
-        $order = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$quote['id']}/convert", ['type' => 'auftragsbestaetigung'])->assertCreated()->json();
         $second = $this->as(Role::Disponent)->postJson('/api/trips', $this->tripBody('Wien – München', ['loaded_km' => 410]))->assertCreated()->json('id');
 
-        $this->as(Role::Buchhaltung)->postJson("/api/documents/{$order['id']}/sections", [
+        // Die Strecke entsteht auf der Reise und bekommt dort ihre Kopie; das Angebot wird abgeglichen
+        $this->as(Role::Disponent)->postJson("/api/journeys/{$quote['journey_id']}/sections", [
             'kind' => 'rueckfahrt', 'trip_id' => $second, 'vehicles' => [['type' => 'doppeldecker', 'count' => 2]],
         ])->assertCreated();
-        $doc = $this->finalize($order['id']);
+        $this->as(Role::Disponent)->postJson("/api/journeys/{$quote['journey_id']}/quote")->assertOk();
+
+        // Die Tour im Archiv ändert sich danach: Die Strecke und der Beleg behalten ihren Stand
+        $this->as(Role::Disponent)->putJson("/api/trips/$second", $this->tripBody('Wien – München', ['loaded_km' => 999]))->assertOk();
+        $doc = $this->finalize($quote['id']);
 
         $this->assertCount(2, $doc['tour_snapshot']['sections']);
         $this->assertSame(['Hinfahrt', 'Rückfahrt'], array_column($doc['tour_snapshot']['sections'], 'kind_label'));

@@ -9,6 +9,7 @@ use App\Models\PricingSetting;
 use App\Models\User;
 use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\CreatesInvoiceDrafts;
@@ -61,9 +62,33 @@ class JourneyListTest extends TestCase
             $this->as($role)->getJson('/api/journeys')->assertOk();
             $this->as($role)->getJson('/api/journeys/'.$quote['journey_id'])->assertOk();
         }
-        // Anlegen und Löschen gibt es nicht
-        $this->as(Role::Admin)->postJson('/api/journeys', ['title' => 'X'])->assertStatus(405);
-        $this->as(Role::Admin)->deleteJson('/api/journeys/'.$quote['journey_id'])->assertStatus(405);
+        // Anlegen und Löschen: nur Admin und Disponent; eine Reise mit Belegen lässt sich nicht löschen
+        $this->as(Role::Buchhaltung)->postJson('/api/journeys', ['title' => 'X'])->assertForbidden();
+        $this->as(Role::Buchhaltung)->deleteJson('/api/journeys/'.$quote['journey_id'])->assertForbidden();
+        $this->as(Role::Admin)->postJson('/api/journeys', ['title' => 'X'])->assertCreated();
+        // Nur ein Entwurf dabei: Er verschwindet mit der Reise und ihren Strecken
+        $this->as(Role::Admin)->deleteJson('/api/journeys/'.$quote['journey_id'])->assertOk();
+        $this->assertDatabaseMissing('journeys', ['id' => $quote['journey_id']]);
+        $this->assertDatabaseMissing('documents', ['id' => $quote['id']]);
+        $this->assertDatabaseMissing('journey_sections', ['journey_id' => $quote['journey_id']]);
+    }
+
+    public function test_reise_mit_festgeschriebenem_beleg_laesst_sich_nicht_loeschen(): void
+    {
+        $quote = $this->quote('München – Wien');
+        DB::table('documents')->where('id', $quote['id'])->update(['status' => 'festgeschrieben']);
+
+        $this->as(Role::Admin)->deleteJson('/api/journeys/'.$quote['journey_id'])
+            ->assertUnprocessable()->assertJsonValidationErrors('journey');
+        $this->assertDatabaseHas('journeys', ['id' => $quote['journey_id']]);
+        $this->assertDatabaseHas('documents', ['id' => $quote['id']]);
+    }
+
+    public function test_leere_reise_loeschen(): void
+    {
+        $id = $this->as(Role::Disponent)->postJson('/api/journeys', ['title' => 'Leer'])->assertCreated()->json('id');
+        $this->as(Role::Disponent)->deleteJson("/api/journeys/$id")->assertOk();
+        $this->assertDatabaseMissing('journeys', ['id' => $id]);
     }
 
     public function test_reise_umbenennen(): void

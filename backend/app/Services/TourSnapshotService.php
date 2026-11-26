@@ -60,15 +60,49 @@ class TourSnapshotService
             'kind' => $section->kind->value,
             'kind_label' => $section->kind->label(),
             'title' => $section->title,
-            'trip' => $section->trip ? $this->tripData($section->trip) : null,
+            // Die Kopie der Strecke (entstand mit dem Angebot); nur ältere Strecken ohne Kopie lesen noch das Archiv
+            'trip' => $section->tour_data ?? ($section->trip ? $this->tripData($section->trip) : null),
             // Strecke ohne Tour (etwa eine Fahrt vor Ort): Kilometer, Fahrzeit und Tage, wie sie eingegeben wurden
             'own' => $section->ownFigures(),
         ];
     }
 
-    /** @return array<string, mixed> */
-    private function tripData(Trip $trip): array
+    /**
+     * Die Kopie einer berechneten Tour, die NICHT im Archiv steht (Angebot direkt aus der Streckenplanung): gleiche Form wie
+     * tripData(), aus den geprüften Angaben der Anfrage. So muss ein Angebot nichts im Tour-Archiv anlegen.
+     *
+     * @param  array<string, mixed>  $t
+     * @return array<string, mixed>
+     */
+    public function fromRequest(array $t, string $fallbackTitle): array
     {
+        $kind = \App\Enums\TripKind::tryFrom((string) ($t['trip_kind'] ?? '')) ?? \App\Enums\TripKind::Gelegenheit;
+
+        return [
+            'title' => mb_substr(trim((string) ($t['title'] ?? '')) ?: $fallbackTitle, 0, 150),
+            'trip_kind' => $kind->value,
+            'trip_kind_label' => $kind->label(),
+            'loaded_km' => (float) $t['loaded_km'],
+            'empty_km' => (float) $t['empty_km'],
+            'drive_s' => (int) $t['drive_s'],
+            'elapsed_s' => (int) ($t['elapsed_s'] ?? $t['drive_s']),
+            'days' => max(1, (int) $t['days']),
+            'round_trip' => (bool) ($t['round_trip'] ?? false),
+            'stops' => array_map(fn (array $s) => [
+                'label' => (string) $s['label'], 'dwell_minutes' => (int) ($s['dwell_minutes'] ?? 0), 'driver_free' => (bool) ($s['driver_free'] ?? false),
+            ], $t['stops'] ?? []),
+            'legs' => array_map(fn (array $l) => [
+                'from' => (string) $l['from'], 'to' => (string) $l['to'],
+                'distance_m' => (int) $l['distance_m'], 'duration_s' => (int) $l['duration_s'], 'empty' => (bool) ($l['empty'] ?? false),
+            ], $t['legs'] ?? []),
+        ];
+    }
+
+    /** Die Tour als Kopie: Halte, Kilometer, Zeiten, Teilstrecken (ohne Linienzug). @return array<string, mixed> */
+    public function tripData(Trip $trip): array
+    {
+        $trip->loadMissing('stops');
+
         return [
             'title' => $trip->title,
             'trip_kind' => $trip->trip_kind->value,

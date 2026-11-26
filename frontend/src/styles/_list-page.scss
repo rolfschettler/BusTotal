@@ -152,6 +152,9 @@
 
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:nth-child(even) td { background: var(--bs-tertiary-bg); }
+  // Ansicht „je Kunde mit Entstehungskette“: statt Zeilenstreifen ist jede zweite KETTE getönt
+  tbody.by-chain tr td { background: transparent; }
+  tbody.by-chain tr.chain-alt td { background: var(--bs-secondary-bg); }
   tbody tr:hover td { background: rgba(var(--bs-primary-rgb), 0.08) !important; }
   tbody tr.row-current td {
     background: var(--bs-primary-bg-subtle) !important;

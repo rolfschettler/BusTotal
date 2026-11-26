@@ -85,6 +85,7 @@
         {{ saving() ? 'Speichert …' : id ? 'Speichern' : '<Objekt> anlegen' }}
       </button>
     }
+    <!-- back(): this.backNav.back('/liste') (core/back-navigation.service.ts), nie fest zur Liste -->
     <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
     @if (form.dirty && !archived()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
     <div class="form-bar-right">

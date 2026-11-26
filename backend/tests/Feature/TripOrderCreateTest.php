@@ -55,11 +55,13 @@ class TripOrderCreateTest extends TestCase
             'vehicle_type' => 'doppeldecker', 'vehicle_count' => 1,
         ])->assertCreated()->json();
 
-        $lines = $this->as(Role::Disponent)->postJson("/api/documents/{$quote['id']}/sections", [
+        $this->as(Role::Disponent)->postJson("/api/journeys/{$quote['journey_id']}/sections", [
             'kind' => 'vor_ort',
             'own' => ['title' => 'Ausflug Ossiacher See', 'loaded_km' => 60, 'drive_minutes' => 150, 'days' => 1],
             'vehicles' => [['type' => 'doppeldecker', 'count' => 1], ['type' => 'minibus', 'count' => 2]],
-        ])->assertCreated()->json('lines');
+        ])->assertCreated();
+        $this->as(Role::Disponent)->postJson("/api/journeys/{$quote['journey_id']}/quote")->assertOk();
+        $lines = $this->as(Role::Disponent)->getJson("/api/documents/{$quote['id']}")->assertOk()->json('lines');
         $lines = array_map(fn (array $l) => array_intersect_key($l, array_flip(['title', 'description', 'quantity', 'unit', 'trip_kind', 'unit_price', 'tax_rate', 'tax_note', 'journey_section_id', 'vehicle_type'])), $lines);
         $this->as(Role::Disponent)->putJson("/api/documents/{$quote['id']}", ['customer_id' => $customer->id, 'service_date_from' => '2027-05-10', 'service_date_to' => '2027-05-12', 'lines' => $lines])->assertOk();
         $this->as(Role::Buchhaltung)->postJson("/api/documents/{$quote['id']}/finalize")->assertOk();

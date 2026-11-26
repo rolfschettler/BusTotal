@@ -207,24 +207,29 @@ class TripArchiveTest extends TestCase
         $this->assertDatabaseCount('trips', 1);
     }
 
-    public function test_loeschen_und_sperre_durch_reise(): void
+    public function test_tour_ist_nur_vorlage_aenderbar_und_loeschbar_die_strecke_behaelt_ihre_kopie(): void
     {
         $id = $this->as(Role::Disponent)->postJson('/api/trips', $this->body())->json('id');
 
-        $journey = Journey::create(['title' => 'Wienreise']);
-        JourneySection::create(['journey_id' => $journey->id, 'position' => 1, 'kind' => SectionKind::Hinfahrt, 'trip_id' => $id]);
+        // Eine Strecke entsteht aus der Tour und bekommt ihre eigene Kopie (wie mit dem ersten Angebot)
+        $journey = app(\App\Services\JourneyService::class)->start('Wienreise', null, null, null, $id);
+        $section = $journey->sections()->firstOrFail();
+        $this->assertSame($id, $section->trip_id);
+        $kopie = $section->tour_data;
+        $this->assertNotEmpty($kopie['stops']);
 
-        $this->as(Role::Disponent)->deleteJson("/api/trips/$id")->assertUnprocessable()
-            ->assertJsonPath('message', 'Diese Tour wird in einer Reise verwendet und kann nicht gelöscht werden.');
-        $this->assertDatabaseCount('trips', 1);
+        // Ändern: die Kopie der Strecke bleibt, wie sie war
+        $this->as(Role::Disponent)->putJson("/api/trips/$id", ['title' => 'Geändert'] + $this->body())->assertOk();
+        $this->assertSame($kopie, $section->fresh()->tour_data);
 
-        JourneySection::query()->delete();
+        // Löschen ist erlaubt: Der Verweis wird leer, die Kopie bleibt
         $this->as(Role::Disponent)->deleteJson("/api/trips/$id")->assertNoContent();
         $this->assertDatabaseCount('trips', 0);
         $this->assertDatabaseCount('trip_stops', 0);
         $this->assertDatabaseCount('places', 2);   // Orte bleiben für andere Datensätze
+        $this->assertNull($section->fresh()->trip_id);
+        $this->assertSame($kopie, $section->fresh()->tour_data);
     }
-
     public function test_aenderungsprotokoll_enthaelt_nicht_die_linie(): void
     {
         $this->as(Role::Disponent)->postJson('/api/trips', $this->body())->assertCreated();

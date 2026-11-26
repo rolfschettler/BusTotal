@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\TourPayload;
 use App\Enums\GermanState;
 use App\Enums\TripKind;
 use App\Enums\VehicleType;
@@ -112,6 +113,8 @@ class PricingController extends Controller
             'vehicle_count' => ['nullable', 'integer', 'min:1', 'max:99'],
             // Die gespeicherte Tour (Tour-Archiv), aus der das Reisevorhaben seine Hinfahrt bekommt
             'trip_id' => ['nullable', 'uuid', 'exists:trips,id'],
+            // Die berechnete Tour selbst, wenn sie nicht im Archiv steht: Das Angebot behält so seine eigene Kopie
+            ...TourPayload::rules('tour'),
             // Fahrtart des Angebots; ohne Angabe gilt Gelegenheitsverkehr (Charter, Ausflug, Gruppenfahrt)
             'trip_kind' => ['nullable', Rule::enum(TripKind::class)],
         ]);

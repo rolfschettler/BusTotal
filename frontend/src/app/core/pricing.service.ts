@@ -33,6 +33,31 @@ export interface PricingSettings {
 export type VehicleRateField = 'price_per_km' | 'hourly_rate' | 'day_rate' | 'overnight_rate' | 'minimum_price';
 
 /** Kennzahlen einer geplanten Tour: nur Zahlen, keine Route und keine Orte. */
+/** Die in der Streckenplanung berechnete Tour, wie sie an Angebot oder Reise geschickt wird (Kopie an der Strecke, kein Archiv-Eintrag). */
+export interface TourPayload {
+  title: string;
+  trip_kind: TripKindValue | null;
+  loaded_km: number;
+  empty_km: number;
+  drive_s: number;
+  elapsed_s: number;
+  days: number;
+  round_trip: boolean;
+  stops: { label: string; dwell_minutes: number; driver_free: boolean }[];
+  legs: { from: string; to: string; distance_m: number; duration_s: number; empty: boolean }[];
+  /** Zum Wiederöffnen der Strecke in der Streckenplanung: Orte mit Lage, Betriebshof, Ergebnis mit Kartenlinie */
+  plan?: {
+    depot_id: string | null;
+    depot_other: { label: string; lat: number; lon: number } | null;
+    from_depot: boolean;
+    return_to_depot: boolean;
+    start_at: string | null;
+    stops: { label: string; lat: number; lon: number; dwell_minutes: number; driver_free: boolean }[];
+    route: object;
+    geometry: [number, number][];
+  };
+}
+
 export interface TourFigures {
   loaded_km: number;
   empty_km: number;
@@ -52,6 +77,8 @@ export interface TourFigures {
   vehicle_count?: number;
   /** Die gespeicherte Tour (Tour-Archiv); aus ihr bekommt die Reise ihre Hinfahrt. */
   trip_id?: string | null;
+  /** Die berechnete Tour: Das Angebot behält sie als eigene Kopie, ohne dass sie im Tour-Archiv stehen muss. */
+  tour?: TourPayload;
   /** Fahrtart des Angebots (bestimmt den Steuersatz); der Server nimmt ohne Angabe Gelegenheitsverkehr. */
   trip_kind?: TripKindValue | null;
 }

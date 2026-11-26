@@ -31,6 +31,8 @@ export interface StopInput extends PlaceInput {
 export interface RouteRequest {
   stops: StopInput[];
   depot?: PlaceInput | null;
+  /** false: keine Anfahrt vom Betriebshof, die Fahrt beginnt beim ersten Halt */
+  from_depot?: boolean;
   return_to_depot?: boolean;
   vehicle_id?: string | null;
   /** ISO 8601 */

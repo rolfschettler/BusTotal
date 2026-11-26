@@ -13,7 +13,7 @@ Die Liste zeigt 20 Belege pro Seite. Ein Klick auf eine Spaltenüberschrift sort
 
 ## Beleg anlegen {#beleg-anlegen}
 
-Ein **Angebot** entsteht auf zwei Wegen: **mit Strecke** über die [Streckenplanung](/hilfe/strecken#angebot-aus-tour) (Knopf **Angebot erstellen**, die Positionen schlägt die Software aus Ihren Preisen vor) oder **ohne Strecke** hier unter **Belege › Neuer Beleg** (Sie tragen die Positionen selbst ein). Beide Wege ergeben denselben Beleg. Der Weg im Einzelnen: [Angebot erstellen](/hilfe/fahrten#angebot).
+Ein **Angebot** entsteht auf drei Wegen: **aus einer Reise** (empfohlen bei Reisen mit mehreren Strecken: Sie planen unter [Reisen](#reisen) Hinfahrt, Fahrten vor Ort und Rückfahrt, dann erstellen Sie das Angebot daraus), **direkt aus einer Tour** über die [Streckenplanung](/hilfe/strecken#angebot-aus-tour) (Knopf **Angebot erstellen**, der Kurzweg für eine einzelne Fahrt) oder **ohne Strecke** hier unter **Belege › Neuer Beleg** (Sie tragen die Positionen selbst ein). Alle Wege ergeben denselben Beleg. Der Weg im Einzelnen: [Angebot erstellen](/hilfe/fahrten#angebot).
 
 Wählen Sie **Neuer Beleg**, dann die Belegart und den Kunden. Die Belegarten:
 
@@ -64,45 +64,66 @@ Ein festgeschriebener Beleg lässt sich nicht mehr ändern oder löschen, weder 
 
 ## Reise {#reise}
 
-Ein Angebot, das Sie in der Streckenplanung mit **Angebot erstellen** anlegen, gehört automatisch zu einer **Reise**. Sie müssen nichts anlegen: Die Reise trägt den Namen der Tour („München – Wien“), den Kunden und den Zeitraum der Fahrt. Im Beleg steht oben die **Reise-Leiste**:
+Eine **Reise** fasst Kunde, Strecken und alle Belege einer Fahrt zusammen. Sie legen sie unter **Reisen › Neue Reise planen** an (Name und Kunde) und planen dort **Strecke für Strecke**, siehe [Mehrere Strecken](#mehrere-strecken). Das Angebot erstellen Sie danach auf der Reise. Eine Reise entsteht auch von selbst, wenn Sie in der Streckenplanung die Taste **Angebot erstellen** nehmen. Im Beleg steht oben die **Reise-Leiste**:
 
-- Sie zeigt alle Belege der Reise in der Reihenfolge ihrer Anlage: Angebot, Auftragsbestätigung, Anzahlung, Rechnung. Der aktuelle Beleg ist hervorgehoben, ein stornierter durchgestrichen. Ein Klick öffnet den Beleg.
+- Sie zeigt alle Belege der Reise in der Reihenfolge ihrer Anlage: Angebot, Auftragsbestätigung, Anzahlung, Rechnung. Der aktuelle Beleg ist hervorgehoben, ein stornierter durchgestrichen. Ein Klick öffnet den Beleg. **Reise öffnen: Strecken ändern** führt zur Reise.
 - Darunter steht der **nächste Schritt**: bei einem Entwurf „Kunden wählen, Positionen prüfen und den Beleg festschreiben“, bei einem festgeschriebenen Beleg zum Beispiel „Auftragsbestätigung erstellen“ (Tasten unten im Formular).
 - Wählen Sie im ersten Beleg den **Kunden** oder ändern das Fahrtdatum, gilt das auch für die Reise. Folgebelege und der Storno bleiben in derselben Reise.
 - Ist die **Auftragsbestätigung** festgeschrieben, zeigt die Leiste die **Fahrtaufträge** der Reise (zu disponieren, disponiert, ausgegeben) mit einem Link dorthin. Weicht die Zahl der Busse in der Auftragsbestätigung von den Fahrtaufträgen ab, steht „Fahrtaufträge prüfen“. Mehr unter [Der Fahrtauftrag](/hilfe/fahrten#fahrtauftrag).
 
-Belege, die Sie von Hand anlegen („Neuer Beleg“), haben keine Reise und keine Leiste. Löschen Sie den ersten Entwurf, verschwindet auch die Reise, wenn sonst kein Beleg zu ihr gehört. Die Tour bleibt im Tour-Archiv.
+Belege, die Sie von Hand anlegen („Neuer Beleg“), haben keine Reise und keine Leiste. Löschen Sie den ersten Entwurf einer Reise des Kurzwegs, verschwindet auch sie, wenn sonst kein Beleg zu ihr gehört. Eine von Hand geplante Reise bleibt bestehen. Sie löschen sie auf der Reise-Seite mit **Reise löschen** (Administrator und Disponent): Dabei verschwinden die Strecken und ein vorhandener Entwurf, nach einer Rückfrage, die nennt, was gelöscht wird. Gibt es **festgeschriebene** Belege, geht das nicht; [stornieren](#stornieren) Sie dann den Beleg. Die Touren bleiben im Tour-Archiv.
 
 ## Die Liste der Reisen {#reisen}
 
-Unter **Fahrten und Abrechnung › Reisen** sehen Sie alle [Reisen](#reise) auf einen Blick. Eine Reise legen Sie nicht an: Sie entsteht mit dem ersten Angebot aus der Streckenplanung („Neue Reise planen“ führt dorthin).
+Unter **Fahrten und Abrechnung › Reisen** sehen Sie alle [Reisen](#reise) auf einen Blick. Mit **Neue Reise planen** (Administrator und Disponent) legen Sie eine an: Name und, wenn Sie ihn schon kennen, der Kunde.
 
 - **Die Liste** zeigt je Reise den Namen mit Zahl der Strecken und Belege, den Kunden, den Zeitraum, den **Stand** und den **Betrag brutto**. Die neueste Reise steht oben. Die Suche trifft den Namen der Reise und den Kunden am Wortanfang („Wien“, „Sonnenschein“, „Mustermann,Max“).
 - **Stand und Betrag** sind aus den Belegen abgeleitet und nirgends gespeichert: Es zählt der weitestgehende gültige Beleg (Rechnung vor Auftragsbestätigung vor Angebot, Stornierte zählen nicht). Anzahlungen bestimmen den Stand nicht. Ein Klick auf den Stand öffnet diesen Beleg.
-- **Die Reise öffnen** (Auge-Symbol oder Name) zeigt die **Strecken** mit Fahrzeugen, Kilometern, Lenkzeit und Tagen (bei Strecken in einem festgeschriebenen Beleg der dort festgehaltene Stand, erkennbar an „Stand aus …“), alle **Belege** mit Betrag und Stand und oben den **nächsten Schritt** mit einer Taste, die zum richtigen Beleg führt.
-- **Umbenennen:** Eine Reise heißt zunächst wie die erste Tour. Mit dem **Stift** neben dem Namen auf der Detailseite geben Sie ihr einen eigenen Namen, zum Beispiel „Klassenfahrt Realschule Mai“ (Enter oder **Speichern**, Esc oder **Abbrechen**). Der Name gilt sofort in der Liste, in der Suche und in der Reise-Leiste im Beleg. Er steht **nicht** auf Belegen und PDFs, deshalb ändert ein neuer Name keinen festgeschriebenen Beleg. Umbenennen dürfen Administrator, Disponent und Buchhaltung.
-- Alles andere bearbeiten Sie im Beleg: Kunde, Positionen und weitere Strecken im Entwurf des Angebots. Die Touren stehen im [Tour-Archiv](/hilfe/strecken#tour-archiv-liste).
+- **Die Reise öffnen** (Auge-Symbol oder Name) ist der Ort, an dem Sie planen: Name und Kunde ändern, **Strecken** hinzufügen, ändern und entfernen, das **Angebot** erstellen und aktualisieren. Dazu stehen dort alle **Belege** mit Betrag und Stand und oben der **nächste Schritt**. Bei Strecken in einem festgeschriebenen Beleg zeigt die Tabelle den dort festgehaltenen Stand („Stand aus …“).
+- **Umbenennen:** Mit dem **Stift** neben dem Namen auf der Reise geben Sie ihr einen eigenen Namen, zum Beispiel „Klassenfahrt Realschule Mai“ (Enter oder **Speichern**, Esc oder **Abbrechen**). Der Name gilt sofort in der Liste, in der Suche und in der Reise-Leiste im Beleg. Er steht **nicht** auf Belegen und PDFs, deshalb ändert ein neuer Name keinen festgeschriebenen Beleg. Umbenennen dürfen Administrator, Disponent und Buchhaltung.
+- **Kunde:** Auf der Reise wählen Sie den Kunden wie im Beleg (Suchfeld, Trefferliste, **Ändern**). Das Angebot übernimmt ihn beim Erstellen; ein schon bestehender Entwurf behält seinen Kunden.
+- Die Buchhaltung sieht Reisen und kann sie umbenennen, aber nicht planen. Die Touren stehen im [Tour-Archiv](/hilfe/strecken#tour-archiv-liste).
 
 ## Mehrere Strecken und Fahrzeugtypen {#mehrere-strecken}
 
-Ein Angebot aus der Streckenplanung enthält zunächst **eine Strecke**. Eine Reise besteht oft aus mehreren: Hinfahrt, Fahrten vor Ort, Rückfahrt, und auf einer Strecke fahren manchmal verschiedene Busse (zum Beispiel ein Doppeldecker und ein Kleinbus nach Wien). Beides bauen Sie im **Entwurf** des Angebots auf:
+Eine Reise besteht oft aus mehreren Strecken: Hinfahrt, Fahrten vor Ort, Rückfahrt. Auf einer Strecke fahren manchmal verschiedene Busse (zum Beispiel ein Doppeldecker und ein Kleinbus nach Wien). Beides planen Sie **auf der Reise**, Schritt für Schritt, und erstellen danach das Angebot:
 
-1. Klicken Sie unter den Positionen auf **Weitere Strecke hinzufügen**.
-2. Wählen Sie die **Art**: Hinfahrt, Fahrt vor Ort oder Rückfahrt. Optional tragen Sie das **Datum der Fahrt** ein, dann rechnet {{app}} auch die Zuschläge für Wochenende und Feiertag.
-3. Wählen Sie, woher **Kilometer und Fahrzeit** kommen:
-   - **Eigene Angaben** (Vorgabe bei der Fahrt vor Ort): Sie tragen nur **Bezeichnung**, **Kilometer**, **Fahrzeit** in Stunden und **Tage** ein, ohne Route und ohne Eintrag im Tour-Archiv. Siehe [Fahrt vor Ort](#fahrt-vor-ort).
-   - **Tour aus dem Archiv** (Vorgabe bei Hin- und Rückfahrt): Sie suchen eine gespeicherte Tour. Neue Touren planen Sie vorher in der [Streckenplanung](/hilfe/strecken#tour-archiv) und speichern sie dort.
-4. Legen Sie die **Fahrzeuge** fest: Typ und Anzahl. Vorgeschlagen sind die Fahrzeuge der ersten Strecke. Mit **Weiteren Fahrzeugtyp** kommt eine Zeile dazu. Jeder Typ erscheint nur einmal.
-5. Klicken Sie **Strecke hinzufügen**.
+1. Öffnen Sie die Reise und klicken Sie **Strecke hinzufügen**. Die Streckenplanung öffnet sich.
+2. Wählen Sie oben die **Art**: Hinfahrt, Fahrt vor Ort oder Rückfahrt (vorgeschlagen wird die passende nächste).
+3. Legen Sie fest, **woher die Strecke kommt**:
+   - **Route berechnen:** Orte eingeben, **Strecke berechnen**. Bei der Rückfahrt sind Von und Nach schon mit den vertauschten Orten der Hinfahrt belegt.
+   - **Vorlage laden:** eine gespeicherte Tour aus dem Archiv übernehmen.
+   - **Ohne Route:** bei **Werte für den Preis** Kilometer, Fahrzeit und Tage selbst eintragen. Siehe [Fahrt vor Ort](#fahrt-vor-ort).
+4. Prüfen Sie bei **Angaben zur Strecke** Bezeichnung, **Datum der Fahrt** (freiwillig, dann rechnet {{app}} die Zuschläge für Wochenende und Feiertag), **Zuschlag** (freiwillig) und die **Fahrzeuge**: Typ und Anzahl, vorgeschlagen sind die der ersten Strecke. Mit **Weiteren Fahrzeugtyp** kommt eine Zeile dazu. Jeder Typ erscheint nur einmal.
+5. Klicken Sie **Speichern**. Sie sind wieder auf der Reise und fügen dort die nächste Strecke hinzu.
 
-**Was entsteht:** Für jeden Fahrzeugtyp legt {{app}} Positionen aus Ihren [Preisen](/hilfe/einstellungen#preise) an, mit den **Preisen des Typs**, wo welche hinterlegt sind. Bei mehreren gleichen Bussen sind die Mengen entsprechend höher. Im Beleg stehen die Positionen **gruppiert** unter einer Überschrift mit Strecke und Fahrzeugen („Rückfahrt: Wien – München · 2 × Doppeldeckerbus“). Die Beschreibung jeder Position nennt dasselbe, damit sie auch im PDF und in der E-Rechnung für sich verständlich ist. Alle Positionen lassen sich danach ändern.
+Jede Strecke **merkt sich ihre Tour selbst**. Spätere Änderungen an der Tour im Archiv ändern die Strecke nicht.
 
-**Gut zu wissen:**
-- Haben Sie ungespeicherte Änderungen am Beleg, werden sie vor dem Hinzufügen gespeichert.
-- **Strecke entfernen** (an der Überschrift) nimmt die Strecke mit allen ihren Fahrzeugtypen und Positionen aus dem Entwurf. Das geht mit jeder Strecke, auch der Hinfahrt, solange eine weitere übrig bleibt. Die letzte Strecke einer Reise bleibt; wollen Sie sie nicht, löschen Sie den Entwurf.
+### Das Angebot aus den Strecken
+
+- **Angebot erstellen** (Karte „Nächster Schritt“ auf der Reise) legt einen Entwurf mit **allen Strecken** an: Für jeden Fahrzeugtyp entstehen Positionen aus Ihren [Preisen](/hilfe/einstellungen#preise), mit den **Preisen des Typs**, wo welche hinterlegt sind. Bei mehreren gleichen Bussen sind die Mengen entsprechend höher. Im Beleg stehen die Positionen **gruppiert** unter einer Überschrift mit Strecke und Fahrzeugen („Rückfahrt: Wien – München · 2 × Doppeldeckerbus“). Alle Positionen lassen sich danach ändern.
+- In der Tabelle der Strecken zeigt die Spalte **Angebot**, wie jede Strecke zum Angebot steht (zum Entwurf, sonst zum festgeschriebenen): **neu** (noch keine Positionen), **geändert** (Datum, Fahrzeuge, Zuschlag oder Strecke haben sich seit der Berechnung geändert) oder **aktuell**.
+- **Angebot aktualisieren** rechnet nur die Positionen der **neuen und geänderten Strecken** neu. Positionen **unveränderter Strecken bleiben mit allen Ihren Änderungen** unberührt. Bei geänderten Strecken fragt {{app}} vorher nach, weil von Hand geänderte Preise oder Texte genau dieser Positionen verloren gehen. Das gilt nur, solange das Angebot ein **Entwurf** ist: Nach dem Festschreiben lässt es sich nicht mehr abgleichen.
+- Mit dem **Stift** [ändern Sie eine Strecke](#strecke-aendern). **Entfernen** (Papierkorb) nimmt die Strecke und ihre Positionen aus dem Entwurf. Steht die Strecke schon in einem festgeschriebenen Beleg, geht das nicht mehr.
 - Fehlen Preise (Einstellungen › Preise), kommt eine Meldung und es wird nichts angelegt.
-- Auftragsbestätigung, Anzahlung, Rechnung und Storno übernehmen die Gruppen. Festgeschriebene Belege lassen sich nicht mehr ändern.
-- Das Fahrzeug wählt später der Disponent. Hier geht es nur um Typ und Anzahl.
+- Auftragsbestätigung, Anzahlung, Rechnung und Storno übernehmen die Gruppen. Das Fahrzeug wählt später der Disponent. Hier geht es nur um Typ und Anzahl.
+
+### Eine Strecke ändern {#strecke-aendern}
+
+Alles, was zu einer Reise gehört, ändern Sie **von der Reise aus**. Das [Tour-Archiv](/hilfe/strecken#tour-archiv-liste) enthält nur Vorlagen: Änderungen dort wirken nicht auf Ihre Reise.
+
+Klicken Sie auf der Reise bei der Strecke auf den **Stift** (oder auf **Datum eintragen**). Die Streckenplanung öffnet sich mit dieser Strecke:
+
+- **Route:** Betriebshof, Von, Zwischenhalte und Nach ändern, dann **Strecke berechnen**. Mit **Vorlage laden** übernehmen Sie stattdessen eine Vorlage.
+- **Angaben zur Strecke:** Bezeichnung, Datum der Fahrt, Abfahrtszeit, Zuschlag und Fahrzeuge (auch mehrere Typen). Außer bei der Abfahrtszeit ist dafür keine neue Berechnung nötig.
+- **Werte für den Preis:** Kilometer mit Gästen, Leerkilometer, Fahrzeit und Tage können Sie **überschreiben**. Geänderte Felder sind markiert, darunter steht der berechnete Wert. **Berechnete Werte nehmen** stellt ihn wieder her. Berechnen Sie die Strecke später neu, fragt {{app}}, ob Ihre Werte bleiben sollen.
+- **Speichern** gilt für die Reise und führt dorthin zurück. **Abbrechen** verwirft die Änderungen. **Als Vorlage speichern** legt die Route zusätzlich im Tour-Archiv ab.
+
+Danach steht die Strecke als **geändert**, bis Sie **Angebot aktualisieren** klicken. Ein festgeschriebener Beleg behält seinen Stand.
+
+Bei Strecken, die Sie **vor dieser Funktion** angelegt haben, ist keine Karte gespeichert. Datum, Fahrzeuge und Werte ändern Sie ohne Berechnung. Wollen Sie die Route ändern, prüfen Sie Orte und Betriebshof und berechnen neu.
+
+Eine **Strecke ohne Route** (von Hand eingetragen) öffnet sich in derselben Maske. Eine Route können Sie dort ergänzen, müssen es aber nicht.
 
 ### Fahrt vor Ort {#fahrt-vor-ort}
 
@@ -110,12 +131,12 @@ Am Reiseziel bieten Sie oft noch eine Fahrt an, zum Beispiel einen Ausflug. Daf�
 
 **Beispiel:** Die Reise fährt von Mietingen nach Villach. Dort bieten Sie einen Ausflug zum Ossiacher See an.
 
-1. Im Entwurf des Angebots **Weitere Strecke hinzufügen** klicken.
-2. Art **Fahrt vor Ort** wählen. **Eigene Angaben** ist dann schon ausgewählt.
-3. Eintragen: Bezeichnung „Ausflug Ossiacher See“, **60** Kilometer, Fahrzeit **2,5** Stunden, **1** Tag.
-4. **Strecke hinzufügen** klicken.
+1. Auf der Reise **Strecke hinzufügen** klicken.
+2. Art **Fahrt vor Ort** wählen.
+3. Ohne Orte einzugeben, eintragen: Bezeichnung „Ausflug Ossiacher See“, **60** Kilometer, Fahrzeit **2** Std. **30** Minuten, **1** Tag, den Fahrzeugtyp.
+4. **Speichern** klicken, danach auf der Reise **Angebot aktualisieren**.
 
-{{app}} legt die Positionen mit Ihren Preisen an, wie bei einer Tour. Eine **Leerfahrt** wird nicht berechnet, denn der Bus ist schon vor Ort. Im Beleg, in der Reise und im PDF steht „Fahrt vor Ort: Ausflug Ossiacher See“ mit Kilometern, Fahrzeit und Tagen. Brauchen Sie die genaue Route mit Halten im Beleg, planen Sie die Fahrt in der [Streckenplanung](/hilfe/strecken#tour-archiv), speichern sie als Tour und wählen **Tour aus dem Archiv**.
+{{app}} legt die Positionen mit Ihren Preisen an, wie bei einer Tour. Eine **Leerfahrt** wird nicht berechnet, denn der Bus ist schon vor Ort. Im Beleg, in der Reise und im PDF steht „Fahrt vor Ort: Ausflug Ossiacher See“ mit Kilometern, Fahrzeit und Tagen. Brauchen Sie die genaue Route mit Halten im Beleg, geben Sie die Orte ein und berechnen die Strecke.
 
 ## Fahrtbeschreibung {#fahrtbeschreibung}
 

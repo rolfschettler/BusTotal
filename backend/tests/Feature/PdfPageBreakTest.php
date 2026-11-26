@@ -125,10 +125,14 @@ class PdfPageBreakTest extends TestCase
         ])->assertCreated()->json();
         $lines = $q['lines'];
         for ($i = 1; $i <= $sections; $i++) {
-            $lines = $this->postJson("/api/documents/{$q['id']}/sections", [
+            $this->postJson("/api/journeys/{$q['journey_id']}/sections", [
                 'kind' => 'vor_ort', 'own' => ['title' => "Ausflug $i", 'loaded_km' => 50, 'drive_minutes' => 120, 'days' => 1],
                 'vehicles' => [['type' => 'doppeldecker', 'count' => 1]],
-            ])->assertCreated()->json('lines');
+            ])->assertCreated();
+        }
+        if ($sections > 0) {
+            $this->postJson("/api/journeys/{$q['journey_id']}/quote")->assertOk();
+            $lines = $this->getJson("/api/documents/{$q['id']}")->assertOk()->json('lines');
         }
         $this->putJson("/api/documents/{$q['id']}", ['customer_id' => $this->customer->id, 'lines' => $lines])->assertOk();
         $this->as(Role::Buchhaltung)->postJson("/api/documents/{$q['id']}/finalize")->assertOk();

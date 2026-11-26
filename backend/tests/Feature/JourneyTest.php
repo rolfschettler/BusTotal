@@ -223,11 +223,41 @@ class JourneyTest extends TestCase
         $this->assertNotNull(Trip::find($tripId));
     }
 
-    public function test_tour_mit_reise_laesst_sich_nicht_loeschen(): void
+    public function test_tour_mit_reise_laesst_sich_loeschen_die_strecke_behaelt_ihre_kopie(): void
     {
         $tripId = $this->trip();
         $this->quote(['trip_id' => $tripId]);
+        $section = \App\Models\JourneySection::firstOrFail();
+        $this->assertNotNull($section->tour_data);
+        $kopie = $section->tour_data;
 
-        $this->as(Role::Disponent)->deleteJson("/api/trips/$tripId")->assertUnprocessable();
+        $this->as(Role::Disponent)->deleteJson("/api/trips/$tripId")->assertNoContent();
+
+        $section->refresh();
+        $this->assertNull($section->trip_id);
+        $this->assertSame($kopie, $section->tour_data);
+    }
+
+    public function test_angebot_aus_berechneter_tour_legt_nichts_im_archiv_an_und_behaelt_eine_eigene_kopie(): void
+    {
+        $this->quote([
+            'tour' => [
+                'title' => 'Ulm – Salzburg', 'trip_kind' => 'gelegenheit', 'loaded_km' => 210.5, 'empty_km' => 12.0, 'drive_s' => 9000,
+                'elapsed_s' => 14000, 'days' => 1, 'round_trip' => false,
+                'stops' => [['label' => 'Ulm', 'dwell_minutes' => 0, 'driver_free' => false], ['label' => 'Salzburg', 'dwell_minutes' => 30, 'driver_free' => true]],
+                'legs' => [['from' => 'Ulm', 'to' => 'Salzburg', 'distance_m' => 210500, 'duration_s' => 9000, 'empty' => false]],
+            ],
+        ]);
+
+        // Nichts im Tour-Archiv, die Strecke trägt ihre eigene Kopie ohne Verweis
+        $this->assertDatabaseCount('trips', 0);
+        $section = \App\Models\JourneySection::firstOrFail();
+        $this->assertNull($section->trip_id);
+        $this->assertSame('Ulm – Salzburg', $section->tour_data['title']);
+        $this->assertSame(['Ulm', 'Salzburg'], array_column($section->tour_data['stops'], 'label'));
+        $this->assertTrue($section->tour_data['stops'][1]['driver_free']);
+        $this->assertSame(210.5, $section->tour_data['loaded_km']);
+        $this->assertSame('Salzburg', $section->tour_data['legs'][0]['to']);
+        $this->assertSame('Gelegenheitsverkehr', $section->tour_data['trip_kind_label']);
     }
 }

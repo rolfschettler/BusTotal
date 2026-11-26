@@ -21,6 +21,7 @@ export interface Trip {
   vehicle_type: string | null;
   vehicle_count: number;
   depot_id: string | null;
+  from_depot?: boolean;
   return_to_depot: boolean;
   round_trip: boolean;
   loaded_km: number;
@@ -30,7 +31,7 @@ export interface Trip {
   days: number;
   stops: TripStop[];
   updated_at: string;
-  /** In wie vielen Reisen die Tour verwendet wird (nur in der Liste); solange > 0 lässt sie sich nicht löschen */
+  /** In wie vielen Reisen die Tour verwendet wird (nur in der Liste, zur Information); Löschen und Ändern sind trotzdem erlaubt: Reisen haben ihre eigene Kopie */
   sections_count?: number;
   route?: Omit<RouteResult, 'geometry'> | null;
   geometry?: [number, number][] | null;
@@ -42,6 +43,7 @@ export interface TripInput {
   vehicle_type: string | null;
   vehicle_count: number;
   depot_id: string | null;
+  from_depot: boolean;
   return_to_depot: boolean;
   round_trip: boolean;
   loaded_km: number;

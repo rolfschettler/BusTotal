@@ -1,12 +1,14 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { of } from 'rxjs';
 import { ConfirmService } from '../../core/confirm.service';
+import { Depot, DepotService } from '../../core/depot.service';
 import { RouteResult, RouteService } from '../../core/route.service';
 import { Trip } from '../../core/trip.service';
+import { JourneyDetail, JourneyService, SectionEditData } from '../../core/journey.service';
 import { RoutePlanningComponent } from './route-planning.component';
 
 const trip = {
@@ -25,6 +27,179 @@ function planner(): RoutePlanningComponent {
   (c as unknown as { applyTrip(t: Trip): void }).applyTrip(trip);
   return c;
 }
+
+describe('Streckenplanung: vorgewählter Betriebshof', () => {
+  function choiceFor(query: Record<string, string>): string {
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(), provideHttpClientTesting(), provideRouter([]),
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(query) } } },
+      ],
+    });
+    spyOn(TestBed.inject(DepotService), 'list').and.returnValue(of([{ id: 'd1', name: 'Hof', is_default: true, place: { lat: 48.2, lon: 9.9 } } as Depot]));
+    const c = TestBed.createComponent(RoutePlanningComponent).componentInstance;
+    c.ngOnInit();
+    return c.depotChoice();
+  }
+
+  it('neue Planung: der Standard', () => expect(choiceFor({})).toBe('d1'));
+  it('Hinfahrt einer Reise: der Standard', () => expect(choiceFor({ journey: 'j1', kind: 'hinfahrt' })).toBe('d1'));
+  it('Fahrt vor Ort einer Reise: kein Betriebshof', () => expect(choiceFor({ journey: 'j1', kind: 'vor_ort' })).toBe(''));
+});
+
+describe('Streckenplanung: Strecke einer Reise ändern', () => {
+  const data = {
+    journey: { id: 'j1', title: 'Villach' }, id: 's1', kind: 'vor_ort', kind_label: 'Fahrt vor Ort', title: 'Ausflug', start_on: null, surcharge_percent: 0,
+    vehicles: [{ type: 'reisebus', count: 1 }], figures: { loaded_km: 78.6, empty_km: 0, drive_s: 5640, days: 1 }, frozen_by: null,
+    tour: { title: 'Ausflug', trip_kind: 'gelegenheit', loaded_km: 78.6, empty_km: 0, drive_s: 5640, elapsed_s: 5640, days: 1, round_trip: false, stops: [], legs: [] },
+    plan: {
+      depot_id: null, depot_other: null, return_to_depot: false, start_at: null, route: { legs: [], schedule: [] }, geometry: [],
+      stops: [
+        { label: 'Villach', lat: 46.6, lon: 13.8, dwell_minutes: 0, driver_free: false },
+        { label: 'Kobarid', lat: 46.2, lon: 13.5, dwell_minutes: 0, driver_free: false },
+      ],
+      calculated: { loaded_km: 78.6, empty_km: 0, drive_s: 5640, days: 1 },
+    },
+  } as unknown as SectionEditData;
+
+  function editor(d: SectionEditData = data): RoutePlanningComponent {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])] });
+    const c = TestBed.createComponent(RoutePlanningComponent).componentInstance;
+    c.sectionId.set(d.id);
+    (c as unknown as { applySection(d: SectionEditData): void }).applySection(d);
+    return c;
+  }
+
+  it('öffnet mit Orten und Ergebnis, ohne etwas zu suchen oder zu berechnen', () => {
+    const c = editor();
+
+    expect(c.stops().map((s) => s.label)).toEqual(['Villach', 'Kobarid']);
+    expect(c.pending().length).toBe(0);
+    expect(c.needsCalc()).toBe(false);
+    expect(c.depotChoice()).toBe('');
+    expect(c.section()!.dirty()).toBe(false);
+    TestBed.inject(HttpTestingController).expectNone(() => true);
+  });
+
+  it('Werte von Hand: Speichern schickt sie ohne neue Route', () => {
+    const c = editor();
+    c.section()!.setValue('loaded_km', 160);
+    expect(c.section()!.hasHandValues()).toBe(true);
+
+    void c.saveSection();
+
+    const req = TestBed.inject(HttpTestingController).expectOne('/api/journeys/j1/sections/s1');
+    expect(req.request.body.figures.loaded_km).toBe(160);
+    expect(req.request.body.tour).toBeUndefined();
+  });
+
+  it('Route geändert: Vor dem Speichern wird gefragt, ohne Ja geht nichts hinaus', async () => {
+    const c = editor();
+    const ask = spyOn(TestBed.inject(ConfirmService), 'ask').and.returnValue(Promise.resolve(false));
+    c.setText(c.end().key, 'Bovec');
+
+    await c.saveSection();
+
+    expect(ask).toHaveBeenCalledTimes(1);
+    TestBed.inject(HttpTestingController).expectNone(() => true);
+  });
+
+  it('neue Berechnung: Handwerte bleiben oder werden ersetzt', () => {
+    const edit = editor().section()!;
+    edit.setValue('loaded_km', 160);
+    const calculated = { loaded_km: 90, empty_km: 0, drive_s: 6000, days: 1 };
+
+    edit.takeCalculation(calculated, true);
+    expect(edit.figures().loaded_km).toBe(160);
+    expect(edit.figures().drive_s).toBe(6000);
+
+    edit.takeCalculation(calculated, false);
+    expect(edit.figures()).toEqual(calculated);
+    expect(edit.hasHandValues()).toBe(false);
+  });
+
+  it('Strecke ohne Route: die gespeicherten Werte gelten, Orte sind freiwillig', () => {
+    const c = editor({ ...data, tour: null, plan: null });
+
+    expect(c.section()!.hasRoute()).toBe(false);
+    expect(c.section()!.figures().loaded_km).toBe(78.6);
+    expect(c.section()!.problem()).toBeNull();
+  });
+});
+
+describe('Streckenplanung: neue Strecke einer Reise', () => {
+  function adder(kind: string, sections: unknown[] = []): RoutePlanningComponent {
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(), provideHttpClientTesting(), provideRouter([]),
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(kind ? { journey: 'j1', kind } : { journey: 'j1' }) } } },
+      ],
+    });
+    spyOn(TestBed.inject(DepotService), 'list').and.returnValue(of([{ id: 'd1', name: 'Hof', is_default: true, place: { lat: 48.2, lon: 9.9 } } as Depot]));
+    spyOn(TestBed.inject(JourneyService), 'get').and.returnValue(of({ id: 'j1', title: 'Villach', sections } as unknown as JourneyDetail));
+    const c = TestBed.createComponent(RoutePlanningComponent).componentInstance;
+    c.ngOnInit();
+    return c;
+  }
+  const outward = { kind: 'hinfahrt', vehicles: [{ type: 'reisebus', count: 2 }], trip: { from: 'Laupheim', to: 'Villach' } };
+
+  it('Rückfahrt: Art vorgeschlagen, Orte vertauscht, Fahrzeuge der Hinfahrt, noch nichts zu speichern', () => {
+    const c = adder('', [outward]);
+
+    expect(c.section()!.kind()).toBe('rueckfahrt');
+    expect(c.textOf(c.start())).toBe('Villach');
+    expect(c.textOf(c.end())).toBe('Laupheim');
+    expect(c.section()!.vehicles()).toEqual([{ type: 'reisebus', count: 2 }]);
+    expect(c.section()!.dirty()).toBe(false);
+  });
+
+  it('Art wechseln ändert den Betriebshof, aber nie eine eigene Wahl', () => {
+    const c = adder('hinfahrt');
+    expect(c.depotChoice()).toBe('d1');
+
+    c.setSectionKind('vor_ort');
+    expect(c.depotChoice()).toBe('');
+
+    c.depotTouched = true;
+    c.setSectionKind('hinfahrt');
+    expect(c.depotChoice()).toBe('');
+  });
+
+  it('Rückfahrt: nie Anfahrt vom Betriebshof, am Ende dorthin zurück', () => {
+    const c = adder('rueckfahrt', [outward]);
+
+    expect(c.fromDepot()).toBe(false);
+    expect(c.returnToDepot()).toBe(true);
+    expect(c.depotPath()).toBe('Von → Nach → Betriebshof');
+
+    c.setSectionKind('hinfahrt');
+    expect(c.depotPath()).toBe('Betriebshof → Von → Nach');
+  });
+
+  it('Speichern ohne Fahrzeugtyp: Das Feld wird markiert, nichts geht hinaus', async () => {
+    const c = adder('vor_ort');
+    expect(c.section()!.errorOf('vehicle0')).toBe('');   // vor dem ersten Versuch keine Markierung
+
+    await c.saveSection();
+
+    expect(c.section()!.errorOf('vehicle0')).toContain('Fahrzeugtyp');
+    TestBed.inject(HttpTestingController).expectNone((r) => r.method === 'POST');
+  });
+
+  it('ohne Route: Die eingetragenen Werte werden als neue Strecke gespeichert', async () => {
+    const c = adder('vor_ort', [outward]);
+    const edit = c.section()!;
+    edit.title.set('Ausflug');
+    edit.setValue('loaded_km', 60);
+    edit.setValue('drive_s', 9000);
+
+    await c.saveSection();
+
+    const req = TestBed.inject(HttpTestingController).expectOne((r) => r.method === 'POST' && r.url === '/api/journeys/j1/sections');
+    expect(req.request.body.own).toEqual({ title: 'Ausflug', loaded_km: 60, drive_minutes: 150, days: 1 });
+    expect(req.request.body.kind).toBe('vor_ort');
+  });
+});
 
 describe('Streckenplanung: Halt einer geladenen Tour ändern', () => {
   it('eine geladene Tour hat alle Orte, nichts ist zu suchen', () => {

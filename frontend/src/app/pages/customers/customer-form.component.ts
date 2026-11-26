@@ -3,6 +3,7 @@ import { Component, ElementRef, OnInit, computed, inject, signal } from '@angula
 import { FormBuilder, FormsModule, NgForm, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { debounceTime } from 'rxjs';
+import { BackNavigation } from '../../core/back-navigation.service';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { httpErrorText } from '../../core/http-error';
@@ -42,6 +43,7 @@ export class CustomerFormComponent implements OnInit {
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private backNav = inject(BackNavigation);
   private auth = inject(AuthService);
   private confirm = inject(ConfirmService);
   private help = inject(HelpService);
@@ -70,7 +72,7 @@ export class CustomerFormComponent implements OnInit {
   addressEdit = signal<Address | null>(null);
 
   form = this.fb.nonNullable.group({
-    type: ['firma', Validators.required],
+    type: ['privat', Validators.required],
     company_name: [''],
     salutation: [''],
     first_name: [''],
@@ -90,8 +92,8 @@ export class CustomerFormComponent implements OnInit {
     notes: [''],
   });
 
-  isOrganisation = computed(() => this.types().find((t) => t.value === this.typeValue())?.organisation ?? true);
-  typeValue = signal('firma');
+  isOrganisation = computed(() => this.types().find((t) => t.value === this.typeValue())?.organisation ?? this.typeValue() !== 'privat');
+  typeValue = signal('privat');
   archived = computed(() => !!this.customer()?.deleted_at);
 
   ngOnInit() {
@@ -203,18 +205,18 @@ export class CustomerFormComponent implements OnInit {
     });
   }
 
-  /** Tastenleiste "Zurück": zur Liste, bei ungespeicherten Änderungen erst nachfragen. */
+  /** Tastenleiste "Zurück": zur vorigen Seite, bei ungespeicherten Änderungen erst nachfragen. */
   async back() {
     if (this.form.dirty) {
       const ok = await this.confirm.ask({
         title: 'Änderungen verwerfen',
-        message: 'Es gibt ungespeicherte Änderungen. Trotzdem zurück zur Liste?',
+        message: 'Es gibt ungespeicherte Änderungen. Trotzdem zurück?',
         confirmLabel: 'Verwerfen',
         danger: true,
       });
       if (!ok) return;
     }
-    this.router.navigate(['/kunden']);
+    void this.backNav.back('/kunden');
   }
 
   /** Tastenleiste "Abbrechen": Eingaben verwerfen, Formular auf den gespeicherten Stand zurücksetzen. */

@@ -42,14 +42,16 @@
   }
 }
 
-// Karte neben einem langen Formular: bleibt beim Scrollen sichtbar und hat eine feste, sinnvolle Höhe.
-.app-map-sticky {
-  position: sticky;
-  top: 1rem;
-  height: min(70vh, 640px);
+// Karte neben einem Formular: füllt die Höhe der Nachbarspalte (Zeile mit gleich hohen Spalten).
+.app-map-fill {
+  height: 100%;
   min-height: 420px;
 
+  // Wird die Nachbarspalte sehr lang (Aufenthalte aufgeklappt), wächst die Karte nicht mit, sondern bleibt beim Scrollen stehen.
   .app-map {
+    position: sticky;
+    top: 1rem;
     height: 100%;
+    max-height: 720px;
   }
 }
