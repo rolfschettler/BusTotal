@@ -21,7 +21,11 @@ use Illuminate\Validation\ValidationException;
  */
 class JourneyService
 {
-    public function __construct(private readonly TourSnapshotService $snapshots, private readonly SectionPlanService $plans) {}
+    public function __construct(
+        private readonly TourSnapshotService $snapshots,
+        private readonly SectionPlanService $plans,
+        private readonly PaymentService $payments,
+    ) {}
 
     /**
      * Eine abgesagte Reise wird nicht weiter geplant. Innerhalb einer Transaktion aufrufen: Die Reise wird gesperrt, damit eine
@@ -319,6 +323,9 @@ class JourneyService
             }
         }
 
+        // Zahlstand der Rechnungen und Anzahlungen (eine Abfrage), damit „Nächster Schritt“ zum Zahlungseingang führen kann
+        $paid = $this->payments->paidTotals($documents->pluck('id')->all());
+
         return [
             'id' => $journey->id,
             'title' => $journey->title,
@@ -351,6 +358,7 @@ class JourneyService
             'documents' => $documents->map(fn (Document $d) => [
                 'id' => $d->id, 'type' => $d->type->value, 'number' => $d->number, 'status' => $d->status->value, 'cancelled' => $d->cancelled_by_id !== null,
                 'document_date' => $d->document_date?->toDateString(), 'gross_total' => $d->gross_total, 'subject' => $d->subject,
+                'payment_state' => $this->payments->summary($d, $paid[$d->id] ?? 0)['state'] ?? null,
             ])->all(),
             'trip_orders' => $this->tripOrderSummary($journey, $documents),
             'trip_order_list' => $this->tripOrderRows($journey),
@@ -387,7 +395,7 @@ class JourneyService
      * „check“ auf true und die Oberfläche sagt „Fahrtaufträge prüfen“. Ohne Auftragsbestätigung ist nichts zu erwarten.
      *
      * @param  iterable<Document>  $documents  die Belege EINER Reise
-     * @return array{count: int, to_plan: int, planned: int, issued: int, cancelled: int, expected: ?int, check: bool}
+     * @return array{count: int, to_plan: int, planned: int, issued: int, done: int, cancelled: int, expected: ?int, check: bool}
      */
     public function tripOrderSummary(Journey $journey, iterable $documents): array
     {
@@ -406,7 +414,8 @@ class JourneyService
             'count' => $count,
             'to_plan' => (int) ($byStatus['entwurf'] ?? 0),
             'planned' => (int) ($byStatus['disponiert'] ?? 0),
-            'issued' => (int) (($byStatus['ausgegeben'] ?? 0) + ($byStatus['erledigt'] ?? 0)),
+            'issued' => (int) ($byStatus['ausgegeben'] ?? 0),
+            'done' => (int) ($byStatus['erledigt'] ?? 0),
             'cancelled' => $cancelled,
             'expected' => $expected,
             // Bei einer abgesagten Reise gibt es nichts zu prüfen.

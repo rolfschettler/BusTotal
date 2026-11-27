@@ -10,9 +10,14 @@ export const TRIP_ORDER_STEPS = [
 
 type StepOrder = Pick<TripOrder, 'status' | 'number' | 'cancelled_at'>;
 
-/** Was als Nächstes zu tun ist, in einem Satz. */
-export function nextStepText(o: StepOrder): string {
+/** Was als Nächstes zu tun ist, in einem Satz. `missing`: auf der Rückerfassung das, was für „erledigt“ noch fehlt. */
+export function nextStepText(o: StepOrder, missing: string[] | null = null): string {
   if (o.cancelled_at) return 'Die Fahrt findet nicht statt.';
+  if (missing) {
+    return missing.length
+      ? `Tippen Sie das Blatt ab. Für „erledigt“ fehlt noch: ${missing.join(', ')}.`
+      : 'Tippen Sie das Blatt ab. Wenn alles stimmt, klicken Sie auf „Fahrt erledigt“.';
+  }
   switch (o.status) {
     case 'entwurf':
       return 'Wählen Sie Bus und Fahrer 1 oder einen Fremdunternehmer und speichern Sie.';
@@ -22,7 +27,7 @@ export function nextStepText(o: StepOrder): string {
         ? 'Die Ausgabe wurde zurückgenommen. Nach der Korrektur erneut ausgeben und den Fahrer informieren.'
         : 'Alles geplant. Geben Sie den Auftrag erst aus, wenn der Fahrer ihn bekommen soll.';
     case 'ausgegeben':
-      return 'Drucken Sie den Auftrag für den Fahrer.';
+      return 'Drucken Sie den Auftrag für den Fahrer. Nach der Fahrt tragen Sie die Rückerfassung ein.';
     default:
       return 'Die Fahrt ist erledigt.';
   }

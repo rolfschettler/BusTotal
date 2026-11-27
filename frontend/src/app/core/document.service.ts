@@ -265,6 +265,8 @@ export interface JourneyTripOrders {
   to_plan: number;
   planned: number;
   issued: number;
+  /** erledigt (Rückerfassung abgeschlossen) */
+  done?: number;
   /** mit der Reise abgesagt */
   cancelled?: number;
   expected: number | null;

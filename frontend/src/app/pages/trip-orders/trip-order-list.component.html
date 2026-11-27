@@ -58,7 +58,7 @@
     <table class="table table-hover table-sm align-middle data-table mb-0">
 
       <colgroup>
-        <col style="width:76px">   <!-- Aktionen -->
+        <col style="width:110px">  <!-- Aktionen -->
         <col style="width:250px">  <!-- Fahrtauftrag -->
         <col style="width:200px">  <!-- Kunde -->
         <col style="width:130px">  <!-- Termin -->
@@ -86,6 +86,11 @@
               <a class="btn-action edit" [routerLink]="['/fahrtauftraege', o.id]" title="Öffnen" [attr.aria-label]="'Fahrtauftrag ' + o.title + ' öffnen'">
                 <i class="bi bi-pencil"></i>
               </a>
+              @if (!o.cancelled_at && o.status !== 'entwurf') {
+                <a class="btn-action edit" [routerLink]="['/fahrtauftraege', o.id, 'rueckerfassung']" title="Rückerfassung" [attr.aria-label]="'Rückerfassung von ' + o.title">
+                  <i class="bi bi-clipboard-check"></i>
+                </a>
+              }
               <button type="button" class="btn-action edit" (click)="openPdf(o)" title="Fahrer-PDF drucken" [attr.aria-label]="'Fahrer-PDF von ' + o.title + ' drucken'">
                 <i class="bi bi-printer"></i>
               </button>

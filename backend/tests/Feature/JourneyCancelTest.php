@@ -188,6 +188,11 @@ class JourneyCancelTest extends TestCase
         $number = $this->as(Role::Buchhaltung)->postJson("/api/documents/{$advance['id']}/finalize")->assertOk()->json('number');
         $this->as(Role::Buchhaltung)->postJson("/api/documents/{$advance['id']}/payments", ['amount' => '100.00', 'paid_on' => now()->toDateString()])->assertCreated();
 
+        // Der Zahlstand steht auch an den Belegen der Reise
+        $states = fn () => collect($this->as(Role::Disponent)->getJson("/api/journeys/{$ids['journey']}")->json('documents'))->pluck('payment_state', 'type')->all();
+        $this->assertSame('teilweise', $states()['anzahlung']);
+        $this->assertNull($states()['angebot']);
+
         $this->as(Role::Disponent)->getJson("/api/journeys/{$ids['journey']}/cancellation")->assertOk()
             ->assertJsonCount(1, 'payments')->assertJsonPath('payments.0.number', $number)->assertJsonPath('payments.0.paid', '100.00')->assertJsonPath('paid_total', '100.00');
     }

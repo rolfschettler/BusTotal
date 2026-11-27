@@ -124,6 +124,8 @@ export interface JourneyDetail {
     document_date: string | null;
     gross_total: string;
     subject: string | null;
+    /** nur bei festgeschriebenen Rechnungen und Anzahlungsrechnungen */
+    payment_state?: 'offen' | 'teilweise' | 'bezahlt' | 'storniert' | null;
   }[];
   stage: DocumentTypeValue | null;
   stage_document_id: string | null;

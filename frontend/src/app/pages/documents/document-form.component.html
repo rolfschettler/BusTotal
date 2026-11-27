@@ -61,6 +61,16 @@
         <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Die Reise ist seit {{ j.cancelled_on | date: 'dd.MM.yyyy' }} abgesagt. Angebot, Auftragsbestätigung und Anzahlung lassen sich nicht mehr erstellen oder festschreiben.
       </div>
     }
+    @if (advance(); as a) {
+      <div class="small text-body-secondary mt-2">
+        <i class="bi bi-arrow-right-circle me-1" aria-hidden="true"></i>Nächster Schritt:
+        @if (a.number) {
+          Anzahlung <a [routerLink]="['/belege', a.id]">{{ a.number }}</a> ist erstellt.
+        } @else {
+          Die Anzahlung ist als <a [routerLink]="['/belege', a.id]">Entwurf</a> angelegt. Bitte prüfen und festschreiben.
+        }
+      </div>
+    }
     @if (nextStep(); as ns) {
       <div class="small text-body-secondary mt-2"><i class="bi bi-arrow-right-circle me-1" aria-hidden="true"></i>Nächster Schritt: {{ ns }}</div>
     }
@@ -68,7 +78,7 @@
       @if (o.count > 0) {
         <div class="small text-body-secondary mt-1">
           <i class="bi bi-clipboard-check me-1" aria-hidden="true"></i>{{ o.count }} {{ o.count === 1 ? 'Fahrtauftrag' : 'Fahrtaufträge' }}
-          ({{ o.to_plan }} zu disponieren, {{ o.planned }} disponiert, {{ o.issued }} ausgegeben@if (o.cancelled) {, {{ o.cancelled }} abgesagt}):
+          ({{ o.to_plan }} zu disponieren, {{ o.planned }} disponiert, {{ o.issued }} ausgegeben@if (o.done) {, {{ o.done }} erledigt}@if (o.cancelled) {, {{ o.cancelled }} abgesagt}):
           <a routerLink="/fahrtauftraege" [queryParams]="{ journey_id: j.id }">Fahrtaufträge öffnen</a>
         </div>
       }
@@ -399,7 +409,7 @@
 @if (doc(); as d) {
   @if (d.payment && readonly()) {
     <!-- Zahlungen: nur bei festgeschriebenen Rechnungen und Anzahlungsrechnungen (der Server liefert dann den Zahlstand). -->
-    <div class="mt-4">
+    <div class="mt-4" id="zahlungen">
       <app-document-payments [documentId]="d.id" [canBook]="canFinalize()" (changed)="refreshPayment()" />
     </div>
   }

@@ -14,7 +14,7 @@ import { TRIP_ORDER_STEPS, nextStepText } from './trip-order-steps';
               <span class="badge text-bg-primary">{{ s.label }}</span>
             } @else {
               <span class="text-body-secondary">
-                <i class="bi me-1" [class.bi-check-lg]="!order.cancelled_at && i < current" [class.bi-circle]="order.cancelled_at || i > current" aria-hidden="true"></i>{{ s.label }}@if (s.value === 'erledigt') { (folgt) }
+                <i class="bi me-1" [class.bi-check-lg]="!order.cancelled_at && i < current" [class.bi-circle]="order.cancelled_at || i > current" aria-hidden="true"></i>{{ s.label }}
               </span>
             }
             @if (!last) { <i class="bi bi-chevron-right text-body-secondary" aria-hidden="true"></i> }
@@ -27,7 +27,8 @@ import { TRIP_ORDER_STEPS, nextStepText } from './trip-order-steps';
   `,
 })
 export class TripOrderStepsComponent {
-  @Input({ required: true }) order!: TripOrder;
+  @Input({ required: true }) order!: Pick<TripOrder, 'status' | 'number' | 'cancelled_at'>;
+  @Input() missing: string[] | null = null;
   readonly steps = TRIP_ORDER_STEPS;
 
   get current(): number {
@@ -35,6 +36,6 @@ export class TripOrderStepsComponent {
   }
 
   get text(): string {
-    return nextStepText(this.order);
+    return nextStepText(this.order, this.missing);
   }
 }

@@ -116,7 +116,8 @@ export class TripOrderService {
 }
 
 /** Filter der Liste: die Stände und zusätzlich „Abgesagt“. */
-export const TRIP_ORDER_STATUS: { value: TripOrderStatus | 'abgesagt'; label: string }[] = [
+export const TRIP_ORDER_STATUS: { value: TripOrderStatus | 'abgesagt' | 'zu_erfassen'; label: string }[] = [
+  { value: 'zu_erfassen', label: 'Noch zu erfassen' },
   { value: 'entwurf', label: 'Zu disponieren' },
   { value: 'disponiert', label: 'Disponiert' },
   { value: 'ausgegeben', label: 'Ausgegeben' },

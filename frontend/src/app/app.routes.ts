@@ -59,6 +59,11 @@ export const routes: Routes = [
             loadComponent: () => import('./pages/trip-orders/trip-order-list.component').then((m) => m.TripOrderListComponent),
           },
           {
+            path: ':id/rueckerfassung',
+            data: { help: 'fahrten#rueckerfassung' },
+            loadComponent: () => import('./pages/trip-orders/trip-report.component').then((m) => m.TripReportComponent),
+          },
+          {
             path: ':id',
             data: { help: 'fahrten#fahrtauftrag' },
             loadComponent: () => import('./pages/trip-orders/trip-order-form.component').then((m) => m.TripOrderFormComponent),

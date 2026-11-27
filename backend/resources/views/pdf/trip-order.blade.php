@@ -48,7 +48,7 @@
     .fill th { background: #eee; border: 0.4pt solid #666; text-align: left; padding: 1.2mm 1.5mm; font-size: 8pt; }
     .fill td { border: 0.4pt solid #666; height: 6.5mm; padding: 0 1.5mm; }
     .fill tr { page-break-inside: avoid; }
-    .notes { border: 0.4pt solid #666; height: 16mm; }
+    .notes { border: 0.4pt solid #666; height: 9mm; }
     .sheet { page-break-before: always; }
     .sheet h2 { margin-top: 4mm; }
 
@@ -174,6 +174,8 @@
         @endforeach
     </table>
 
+    <div class="small" style="margin-top: 1mm">Personen tatsächlich: ______________</div>
+
     <h2>Grenzübertritte</h2>
     <table class="fill">
         <tr><th>Land</th><th style="width: 36mm">km-Stand Einfahrt</th><th style="width: 36mm">km-Stand Ausfahrt</th><th style="width: 36mm">km im Ausland</th></tr>
@@ -183,8 +185,8 @@
 
     <h2>Zusatzleistungen (Sonderfahrt, Wartezeit)</h2>
     <table class="fill">
-        <tr><th>Leistung</th><th style="width: 24mm">Menge</th><th style="width: 32mm">bar bezahlt?</th></tr>
-        @for ($i = 0; $i < 3; $i++)<tr><td></td><td></td><td></td></tr>@endfor
+        <tr><th>Leistung</th><th style="width: 24mm">Menge</th><th style="width: 28mm">Betrag</th><th style="width: 28mm">bar bezahlt?</th></tr>
+        @for ($i = 0; $i < 3; $i++)<tr><td></td><td></td><td></td><td></td></tr>@endfor
     </table>
 
     <h2>Unvorhergesehene Kosten (Maut, Parken, Fähre)</h2>

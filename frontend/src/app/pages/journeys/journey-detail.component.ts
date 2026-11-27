@@ -305,6 +305,13 @@ export class JourneyDetailComponent implements OnInit {
   /** Gibt es schon eine gültige Anzahlungsrechnung (auch als Entwurf)? */
   hasAdvance = computed(() => !!this.journey()?.documents.some((x) => x.type === 'anzahlung' && !x.cancelled));
 
+  /** Zahlungen buchen dürfen Administrator und Buchhaltung. */
+  canBook = computed(() => ['admin', 'buchhaltung'].includes(this.auth.user()?.role ?? ''));
+  /** Die älteste Rechnung oder Anzahlungsrechnung der Reise, zu der noch Geld fehlt: Dorthin führt ein Link. */
+  openPayment = computed(
+    () => this.journey()?.documents.find((x) => !x.cancelled && (x.payment_state === 'offen' || x.payment_state === 'teilweise')) ?? null,
+  );
+
   /** Es wird noch geplant (kein Beleg oder nur ein Entwurf): Dann gehört „Strecke hinzufügen“ zum nächsten Schritt. */
   planning = computed(() => this.canChange() && (this.latest()?.status ?? 'entwurf') === 'entwurf');
 
@@ -329,13 +336,13 @@ export class JourneyDetailComponent implements OnInit {
     if (d.cancelled) return 'Dieser Beleg ist storniert. Erstellen Sie bei Bedarf einen neuen.';
     switch (d.type) {
       case 'angebot': return 'Auftragsbestätigung erstellen, sobald der Kunde zusagt.';
-      case 'auftragsbestaetigung': {
+      case 'auftragsbestaetigung':
+      case 'anzahlung': {
         const o = this.orders();
         if (o && o.to_plan > 0) return `Teilen Sie Bus und Fahrer für ${o.to_plan === 1 ? 'den Fahrtauftrag' : `die ${o.to_plan} Fahrtaufträge`} ein.`;
         return 'Die Fahrt ist eingeteilt.';
       }
-      case 'anzahlung': return 'Erfassen Sie den Zahlungseingang in der Anzahlungsrechnung.';
-      case 'rechnung': return 'Zahlungseingang erfassen.';
+      case 'rechnung': return this.openPayment() ? '' : 'Die Rechnung ist bezahlt.';
       default: return '';
     }
   });

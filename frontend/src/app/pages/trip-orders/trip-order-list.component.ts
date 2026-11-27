@@ -24,7 +24,7 @@ type ListParams = { q: string; status: string; page: number };
   selector: 'app-trip-order-list',
   imports: [DatePipe, FormsModule, RouterLink, CustomerNameComponent, HighlightComponent, StickyFilterBarDirective, RevealCurrentDirective],
   templateUrl: './trip-order-list.component.html',
-  host: { class: 'list-page', style: '--sheet-w: 1116px' },
+  host: { class: 'list-page', style: '--sheet-w: 1150px' },
 })
 export class TripOrderListComponent implements OnInit {
   private api = inject(TripOrderService);

@@ -191,12 +191,15 @@ class DocumentService
     /** Belege der Planung: Bei einer abgesagten Reise werden sie nicht mehr angelegt oder festgeschrieben. */
     private const PLANNING_TYPES = [DocumentType::Angebot, DocumentType::Auftragsbestaetigung, DocumentType::Anzahlung];
 
-    /** Arten, die es aus einem Vorgänger nur einmal (gleichzeitig gültig) geben darf. Die Auftragsbestätigung ist die eine Zusage. */
-    private const SINGLE_FOLLOW_UP = [DocumentType::Auftragsbestaetigung];
+    /**
+     * Arten, die es aus einem Vorgänger nur einmal (gleichzeitig gültig, auch als Entwurf) geben darf: die Auftragsbestätigung als
+     * die eine Zusage und je Auftrag eine Anzahlungsrechnung. Nach einem Storno ist der Platz wieder frei.
+     */
+    private const SINGLE_FOLLOW_UP = [DocumentType::Auftragsbestaetigung, DocumentType::Anzahlung];
 
     /**
      * Der gültige (nicht stornierte) Folgebeleg der Art `$type` zu `$source`, wenn die Art nur einmal vorkommen darf; sonst null.
-     * Anzahlungen und Rechnungen sind davon ausgenommen (mehrere Anzahlungen, Teil- und Sammelrechnungen in Etappe 4).
+     * Rechnungen sind davon ausgenommen (Teil- und Sammelrechnungen in Etappe 4).
      */
     public function activeFollowUp(Document $source, DocumentType $type): ?Document
     {

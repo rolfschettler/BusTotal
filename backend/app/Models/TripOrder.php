@@ -38,6 +38,7 @@ class TripOrder extends Model
             'departure_at' => 'datetime',
             'issued_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'completed_at' => 'datetime',
             'collective_only' => 'boolean',
             'bus_no' => 'integer',
         ];
@@ -80,6 +81,28 @@ class TripOrder extends Model
     public function boardings(): HasMany
     {
         return $this->hasMany(TripOrderBoarding::class)->orderBy('position');
+    }
+
+    // ---------- Rückerfassung ----------
+
+    public function times(): HasMany
+    {
+        return $this->hasMany(TripOrderTime::class)->orderBy('position');
+    }
+
+    public function borders(): HasMany
+    {
+        return $this->hasMany(TripOrderBorder::class)->orderBy('position');
+    }
+
+    public function extras(): HasMany
+    {
+        return $this->hasMany(TripOrderExtra::class)->orderBy('position');
+    }
+
+    public function costs(): HasMany
+    {
+        return $this->hasMany(TripOrderCost::class)->orderBy('position');
     }
 
     public function section(): BelongsTo

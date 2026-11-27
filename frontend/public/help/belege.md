@@ -239,14 +239,14 @@ Das ist Absicht. **Die Rechnung entsteht nicht aus Angebot oder Auftragsbestäti
 | Aus | entsteht |
 |---|---|
 | Angebot | die Auftragsbestätigung (nur eine) |
-| Auftragsbestätigung | die Anzahlungsrechnung (auch mehrere) |
+| Auftragsbestätigung | die Anzahlungsrechnung (eine) |
 | Fahrtaufträge | die Rechnung (**folgt in einer späteren Etappe**) |
 
 **Anzahlung fordern:** Öffnen Sie die Auftragsbestätigung und wählen Sie **Anzahlungsrechnung erstellen**. Die Anzahlungsrechnung bleibt mit der Auftragsbestätigung verbunden. Die Rechnung aus den Fahrtaufträgen wird sie berücksichtigen.
 
 > **Bis diese Etappe da ist:** Eine Rechnung ohne Anzahlung legen Sie über **Belege › Neuer Beleg** an und tragen die Positionen selbst ein. Für eine Reise **mit Anzahlung** ist dieser Weg nicht geeignet, denn eine so angelegte Rechnung ist nicht mit der Auftragsbestätigung verbunden.
 
-Eine **Anzahlungsrechnung** gibt es nur zur Auftragsbestätigung, mehrere sind möglich. Die Software schlägt 30 % des Auftrags vor, je Steuersatz eine Position („Anzahlung 30 % auf Auftragsbestätigung …“). Den Betrag ändern Sie im Entwurf wie jede Position.
+Eine **Anzahlungsrechnung** gibt es nur zur Auftragsbestätigung, und zwar **eine** je Auftrag (auch ein Entwurf zählt). Gibt es sie schon, steht statt der Taste ein Verweis darauf. Erst nach ihrem Storno oder dem Löschen des Entwurfs lässt sich eine neue erstellen. Die Software schlägt 30 % des Auftrags vor, je Steuersatz eine Position („Anzahlung 30 % auf Auftragsbestätigung …“). Den Betrag ändern Sie im Entwurf wie jede Position.
 
 ## Schlussrechnung und Anzahlungen {#schlussrechnung}
 

@@ -14,7 +14,7 @@ import { TripOrder, TripOrderBoarding, TripOrderInput, TripOrderService, statusB
 import { VehicleChoice, VehicleService } from '../../core/vehicle.service';
 import { HelpLinkComponent } from '../../help/help-link.component';
 
-import { TripOrderRevokeModalComponent } from './trip-order-revoke-modal.component';
+import { askReason } from '../../shared/reason-modal.component';
 import { TripOrderStepsComponent } from './trip-order-steps.component';
 import { issueSummary } from './trip-order-steps';
 import { fromLocalInput, toLocalInput } from './trip-order-time';
@@ -255,20 +255,21 @@ export class TripOrderFormComponent implements OnInit {
   }
 
   /** Zu früh ausgegeben: Begründung im Fenster, danach ist der Auftrag wieder frei änderbar. */
-  revoke() {
+  async revoke() {
     const o = this.order();
     if (!o || this.form.dirty) return;
-    const ref = this.modals.open(TripOrderRevokeModalComponent, { centered: true });
-    (ref.componentInstance as TripOrderRevokeModalComponent).order = o;
-    ref.result.then(
-      (updated: TripOrder) => {
-        this.formSubmitted.set(false);
-        this.fieldErrors.set({});
-        this.apply(updated);
-        this.notify(true, 'Ausgabe zurückgenommen. Der Fahrtauftrag lässt sich wieder ändern.');
-      },
-      () => undefined,
-    );
+    const updated = await askReason(this.modals, {
+      title: `Ausgabe zurücknehmen: ${o.number}`,
+      message: 'Der Auftrag ist wieder frei änderbar und behält seine Nummer. Hat der Fahrer ihn schon, informieren Sie ihn bitte.',
+      confirmLabel: 'Zurücknehmen',
+      errorText: 'Die Ausgabe konnte nicht zurückgenommen werden.',
+      save: (reason) => this.api.revoke(o.id, reason),
+    });
+    if (!updated) return;
+    this.formSubmitted.set(false);
+    this.fieldErrors.set({});
+    this.apply(updated);
+    this.notify(true, 'Ausgabe zurückgenommen. Der Fahrtauftrag lässt sich wieder ändern.');
   }
 
   /** Druckvorschau der Fahrer-Fassung (ohne Preise). Zeigt den gespeicherten Stand, deshalb vorher speichern. */

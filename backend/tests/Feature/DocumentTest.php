@@ -394,10 +394,25 @@ class DocumentTest extends TestCase
         $res = $this->as(Role::Disponent)->postJson($url, ['type' => 'auftragsbestaetigung'])->assertUnprocessable();
         $this->assertStringContainsString(Document::find($ab['id'])->number, $res->json('errors.document.0'));
 
-        // Anzahlungen gibt es zur Auftragsbestätigung, nicht zum Angebot; mehrere sind möglich (Teilzahlungen)
-        $abUrl = "/api/documents/{$ab['id']}/convert";
-        $this->as(Role::Buchhaltung)->postJson($abUrl, ['type' => 'anzahlung'])->assertCreated();
-        $this->as(Role::Buchhaltung)->postJson($abUrl, ['type' => 'anzahlung'])->assertCreated();
+    }
+
+    public function test_je_auftrag_gibt_es_nur_eine_gueltige_anzahlungsrechnung(): void
+    {
+        $angebot = $this->finalized('angebot');
+        $ab = $this->as(Role::Disponent)->postJson("/api/documents/{$angebot['id']}/convert", ['type' => 'auftragsbestaetigung'])->json();
+        $this->as(Role::Buchhaltung)->postJson("/api/documents/{$ab['id']}/finalize")->assertOk();
+        $url = "/api/documents/{$ab['id']}/convert";
+
+        $first = $this->as(Role::Buchhaltung)->postJson($url, ['type' => 'anzahlung'])->assertCreated()->json('id');
+        // schon der Entwurf zählt
+        $this->as(Role::Buchhaltung)->postJson($url, ['type' => 'anzahlung'])->assertUnprocessable()->assertJsonValidationErrors(['document']);
+        $this->as(Role::Buchhaltung)->getJson("/api/documents/{$ab['id']}")->assertJsonPath('existing_followups.anzahlung.id', $first);
+
+        // nach dem Storno ist der Platz wieder frei
+        $this->as(Role::Buchhaltung)->postJson("/api/documents/{$first}/finalize")->assertOk();
+        $this->as(Role::Buchhaltung)->postJson($url, ['type' => 'anzahlung'])->assertUnprocessable();
+        $this->as(Role::Buchhaltung)->postJson("/api/documents/{$first}/cancel")->assertCreated();
+        $this->as(Role::Buchhaltung)->postJson($url, ['type' => 'anzahlung'])->assertCreated();
     }
 
     public function test_folgebeleg_nur_aus_festgeschriebenem_und_erlaubtem_beleg(): void

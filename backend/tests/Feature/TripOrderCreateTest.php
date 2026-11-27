@@ -139,7 +139,7 @@ class TripOrderCreateTest extends TestCase
 
         // Nur Angebot: nichts zu erwarten
         $this->as(Role::Disponent)->getJson("/api/journeys/$journeyId")->assertOk()
-            ->assertJsonPath('trip_orders', ['count' => 0, 'to_plan' => 0, 'planned' => 0, 'issued' => 0, 'cancelled' => 0, 'expected' => null, 'check' => false]);
+            ->assertJsonPath('trip_orders', ['count' => 0, 'to_plan' => 0, 'planned' => 0, 'issued' => 0, 'done' => 0, 'cancelled' => 0, 'expected' => null, 'check' => false]);
 
         $ab = $this->confirmation($quote);
         $this->as(Role::Disponent)->getJson("/api/journeys/$journeyId")

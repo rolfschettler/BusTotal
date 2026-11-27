@@ -86,6 +86,14 @@
           <!-- Die Anzahlung entsteht in der Auftragsbestätigung: Der Link führt dorthin -->
           @if (!j.quote.draft_id && !hasAdvance()) { Optional: <a class="alert-link" [routerLink]="['/belege', ab.id]">Fordern Sie eine Anzahlung</a>. }
         }
+        @if (openPayment(); as p) {
+          <!-- Der Link springt in der Rechnung direkt zum Abschnitt „Zahlungen“ -->
+          @if (canBook()) {
+            <a class="alert-link" [routerLink]="['/belege', p.id]" fragment="zahlungen">Zahlungseingang zu {{ p.number }} erfassen</a>.
+          } @else {
+            <a class="alert-link" [routerLink]="['/belege', p.id]" fragment="zahlungen">{{ typeLabel(p.type) }} {{ p.number }}</a> ist noch nicht bezahlt.
+          }
+        }
       </span>
     </div>
     <div class="d-flex flex-wrap gap-2">
@@ -237,7 +245,12 @@
                 @for (d of t.drivers; track $index) { <div>{{ d }}</div> }
                 @empty { <span class="small text-body-secondary">{{ t.external_company ? '–' : 'noch offen' }}</span> }
               </td>
-              <td><span class="badge" [class]="badge(t)">{{ t.status_label }}</span></td>
+              <td>
+                <span class="badge" [class]="badge(t)">{{ t.status_label }}</span>
+                @if (!t.cancelled_at && t.status !== 'entwurf') {
+                  <a class="d-block small mt-1" [routerLink]="['/fahrtauftraege', t.id, 'rueckerfassung']">Rückerfassung</a>
+                }
+              </td>
             </tr>
           } @empty {
             <tr><td colspan="5" class="text-center text-secondary py-4 small">Noch keine Fahrtaufträge. Sie entstehen, sobald die Auftragsbestätigung festgeschrieben wird: je Strecke und Bus einer.</td></tr>

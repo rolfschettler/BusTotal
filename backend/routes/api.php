@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\JourneyController;
 use App\Http\Controllers\Api\TripController;
 use App\Http\Controllers\Api\TripOrderController;
+use App\Http\Controllers\Api\TripReportController;
 use App\Http\Controllers\Api\VehicleController;
 use Illuminate\Support\Facades\Route;
 
@@ -170,6 +171,13 @@ Route::middleware(['auth:sanctum', 'account.ok'])->group(function () {
     Route::get('/trip-orders', [TripOrderController::class, 'index'])->middleware('role:admin,disponent,buchhaltung');
     Route::get('/trip-orders/{tripOrder}', [TripOrderController::class, 'show'])->middleware('role:admin,disponent,buchhaltung');
     Route::get('/trip-orders/{tripOrder}/pdf', [TripOrderController::class, 'pdf'])->middleware('role:admin,disponent,buchhaltung');
+    // Rückerfassung: das Erfassungsblatt eintippen und die Fahrt abschließen; auch die Buchhaltung (sie braucht die Angaben).
+    Route::middleware('role:admin,disponent,buchhaltung')->group(function () {
+        Route::get('/trip-orders/{tripOrder}/report', [TripReportController::class, 'show']);
+        Route::put('/trip-orders/{tripOrder}/report', [TripReportController::class, 'update']);
+        Route::post('/trip-orders/{tripOrder}/report/complete', [TripReportController::class, 'complete']);
+        Route::post('/trip-orders/{tripOrder}/report/reopen', [TripReportController::class, 'reopen']);
+    });
     Route::middleware('role:admin,disponent')->group(function () {
         Route::put('/trip-orders/{tripOrder}', [TripOrderController::class, 'update']);
         Route::post('/trip-orders/{tripOrder}/issue', [TripOrderController::class, 'issue']);

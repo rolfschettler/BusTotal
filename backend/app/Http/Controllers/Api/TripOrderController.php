@@ -12,6 +12,7 @@ use App\Support\NameSearch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 /**
@@ -27,7 +28,7 @@ class TripOrderController extends Controller
     {
         $filters = $request->validate([
             // „abgesagt“ ist kein eigener Stand (siehe TripOrder::isCancelled), lässt sich aber wie einer filtern
-            'status' => ['nullable', Rule::in([...array_column(TripOrderStatus::cases(), 'value'), 'abgesagt'])],
+            'status' => ['nullable', Rule::in([...array_column(TripOrderStatus::cases(), 'value'), 'abgesagt', 'zu_erfassen'])],
             'journey_id' => ['nullable', 'uuid'],
             'vehicle_id' => ['nullable', 'uuid'],
             'driver_id' => ['nullable', 'uuid'],
@@ -40,6 +41,13 @@ class TripOrderController extends Controller
 
         if (($filters['status'] ?? null) === 'abgesagt') {
             $query->whereNotNull('trip_orders.cancelled_at');
+        } elseif (($filters['status'] ?? null) === 'zu_erfassen') {
+            // Die Fahrt ist vorbei (deutscher Tag), aber noch nicht erledigt
+            $today = Carbon::today('Europe/Berlin')->toDateString();
+            $query->whereIn('trip_orders.status', [TripOrderStatus::Disponiert->value, TripOrderStatus::Ausgegeben->value])
+                ->whereNull('trip_orders.cancelled_at')
+                ->where(fn ($w) => $w->where(fn ($a) => $a->whereNotNull('trip_orders.date_to')->where('trip_orders.date_to', '<', $today))
+                    ->orWhere(fn ($b) => $b->whereNull('trip_orders.date_to')->whereNotNull('trip_orders.date_from')->where('trip_orders.date_from', '<', $today)));
         } elseif (! empty($filters['status'])) {
             $query->where('trip_orders.status', $filters['status'])->whereNull('trip_orders.cancelled_at');
         }

@@ -17,7 +17,7 @@ Diese Seite zeigt, was {{app}} für Ihr Busunternehmen leistet: **von der Streck
 | Reisevorhaben mit mehreren Bussen | Hinfahrt, Fahrt vor Ort und Rückfahrt in einem Vorgang | Verfügbar (auf der Reise) |
 | Fahrt vor Ort ohne Tour | Ausflug am Reiseziel nur mit Kilometern und Fahrzeit, ohne Routenplanung | Verfügbar (auf der Reise) |
 | Fahrtauftrag je Bus | Fahrzeug und Fahrer zuweisen mit Hinweisen, Fahrer-PDF ohne Preise mit Erfassungsblatt | [Verfügbar](/hilfe/fahrten#fahrtauftrag) |
-| Rückerfassung | Zusatzleistungen, Kosten und Grenzstände aus dem Fahrtauftrag, die Rechnung entsteht daraus | In Planung |
+| Rückerfassung | Zeiten, Kilometer, Grenzstände, Zusatzleistungen und Kosten aus dem Erfassungsblatt eintragen | [Verfügbar](/hilfe/fahrten#rueckerfassung) |
 | Belege nach GoBD | Unveränderbare Rechnungen, lückenlose Nummern, Storno statt Löschen | Verfügbar |
 | Archiv-PDF mit Prüfsumme | Jede festgeschriebene Rechnung wird einmal gesichert, nie neu erzeugt | Verfügbar |
 | Anzahlungsrechnung | Anzahlung zur Auftragsbestätigung; die Schlussrechnung mit Abzug folgt mit der Rechnung aus Fahrtaufträgen | Verfügbar (Schlussrechnung in Planung) |
@@ -59,8 +59,10 @@ Diese Seite zeigt, was {{app}} für Ihr Busunternehmen leistet: **von der Streck
 - **Fahrtauftrag je Bus:** Mit der Auftragsbestätigung entstehen die Fahrtaufträge. Ablauf, Stationen, Zeiten und Fahrzeugtyp kommen aus dem Angebot. Fahrzeug (eigenes oder **Fremdunternehmer**), **Fahrer 1 und Fahrer 2** weist der Disponent zu, mit Hinweisen bei Doppelbelegung, abgelaufenen Fristen, Abwesenheit, Führerscheinklasse und Sitzplätzen. Das Fahrer-PDF zeigt keine Preise. Siehe [Der Fahrtauftrag](/hilfe/fahrten#fahrtauftrag).
 - **Erfassungsblatt:** Auf der letzten Seite des Fahrer-PDFs notiert der Fahrer Zusatzleistungen (Sonderfahrten vor Ort), unvorhergesehene Kosten (Maut, Parken) und die **Kilometerstände bei Grenzein- und -austritt**.
 
+- **Rückerfassung:** Das Büro tippt das Erfassungsblatt ab, die Software prüft Kilometerstände und Zeiten und weist auf Unstimmigkeiten hin. „Erledigt“ lässt sich mit Begründung zurücknehmen. Siehe [Rückerfassung](/hilfe/fahrten#rueckerfassung).
+
 **In Planung**
-- **Rückerfassung:** Das Büro übernimmt die Angaben vom Erfassungsblatt, die Software prüft sie auf Plausibilität (lückenlose Kilometerstände und Zeiten). Daraus entsteht die Rechnung.
+- **Rechnung aus der Rückerfassung:** Aus den erfassten Angaben entsteht die Rechnung.
 - **Ihr Vorteil:** Keine Zettelwirtschaft zwischen Fahrer und Büro, Zusatzleistungen gehen nicht verloren, die Rechnung stimmt mit der Fahrt überein.
 
 ## Rechnungen nach GoBD {#rechnungen}

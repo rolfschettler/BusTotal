@@ -58,7 +58,7 @@ Die Touren „München – Wien“ und „Wien – München“ liegen im Archiv 
 - Eine Änderung an einer Tour im Archiv ändert **keinen** festgeschriebenen Beleg. Beim Festschreiben wird der Stand im Beleg festgehalten.
 - Belege ohne Strecke (Pauschalpreise, Zusatzleistungen) legen Sie von Hand an. Sie gehören zu keiner Reise.
 - Mit der Auftragsbestätigung entsteht je Strecke und Bus ein **Fahrtauftrag**, siehe [Schritt 5](#fahrt).
-- **Noch nicht gebaut:** die **Rückerfassung** der Fahrt. Sie kommt später zwischen Fahrtauftrag und Rechnung dazu, siehe Schritt 6.
+- **Nach der Fahrt** tragen Sie die [Rückerfassung](#rueckerfassung) ein (Schritt 6). Die Rechnung daraus ist noch nicht gebaut.
 
 ## Vorbereitung: einmal einrichten {#einrichten}
 
@@ -89,7 +89,7 @@ Bevor Sie das erste Angebot schreiben, richtet der **Administrator** diese Dinge
 | 3 | Auftrag bestätigen | Im festgeschriebenen Angebot: **Auftragsbestätigung erstellen** | Verfügbar |
 | 4 | Anzahlung verlangen (optional) | **Anzahlungsrechnung erstellen** | Verfügbar |
 | 5 | Fahrt durchführen | **Fahrtaufträge**: Fahrzeug und Fahrer zuweisen, ausgeben, Fahrer-PDF drucken | Verfügbar |
-| 6 | Fahrt zurückerfassen | Zeiten, Kilometerstände, Zusatzleistungen, Kosten | In Planung |
+| 6 | Fahrt zurückerfassen | **Rückerfassung** im Fahrtauftrag: Zeiten, Kilometerstände, Zusatzleistungen, Kosten | Verfügbar |
 | 7 | Rechnung schreiben | **Rechnung erstellen** aus dem Auftrag | Verfügbar (aus dem Auftrag) |
 | 8 | Zahlung erfassen | Abschnitt **Zahlungen** in der Rechnung | Verfügbar |
 | 9 | Korrigieren | **Stornieren** und neu erstellen | Verfügbar |
@@ -176,9 +176,9 @@ Auf der Seite der Reise führt beim **Nächsten Schritt** der Link **Fordern Sie
 
 **Wo:** in der festgeschriebenen Auftragsbestätigung.
 
-1. **Anzahlungsrechnung erstellen**. Vorgeschlagen sind 30 % des Auftrags, je Steuersatz eine Position. Den Prozentsatz ändern Sie im Entwurf.
+1. **Anzahlungsrechnung erstellen** (je Auftrag eine). Vorgeschlagen sind 30 % des Auftrags, je Steuersatz eine Position. Den Prozentsatz ändern Sie im Entwurf.
 2. **Festschreiben** und an den Kunden schicken (Drucken).
-3. Wenn die Anzahlung eingeht: In der Anzahlungsrechnung im Abschnitt **Zahlungen** **Zahlung erfassen** (siehe [Schritt 8](#zahlung)).
+3. Wenn die Anzahlung eingeht: Auf der Reise führt beim **Nächsten Schritt** der Link **Zahlungseingang … erfassen** direkt dorthin. Oder: In der Anzahlungsrechnung im Abschnitt **Zahlungen** **Zahlung erfassen** (siehe [Schritt 8](#zahlung)).
 
 ## Schritt 5: Fahrt durchführen {#fahrt}
 
@@ -188,7 +188,7 @@ Sobald Sie eine **Auftragsbestätigung festschreiben**, legt {{app}} für jede S
 
 ### Der Fahrtauftrag {#fahrtauftrag}
 
-Ein neuer Fahrtauftrag hat den Stand **Zu disponieren**: Der Fahrzeugtyp steht fest (aus dem Angebot), Fahrzeug und Fahrer sind noch offen. Oben im Fahrtauftrag zeigt eine **Ablaufleiste**, wo er steht (**Zu disponieren → Disponiert → Ausgegeben → Erledigt**) und was als Nächstes zu tun ist. „Erledigt“ folgt mit der Rückerfassung. Alle Fahrtaufträge einer Reise stehen auch auf der Seite der Reise.
+Ein neuer Fahrtauftrag hat den Stand **Zu disponieren**: Der Fahrzeugtyp steht fest (aus dem Angebot), Fahrzeug und Fahrer sind noch offen. Oben im Fahrtauftrag zeigt eine **Ablaufleiste**, wo er steht (**Zu disponieren → Disponiert → Ausgegeben → Erledigt**) und was als Nächstes zu tun ist. „Erledigt“ setzen Sie mit der [Rückerfassung](#rueckerfassung). Alle Fahrtaufträge einer Reise stehen auch auf der Seite der Reise.
 
 **Ausgeben ist nicht Festschreiben:** [Festschreiben](/hilfe/belege#entwurf-und-festschreiben) macht einen Beleg gesetzlich endgültig. **Ausgeben** ist die Übergabe an den Fahrer und lässt sich korrigieren.
 
@@ -216,15 +216,28 @@ Die **Lenk- und Ruhezeiten** der Fahrer über mehrere Fahrten prüft {{app}} hie
 
 **„Fahrtaufträge prüfen“:** Steht dieser Hinweis in der Reise oder oben im Beleg, passt die Zahl der Busse in der Auftragsbestätigung nicht zur Zahl der Fahrtaufträge, zum Beispiel weil ein Bus dazukam oder wegfiel. {{app}} ändert vorhandene Fahrtaufträge dann nicht von selbst. Prüfen Sie in der Liste, ob einer fehlt oder überzählig ist.
 
-**Bis die Rückerfassung kommt:** Was der Fahrer auf dem Erfassungsblatt notiert hat (Zusatzleistungen, Kosten, Grenzstände), tragen Sie wie bisher in die Rechnung ein.
-
 **Abgesagte Reise:** Wird die Reise [abgesagt](/hilfe/belege#reise-absagen), tragen ihre noch nicht erledigten Fahrtaufträge den Stand **Abgesagt**. Sie lassen sich nicht mehr ändern oder ausgeben und belegen Fahrzeug und Fahrer nicht mehr. In der Liste finden Sie sie über den Filter „Abgesagt“.
 
 ## Schritt 6: Fahrt zurückerfassen {#rueckerfassung}
 
-**In Planung.** Das Büro übernimmt die Angaben des Fahrers aus dem Fahrtauftrag. {{app}} prüft sie auf Plausibilität (lückenlose Kilometerstände, Zeiten). Daraus entsteht die Rechnung.
+**Wo:** im Fahrtauftrag die Taste **Rückerfassung**, in der Liste der Fahrtaufträge das Symbol mit dem Haken oder auf der Seite der Reise der Link **Rückerfassung**. Der Filter **Noch zu erfassen** zeigt alle Fahrten, die vorbei und noch nicht erledigt sind. Eintragen dürfen Administrator, Disponent und Buchhaltung. Der Auftrag muss mindestens **Disponiert** sein.
 
-**Bis dahin:** Zusatzleistungen und Kosten fügen Sie in der Rechnung als eigene **Positionen** hinzu.
+Der Fahrer bringt das ausgefüllte **Erfassungsblatt** zurück, Sie tippen es von oben nach unten ab:
+
+1. **Zeiten und Kilometer:** Datum und Ort sind vorbelegt. Die **erste Zeile** ist der Anfang, die **letzte** das Ende der Fahrt. Mit **Zeile** fügen Sie eine Zwischenstation ein. **Strecke bis hier** sagt, ob der Bus leer oder mit Fahrgästen gefahren ist. Darunter stehen die gefahrenen und die geplanten Kilometer.
+2. **Personen tatsächlich.**
+3. **Grenzübertritte:** je Land eine Zeile mit km-Stand bei Ein- und Ausfahrt und woher die Angabe stammt.
+4. **Zusatzleistungen** (Sonderfahrt, Wartezeit): Betrag brutto, bar bezahlt oder auf Rechnung, Steuersatz.
+5. **Kosten unterwegs** (Maut, Parken, Fähre): Betrag, Beleg-Nummer, ob Sie sie an den Kunden weiterberechnen. **Reisevorleistung** ist je nach Art vorbelegt.
+6. **Notizen.**
+
+**Speichern** geht beliebig oft. **Fahrt erledigt** speichert, zeigt eine Kurzfassung zur Kontrolle und schließt den Auftrag ab. Dafür nötig sind nur der **km-Stand am Anfang und am Ende** (bei Fremdunternehmern nicht) und vollständige Grenzzeilen. Hatte der Auftrag noch keine Nummer, bekommt er sie jetzt. Vor dem Beginn der Fahrt geht „erledigt“ nicht, und ein km-Stand am Ende darf nicht kleiner sein als am Anfang.
+
+**Gelber Kasten „Bitte prüfen“:** nur Hinweise, zum Beispiel wenn die gefahrenen Kilometer stark von der Planung abweichen oder eine Barzahlung ohne Betrag eingetragen ist.
+
+**Fehler nach „erledigt“?** Mit **Erledigt zurücknehmen** (mit Begründung) steht der Auftrag wieder auf **Ausgegeben**, Ihre Eingaben bleiben und lassen sich ändern. Alle Änderungen stehen im Änderungsprotokoll.
+
+Die **Rechnung** aus diesen Angaben, die Quittung bei Barzahlung und der Auslandsanteil folgen im nächsten Ausbauschritt. Bis dahin übertragen Sie die Angaben von Hand in die Rechnung.
 
 ## Schritt 7: Rechnung schreiben {#rechnung}
 
@@ -270,10 +283,8 @@ Die **Lenk- und Ruhezeiten** der Fahrer über mehrere Fahrten prüft {{app}} hie
 
 Diese Anleitung wird mit jeder Ausbaustufe ergänzt. Geplant sind in dieser Reihenfolge:
 
-1. **Tour speichern und wiederverwenden**, Angebot mit **mehreren Strecken und Fahrzeugtypen**, das **Reisevorhaben** (Hinfahrt, Fahrt vor Ort, Rückfahrt).
-2. **Rückerfassung** mit Kilometerständen an der Grenze (der **Fahrtauftrag** je Bus mit Fahrer-PDF ist schon da).
-3. **Rechnung aus Fahrtaufträgen**, **Sammelrechnung** (Werksverkehr), **Auslandsanteil** nach Streckenlänge.
-4. **Reiseleistungen nach § 25 UStG** (Marge).
-5. **Voranmeldungsbericht**, Datenexport, DATEV, Aufbewahrung.
+1. **Rechnung aus Fahrtaufträgen**, **Sammelrechnung** (Werksverkehr), **Auslandsanteil** nach Streckenlänge.
+2. **Reiseleistungen nach § 25 UStG** (Marge).
+3. **Voranmeldungsbericht**, Datenexport, DATEV, Aufbewahrung.
 
 **E-Rechnung** läuft als eigene Spur und wird eingeplant, sobald die Pflicht für Ihr Unternehmen feststeht.

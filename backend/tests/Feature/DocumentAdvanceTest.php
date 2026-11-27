@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\User;
 use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\CreatesInvoiceDrafts;
 use Tests\TestCase;
@@ -169,9 +170,12 @@ class DocumentAdvanceTest extends TestCase
 
     public function test_mehrere_anzahlungen_werden_summiert(): void
     {
+        // Neu entsteht je Auftrag nur eine Anzahlung; ältere Daten können mehrere haben, der Abzug muss alle erfassen.
         $angebot = $this->angebot();
-        $this->finalize($this->convert($angebot['id'], 'anzahlung', 30)['id']);
+        $first = $this->finalize($this->convert($angebot['id'], 'anzahlung', 30)['id'])['id'];
+        DB::table('documents')->where('id', $first)->update(['source_id' => null]);
         $this->finalize($this->convert($angebot['id'], 'anzahlung', 20)['id']);
+        DB::table('documents')->where('id', $first)->update(['source_id' => $angebot['id']]);
 
         $schluss = $this->convert($angebot['id'], 'rechnung');
 

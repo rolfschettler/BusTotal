@@ -140,6 +140,12 @@ export class DocumentFormComponent implements OnInit {
     const types = this.typeInfo()?.convertible_to ?? [];
     return this.journeyCancelled() ? types.filter((t) => this.doc()?.existing_followups?.[t]) : types;
   });
+  /** Die vorhandene Anzahlungsrechnung einer festgeschriebenen Auftragsbestätigung (je Auftrag gibt es nur eine). */
+  advance = computed(() => {
+    const d = this.doc();
+    if (d?.type !== 'auftragsbestaetigung' || d.status !== 'festgeschrieben' || this.cancelled() || this.journeyCancelled()) return null;
+    return d.existing_followups?.['anzahlung'] ?? null;
+  });
   /** Kurzer Hinweis zum nächsten Schritt in der Reise-Leiste (nur bei Belegen einer Reise). */
   nextStep = computed(() => {
     const d = this.doc();
@@ -147,6 +153,7 @@ export class DocumentFormComponent implements OnInit {
     if (d.status === 'entwurf') return 'Kunden wählen, Positionen prüfen und den Beleg festschreiben.';
     // Was es aus diesem Beleg schon gibt (Auftragsbestätigung), ist kein nächster Schritt mehr
     const next = (this.typeInfo()?.convertible_to ?? []).filter((t) => !d.existing_followups?.[t]);
+    if (this.advance()) return null; // dafür steht ein eigener Satz mit Verweis in der Leiste
     if (d.type === 'auftragsbestaetigung' && next.includes('anzahlung')) return 'Wenn Sie eine Anzahlung verlangen möchten: „Anzahlungsrechnung erstellen“ (Taste unten). Das ist freiwillig.';
     return next.length ? `${next.map((t) => this.typeLabel(t)).join(' oder ')} erstellen (Tasten unten).` : null;
   });
@@ -265,8 +272,16 @@ export class DocumentFormComponent implements OnInit {
   }
 
   /** Server-Stand ins Formular übernehmen. */
+  /** Link „Zahlungseingang erfassen“: nach dem Anzeigen zum Abschnitt „Zahlungen“ springen (er steht unter dem Formular). */
+  private revealPayments() {
+    if (this.route.snapshot.fragment !== 'zahlungen') return;
+    // Erst wenn Formular und Zahlungsliste stehen, stimmt die Stelle
+    setTimeout(() => this.host.nativeElement.querySelector('#zahlungen')?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 400);
+  }
+
   private apply(d: BusDocument) {
     this.doc.set(d);
+    this.revealPayments();
     this.customer.set(d.customer ? { id: d.customer.id, display_name: d.customer.display_name, customer_number: d.customer.customer_number } : null);
     this.lines.clear({ emitEvent: false });
     for (const l of d.lines ?? []) {

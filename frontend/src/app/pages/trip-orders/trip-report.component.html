@@ -1,0 +1,243 @@
+<!-- Formular-Muster, siehe docs/ClaudeCodePatterns/EditFormPattern.md. Reihenfolge wie auf dem Erfassungsblatt. -->
+<a [routerLink]="['/fahrtauftraege', id]" class="small text-decoration-none">‹ Zum Fahrtauftrag</a>
+
+@if (loading()) {
+  <div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary"></div></div>
+} @else if (data()) {
+  @let d = data()!;
+  @let o = d.order;
+
+  <div class="mb-3">
+    <h1 class="h3 mb-1">Rückerfassung @if (o.number) { <code>{{ o.number }}</code> }</h1>
+    <p class="mb-0 small text-body-secondary">
+      <span class="badge" [class]="badge(o)">{{ o.status_label }}</span>
+      {{ o.title }}, Bus {{ o.bus_no }}
+      @if (o.date_from) { · {{ o.date_from | date: 'dd.MM.yyyy' }}@if (o.date_to && o.date_to !== o.date_from) { – {{ o.date_to | date: 'dd.MM.yyyy' }} } }
+      @if (o.vehicle ?? o.external_company; as bus) { · {{ bus }} }
+      @if (o.drivers.length) { · {{ o.drivers.join(', ') }} }
+      @if (o.customer) { · {{ o.customer }} }
+      @if (o.journey_id) { · <a [routerLink]="['/reisen', o.journey_id]">zur Reise</a> }
+      <app-help-link topic="fahrten" anchor="rueckerfassung" label="Rückerfassung" />
+    </p>
+  </div>
+
+  <app-trip-order-steps [order]="o" [missing]="d.report.editable ? d.report.missing : null" />
+
+  @if (message(); as m) {
+    <div class="alert py-2 small" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
+  }
+  @if (d.report.warnings.length) {
+    <div class="alert alert-warning py-2 small" role="status">
+      <strong>Bitte prüfen</strong> (das sind Hinweise):
+      <ul class="mb-0 mt-1">@for (w of d.report.warnings; track $index) { <li>{{ w }}</li> }</ul>
+    </div>
+  }
+
+  <form id="reportForm" class="form-area" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <div class="section-title">Zeiten und Kilometer</div>
+    <div class="table-responsive" formArrayName="times">
+      <table class="table table-sm align-middle bg-white border mb-2">
+        <thead>
+          <tr class="small">
+            <th scope="col">Ereignis</th><th scope="col">Datum</th><th scope="col">Ort</th><th scope="col">Uhrzeit</th>
+            <th scope="col">km-Stand</th><th scope="col">Strecke bis hier</th><th scope="col"><span class="visually-hidden">Entfernen</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of list('times').controls; track row; let i = $index; let first = $first; let last = $last) {
+            <tr [formGroupName]="i">
+              <td><input class="form-control form-control-sm" formControlName="event" maxlength="100" [attr.aria-label]="'Ereignis in Zeile ' + (i + 1)" /></td>
+              <td><input type="date" class="form-control form-control-sm" formControlName="date" aria-label="Datum" /></td>
+              <td><input class="form-control form-control-sm" formControlName="place" maxlength="150" aria-label="Ort" /></td>
+              <td><input type="time" class="form-control form-control-sm" formControlName="time" aria-label="Uhrzeit" /></td>
+              <td><input type="number" min="0" step="1" class="form-control form-control-sm" formControlName="km" aria-label="km-Stand" /></td>
+              <td>
+                @if (first) {
+                  <span class="small text-body-secondary">–</span>
+                } @else {
+                  <select class="form-select form-select-sm" formControlName="leg" aria-label="Strecke bis hier">
+                    <option value="betriebshof">leer vom/zum Betriebshof</option>
+                    <option value="befoerderung">mit Fahrgästen</option>
+                    <option value="leerfahrt">leer unterwegs</option>
+                  </select>
+                }
+              </td>
+              <td>
+                <!-- Anfang und Ende bleiben: nur Zwischenzeilen lassen sich entfernen -->
+                @if (!readOnly() && !first && !last) {
+                  <button type="button" class="btn-action delete" title="Zeile entfernen" [attr.aria-label]="'Zeile ' + (i + 1) + ' entfernen'" (click)="remove('times', i)"><i class="bi bi-trash"></i></button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+      @if (!readOnly()) { <button type="button" class="btn btn-outline-secondary btn-sm" (click)="addTime()"><i class="bi bi-plus-lg me-1"></i>Zeile</button> }
+      <span class="small">
+        @if (driven() !== null) { <strong>Gefahren: {{ driven() }} km</strong> }
+        @if (d.report.planned_km) { <span class="text-body-secondary">(geplant {{ d.report.planned_km }} km)</span> }
+      </span>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-12 col-lg-4">
+        <label class="form-label" for="actual_passengers">Personen tatsächlich</label>
+        <input class="form-control" id="actual_passengers" formControlName="actual_passengers" maxlength="40" />
+        @if (o.passengers) { <div class="form-text">geplant: {{ o.passengers }}</div> }
+      </div>
+    </div>
+
+    <div class="section-title">Grenzübertritte</div>
+    <div formArrayName="borders">
+      @for (row of list('borders').controls; track row; let i = $index) {
+        <div class="row g-3 mb-2" [formGroupName]="i">
+          <div class="col-12 col-lg-3">
+            <label class="form-label" [for]="'country_' + i">Land</label>
+            <input class="form-control" [id]="'country_' + i" formControlName="country" maxlength="60" />
+          </div>
+          <div class="col-6 col-lg-2">
+            <label class="form-label" [for]="'km_in_' + i">km Einfahrt</label>
+            <input type="number" min="0" class="form-control" [id]="'km_in_' + i" formControlName="km_in" />
+          </div>
+          <div class="col-6 col-lg-2">
+            <label class="form-label" [for]="'km_out_' + i">km Ausfahrt</label>
+            <input type="number" min="0" class="form-control" [id]="'km_out_' + i" formControlName="km_out" />
+            @if (abroad(i) !== null) { <div class="form-text">{{ abroad(i) }} km im Ausland</div> }
+          </div>
+          <div class="col-12 col-lg-5">
+            <label class="form-label" [for]="'source_' + i">Angabe von</label>
+            <div class="input-group">
+              <select class="form-select" [id]="'source_' + i" formControlName="source">
+                <option value="fahrer">Fahrer</option>
+                <option value="tachograph">Tachograph</option>
+                <option value="navigation">Navigation</option>
+              </select>
+              @if (!readOnly()) {
+                <button type="button" class="btn btn-outline-secondary" (click)="remove('borders', i)" title="Zeile entfernen" aria-label="Grenzübertritt entfernen"><i class="bi bi-trash"></i></button>
+              }
+            </div>
+          </div>
+        </div>
+      } @empty {
+        @if (readOnly()) { <div class="small text-body-secondary mb-2">Keine.</div> }
+      }
+    </div>
+    @if (!readOnly()) { <button type="button" class="btn btn-outline-secondary btn-sm mb-3" (click)="add('borders')"><i class="bi bi-plus-lg me-1"></i>Land</button> }
+
+    <div class="section-title">Zusatzleistungen</div>
+    <div formArrayName="extras">
+      @for (row of list('extras').controls; track row; let i = $index) {
+        <div class="row g-3 mb-3" [formGroupName]="i">
+          <div class="col-12 col-lg-6">
+            <label class="form-label" [for]="'title_' + i">Leistung</label>
+            <input class="form-control" [id]="'title_' + i" formControlName="title" maxlength="150" />
+          </div>
+          <div class="col-6 col-lg-3">
+            <label class="form-label" [for]="'quantity_' + i">Menge</label>
+            <input class="form-control" [id]="'quantity_' + i" formControlName="quantity" maxlength="40" />
+          </div>
+          <div class="col-6 col-lg-3">
+            <label class="form-label" [for]="'place_' + i">Ort</label>
+            <input class="form-control" [id]="'place_' + i" formControlName="place" maxlength="100" />
+          </div>
+          <div class="col-6 col-lg-3">
+            <label class="form-label" [for]="'amount_' + i">Betrag brutto €</label>
+            <input type="number" min="0" step="0.01" class="form-control" [id]="'amount_' + i" formControlName="amount" />
+          </div>
+          <div class="col-6 col-lg-3">
+            <label class="form-label" [for]="'payment_' + i">Bezahlung</label>
+            <select class="form-select" [id]="'payment_' + i" formControlName="payment">
+              <option value="rechnung">auf Rechnung</option>
+              <option value="bar">bar bezahlt</option>
+            </select>
+          </div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" [for]="'tax_' + i">Steuersatz</label>
+            <div class="input-group">
+              <select class="form-select" [id]="'tax_' + i" formControlName="tax_rate">
+                @for (r of d.choices.tax_rates; track r) { <option [ngValue]="r">{{ r }} %</option> }
+              </select>
+              @if (!readOnly()) {
+                <button type="button" class="btn btn-outline-secondary" (click)="remove('extras', i)" title="Zeile entfernen" aria-label="Zusatzleistung entfernen"><i class="bi bi-trash"></i></button>
+              }
+            </div>
+          </div>
+        </div>
+      } @empty {
+        @if (readOnly()) { <div class="small text-body-secondary mb-2">Keine.</div> }
+      }
+    </div>
+    @if (!readOnly()) { <button type="button" class="btn btn-outline-secondary btn-sm mb-3" (click)="add('extras')"><i class="bi bi-plus-lg me-1"></i>Leistung</button> }
+
+    <div class="section-title">Kosten unterwegs</div>
+    <div formArrayName="costs">
+      @for (row of list('costs').controls; track row; let i = $index) {
+        <div class="row g-3 mb-3" [formGroupName]="i">
+          <div class="col-12 col-lg-4">
+            <label class="form-label" [for]="'category_' + i">Art</label>
+            <select class="form-select" [id]="'category_' + i" formControlName="category" (change)="categoryChanged(i)">
+              @for (c of d.choices.categories; track c.value) { <option [value]="c.value">{{ c.label }}</option> }
+            </select>
+          </div>
+          <div class="col-6 col-lg-3">
+            <label class="form-label" [for]="'cost_amount_' + i">Betrag brutto €</label>
+            <input type="number" min="0" step="0.01" class="form-control" [id]="'cost_amount_' + i" formControlName="amount" />
+          </div>
+          <div class="col-6 col-lg-5">
+            <label class="form-label" [for]="'receipt_' + i">Beleg-Nr.</label>
+            <div class="input-group">
+              <input class="form-control" [id]="'receipt_' + i" formControlName="receipt_no" maxlength="60" />
+              @if (!readOnly()) {
+                <button type="button" class="btn btn-outline-secondary" (click)="remove('costs', i)" title="Zeile entfernen" aria-label="Kosten entfernen"><i class="bi bi-trash"></i></button>
+              }
+            </div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" [id]="'charge_' + i" formControlName="charge_customer" />
+              <label class="form-check-label small" [for]="'charge_' + i">An Kunden weiterberechnen</label>
+            </div>
+          </div>
+          <div class="col-12 col-lg-8">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" [id]="'travel_' + i" formControlName="travel_service" />
+              <label class="form-check-label small" [for]="'travel_' + i">Leistung für die Reisegäste (Reisevorleistung)</label>
+            </div>
+          </div>
+        </div>
+      } @empty {
+        @if (readOnly()) { <div class="small text-body-secondary mb-2">Keine.</div> }
+      }
+    </div>
+    @if (!readOnly()) { <button type="button" class="btn btn-outline-secondary btn-sm mb-3" (click)="add('costs')"><i class="bi bi-plus-lg me-1"></i>Kosten</button> }
+
+    <div class="section-title">Notizen</div>
+    <label class="form-label visually-hidden" for="report_notes">Notizen und Besonderheiten</label>
+    <textarea class="form-control" id="report_notes" rows="3" formControlName="report_notes" maxlength="4000"></textarea>
+    <div class="form-text">Notizen und Besonderheiten der Fahrt.</div>
+  </form>
+
+  <div class="form-bar">
+    @if (!readOnly()) {
+      <button type="submit" form="reportForm" class="btn btn-primary" [disabled]="saving()">
+        @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+        Speichern
+      </button>
+    }
+    <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
+    @if (form.dirty && !readOnly()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
+    <div class="form-bar-right">
+      @if (!readOnly()) {
+        <button type="button" class="btn btn-outline-secondary" [disabled]="saving()" (click)="complete()">
+          <i class="bi bi-check2-all me-1"></i>Fahrt erledigt …
+        </button>
+        <button type="button" class="btn btn-outline-secondary" [disabled]="!form.dirty" [attr.title]="form.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancel()">Abbrechen</button>
+      }
+      @if (done()) {
+        <button type="button" class="btn btn-outline-secondary" (click)="reopen()"><i class="bi bi-arrow-counterclockwise me-1"></i>Erledigt zurücknehmen …</button>
+      }
+    </div>
+  </div>
+}
