@@ -1,25 +1,26 @@
-<a routerLink="/reisen" class="small text-decoration-none">‹ Alle Reisen</a>
+<!-- Formular-Muster, siehe docs/ClaudeCodePatterns/EditFormPattern.md -->
 
 @if (loading()) {
   <div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary"></div></div>
 } @else if (error()) {
-  <div class="alert alert-danger mt-3" role="alert">{{ error() }}</div>
+  <div class="alert alert-danger" role="alert">{{ error() }}</div>
 } @else if (journey()) {
   @let j = journey()!;
-  <div class="mb-3">
+  <div class="form-head">
+    <button type="button" class="btn btn-sm btn-outline-secondary" (click)="back()">
+      <i class="bi bi-chevron-left" aria-hidden="true"></i> Zurück
+    </button>
     @if (!editing()) {
-      <h1 class="h3 mb-1 d-flex align-items-center gap-2">
-        <span>{{ j.title }}</span>
-        @if (j.state === 'abgesagt') { <span class="badge text-bg-danger fs-6">Abgesagt</span> }
-        @if (j.state === 'abgeschlossen') { <span class="badge text-bg-secondary fs-6">Abgeschlossen</span> }
-        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="startRename()" title="Reise umbenennen" aria-label="Reise umbenennen">
-          <i class="bi bi-pencil" aria-hidden="true"></i>
-        </button>
-      </h1>
-      @if (renamed()) {
-        <div class="small text-success mb-1" role="status"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Name gespeichert.</div>
-      }
-    } @else {
+      <h1>{{ j.title }}</h1>
+      <button type="button" class="btn btn-sm btn-outline-secondary" (click)="startRename()" title="Reise umbenennen" aria-label="Reise umbenennen">
+        <i class="bi bi-pencil" aria-hidden="true"></i>
+      </button>
+      @if (j.state === 'abgesagt') { <span class="flag flag-danger">Abgesagt</span> }
+      @if (j.state === 'abgeschlossen') { <span class="flag flag-ok">Abgeschlossen</span> }
+      @if (renamed()) { <span class="small text-success" role="status"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Name gespeichert.</span> }
+    }
+  </div>
+  @if (editing()) {
       <div class="mb-2" style="max-width: 40rem">
         <label class="form-label small mb-1" for="journeyTitle">Name der Reise</label>
         <div class="input-group">
@@ -35,32 +36,7 @@
         @if (renameError(); as re) { <div class="text-danger small mt-1" role="alert">{{ re }}</div> }
         <div class="form-text">Zum Beispiel „Klassenfahrt Realschule Mai“. Der Name erscheint in der Liste, in der Suche und oben im Beleg, aber nicht auf Belegen und PDFs.</div>
       </div>
-    }
-    @if (j.customer && !customerEditing()) {
-      <p class="mb-0 small text-body-secondary">
-        Kunde: <a [routerLink]="['/kunden', j.customer.id]">{{ j.customer.display_name }}</a>
-        @if (canPlan()) { <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline" (click)="customerEditing.set(true)">Ändern</button> }
-        <app-help-link topic="belege" anchor="reisen" label="Reisen" />
-      </p>
-    } @else if (canPlan()) {
-      <div style="max-width: 40rem">
-        <label class="form-label small mb-1" for="journeyCustomer">Kunde</label>
-        <app-customer-picker inputId="journeyCustomer" [customer]="null" (picked)="pickCustomer($event)" hint="Freiwillig. Das Angebot übernimmt den Kunden; sonst wählen Sie ihn später im Angebot." />
-        @if (customerEditing()) { <button type="button" class="btn btn-link btn-sm p-0 mt-1" (click)="customerEditing.set(false)">Abbrechen</button> }
-      </div>
-    } @else {
-      <p class="mb-0 small text-body-secondary">Noch kein Kunde gewählt <app-help-link topic="belege" anchor="reisen" label="Reisen" /></p>
-    }
-    <!-- Reisezeitraum: aus den Fahrtdaten der Strecken, steht immer da (auch ohne Kunde) -->
-    <p class="mb-0 mt-1 small">
-      <strong>Reisedatum:</strong>
-      @if (j.date_from) {
-        {{ j.date_from | date: 'dd.MM.yyyy' }}@if (j.date_to && j.date_to !== j.date_from) { – {{ j.date_to | date: 'dd.MM.yyyy' }} }
-      } @else {
-        <span class="text-body-secondary">noch keins. Es ergibt sich aus den Fahrtdaten der Strecken: „Datum eintragen“ bei einer Strecke.</span>
-      }
-    </p>
-  </div>
+  }
 
   @if (message(); as m) {
     <div class="alert py-2" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
@@ -68,18 +44,18 @@
 
   <!-- Nächster Schritt: oben der Satz, darunter alle Tasten in EINER Reihe. Solange geplant wird, steht hier auch „Strecke hinzufügen“
        (Kernfunktion der Reise). -->
+  <app-route-line [steps]="line()">
   @if (cancelled()) {
   <div class="alert alert-danger d-flex flex-wrap align-items-center gap-2 py-2" role="note">
     <i class="bi bi-x-circle" aria-hidden="true"></i>
     <span class="me-auto"><strong>Abgesagt am {{ j.cancelled_on | date: 'dd.MM.yyyy' }}.</strong> Grund: {{ j.cancel_reason }}</span>
     @if (canPlan()) {
-      <button type="button" class="btn btn-outline-secondary bg-white text-body" [disabled]="busy()" (click)="reactivate()">Absage zurücknehmen</button>
+      <button type="button" class="btn btn-outline-secondary" [disabled]="busy()" (click)="reactivate()">Absage zurücknehmen</button>
     }
   </div>
   } @else {
-  <div class="alert alert-info py-3" role="note">
-    <div class="d-flex gap-2 mb-2">
-      <i class="bi bi-arrow-right-circle" aria-hidden="true"></i>
+  <div role="note">
+    <div class="mb-2">
       <span>
         <strong>Nächster Schritt:</strong> {{ nextStep() }}
         @if (confirmation(); as ab) {
@@ -98,7 +74,7 @@
     </div>
     <div class="d-flex flex-wrap gap-2">
     @if (planning()) {
-      <a class="btn" [class.btn-primary]="addFirst()" [class.btn-outline-primary]="!addFirst()" [class.bg-white]="!addFirst()"
+      <a class="btn" [class.btn-primary]="addFirst()" [class.btn-outline-primary]="!addFirst()"
          routerLink="/streckenplanung" [queryParams]="{ journey: j.id }">
         <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Strecke hinzufügen
       </a>
@@ -115,7 +91,7 @@
         <a class="btn btn-primary" [routerLink]="['/belege', draftId]">Angebot öffnen</a>
       }
     } @else if (j.quote.can_create && canPlan()) {
-      <button type="button" class="btn" [class.btn-primary]="!addFirst()" [class.btn-outline-primary]="addFirst()" [class.bg-white]="addFirst()" [disabled]="busy()" (click)="quote()">
+      <button type="button" class="btn" [class.btn-primary]="!addFirst()" [class.btn-outline-primary]="addFirst()" [disabled]="busy()" (click)="quote()">
         @if (busy()) { <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> }
         Angebot erstellen
       </button>
@@ -125,7 +101,7 @@
           <a class="btn btn-primary" [routerLink]="['/fahrtauftraege']" [queryParams]="{ journey_id: j.id }">Fahrtaufträge öffnen</a>
         }
         <a class="btn" [class.btn-primary]="!orders()?.to_plan" [class.btn-outline-secondary]="orders()?.to_plan"
-           [class.bg-white]="orders()?.to_plan" [class.text-body]="orders()?.to_plan" [routerLink]="['/belege', ab.id]">Auftragsbestätigung öffnen</a>
+           [routerLink]="['/belege', ab.id]">Auftragsbestätigung öffnen</a>
       } @else {
         @if (latest(); as d) {
           <a class="btn btn-primary" [routerLink]="['/belege', d.id]">{{ typeLabel(d.type) }} öffnen</a>
@@ -136,10 +112,14 @@
   </div>
   }
 
+  </app-route-line>
+
+<div class="form-cols">
+<div>
   <div class="form-area mb-3">
     <div class="section-title">Strecken</div>
     <div class="table-responsive">
-      <table class="table table-sm align-middle bg-white border mb-0">
+      <table class="table align-middle mb-0">
         <thead>
           <tr>
             <th scope="col">Art</th><th scope="col">Strecke</th><th scope="col">Fahrzeuge</th>
@@ -218,7 +198,7 @@
   <div class="form-area mb-3">
     <div class="section-title">Fahrtaufträge <app-help-link topic="fahrten" anchor="fahrtauftrag" label="Fahrtauftrag" /></div>
     <div class="table-responsive">
-      <table class="table table-sm align-middle bg-white border mb-0">
+      <table class="table align-middle mb-0">
         <thead>
           <tr>
             <th scope="col">Fahrtauftrag</th><th scope="col">Termin</th><th scope="col">Fahrzeug</th><th scope="col">Fahrer</th><th scope="col">Stand</th>
@@ -269,7 +249,7 @@
   <div class="form-area mb-3">
     <div class="section-title">Belege</div>
     <div class="table-responsive">
-      <table class="table table-sm align-middle bg-white border mb-0">
+      <table class="table align-middle mb-0">
         <thead>
           <tr><th scope="col">Beleg</th><th scope="col">Datum</th><th scope="col">Stand</th><th scope="col" class="text-end">Brutto</th></tr>
         </thead>
@@ -301,8 +281,39 @@
     }
   </div>
 
+
+</div>
+
+<aside class="form-side">
+  <div class="side-panel">
+    <h2>Reise <app-help-link topic="belege" anchor="reisen" label="Reisen" /></h2>
+    @if (j.customer && !customerEditing()) {
+      <p class="mb-0 small text-body-secondary">
+        Kunde: <a [routerLink]="['/kunden', j.customer.id]">{{ j.customer.display_name }}</a>
+        @if (canPlan()) { <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline" (click)="customerEditing.set(true)">Ändern</button> }
+      </p>
+    } @else if (canPlan()) {
+      <div>
+        <label class="form-label small mb-1" for="journeyCustomer">Kunde</label>
+        <app-customer-picker inputId="journeyCustomer" [customer]="null" (picked)="pickCustomer($event)" hint="Freiwillig. Das Angebot übernimmt den Kunden; sonst wählen Sie ihn später im Angebot." />
+        @if (customerEditing()) { <button type="button" class="btn btn-link btn-sm p-0 mt-1" (click)="customerEditing.set(false)">Abbrechen</button> }
+      </div>
+    } @else {
+      <p class="mb-0 small text-body-secondary">Noch kein Kunde gewählt</p>
+    }
+    <p class="mb-0 mt-2 small">
+      <strong>Reisedatum:</strong>
+      @if (j.date_from) {
+        {{ j.date_from | date: 'dd.MM.yyyy' }}@if (j.date_to && j.date_to !== j.date_from) { – {{ j.date_to | date: 'dd.MM.yyyy' }} }
+      } @else {
+        <span class="text-body-secondary">noch keins. Es ergibt sich aus den Fahrtdaten der Strecken: „Datum eintragen“ bei einer Strecke.</span>
+      }
+    </p>
+  </div>
   @if (canPlan()) {
-    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+  <div class="side-panel">
+    <h2>Absagen und löschen <app-help-link topic="belege" anchor="reise-absagen" label="Reise absagen" /></h2>
+    <div class="side-stack mb-1">
       @if (j.state === 'laufend') {
         <button type="button" class="btn btn-outline-danger" [disabled]="busy()" (click)="openCancel()">
           <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Reise absagen
@@ -311,9 +322,8 @@
       <button type="button" class="btn btn-outline-danger" [disabled]="busy() || !canDelete()" (click)="deleteJourney()">
         <i class="bi bi-trash me-1" aria-hidden="true"></i>Reise löschen
       </button>
-      <app-help-link topic="belege" anchor="reise-absagen" label="Reise absagen" />
     </div>
-    <div class="form-text mb-3">
+    <div class="form-text">
       @if (j.state === 'laufend') { Findet die Reise nicht statt, sagen Sie sie ab: Reise und Belege bleiben erhalten. }
       @if (canDelete()) {
         Löschen entfernt die Reise mit ihren Strecken@if (j.documents.length) { und dem Angebot, solange es nicht festgeschrieben ist }.
@@ -321,5 +331,8 @@
         Löschen ist nicht möglich, weil es festgeschriebene Belege gibt.
       }
     </div>
+  </div>
   }
+</aside>
+</div>
 }

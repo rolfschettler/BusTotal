@@ -1,5 +1,34 @@
 <!-- Formular-Muster, siehe docs/ClaudeCodePatterns/EditFormPattern.md. Reihenfolge wie auf dem Erfassungsblatt. -->
-<a [routerLink]="['/fahrtauftraege', id]" class="small text-decoration-none">‹ Zum Fahrtauftrag</a>
+<div class="form-head">
+  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="back()">
+    <i class="bi bi-chevron-left" aria-hidden="true"></i> Zurück
+  </button>
+  <h1>Rückerfassung {{ data()?.order?.number }}</h1>
+  @if (data()?.order; as o) {
+    <span class="badge" [class]="badge(o)">{{ o.status_label }}</span>
+    <app-help-link topic="fahrten" anchor="rueckerfassung" label="Rückerfassung" />
+    <p class="form-meta">
+      <a [routerLink]="['/fahrtauftraege', o.id]">Fahrtauftrag {{ o.title }}</a>, Bus {{ o.bus_no }}
+      @if (o.date_from) { · {{ o.date_from | date: 'dd.MM.yyyy' }}@if (o.date_to && o.date_to !== o.date_from) { – {{ o.date_to | date: 'dd.MM.yyyy' }} } }
+      @if (o.vehicle ?? o.external_company; as bus) { · {{ bus }} }
+      @if (o.drivers.length) { · {{ o.drivers.join(', ') }} }
+      @if (o.customer) { · {{ o.customer }} }
+      @if (o.journey_id) { · <a [routerLink]="['/reisen', o.journey_id]">zur Reise</a> }
+    </p>
+  }
+  @if (data(); as r) {
+    <div class="head-actions">
+      @if (done()) {
+        <button type="button" class="btn btn-outline-secondary" (click)="reopen()"><i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>Erledigt zurücknehmen …</button>
+      }
+      @if (!readOnly()) {
+        <button type="button" class="btn" [class.btn-primary]="!r.report.missing.length" [class.btn-outline-secondary]="r.report.missing.length" [disabled]="saving()" (click)="complete()">
+          <i class="bi bi-check2-all me-1" aria-hidden="true"></i>Fahrt erledigt …
+        </button>
+      }
+    </div>
+  }
+</div>
 
 @if (loading()) {
   <div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary"></div></div>
@@ -7,27 +36,13 @@
   @let d = data()!;
   @let o = d.order;
 
-  <div class="mb-3">
-    <h1 class="h3 mb-1">Rückerfassung @if (o.number) { <code>{{ o.number }}</code> }</h1>
-    <p class="mb-0 small text-body-secondary">
-      <span class="badge" [class]="badge(o)">{{ o.status_label }}</span>
-      {{ o.title }}, Bus {{ o.bus_no }}
-      @if (o.date_from) { · {{ o.date_from | date: 'dd.MM.yyyy' }}@if (o.date_to && o.date_to !== o.date_from) { – {{ o.date_to | date: 'dd.MM.yyyy' }} } }
-      @if (o.vehicle ?? o.external_company; as bus) { · {{ bus }} }
-      @if (o.drivers.length) { · {{ o.drivers.join(', ') }} }
-      @if (o.customer) { · {{ o.customer }} }
-      @if (o.journey_id) { · <a [routerLink]="['/reisen', o.journey_id]">zur Reise</a> }
-      <app-help-link topic="fahrten" anchor="rueckerfassung" label="Rückerfassung" />
-    </p>
-  </div>
-
   <app-trip-order-steps [order]="o" [missing]="d.report.editable ? d.report.missing : null" />
 
   @if (message(); as m) {
-    <div class="alert py-2 small" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
+    <div class="alert py-2" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
   }
   @if (d.report.warnings.length) {
-    <div class="alert alert-warning py-2 small" role="status">
+    <div class="alert alert-warning py-2" role="status">
       <strong>Bitte prüfen</strong> (das sind Hinweise):
       <ul class="mb-0 mt-1">@for (w of d.report.warnings; track $index) { <li>{{ w }}</li> }</ul>
     </div>
@@ -219,25 +234,14 @@
     <div class="form-text">Notizen und Besonderheiten der Fahrt.</div>
   </form>
 
-  <div class="form-bar">
-    @if (!readOnly()) {
+  @if (!readOnly()) {
+    <div class="form-bar" [class.d-none]="!form.dirty">
       <button type="submit" form="reportForm" class="btn btn-primary" [disabled]="saving()">
         @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
-        Speichern
+        Speichern<kbd>Strg+S</kbd>
       </button>
-    }
-    <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
-    @if (form.dirty && !readOnly()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
-    <div class="form-bar-right">
-      @if (!readOnly()) {
-        <button type="button" class="btn btn-outline-secondary" [disabled]="saving()" (click)="complete()">
-          <i class="bi bi-check2-all me-1"></i>Fahrt erledigt …
-        </button>
-        <button type="button" class="btn btn-outline-secondary" [disabled]="!form.dirty" [attr.title]="form.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancel()">Abbrechen</button>
-      }
-      @if (done()) {
-        <button type="button" class="btn btn-outline-secondary" (click)="reopen()"><i class="bi bi-arrow-counterclockwise me-1"></i>Erledigt zurücknehmen …</button>
-      }
+      <button type="button" class="btn btn-outline-secondary" (click)="cancel()">Verwerfen</button>
+      <span class="form-bar-hint">Ungespeicherte Änderungen</span>
     </div>
-  </div>
+  }
 }

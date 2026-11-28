@@ -4,12 +4,14 @@ import { Component, ElementRef, OnInit, computed, inject, signal, viewChild } fr
 import { FormsModule, NgForm } from '@angular/forms';
 import { AuthService, Role } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
+import { useFormPage } from '../../core/form-page';
 import { httpErrorText } from '../../core/http-error';
 import { ROLE_OPTIONS, roleLabel } from '../../core/roles';
 import { ManagedUser, UserAdminService } from '../../core/user-admin.service';
 import { HelpLinkComponent } from '../../help/help-link.component';
+import { AvatarComponent } from '../../shared/avatar.component';
 import { HighlightComponent } from '../../shared/highlight.component';
-import { StickyFilterBarDirective } from '../../shared/sticky-filter-bar.directive';
+import { ListSearchDirective, RowNavDirective } from '../../shared/row-nav.directive';
 import { StatusFilter, UserSortCol, filterUsers, sortUsers } from './users-view';
 
 interface Draft {
@@ -26,10 +28,9 @@ interface Draft {
  */
 @Component({
   selector: 'app-users',
-  imports: [FormsModule, DatePipe, HelpLinkComponent, HighlightComponent, StickyFilterBarDirective],
+  imports: [FormsModule, DatePipe, HelpLinkComponent, HighlightComponent, RowNavDirective, ListSearchDirective, AvatarComponent],
   templateUrl: './users.component.html',
-  // list-page: globales Listenlayout. --sheet-w: Summe der Spaltenbreiten in <colgroup>.
-  host: { class: 'list-page', style: '--sheet-w: 1040px' },
+  host: { class: 'list-page' },
 })
 export class UsersComponent implements OnInit {
   private api = inject(UserAdminService);
@@ -121,14 +122,37 @@ export class UsersComponent implements OnInit {
 
   newUser() {
     this.reset();
-    this.draft.set({ id: null, name: '', email: '', role: 'disponent' });
+    this.openDraft({ id: null, name: '', email: '', role: 'disponent' });
     this.scrollToTop();
   }
 
+  /** Klick oder Enter auf eine Zeile. Ein offenes Formular wird nicht ungefragt ersetzt. */
+  editById(id: string) {
+    const user = this.users().find((u) => u.id === id);
+    if (user && !this.hasUnsaved()) this.edit(user);
+  }
+
+  /** Strg+S speichert das Formular; beim Verlassen wird nach ungespeicherten Eingaben gefragt. */
+  canLeave = useFormPage({
+    unsaved: () => this.hasUnsaved(),
+    save: () => document.querySelector<HTMLFormElement>('#userForm')?.requestSubmit(),
+  });
+
+  private hasUnsaved(): boolean {
+    const d = this.draft();
+    return !!d && JSON.stringify(d) !== this.draftBefore;
+  }
+  private draftBefore = '';
+
   edit(u: ManagedUser) {
     this.reset();
-    this.draft.set({ id: u.id, name: u.name, email: u.email, role: u.role });
+    this.openDraft({ id: u.id, name: u.name, email: u.email, role: u.role });
     this.scrollToTop();
+  }
+
+  private openDraft(d: Draft) {
+    this.draftBefore = JSON.stringify(d);
+    this.draft.set(d);
   }
 
   cancel() {

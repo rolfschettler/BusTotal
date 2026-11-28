@@ -1,3 +1,4 @@
+import { TitleCasePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormsModule, NgForm, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -6,6 +7,7 @@ import { debounceTime } from 'rxjs';
 import { BackNavigation } from '../../core/back-navigation.service';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
+import { useFormPage } from '../../core/form-page';
 import { httpErrorText } from '../../core/http-error';
 import { ListMemory } from '../../core/list-memory.service';
 import { HelpLinkComponent } from '../../help/help-link.component';
@@ -32,10 +34,10 @@ const emptyAddress = (): Address => ({
 
 @Component({
   selector: 'app-customer-form',
-  imports: [ReactiveFormsModule, FormsModule, RouterLink, HelpLinkComponent],
+  imports: [ReactiveFormsModule, FormsModule, RouterLink, TitleCasePipe, HelpLinkComponent],
   templateUrl: './customer-form.component.html',
-  // Formular-Muster: Optik (max. Breite, .section-title) kommt global aus styles/_edit-form.scss
-  host: { class: 'form-page' },
+  // Formular-Muster: Optik kommt global aus styles/_edit-form.scss
+  host: { class: 'form-page form-page-record' },
 })
 export class CustomerFormComponent implements OnInit {
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -70,6 +72,9 @@ export class CustomerFormComponent implements OnInit {
 
   contactEdit = signal<Contact | null>(null);
   addressEdit = signal<Address | null>(null);
+  /** Stand beim Öffnen von Ansprechpartner bzw. Adresse: Daran ist zu erkennen, ob etwas geändert wurde. */
+  private contactBefore = '';
+  private addressBefore = '';
 
   form = this.fb.nonNullable.group({
     type: ['privat', Validators.required],
@@ -95,6 +100,9 @@ export class CustomerFormComponent implements OnInit {
   isOrganisation = computed(() => this.types().find((t) => t.value === this.typeValue())?.organisation ?? this.typeValue() !== 'privat');
   typeValue = signal('privat');
   archived = computed(() => !!this.customer()?.deleted_at);
+  /** Reisen planen dürfen Administrator und Disponent (der Server prüft zusätzlich). */
+  canPlan = computed(() => ['admin', 'disponent'].includes(this.auth.user()?.role ?? ''));
+  typeLabel = (value: string) => this.types().find((t) => t.value === value)?.label ?? value;
 
   ngOnInit() {
     this.api.types().subscribe((t) => this.types.set(t));
@@ -191,6 +199,7 @@ export class CustomerFormComponent implements OnInit {
       next: (c) => {
         this.saving.set(false);
         if (!this.id) {
+          this.form.markAsPristine(); // gespeichert: beim Wechsel zum neuen Kunden nicht nachfragen
           this.router.navigate(['/kunden', c.id]);
           return;
         }
@@ -205,21 +214,40 @@ export class CustomerFormComponent implements OnInit {
     });
   }
 
-  /** Tastenleiste "Zurück": zur vorigen Seite, bei ungespeicherten Änderungen erst nachfragen. */
-  async back() {
-    if (this.form.dirty) {
-      const ok = await this.confirm.ask({
-        title: 'Änderungen verwerfen',
-        message: 'Es gibt ungespeicherte Änderungen. Trotzdem zurück?',
-        confirmLabel: 'Verwerfen',
-        danger: true,
-      });
-      if (!ok) return;
-    }
+  /** „Zurück“ oben: zur vorigen Seite. Nach ungespeicherten Änderungen fragt `canLeave`. */
+  back() {
     void this.backNav.back('/kunden');
   }
 
-  /** Tastenleiste "Abbrechen": Eingaben verwerfen, Formular auf den gespeicherten Stand zurücksetzen. */
+  // ---------- Ungespeicherte Eingaben und Tastatur ----------
+
+  /** Stammdaten, Ansprechpartner oder Adresse geändert und noch nicht gespeichert? */
+  hasUnsaved(): boolean {
+    if (this.archived()) return false;
+    const contact = this.contactEdit();
+    const address = this.addressEdit();
+    return (
+      this.form.dirty ||
+      (!!contact && JSON.stringify(contact) !== this.contactBefore) ||
+      (!!address && JSON.stringify(address) !== this.addressBefore)
+    );
+  }
+
+  /** Strg+S, Warnung beim Neuladen und Rückfrage beim Verlassen (Formular-Muster). */
+  canLeave = useFormPage({ unsaved: () => this.hasUnsaved(), save: () => this.saveVisible() });
+
+  /** Speichert das Formular des sichtbaren Reiters. */
+  private saveVisible() {
+    if (this.archived() || this.loading()) return;
+    if (this.tab() === 'stamm') {
+      if (!this.saving() && (!this.id || this.form.dirty)) this.save();
+    } else {
+      const id = this.tab() === 'kontakte' ? 'contactForm' : 'addressForm';
+      this.host.nativeElement.querySelector<HTMLFormElement>('#' + id)?.requestSubmit();
+    }
+  }
+
+  /** „Verwerfen“: Eingaben zurücknehmen, Formular auf den gespeicherten Stand zurücksetzen. */
   cancel() {
     const c = this.customer();
     if (c) {
@@ -246,7 +274,7 @@ export class CustomerFormComponent implements OnInit {
       message: 'Der Kunde verschwindet aus der Liste, bleibt aber für Belege erhalten.',
       confirmLabel: 'Archivieren',
     });
-    if (ok) this.api.archive(this.id).subscribe(() => this.router.navigate(['/kunden']));
+    if (ok) this.api.archive(this.id).subscribe(() => this.leaveToList());
   }
 
   restore() {
@@ -279,18 +307,29 @@ export class CustomerFormComponent implements OnInit {
       confirmLabel: 'Endgültig anonymisieren',
       danger: true,
     });
-    if (ok) this.api.anonymize(this.id).subscribe(() => this.router.navigate(['/kunden']));
+    if (ok) this.api.anonymize(this.id).subscribe(() => this.leaveToList());
+  }
+
+  /** Nach Archivieren oder Anonymisieren zur Liste; offene Eingaben sind damit hinfällig. */
+  private leaveToList() {
+    this.form.markAsPristine();
+    this.contactEdit.set(null);
+    this.addressEdit.set(null);
+    this.router.navigate(['/kunden']);
   }
 
   // ---------- Ansprechpartner ----------
 
   newContact() {
-    this.contactSubmitted.set(false);
-    this.contactEdit.set(emptyContact());
+    this.openContact(emptyContact());
   }
   editContact(c: Contact) {
+    this.openContact({ ...c });
+  }
+  private openContact(c: Contact) {
     this.contactSubmitted.set(false);
-    this.contactEdit.set({ ...c });
+    this.contactBefore = JSON.stringify(c);
+    this.contactEdit.set(c);
   }
   saveContact(f: NgForm) {
     const c = this.contactEdit();
@@ -319,12 +358,15 @@ export class CustomerFormComponent implements OnInit {
   // ---------- Adressen ----------
 
   newAddress() {
-    this.addressSubmitted.set(false);
-    this.addressEdit.set(emptyAddress());
+    this.openAddress(emptyAddress());
   }
   editAddress(a: Address) {
+    this.openAddress({ ...a });
+  }
+  private openAddress(a: Address) {
     this.addressSubmitted.set(false);
-    this.addressEdit.set({ ...a });
+    this.addressBefore = JSON.stringify(a);
+    this.addressEdit.set(a);
   }
   saveAddress(f: NgForm) {
     const a = this.addressEdit();

@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { httpErrorText } from '../../core/http-error';
 import { BusDocument, DocumentService, DocumentTypeInfo } from '../../core/document.service';
 import { hasHit } from '../../shared/highlight';
@@ -10,7 +10,7 @@ import { CustomerService } from '../../core/customer.service';
 import { PrintPreviewService } from '../../core/print-preview.service';
 import { CustomerNameComponent } from '../../shared/customer-name.component';
 import { HighlightComponent } from '../../shared/highlight.component';
-import { StickyFilterBarDirective } from '../../shared/sticky-filter-bar.directive';
+import { ListSearchDirective, RowNavDirective } from '../../shared/row-nav.directive';
 import { RevealCurrentDirective } from '../../shared/reveal-current.directive';
 import { ListMemory } from '../../core/list-memory.service';
 import { formatAmount } from './document-calc';
@@ -32,12 +32,13 @@ type DocListParams = {
  */
 @Component({
   selector: 'app-document-list',
-  imports: [DatePipe, FormsModule, RouterLink, CustomerNameComponent, HighlightComponent, StickyFilterBarDirective, RevealCurrentDirective],
+  imports: [DatePipe, FormsModule, RouterLink, CustomerNameComponent, HighlightComponent, RowNavDirective, ListSearchDirective, RevealCurrentDirective],
   templateUrl: './document-list.component.html',
-  host: { class: 'list-page', style: '--sheet-w: 1184px' },
+  host: { class: 'list-page' },
 })
 export class DocumentListComponent implements OnInit {
   private api = inject(DocumentService);
+  private router = inject(Router);
   private route = inject(ActivatedRoute);
   private memory = inject(ListMemory);
   private printPreview = inject(PrintPreviewService);
@@ -89,7 +90,27 @@ export class DocumentListComponent implements OnInit {
     this.page.set(saved?.page ?? 1);
     this.locate = this.currentId();
     this.api.types().subscribe((t) => this.types.set(t));
-    this.load();
+
+    // „Belege anzeigen“ auf der Kundenseite (?kunde=…): alle Belege dieses Kunden, ohne die gemerkten Filter.
+    const customerId = this.route.snapshot.queryParamMap.get('kunde');
+    if (!customerId) {
+      this.load();
+      return;
+    }
+    this.q = this.type = this.status = '';
+    this.page.set(1);
+    this.locate = null;
+    this.customers.get(customerId).subscribe({
+      next: (c) =>
+        this.pickCustomer({
+          id: c.id, display_name: c.display_name, customer_number: c.customer_number, company_name: c.company_name,
+          first_name: c.first_name, last_name: c.last_name, postal_code: c.postal_code, city: c.city, archived: !!c.deleted_at,
+        }),
+      error: () => {
+        this.customer.set(null);
+        this.load();
+      },
+    });
   }
 
   onCustomerSearch(q: string) {
@@ -124,6 +145,16 @@ export class DocumentListComponent implements OnInit {
   select(id: string) {
     this.currentId.set(id);
     this.memory.select(KEY, id);
+  }
+
+  open(id: string) {
+    void this.router.navigate(['/belege', id]);
+  }
+
+  /** Enter in der Suche, bevor die Verzögerung abgelaufen ist: sofort suchen. */
+  searchNow() {
+    clearTimeout(this.timer);
+    if (this.q.trim() !== this.shownQuery()) this.filterChanged();
   }
 
   onSearch() {

@@ -1,155 +1,136 @@
 <!-- Tabellen-Muster, siehe docs/ClaudeCodePatterns/TableViewPattern.md. Die Optik kommt aus src/styles/_list-page.scss. -->
 
-<!-- ── Seitenkopf ──────────────────────────────────────────────────── -->
-<div class="page-header">
-  <div class="row g-2 align-items-center">
-    <div class="col-auto">
-      <div class="d-flex align-items-center gap-2">
-        <h5 class="page-title mb-0">{{ archived ? 'Archivierte Kunden' : 'Kunden' }}</h5>
-        @if (loaded()) {
-          <span class="badge rounded-pill record-count d-none d-sm-inline-flex">{{ total() }} {{ total() === 1 ? 'Kunde' : 'Kunden' }}</span>
-        }
-      </div>
-    </div>
-    <div class="col-12 col-sm-auto ms-sm-auto">
-      <div class="row row-cols-1 row-cols-sm-auto g-1 justify-content-end align-items-center header-ctrl">
-        <div class="col">
-          <button type="button" class="btn btn-sm btn-header w-100" (click)="refresh()" [disabled]="loading()">
-            <i class="bi bi-arrow-clockwise"></i><span class="ms-1">Aktualisieren</span>
-          </button>
-        </div>
-        <div class="col">
-          <a routerLink="/kunden/neu" class="btn btn-sm btn-header-new w-100">
-            <i class="bi bi-plus-lg"></i><span class="ms-1">Neuer Kunde</span>
-          </a>
-        </div>
-      </div>
-    </div>
+<div class="list-head">
+  <h1 class="list-title">{{ archived ? 'Archivierte Kunden' : 'Kunden' }}</h1>
+  @if (loaded()) { <span class="list-count">{{ total() }}</span> }
+
+  <input type="search" class="form-control list-search" [class.filter-active]="q.trim() !== ''" autocomplete="off"
+         appListSearch [nav]="nav" [pending]="q.trim() !== shownQuery() || loading()" (searchNow)="searchNow()"
+         placeholder="Suche: Nachname, Kundennr., Ort, PLZ, E-Mail …" title="Mit Komma nach Nachname und Vorname: Mustermann,Max" aria-label="Suche"
+         [(ngModel)]="q" (ngModelChange)="onSearch()" />
+  <div class="list-chips" role="group" aria-label="Kundenart">
+    <button type="button" class="app-tab" [class.active]="type === ''" [attr.aria-pressed]="type === ''" (click)="showType('')">Alle</button>
+    @for (t of types(); track t.value) {
+      <button type="button" class="app-tab" [class.active]="type === t.value" [attr.aria-pressed]="type === t.value" (click)="showType(t.value)">{{ t.label }}</button>
+    }
+  </div>
+  <div class="form-check mb-0">
+    <input id="archived" class="form-check-input" type="checkbox" [(ngModel)]="archived" (ngModelChange)="filterChanged()" />
+    <label class="form-check-label" for="archived">Archivierte</label>
+  </div>
+
+  <div class="list-actions">
+    <button type="button" class="btn btn-outline-secondary" (click)="refresh()" [disabled]="loading()" title="Liste neu laden">
+      <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Aktualisieren
+    </button>
+    <a routerLink="/kunden/neu" class="btn btn-primary"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Neuer Kunde</a>
   </div>
 </div>
 
-<!-- ── Inhalt: der EINE Scroll-Container ───────────────────────────── -->
-<div class="page-content">
-
-  <!-- Filterleiste (klebt oben) -->
-  <div class="filter-bar" appStickyFilterBar>
-    <div class="row g-2 align-items-center">
-      <div class="col-12 col-sm-6 col-lg-4">
-        <input type="search" class="form-control form-control-sm" [class.filter-active]="q.trim() !== ''"
-               placeholder="Suche: Nachname, Kundennr., Ort, PLZ, E-Mail …" title="Mit Komma nach Nachname und Vorname: Mustermann,Max" aria-label="Suche"
-               [(ngModel)]="q" (ngModelChange)="onSearch()" />
-      </div>
-      <div class="col-6 col-sm-auto">
-        <select class="form-select form-select-sm" [class.filter-active]="type !== ''" aria-label="Kundenart"
-                [(ngModel)]="type" (ngModelChange)="filterChanged()">
-          <option value="">Alle Arten</option>
-          @for (t of types(); track t.value) {
-            <option [value]="t.value">{{ t.label }}</option>
-          }
-        </select>
-      </div>
-      <div class="col-6 col-sm-auto">
-        <div class="form-check mb-0">
-          <input id="archived" class="form-check-input" type="checkbox" [(ngModel)]="archived" (ngModelChange)="filterChanged()" />
-          <label class="form-check-label small" for="archived">Archivierte</label>
-        </div>
-      </div>
-    </div>
-  </div>
-
+<!-- Der EINE Scroll-Container; der Tabellenkopf klebt an seinem oberen Rand -->
+<div class="list-split">
+<div class="list-body" [class.dimmed]="loading()" appRowNav #nav="appRowNav" [preview]="true" (rowSelect)="select($event)" (rowOpen)="open($event)">
   @if (message(); as m) {
-    <div class="alert alert-success py-2 mb-3" role="status">{{ m }}</div>
+    <div class="alert alert-success py-2" role="status">{{ m }}</div>
   }
   @if (error()) {
-    <div class="alert alert-danger py-2 mb-3" role="alert">{{ error() }}</div>
+    <div class="alert alert-danger py-2" role="alert">{{ error() }}</div>
   }
 
-  <!-- KEIN overflow-Wrapper um die Tabelle! .page-content scrollt schon beide Achsen,
-       ein zweiter overflow-Container würde den klebenden Tabellenkopf brechen. -->
-  <div class="card table-card rounded-3" [class.dimmed]="loading()">
-    <table class="table table-hover table-sm align-middle data-table mb-0">
+  <table class="data-table" style="min-width: 960px">
+    <colgroup>
+      <col style="width: 104px">  <!-- Nr. -->
+      <col style="width: 30%">    <!-- Name -->
+      <col style="width: 136px">  <!-- Art -->
+      <col style="width: 15%">    <!-- Ort -->
+      <col>                       <!-- E-Mail: nimmt den Rest -->
+      <col style="width: 148px">  <!-- Telefon -->
+      <col style="width: 64px">   <!-- Aktion -->
+    </colgroup>
 
-      <!-- Feste Spaltenbreiten. Ihre Summe steht als --sheet-w im host der Komponente. -->
-      <colgroup>
-        <col style="width:76px">   <!-- Aktionen: zwei Symbole à 28 px + Abstand -->
-        <col style="width:100px">  <!-- Nr. -->
-        <col style="width:258px">  <!-- Name -->
-        <col style="width:110px">  <!-- Art -->
-        <col style="width:170px">  <!-- Ort -->
-        <col style="width:240px">  <!-- E-Mail -->
-        <col style="width:130px">  <!-- Telefon -->
-      </colgroup>
+    <thead>
+      <tr>
+        <th class="sortable" [class.sort-active]="sortCol() === 'number'" [attr.aria-sort]="ariaSort('number')" tabindex="0"
+            (click)="sort('number')" (keydown.enter)="sort('number')">Nr. <i class="bi {{ sortIcon('number') }}"></i></th>
+        <th class="sortable" [class.sort-active]="sortCol() === 'name'" [attr.aria-sort]="ariaSort('name')" tabindex="0"
+            (click)="sort('name')" (keydown.enter)="sort('name')">Name <i class="bi {{ sortIcon('name') }}"></i></th>
+        <th class="sortable" [class.sort-active]="sortCol() === 'type'" [attr.aria-sort]="ariaSort('type')" tabindex="0"
+            (click)="sort('type')" (keydown.enter)="sort('type')">Art <i class="bi {{ sortIcon('type') }}"></i></th>
+        <th class="sortable" [class.sort-active]="sortCol() === 'city'" [attr.aria-sort]="ariaSort('city')" tabindex="0"
+            (click)="sort('city')" (keydown.enter)="sort('city')">Ort <i class="bi {{ sortIcon('city') }}"></i></th>
+        <th class="sortable" [class.sort-active]="sortCol() === 'email'" [attr.aria-sort]="ariaSort('email')" tabindex="0"
+            (click)="sort('email')" (keydown.enter)="sort('email')">E-Mail <i class="bi {{ sortIcon('email') }}"></i></th>
+        <th class="sortable" [class.sort-active]="sortCol() === 'phone'" [attr.aria-sort]="ariaSort('phone')" tabindex="0"
+            (click)="sort('phone')" (keydown.enter)="sort('phone')">Telefon <i class="bi {{ sortIcon('phone') }}"></i></th>
+        <th><span class="visually-hidden">Aktion</span></th>
+      </tr>
+    </thead>
 
-      <thead>
-        <tr>
-          <th class="col-actions"><span class="visually-hidden">Aktionen</span></th>
-          <th class="sortable" [class.sort-active]="sortCol() === 'number'" [attr.aria-sort]="ariaSort('number')" tabindex="0"
-              (click)="sort('number')" (keydown.enter)="sort('number')">Nr. <i class="bi {{ sortIcon('number') }}"></i></th>
-          <th class="sortable" [class.sort-active]="sortCol() === 'name'" [attr.aria-sort]="ariaSort('name')" tabindex="0"
-              (click)="sort('name')" (keydown.enter)="sort('name')">Name <i class="bi {{ sortIcon('name') }}"></i></th>
-          <th class="sortable" [class.sort-active]="sortCol() === 'type'" [attr.aria-sort]="ariaSort('type')" tabindex="0"
-              (click)="sort('type')" (keydown.enter)="sort('type')">Art <i class="bi {{ sortIcon('type') }}"></i></th>
-          <th class="sortable" [class.sort-active]="sortCol() === 'city'" [attr.aria-sort]="ariaSort('city')" tabindex="0"
-              (click)="sort('city')" (keydown.enter)="sort('city')">Ort <i class="bi {{ sortIcon('city') }}"></i></th>
-          <th class="sortable" [class.sort-active]="sortCol() === 'email'" [attr.aria-sort]="ariaSort('email')" tabindex="0"
-              (click)="sort('email')" (keydown.enter)="sort('email')">E-Mail <i class="bi {{ sortIcon('email') }}"></i></th>
-          <th class="sortable" [class.sort-active]="sortCol() === 'phone'" [attr.aria-sort]="ariaSort('phone')" tabindex="0"
-              (click)="sort('phone')" (keydown.enter)="sort('phone')">Telefon <i class="bi {{ sortIcon('phone') }}"></i></th>
+    <tbody>
+      @for (c of rows(); track c.id) {
+        <tr [attr.data-row-id]="c.id" [class.row-current]="c.id === currentId()" [appRevealCurrent]="c.id === currentId()">
+          <td><app-highlight [text]="c.customer_number" [query]="shownQuery()" mode="start" /></td>
+          <td [title]="c.display_name">
+            <div class="who">
+              <app-avatar [name]="c.display_name" />
+              <div>
+                <a [routerLink]="['/kunden', c.id]" class="text-reset"><app-customer-name [customer]="c" [query]="shownQuery()" [showPlace]="false" /></a>
+                @for (h of hiddenHits(c); track h.label) {
+                  <div class="small text-body-secondary">Treffer in {{ h.label }}: <app-highlight [text]="h.value" [query]="shownQuery()" mode="start" /></div>
+                }
+              </div>
+            </div>
+          </td>
+          <td>{{ typeLabel(c.type) }}</td>
+          <!-- {{ ' ' }}: Angular entfernt reinen Leerraum zwischen Bausteinen, der Abstand muss ausdrücklich da sein. -->
+          <td><app-highlight [text]="c.postal_code" [query]="shownQuery()" mode="start" />{{ ' ' }}<app-highlight [text]="c.city" [query]="shownQuery()" mode="start" /></td>
+          <td [title]="c.email ?? ''"><app-highlight [text]="c.email" [query]="shownQuery()" mode="start" /></td>
+          <td>{{ c.phone || c.mobile }}</td>
+          <td class="col-actions">
+            @if (!archived) {
+              <button type="button" class="btn-action" (click)="archive(c)" title="Archivieren" [attr.aria-label]="c.display_name + ' archivieren'">
+                <i class="bi bi-archive" aria-hidden="true"></i>
+              </button>
+            } @else if (auth.user()?.role === 'admin') {
+              <button type="button" class="btn-action" (click)="restore(c)" title="Wiederherstellen" [attr.aria-label]="c.display_name + ' wiederherstellen'">
+                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+              </button>
+            }
+          </td>
         </tr>
-      </thead>
+      } @empty {
+        <tr>
+          <td colspan="7" class="text-center text-body-secondary py-5">
+            @if (!loaded()) {
+              Daten werden geladen …
+            } @else if (shownQuery() || type) {
+              Keine Kunden zu dieser Suche gefunden.
+            } @else if (archived) {
+              Keine archivierten Kunden.
+            } @else {
+              Noch keine Kunden. <a routerLink="/kunden/neu">Ersten Kunden anlegen</a>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+<aside class="list-peek" aria-label="Vorschau">
+  <app-customer-peek [customer]="current()" [typeLabel]="current() ? typeLabel(current()!.type) : ''" (opened)="open($event)" />
+</aside>
+</div>
 
-      <tbody>
-        @for (c of rows(); track c.id) {
-          <tr (click)="select(c.id)" [class.row-current]="c.id === currentId()" [appRevealCurrent]="c.id === currentId()">
-            <!-- Auch ein Klick auf eine Aktion macht die Zeile zur aktuellen Zeile (ListMemory) -->
-            <td class="col-actions">
-              <a class="btn-action edit" [routerLink]="['/kunden', c.id]" title="Öffnen und bearbeiten" [attr.aria-label]="c.display_name + ' öffnen'">
-                <i class="bi bi-pencil"></i>
-              </a>
-              @if (!archived) {
-                <button type="button" class="btn-action delete" (click)="archive(c)" title="Archivieren" [attr.aria-label]="c.display_name + ' archivieren'">
-                  <i class="bi bi-archive"></i>
-                </button>
-              } @else if (auth.user()?.role === 'admin') {
-                <button type="button" class="btn-action restore" (click)="restore(c)" title="Wiederherstellen" [attr.aria-label]="c.display_name + ' wiederherstellen'">
-                  <i class="bi bi-arrow-counterclockwise"></i>
-                </button>
-              }
-            </td>
-            <td><code><app-highlight [text]="c.customer_number" [query]="shownQuery()" mode="start" /></code></td>
-            <td [title]="c.display_name">
-              <a [routerLink]="['/kunden', c.id]" class="text-reset text-decoration-none"><app-customer-name [customer]="c" [query]="shownQuery()" [showPlace]="false" /></a>
-              @for (h of hiddenHits(c); track h.label) {
-                <div class="small text-body-secondary">Treffer in {{ h.label }}: <app-highlight [text]="h.value" [query]="shownQuery()" mode="start" /></div>
-              }
-            </td>
-            <td>{{ typeLabel(c.type) }}</td>
-            <!-- {{ ' ' }}: Angular entfernt reinen Leerraum zwischen Bausteinen, der Abstand muss ausdrücklich da sein. -->
-            <td><app-highlight [text]="c.postal_code" [query]="shownQuery()" mode="start" />{{ ' ' }}<app-highlight [text]="c.city" [query]="shownQuery()" mode="start" /></td>
-            <td [title]="c.email ?? ''"><app-highlight [text]="c.email" [query]="shownQuery()" mode="start" /></td>
-            <td class="dim">{{ c.phone || c.mobile }}</td>
-          </tr>
-        } @empty {
-          <tr>
-            <td colspan="7" class="text-center text-secondary py-5 small">
-              {{ loaded() ? 'Keine Kunden gefunden.' : 'Daten werden geladen …' }}
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Blättern: Die Liste kommt seitenweise vom Server -->
-  <div class="pager">
-    <span>{{ total() }} {{ total() === 1 ? 'Kunde' : 'Kunden' }}</span>
-    <span class="ms-auto"></span>
-    <button type="button" class="btn btn-sm btn-outline-primary" (click)="go(page() - 1)" [disabled]="page() <= 1 || loading()">
-      <i class="bi bi-chevron-left"></i> Zurück
-    </button>
-    <span>Seite {{ page() }} von {{ lastPage() }}</span>
-    <button type="button" class="btn btn-sm btn-outline-primary" (click)="go(page() + 1)" [disabled]="page() >= lastPage() || loading()">
-      Weiter <i class="bi bi-chevron-right"></i>
-    </button>
-  </div>
+<!-- Blättern: Die Liste kommt seitenweise vom Server -->
+<div class="list-foot">
+  <span>{{ total() }} {{ total() === 1 ? 'Kunde' : 'Kunden' }}</span>
+  <span>Pfeiltasten wählen, Enter oder Doppelklick öffnet</span>
+  <span class="ms-auto"></span>
+  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="go(page() - 1)" [disabled]="page() <= 1 || loading()">
+    <i class="bi bi-chevron-left" aria-hidden="true"></i> Zurück
+  </button>
+  <span>Seite {{ page() }} von {{ lastPage() }}</span>
+  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="go(page() + 1)" [disabled]="page() >= lastPage() || loading()">
+    Weiter <i class="bi bi-chevron-right" aria-hidden="true"></i>
+  </button>
 </div>

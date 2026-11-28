@@ -29,19 +29,40 @@ Offene Punkte sind Verweise: Ein Klick führt Sie an die richtige Stelle, das Fr
 
 ## Aufbau der Oberfläche {#aufbau}
 
-- **Kopfleiste (oben):** Sie bleibt immer sichtbar. Links steht der Firmenname, rechts das Fragezeichen für die Hilfe und Ihr Benutzermenü mit **Abmelden**.
-- **Seitenleiste (links):** Von hier erreichen Sie alle Bereiche. Sie ist nach dem Arbeitsablauf in Gruppen geordnet: **Fahrten und Abrechnung** (Streckenplanung, Tour-Archiv, Reisen, Belege; wie sie zusammenhängen: [So ist die Software aufgebaut](/hilfe/fahrten#konzept)), **Stammdaten** (Kunden, Fahrzeuge, Fahrer) und **Verwaltung** (Benutzer, Einstellungen). **Start** und **Hilfe** stehen außerhalb der Gruppen. Welche Einträge Sie sehen, hängt von Ihrer [Rolle](/hilfe/anmeldung#rollen) ab.
-- **Arbeitsbereich (rechts):** Hier erscheint die gewählte Seite. Nur dieser Bereich scrollt.
+- **Seitenleiste (links):** Oben steht der Firmenname (ein Klick darauf führt zur Startseite), darunter **Alles durchsuchen** und das Menü, unten die Hilfe und Ihr Benutzermenü mit **Handbuch** und **Abmelden**.
+- **Menü:** Es ist nach dem Arbeitsablauf geordnet: **Reisen**, **Belege**, **Fahrtaufträge**, **Streckenplanung** und **Tour-Archiv** (wie alles zusammenhängt: [So ist die Software aufgebaut](/hilfe/fahrten#konzept)), darunter **Kunden**, **Fahrzeuge**, **Fahrer**, darunter **Benutzer** und **Einstellungen**. Der aktuelle Bereich ist hervorgehoben. Welche Einträge Sie sehen, hängt von Ihrer [Rolle](/hilfe/anmeldung#rollen) ab.
+- **Arbeitsbereich (rechts daneben):** Hier erscheint die gewählte Seite. Nur dieser Bereich scrollt.
 
 Die Farbe der Oberfläche und das Logo stellt der Administrator unter [Einstellungen](/hilfe/einstellungen#erscheinungsbild) ein.
+
+## Listen und Formulare bedienen {#bedienung}
+
+**In jeder Liste:**
+
+- Ein **Klick auf eine Zeile** öffnet den Datensatz.
+- Der Cursor steht schon in der Suche. Die **Pfeiltasten** wählen eine Zeile, **Enter** öffnet sie.
+- Die Symbole **rechts** in der Zeile sind weitere Aktionen, zum Beispiel Drucken oder Archivieren.
+- Kommen Sie zurück, steht die Liste wie vorher und die Zeile ist markiert.
+
+**In jedem Formular:**
+
+- **Zurück** steht oben links.
+- Sobald Sie etwas ändern, erscheint unten eine dunkle Leiste mit **Speichern** (oder <kbd>Strg</kbd>+<kbd>S</kbd>) und **Verwerfen**.
+- Aktionen wie Drucken, Archivieren oder der nächste Schritt stehen **oben rechts**. Die farbig gefüllte Taste zeigt, was jetzt dran ist.
+- Verlassen Sie die Seite mit ungespeicherten Eingaben, fragt die Software vorher nach.
+- Weitere Angaben und seltene Aktionen stehen, wo es sie gibt, in der **rechten Spalte**.
+
+## Alles durchsuchen {#alles-durchsuchen}
+
+**Alles durchsuchen** in der Seitenleiste (oder <kbd>Strg</kbd>+<kbd>K</kbd>) findet Kunden, Reisen, Belege und Fahrtaufträge an einer Stelle. Geben Sie mindestens zwei Zeichen ein; gesucht wird wie in den Listen. Die **Pfeiltasten** wählen einen Treffer, **Enter** öffnet ihn. Je Bereich erscheinen höchstens fünf Treffer.
 
 ## Hilfe aufrufen {#hilfe-aufrufen}
 
 Zu jeder Seite gibt es passende Hilfe, die Sie auf drei Wegen erreichen:
 
-1. **Fragezeichen in der Kopfleiste** oder die Taste <kbd>F1</kbd>: Ein Fenster am rechten Rand zeigt den Text zur aktuellen Seite. Die Seite bleibt dabei bedienbar. Wechseln Sie die Seite oder den Reiter, folgt das Hilfefenster.
+1. **Hilfe (F1)** unten in der Seitenleiste oder die Taste <kbd>F1</kbd>: Ein Fenster am rechten Rand zeigt den Text zur aktuellen Seite. Die Seite bleibt dabei bedienbar. Wechseln Sie die Seite oder den Reiter, folgt das Hilfefenster.
 2. **Kleine Fragezeichen neben schwierigen Feldern** (zum Beispiel bei der IBAN): Sie öffnen die Hilfe direkt an der passenden Stelle.
-3. **Eintrag „Hilfe“ in der Seitenleiste:** Die vollständige Hilfe mit Themenliste und Suche.
+3. **Handbuch im Benutzermenü** (unten links auf Ihren Namen klicken): Die vollständige Hilfe mit Themenliste und Suche.
 
 Im Hilfefenster bringt Sie **Im Handbuch öffnen** auf die große Hilfeseite, genau an dieselbe Stelle.
 

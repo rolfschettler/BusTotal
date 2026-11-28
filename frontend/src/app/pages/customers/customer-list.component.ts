@@ -1,38 +1,39 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { httpErrorText } from '../../core/http-error';
 import { Customer, CustomerService, CustomerType } from '../../core/customer.service';
 import { hasHit } from '../../shared/highlight';
 import { CustomerNameComponent } from '../../shared/customer-name.component';
+import { AvatarComponent } from '../../shared/avatar.component';
 import { HighlightComponent } from '../../shared/highlight.component';
-import { StickyFilterBarDirective } from '../../shared/sticky-filter-bar.directive';
 import { RevealCurrentDirective } from '../../shared/reveal-current.directive';
+import { ListSearchDirective, RowNavDirective } from '../../shared/row-nav.directive';
 import { ListMemory } from '../../core/list-memory.service';
+import { CustomerPeekComponent } from './customer-peek.component';
 
 const KEY = 'kunden';
 type ListParams = { q: string; type: string; archived: boolean; sortCol: string; sortDir: 'asc' | 'desc'; page: number };
 
 /**
- * Kundenliste. Lebende Referenz des Tabellen-Musters (docs/ClaudeCodePatterns/TableViewPattern.md):
- * Seitenkopf mit Zähler und Schaltflächen, klebende Filterleiste, klebender Tabellenkopf mit Sortierung,
- * Aktionsspalte, Auswahlzeile. Weil die Menge groß werden kann, filtert, sortiert und blättert der SERVER.
+ * Kundenliste. Lebende Referenz des Tabellen-Musters (docs/ClaudeCodePatterns/TableViewPattern.md).
+ * Weil die Menge groß werden kann, filtert, sortiert und blättert der SERVER.
  */
 @Component({
   selector: 'app-customer-list',
-  imports: [FormsModule, RouterLink, CustomerNameComponent, HighlightComponent, StickyFilterBarDirective, RevealCurrentDirective],
+  imports: [FormsModule, RouterLink, CustomerNameComponent, HighlightComponent, RevealCurrentDirective, RowNavDirective, ListSearchDirective, AvatarComponent, CustomerPeekComponent],
   templateUrl: './customer-list.component.html',
-  // list-page: aktiviert das globale Listenlayout. --sheet-w: Breite des Blattes (Summe der Spalten in <colgroup>).
-  host: { class: 'list-page', style: '--sheet-w: 1084px' },
+  host: { class: 'list-page' },
 })
 export class CustomerListComponent implements OnInit {
   private api = inject(CustomerService);
   private route = inject(ActivatedRoute);
   private confirm = inject(ConfirmService);
   private memory = inject(ListMemory);
+  private router = inject(Router);
   auth = inject(AuthService);
 
   // Filter (mit der Eingabe verbunden)
@@ -51,6 +52,8 @@ export class CustomerListComponent implements OnInit {
   types = signal<CustomerType[]>([]);
   /** Die markierte Zeile; bleibt über Formular und Rücksprung erhalten (ListMemory). */
   currentId = signal<string | null>(this.memory.current(KEY));
+  /** Die Zeile, die die Vorschau zeigt: die aktuelle, sonst die erste der Seite. */
+  current = computed(() => this.rows().find((c) => c.id === this.currentId()) ?? this.rows()[0] ?? null);
   loaded = signal(false);
   loading = signal(false);
   error = signal<string | null>(null);
@@ -78,6 +81,21 @@ export class CustomerListComponent implements OnInit {
   select(id: string) {
     this.currentId.set(id);
     this.memory.select(KEY, id);
+  }
+
+  showType(type: string) {
+    this.type = type;
+    this.filterChanged();
+  }
+
+  open(id: string) {
+    void this.router.navigate(['/kunden', id]);
+  }
+
+  /** Enter in der Suche, bevor die Verzögerung abgelaufen ist: sofort suchen. */
+  searchNow() {
+    clearTimeout(this.timer);
+    if (this.q.trim() !== this.shownQuery()) this.filterChanged();
   }
 
   // ---------- Bedienung ----------

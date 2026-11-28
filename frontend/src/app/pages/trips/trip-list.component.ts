@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { httpErrorText } from '../../core/http-error';
@@ -10,7 +10,7 @@ import { ListMemory } from '../../core/list-memory.service';
 import { Trip, TripService } from '../../core/trip.service';
 import { HighlightComponent } from '../../shared/highlight.component';
 import { RevealCurrentDirective } from '../../shared/reveal-current.directive';
-import { StickyFilterBarDirective } from '../../shared/sticky-filter-bar.directive';
+import { ListSearchDirective, RowNavDirective } from '../../shared/row-nav.directive';
 import { formatDuration } from '../route-planning/route-planning-view';
 
 const KEY = 'tour-archiv';
@@ -27,12 +27,13 @@ const VEHICLE_LABELS: Record<string, string> = {
  */
 @Component({
   selector: 'app-trip-list',
-  imports: [DatePipe, DecimalPipe, FormsModule, RouterLink, HighlightComponent, StickyFilterBarDirective, RevealCurrentDirective],
+  imports: [DatePipe, DecimalPipe, FormsModule, RouterLink, HighlightComponent, RowNavDirective, ListSearchDirective, RevealCurrentDirective],
   templateUrl: './trip-list.component.html',
-  host: { class: 'list-page', style: '--sheet-w: 1166px' },
+  host: { class: 'list-page' },
 })
 export class TripListComponent implements OnInit {
   private api = inject(TripService);
+  private router = inject(Router);
   private memory = inject(ListMemory);
   private confirm = inject(ConfirmService);
   private auth = inject(AuthService);
@@ -72,12 +73,24 @@ export class TripListComponent implements OnInit {
     this.memory.select(KEY, id);
   }
 
+  open(id: string) {
+    if (this.canEdit()) void this.router.navigate(['/streckenplanung'], { queryParams: { trip: id } });
+  }
+
+  /** Enter in der Suche, bevor die Verzögerung abgelaufen ist: sofort suchen. */
+  searchNow() {
+    clearTimeout(this.timer);
+    if (this.q.trim() !== this.shownQuery()) this.filterChanged();
+  }
+
   onSearch() {
     clearTimeout(this.timer);
-    this.timer = setTimeout(() => {
-      this.page.set(1);
-      this.load();
-    }, 300);
+    this.timer = setTimeout(() => this.filterChanged(), 300);
+  }
+
+  filterChanged() {
+    this.page.set(1);
+    this.load();
   }
 
   refresh() {

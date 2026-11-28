@@ -1,71 +1,41 @@
 <!-- Tabellen-Muster (clientseitige Variante), siehe docs/ClaudeCodePatterns/TableViewPattern.md -->
+<div class="list-head">
+  <h1 class="list-title">Firmen</h1>
+  <app-help-link topic="betreiber" anchor="firmenliste" label="Firmenverwaltung" />
+  @if (!loading()) { <span class="list-count">{{ filtered() ? displayRows().length + ' von ' + tenants().length : tenants().length }}</span> }
 
-<!-- ── Seitenkopf ──────────────────────────────────────────────────── -->
-<div class="page-header">
-  <div class="row g-2 align-items-center">
-    <div class="col-auto">
-      <div class="d-flex align-items-center gap-2">
-        <h5 class="page-title mb-0">Firmen</h5>
-        <app-help-link topic="betreiber" anchor="firmenliste" label="Firmenverwaltung" />
-        @if (!loading()) {
-          <span class="badge rounded-pill record-count d-none d-sm-inline-flex">
-            {{ filtered() ? displayRows().length + ' von ' + tenants().length : tenants().length }} Firmen
-          </span>
-        }
-      </div>
-    </div>
-    <div class="col-12 col-sm-auto ms-sm-auto">
-      <div class="row row-cols-1 row-cols-sm-auto g-1 justify-content-end align-items-center header-ctrl">
-        <div class="col">
-          <button type="button" class="btn btn-sm btn-header w-100" (click)="refresh()" [disabled]="loading()">
-            <i class="bi bi-arrow-clockwise"></i><span class="ms-1">Aktualisieren</span>
-          </button>
-        </div>
-        <div class="col">
-          <button type="button" class="btn btn-sm btn-header-new w-100" (click)="newTenant()" [disabled]="draft() !== null || busy()">
-            <i class="bi bi-plus-lg"></i><span class="ms-1">Neue Firma</span>
-          </button>
-        </div>
-      </div>
-    </div>
+  <input type="search" class="form-control list-search" [class.filter-active]="q().trim() !== ''" autocomplete="off"
+         appListSearch [nav]="nav" placeholder="Suche: Name, Adresse, Datenbank …" aria-label="Suche" [ngModel]="q()" (ngModelChange)="q.set($event)" />
+  <select class="form-select" [class.filter-active]="statusFilter() !== ''" aria-label="Status" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+    <option value="">Alle Status</option>
+    <option value="active">Aktiv</option>
+    <option value="locked">Gesperrt</option>
+  </select>
+
+  <div class="list-actions">
+    <button type="button" class="btn btn-outline-secondary" (click)="refresh()" [disabled]="loading()" title="Liste neu laden">
+      <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Aktualisieren
+    </button>
+    <button type="button" class="btn" [class.btn-primary]="draft() === null" [class.btn-outline-secondary]="draft() !== null" (click)="newTenant()" [disabled]="draft() !== null || busy()">
+      <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Neue Firma
+    </button>
   </div>
 </div>
 
-<!-- ── Inhalt: der EINE Scroll-Container ───────────────────────────── -->
-<div class="page-content" #content>
-
-  <!-- Filterleiste (klebt oben) -->
-  <div class="filter-bar" appStickyFilterBar>
-    <div class="row g-2 align-items-center">
-      <div class="col-12 col-sm-6 col-lg-4">
-        <input type="search" class="form-control form-control-sm" [class.filter-active]="q().trim() !== ''"
-               placeholder="Suche: Name, Adresse, Datenbank …" aria-label="Suche"
-               [ngModel]="q()" (ngModelChange)="q.set($event)" />
-      </div>
-      <div class="col-6 col-sm-auto">
-        <select class="form-select form-select-sm" [class.filter-active]="statusFilter() !== ''" aria-label="Status"
-                [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
-          <option value="">Alle Status</option>
-          <option value="active">Aktiv</option>
-          <option value="locked">Gesperrt</option>
-        </select>
-      </div>
-    </div>
-  </div>
-
+<div class="list-body" #content appRowNav #nav="appRowNav" (rowSelect)="currentId.set($event)" (rowOpen)="editById($event)">
   @if (message(); as m) {
-    <div class="alert py-2 mb-3" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
+    <div class="alert py-2" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
   }
 
   @if (busy() && !draft()) {
-    <div class="alert alert-info py-2 mb-3" role="status">
+    <div class="alert alert-info py-2" role="status">
       <span class="spinner-border spinner-border-sm me-2"></span> Bitte warten, die Datenbank wird bearbeitet …
     </div>
   }
 
   <!-- Zugang des Administrators: wird nur einmal angezeigt -->
   @if (secret(); as s) {
-    <div class="alert alert-warning mb-3" role="alert">
+    <div class="alert alert-warning" role="alert">
       <div class="fw-semibold mb-1">
         {{ s.title }}
         <app-help-link topic="betreiber" anchor="vorlaeufiges-passwort" label="Vorläufiges Passwort" />
@@ -87,7 +57,7 @@
   <!-- Formular: Anlegen und Bearbeiten. Kurzes Inline-Formular nach dem Formular-Muster
        (docs/ClaudeCodePatterns/EditFormPattern.md): .form-area, Labels oben, Tastenleiste ohne sticky (.form-bar-static). -->
   @if (draft(); as d) {
-    <div class="form-page mb-3">
+    <div class="list-box form-page">
       <form id="tenantForm" class="form-area" #tf="ngForm" (ngSubmit)="save(tf)" novalidate [class.was-validated]="formSubmitted()">
         <div class="row g-3">
           <div class="col-12"><div class="section-title">{{ d.id === null ? 'Neue Firma' : 'Firma bearbeiten' }}</div></div>
@@ -173,7 +143,7 @@
 
   <!-- Formular: Administrator einer vorhandenen Firma nachlegen (z. B. wenn der Zugang verloren ist) -->
   @if (adminDraft(); as a) {
-    <div class="form-page mb-3">
+    <div class="list-box form-page">
       <form id="adminForm" class="form-area" #af="ngForm" (ngSubmit)="saveAdmin(af)" novalidate [class.was-validated]="formSubmitted()">
         <div class="row g-3">
           <div class="col-12"><div class="section-title">Administrator anlegen für {{ a.tenant.name }}</div></div>
@@ -205,7 +175,7 @@
 
   <!-- Administratoren einer Firma: vorläufiges Passwort einblenden oder neu vergeben -->
   @if (adminList(); as l) {
-    <div class="form-page mb-3">
+    <div class="list-box form-page">
       <div class="form-area">
         <div class="row g-3">
           <div class="col-12"><div class="section-title">Administratoren von {{ l.tenant.name }}</div></div>
@@ -254,23 +224,18 @@
       </div>
     </div>
   }
+  <table class="data-table" style="min-width: 1100px">
+    <colgroup>
+      <col>
+      <col style="width: 24%">
+      <col style="width: 18%">
+      <col style="width: 120px">
+      <col style="width: 190px">
+      <col style="width: 170px">
+    </colgroup>
 
-  <!-- KEIN overflow-Wrapper um die Tabelle! .page-content scrollt schon beide Achsen. -->
-  <div class="card table-card rounded-3">
-    <table class="table table-hover table-sm align-middle data-table mb-0">
-
-      <colgroup>
-        <col style="width:176px">  <!-- Aktionen: fünf Symbole à 28 px + Abstand -->
-        <col style="width:220px">  <!-- Name -->
-        <col style="width:230px">  <!-- Adresse -->
-        <col style="width:170px">  <!-- Datenbank -->
-        <col style="width:110px">  <!-- Status -->
-        <col style="width:186px">  <!-- Datenbank aktualisiert -->
-      </colgroup>
-
-      <thead>
+    <thead>
         <tr>
-          <th class="col-actions"><span class="visually-hidden">Aktionen</span></th>
           <th class="sortable" [class.sort-active]="sortCol() === 'name'" [attr.aria-sort]="ariaSort('name')" tabindex="0"
               (click)="sort('name')" (keydown.enter)="sort('name')">Name <i class="bi {{ sortIcon('name') }}"></i></th>
           <th class="sortable" [class.sort-active]="sortCol() === 'subdomain'" [attr.aria-sort]="ariaSort('subdomain')" tabindex="0"
@@ -281,35 +246,13 @@
               (click)="sort('status')" (keydown.enter)="sort('status')">Status <i class="bi {{ sortIcon('status') }}"></i></th>
           <th class="sortable" [class.sort-active]="sortCol() === 'migrated'" [attr.aria-sort]="ariaSort('migrated')" tabindex="0"
               (click)="sort('migrated')" (keydown.enter)="sort('migrated')">Zuletzt aktualisiert <i class="bi {{ sortIcon('migrated') }}"></i></th>
+          <th><span class="visually-hidden">Aktionen</span></th>
         </tr>
       </thead>
 
       <tbody>
         @for (t of displayRows(); track t.id) {
-          <tr (click)="currentId.set(t.id)" [class.row-current]="t.id === currentId()" [class.text-body-secondary]="!t.is_active">
-            <td class="col-actions" (click)="$event.stopPropagation()">
-              <button type="button" class="btn-action edit" (click)="edit(t)" [disabled]="busy()" title="Bearbeiten" [attr.aria-label]="t.name + ' bearbeiten'">
-                <i class="bi bi-pencil"></i>
-              </button>
-              <button type="button" class="btn-action key" (click)="migrate(t)" [disabled]="busy()" title="Datenbank aktualisieren" [attr.aria-label]="t.name + ' Datenbank aktualisieren'">
-                <i class="bi bi-database-up"></i>
-              </button>
-              <button type="button" class="btn-action key" (click)="openAdmins(t)" [disabled]="busy()" title="Administratoren und vorläufige Passwörter" [attr.aria-label]="t.name + ' Administratoren'">
-                <i class="bi bi-key"></i>
-              </button>
-              <button type="button" class="btn-action key" (click)="newAdmin(t)" [disabled]="busy()" title="Administrator anlegen" [attr.aria-label]="t.name + ' Administrator anlegen'">
-                <i class="bi bi-person-plus"></i>
-              </button>
-              @if (t.is_active) {
-                <button type="button" class="btn-action delete" (click)="toggleActive(t)" [disabled]="busy()" title="Sperren" [attr.aria-label]="t.name + ' sperren'">
-                  <i class="bi bi-lock"></i>
-                </button>
-              } @else {
-                <button type="button" class="btn-action restore" (click)="toggleActive(t)" [disabled]="busy()" title="Entsperren" [attr.aria-label]="t.name + ' entsperren'">
-                  <i class="bi bi-unlock"></i>
-                </button>
-              }
-            </td>
+          <tr [attr.data-row-id]="t.id" [class.row-current]="t.id === currentId()" [class.text-body-secondary]="!t.is_active">
             <td [title]="t.name"><span class="fw-semibold"><app-highlight [text]="t.name" [query]="q()" /></span></td>
             <td [title]="t.host"><app-highlight [text]="t.host" [query]="q()" /></td>
             <td [title]="t.db_database"><app-highlight [text]="t.db_database" [query]="q()" /></td>
@@ -317,15 +260,39 @@
               @if (t.is_active) { <span class="badge text-bg-success">Aktiv</span> } @else { <span class="badge text-bg-danger">Gesperrt</span> }
             </td>
             <td class="dim">{{ t.migrated_at ? (t.migrated_at | date: 'dd.MM.y, HH:mm') : 'noch nie' }}</td>
+            <td class="col-actions">
+              <button type="button" class="btn-action" (click)="migrate(t)" [disabled]="busy()" title="Datenbank aktualisieren" [attr.aria-label]="t.name + ' Datenbank aktualisieren'">
+                <i class="bi bi-database-up" aria-hidden="true"></i>
+              </button>
+              <button type="button" class="btn-action" (click)="openAdmins(t)" [disabled]="busy()" title="Administratoren und vorläufige Passwörter" [attr.aria-label]="t.name + ' Administratoren'">
+                <i class="bi bi-key" aria-hidden="true"></i>
+              </button>
+              <button type="button" class="btn-action" (click)="newAdmin(t)" [disabled]="busy()" title="Administrator anlegen" [attr.aria-label]="t.name + ' Administrator anlegen'">
+                <i class="bi bi-person-plus" aria-hidden="true"></i>
+              </button>
+              @if (t.is_active) {
+                <button type="button" class="btn-action delete" (click)="toggleActive(t)" [disabled]="busy()" title="Sperren" [attr.aria-label]="t.name + ' sperren'">
+                  <i class="bi bi-lock" aria-hidden="true"></i>
+                </button>
+              } @else {
+                <button type="button" class="btn-action" (click)="toggleActive(t)" [disabled]="busy()" title="Entsperren" [attr.aria-label]="t.name + ' entsperren'">
+                  <i class="bi bi-unlock" aria-hidden="true"></i>
+                </button>
+              }
+            </td>
           </tr>
         } @empty {
           <tr>
-            <td colspan="6" class="text-center text-secondary py-5 small">
+            <td colspan="6" class="text-center text-body-secondary py-5">
               {{ loading() ? 'Daten werden geladen …' : filtered() ? 'Keine Firmen zu diesem Filter.' : 'Noch keine Firmen angelegt.' }}
             </td>
           </tr>
         }
       </tbody>
     </table>
-  </div>
+</div>
+
+<div class="list-foot">
+  <span>{{ displayRows().length }} Firmen</span>
+  <span class="list-keys">Pfeiltasten wählen, Enter bearbeitet</span>
 </div>

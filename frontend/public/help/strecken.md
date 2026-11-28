@@ -82,7 +82,7 @@ Eine berechnete Tour können Sie als **Vorlage** im **Tour-Archiv** ablegen und 
 
 ## Das Tour-Archiv als Liste {#tour-archiv-liste}
 
-Alle gespeicherten Touren sehen Sie in der Seitenleiste unter **Fahrten und Abrechnung › Tour-Archiv**. Die Liste zeigt je Tour den Namen, die Strecke (Von → Nach, Zahl der Zwischenhalte, Rückfahrt), Kilometer, Lenkzeit und Tage, Fahrzeuge (Anzahl und Typ), die Fahrtart und in wie vielen [Reisen](/hilfe/belege#reisen) die Tour verwendet wird. Die neueste Änderung steht oben.
+Alle gespeicherten Touren sehen Sie im Menü unter **Tour-Archiv**. Die Liste zeigt je Tour den Namen, die Strecke (Von → Nach, Zahl der Zwischenhalte, Rückfahrt), Kilometer, Lenkzeit und Tage, Fahrzeuge (Anzahl und Typ), die Fahrtart und in wie vielen [Reisen](/hilfe/belege#reisen) die Tour verwendet wird. Die neueste Änderung steht oben.
 
 - **Suchen:** Das Suchfeld trifft den Namen am Wortanfang und die Orte am Anfang des Ortsnamens, die Treffer sind markiert (zum Beispiel „Wien“ oder „Salz“).
 - **Öffnen:** Ein Klick auf den Namen oder das Symbol links öffnet die Tour in der Streckenplanung, mit allen Angaben und dem gespeicherten Ergebnis. Dort ändern Sie sie und speichern mit **Vorlage speichern** oder legen mit **Unter neuem Namen speichern** eine zweite an.

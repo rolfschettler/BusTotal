@@ -5,15 +5,18 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { AuthService } from '../../core/auth.service';
+import { BackNavigation } from '../../core/back-navigation.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { httpErrorText } from '../../core/http-error';
 import { JourneyDetail, JourneyDetailSection, JourneyService, SectionState } from '../../core/journey.service';
 import { statusBadge } from '../../core/trip-order.service';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { CustomerPickerComponent, PickedCustomer } from '../../shared/customer-picker.component';
+import { RouteLineComponent } from '../../shared/route-line.component';
 import { formatDuration } from '../route-planning/route-planning-view';
 import { formatAmount } from '../documents/document-calc';
 import { JourneyCancelModalComponent } from './journey-cancel-modal.component';
+import { journeyLine } from './journey-line';
 import { STAGE_LABELS } from './journey-list.component';
 
 /** Bezeichnungen der Belegarten für die Kette. */
@@ -34,9 +37,9 @@ const STATE_LABELS: Record<SectionState, string> = { neu: 'neu', geaendert: 'ge�
  */
 @Component({
   selector: 'app-journey-detail',
-  imports: [DatePipe, DecimalPipe, FormsModule, RouterLink, HelpLinkComponent, CustomerPickerComponent],
+  imports: [DatePipe, DecimalPipe, FormsModule, RouterLink, HelpLinkComponent, CustomerPickerComponent, RouteLineComponent],
   templateUrl: './journey-detail.component.html',
-  host: { class: 'form-page' },
+  host: { class: 'form-page form-page-record' },
 })
 export class JourneyDetailComponent implements OnInit {
   private api = inject(JourneyService);
@@ -45,6 +48,7 @@ export class JourneyDetailComponent implements OnInit {
   private auth = inject(AuthService);
   private confirm = inject(ConfirmService);
   private modals = inject(NgbModal);
+  private backNav = inject(BackNavigation);
 
   journey = signal<JourneyDetail | null>(null);
   loading = signal(true);
@@ -61,6 +65,17 @@ export class JourneyDetailComponent implements OnInit {
   cancelled = computed(() => this.journey()?.state === 'abgesagt');
   /** Strecken und Angebot ändern: nur mit Berechtigung und solange die Reise nicht abgesagt ist. */
   canChange = computed(() => this.canPlan() && !this.cancelled());
+
+  /** Die Haltestellen der Reise für den Linienplan. */
+  line = computed(() => {
+    const j = this.journey();
+    return j ? journeyLine(j) : [];
+  });
+
+  /** „Zurück“: dorthin, wo man hergekommen ist. */
+  back() {
+    void this.backNav.back('/reisen');
+  }
 
   // ---- Umbenennen ----
   editing = signal(false);

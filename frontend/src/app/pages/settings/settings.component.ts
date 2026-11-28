@@ -7,6 +7,7 @@ import { BrandService, textOn } from '../../core/brand.service';
 import { Depot, DepotService } from '../../core/depot.service';
 import { GERMAN_STATES } from '../../core/german-states';
 import { ConfirmService } from '../../core/confirm.service';
+import { useFormPage } from '../../core/form-page';
 import { httpErrorText } from '../../core/http-error';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { HelpService } from '../../help/help.service';
@@ -334,23 +335,20 @@ export class SettingsComponent implements OnInit {
     this.fieldErrors.set({});
   }
 
+  /** Strg+S speichert den sichtbaren Reiter; beim Verlassen zählt jeder Reiter mit offenen Eingaben. */
+  canLeave = useFormPage({
+    unsaved: () => this.canEdit() && (this.company.dirty || this.pricing.dirty || this.serviceKey.trim() !== ''),
+    save: () => {
+      if (!this.canEdit() || this.saving() || this.serviceBusy()) return;
+      if (this.tab() === 'firma' && this.company.dirty) this.saveCompany();
+      else if (this.tab() === 'preise' && this.pricing.dirty) this.savePricing();
+      else if (this.tab() === 'dienste') this.saveServiceKey();
+    },
+  });
+
   /** Feld rot markieren: Eingabe ungültig (nach Speichern-Versuch) oder vom Server abgelehnt. */
   invalid(name: keyof typeof this.company.controls): boolean {
     return (this.formSubmitted() && this.company.controls[name].invalid) || !!this.fieldErrors()[name];
-  }
-
-  /** Tastenleiste "Zurück": zur Startseite, bei ungespeicherten Änderungen erst nachfragen. */
-  async back() {
-    if (this.dirty) {
-      const ok = await this.confirm.ask({
-        title: 'Änderungen verwerfen',
-        message: 'Es gibt ungespeicherte Änderungen. Trotzdem zurück zur Startseite?',
-        confirmLabel: 'Verwerfen',
-        danger: true,
-      });
-      if (!ok) return;
-    }
-    this.router.navigate(['/']);
   }
 
   /** Tastenleiste "Abbrechen": Eingaben verwerfen, auf den gespeicherten Stand zurücksetzen. */

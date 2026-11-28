@@ -4,7 +4,7 @@ Dieses Thema erklärt, wie Benutzer verwaltet werden (nur für den **Administrat
 
 ## Benutzerliste {#benutzerliste}
 
-Unter **Benutzer** in der Seitenleiste sehen Sie alle Personen, die sich anmelden können:
+Unter **Benutzer** im Menü sehen Sie alle Personen, die sich anmelden können:
 
 - **Name und E-Mail-Adresse.** Die E-Mail-Adresse ist der Anmeldename und darf nur einmal vorkommen.
 - **Rolle.** Sie bestimmt, was der Benutzer sehen und ändern darf. Die Rechte jeder Rolle stehen unter [Rollen und Rechte](/hilfe/anmeldung#rollen).
@@ -17,7 +17,8 @@ Bedienung der Liste:
 
 - **Suchen und filtern:** Das Suchfeld durchsucht Name, E-Mail-Adresse und Rolle, die Treffer sind gelb markiert. Dazu gibt es Filter für **Rolle** und **Status**. Der Zähler oben zeigt dann „2 von 4 Benutzer“. Groß- und Kleinschreibung sowie Umlaute spielen keine Rolle.
 - **Sortieren:** Ein Klick auf eine Spaltenüberschrift sortiert die Liste, ein zweiter dreht die Richtung um. „Noch nie angemeldet“ steht in beiden Richtungen am Ende.
-- **Symbole in der ersten Spalte:** der **Stift** bearbeitet den Benutzer, der **Schlüssel** setzt das Passwort zurück, das **Schloss** sperrt (bei einem gesperrten Benutzer öffnet das geöffnete Schloss die Sperre wieder). Bei Ihrer eigenen Zeile sind Schlüssel und Schloss blass und nicht bedienbar, denn Sie können sich nicht selbst sperren oder zurücksetzen.
+- **Bearbeiten:** Ein Klick auf eine Zeile (oder Enter) öffnet den Benutzer im Formular über der Liste.
+- **Symbole rechts in der Zeile:** der **Schlüssel** setzt das Passwort zurück, das **Schloss** sperrt (bei einem gesperrten Benutzer öffnet das geöffnete Schloss die Sperre wieder). Bei Ihrer eigenen Zeile sind Schlüssel und Schloss blass und nicht bedienbar, denn Sie können sich nicht selbst sperren oder zurücksetzen.
 - Der Kopf mit Suche und Spaltenüberschriften bleibt beim Scrollen sichtbar.
 
 ## Benutzer anlegen {#anlegen}
@@ -37,7 +38,7 @@ Das System erzeugt ein [vorläufiges Passwort](#vorlaeufiges-passwort) und zeigt
 
 ## Benutzer bearbeiten {#bearbeiten}
 
-Mit dem **Stift** ändern Sie Name, E-Mail-Adresse und Rolle. Das Formular erscheint oberhalb der Liste. Die Änderung gilt sofort, der Benutzer muss sich dafür nicht neu anmelden. Alle Änderungen stehen mit altem und neuem Wert im [Änderungsprotokoll](/hilfe/datenschutz#protokoll).
+Mit einem Klick auf die Zeile ändern Sie Name, E-Mail-Adresse und Rolle. Das Formular erscheint oberhalb der Liste. Die Änderung gilt sofort, der Benutzer muss sich dafür nicht neu anmelden. Alle Änderungen stehen mit altem und neuem Wert im [Änderungsprotokoll](/hilfe/datenschutz#protokoll).
 
 Ihre **eigene Rolle** können Sie nicht ändern, damit Sie sich nicht versehentlich selbst die Rechte nehmen.
 
@@ -64,7 +65,7 @@ Für sich selbst können Sie diese Funktion nicht benutzen. Ändern Sie Ihr eige
 
 ## Das eigene Passwort ändern {#passwort-aendern}
 
-Jeder Benutzer ändert sein Passwort über das **Benutzermenü** oben rechts: **Passwort ändern**.
+Jeder Benutzer ändert sein Passwort über das **Benutzermenü** unten links: **Passwort ändern**.
 
 1. Geben Sie Ihr aktuelles Passwort ein.
 2. Geben Sie das neue Passwort zweimal ein.

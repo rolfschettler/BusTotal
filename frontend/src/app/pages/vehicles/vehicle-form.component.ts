@@ -1,11 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { EmptyDateDirective } from '../../shared/empty-date.directive';
 import { BackNavigation } from '../../core/back-navigation.service';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { ListMemory } from '../../core/list-memory.service';
+import { useFormPage } from '../../core/form-page';
 import { httpErrorText } from '../../core/http-error';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { Option, Vehicle, VehicleInput, VehicleOptions, VehicleService } from '../../core/vehicle.service';
@@ -17,9 +19,9 @@ import { daysUntil, deadlineState, deadlineText, germanDate } from '../../shared
  */
 @Component({
   selector: 'app-vehicle-form',
-  imports: [ReactiveFormsModule, RouterLink, HelpLinkComponent],
+  imports: [ReactiveFormsModule, HelpLinkComponent, EmptyDateDirective],
   templateUrl: './vehicle-form.component.html',
-  host: { class: 'form-page' },
+  host: { class: 'form-page form-page-record' },
 })
 export class VehicleFormComponent implements OnInit {
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -158,6 +160,7 @@ export class VehicleFormComponent implements OnInit {
       next: (v) => {
         this.saving.set(false);
         if (!this.id) {
+          this.form.markAsPristine(); // gespeichert: beim Wechsel zum neuen Datensatz nicht nachfragen
           this.router.navigate(['/fahrzeuge', v.id]);
           return;
         }
@@ -177,18 +180,17 @@ export class VehicleFormComponent implements OnInit {
     });
   }
 
-  async back() {
-    if (this.form.dirty) {
-      const ok = await this.confirm.ask({
-        title: 'Änderungen verwerfen',
-        message: 'Es gibt ungespeicherte Änderungen. Trotzdem zurück?',
-        confirmLabel: 'Verwerfen',
-        danger: true,
-      });
-      if (!ok) return;
-    }
+  /** „Zurück“ oben. Nach ungespeicherten Änderungen fragt `canLeave`. */
+  back() {
     void this.backNav.back('/fahrzeuge');
   }
+
+  canLeave = useFormPage({
+    unsaved: () => !this.readOnly() && this.form.dirty,
+    save: () => {
+      if (!this.readOnly() && !this.saving() && !this.loading() && (!this.id || this.form.dirty)) this.save();
+    },
+  });
 
   /** Eingaben verwerfen, Formular auf den gespeicherten Stand zurücksetzen. */
   cancel() {
@@ -208,7 +210,11 @@ export class VehicleFormComponent implements OnInit {
       message: 'Das Fahrzeug verschwindet aus der Liste, bleibt aber für spätere Aufträge und Belege erhalten.',
       confirmLabel: 'Archivieren',
     });
-    if (ok) this.api.archive(this.id).subscribe(() => this.router.navigate(['/fahrzeuge']));
+    if (!ok) return;
+    this.api.archive(this.id).subscribe(() => {
+      this.form.markAsPristine();
+      this.router.navigate(['/fahrzeuge']);
+    });
   }
 
   /** Trägt „heute ausgelesen“ ein; der Server setzt die nächste Frist (90 Tage). Nur bei gespeichertem Formular, sonst gingen Eingaben verloren. */

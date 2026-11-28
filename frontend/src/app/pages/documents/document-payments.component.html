@@ -1,9 +1,9 @@
 <!-- Zahlungen zu einer Rechnung oder Anzahlungsrechnung. Formular-Muster: docs/ClaudeCodePatterns/EditFormPattern.md (Inline-Formular). -->
-<div class="form-page mb-3">
+<div class="form-area mb-3">
   <div class="section-title">Zahlungen <app-help-link topic="belege" anchor="zahlungen" label="Zahlungen" /></div>
 
   @if (message(); as m) {
-    <div class="alert py-2 small" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
+    <div class="alert py-2" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
   }
 
   @if (loading()) {
@@ -14,11 +14,11 @@
 
     <!-- Zahlstand -->
     <div class="row g-2 mb-3">
-      <div class="col-6 col-lg-3"><div class="bg-white border rounded p-2 h-100"><div class="small text-body-secondary">Zu zahlen</div><div class="fs-5 fw-semibold">{{ amountText(s.payable) }}</div></div></div>
-      <div class="col-6 col-lg-3"><div class="bg-white border rounded p-2 h-100"><div class="small text-body-secondary">Bezahlt</div><div class="fs-5 fw-semibold">{{ amountText(s.paid) }}</div></div></div>
-      <div class="col-6 col-lg-3"><div class="bg-white border rounded p-2 h-100"><div class="small text-body-secondary">Offen</div><div class="fs-5 fw-semibold" [class.text-danger]="s.overdue">{{ amountText(s.open) }}</div></div></div>
+      <div class="col-6 col-lg-3"><div class="border rounded p-2 h-100"><div class="small text-body-secondary">Zu zahlen</div><div class="fs-5 fw-semibold">{{ amountText(s.payable) }}</div></div></div>
+      <div class="col-6 col-lg-3"><div class="border rounded p-2 h-100"><div class="small text-body-secondary">Bezahlt</div><div class="fs-5 fw-semibold">{{ amountText(s.paid) }}</div></div></div>
+      <div class="col-6 col-lg-3"><div class="border rounded p-2 h-100"><div class="small text-body-secondary">Offen</div><div class="fs-5 fw-semibold" [class.text-danger]="s.overdue">{{ amountText(s.open) }}</div></div></div>
       <div class="col-6 col-lg-3">
-        <div class="bg-white border rounded p-2 h-100">
+        <div class="border rounded p-2 h-100">
           <div class="small text-body-secondary">Stand</div>
           <div class="fs-5">
             @switch (s.state) {
@@ -78,12 +78,12 @@
 
     <!-- Zahlung erfassen -->
     @if (canBook() && !formOpen()) {
-      <button type="button" class="btn btn-outline-secondary" (click)="openForm()"><i class="bi bi-plus-lg me-1"></i>Zahlung erfassen</button>
+      <button type="button" class="btn" [class.btn-primary]="s.state === 'offen' || s.state === 'teilweise'" [class.btn-outline-secondary]="s.state !== 'offen' && s.state !== 'teilweise'" (click)="openForm()"><i class="bi bi-plus-lg me-1"></i>Zahlung erfassen</button>
     }
 
     @if (formOpen()) {
-      <form id="paymentForm" class="form-area" [formGroup]="form" (ngSubmit)="save()" novalidate>
-        <div class="row g-3">
+      <form id="paymentForm" [formGroup]="form" (ngSubmit)="save()" novalidate>
+        <div class="row g-2">
           <div class="col-12"><div class="section-title">Zahlung erfassen</div></div>
 
           <div class="col-12 col-lg-4">
@@ -126,9 +126,7 @@
           @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
           {{ saving() ? 'Bucht …' : 'Buchen' }}
         </button>
-        <div class="form-bar-right">
-          <button type="button" class="btn btn-outline-secondary" (click)="closeForm()">Abbrechen</button>
-        </div>
+        <button type="button" class="btn btn-outline-secondary" (click)="closeForm()">Abbrechen</button>
       </div>
     }
   }

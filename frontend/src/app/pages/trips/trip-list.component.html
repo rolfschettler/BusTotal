@@ -1,92 +1,57 @@
 <!-- Tabellen-Muster, siehe docs/ClaudeCodePatterns/TableViewPattern.md. Die Optik kommt aus src/styles/_list-page.scss. -->
+<div class="list-head">
+  <h1 class="list-title">Tour-Archiv</h1>
+  @if (loaded()) { <span class="list-count">{{ total() }}</span> }
 
-<div class="page-header">
-  <div class="row g-2 align-items-center">
-    <div class="col-auto">
-      <div class="d-flex align-items-center gap-2">
-        <h5 class="page-title mb-0">Tour-Archiv</h5>
-        @if (loaded()) {
-          <span class="badge rounded-pill record-count d-none d-sm-inline-flex">{{ total() }} {{ total() === 1 ? 'Tour' : 'Touren' }}</span>
-        }
-      </div>
-    </div>
-    <div class="col-12 col-sm-auto ms-sm-auto">
-      <div class="row row-cols-1 row-cols-sm-auto g-1 justify-content-end align-items-center header-ctrl">
-        <div class="col">
-          <button type="button" class="btn btn-sm btn-header w-100" (click)="refresh()" [disabled]="loading()">
-            <i class="bi bi-arrow-clockwise"></i><span class="ms-1">Aktualisieren</span>
-          </button>
-        </div>
-        @if (canEdit()) {
-          <div class="col">
-            <a routerLink="/streckenplanung" class="btn btn-sm btn-header-new w-100">
-              <i class="bi bi-signpost-split"></i><span class="ms-1">Neue Tour planen</span>
-            </a>
-          </div>
-        }
-      </div>
-    </div>
+  <input type="search" class="form-control list-search" [class.filter-active]="q.trim() !== ''" autocomplete="off"
+         appListSearch [nav]="nav" [pending]="q.trim() !== shownQuery() || loading()" (searchNow)="searchNow()"
+         placeholder="Suche: Name der Tour oder Ort …" aria-label="Suche" [(ngModel)]="q" (ngModelChange)="onSearch()" />
+
+  <div class="list-actions">
+    <button type="button" class="btn btn-outline-secondary" (click)="refresh()" [disabled]="loading()" title="Liste neu laden">
+      <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Aktualisieren
+    </button>
+    @if (canEdit()) {
+      <a routerLink="/streckenplanung" class="btn btn-primary"><i class="bi bi-signpost-split me-1" aria-hidden="true"></i>Neue Tour planen</a>
+    }
   </div>
+  <div class="list-note">Touren speichern Sie in der Streckenplanung mit „Als Vorlage speichern“.</div>
 </div>
 
-<div class="page-content">
-
-  <div class="filter-bar" appStickyFilterBar>
-    <div class="row g-2 align-items-center">
-      <div class="col-12 col-sm-6 col-lg-4">
-        <input type="search" class="form-control form-control-sm" [class.filter-active]="q.trim() !== ''"
-               placeholder="Suche: Name der Tour oder Ort …" aria-label="Suche" autocomplete="off"
-               [(ngModel)]="q" (ngModelChange)="onSearch()" />
-      </div>
-      <div class="col-12 col-sm-auto small text-body-secondary">
-        Touren speichern Sie in der Streckenplanung mit „Als Vorlage speichern“.
-      </div>
-    </div>
-  </div>
-
-  @if (error()) {
-    <div class="alert alert-danger py-2 mb-3" role="alert">{{ error() }}</div>
-  }
+<div class="list-body" [class.dimmed]="loading()" appRowNav #nav="appRowNav" (rowSelect)="select($event)" (rowOpen)="open($event)">
   @if (message(); as m) {
-    <div class="alert alert-success py-2 mb-3" role="status">{{ m }}</div>
+    <div class="alert alert-success py-2" role="status">{{ m }}</div>
+  }
+  @if (error()) {
+    <div class="alert alert-danger py-2" role="alert">{{ error() }}</div>
   }
 
-  <div class="card table-card rounded-3" [class.dimmed]="loading()">
-    <table class="table table-hover table-sm align-middle data-table mb-0">
+  <table class="data-table" style="min-width: 1100px">
+    <colgroup>
+      <col style="width: 20%">
+      <col>
+      <col style="width: 210px">
+      <col style="width: 150px">
+      <col style="width: 180px">
+      <col style="width: 90px">
+      <col style="width: 56px">
+    </colgroup>
 
-      <colgroup>
-        <col style="width:76px">   <!-- Aktionen -->
-        <col style="width:230px">  <!-- Name -->
-        <col style="width:300px">  <!-- Strecke -->
-        <col style="width:190px">  <!-- Kennzahlen -->
-        <col style="width:170px">  <!-- Fahrzeuge -->
-        <col style="width:110px">  <!-- Fahrtart -->
-        <col style="width:90px">   <!-- Verwendet -->
-      </colgroup>
-
-      <thead>
+    <thead>
         <tr>
-          <th class="col-actions"><span class="visually-hidden">Aktionen</span></th>
           <th>Name</th>
           <th>Strecke</th>
           <th>Kilometer und Zeit</th>
           <th>Fahrzeuge</th>
           <th>Fahrtart</th>
           <th>Verwendet</th>
+          <th><span class="visually-hidden">Aktionen</span></th>
         </tr>
       </thead>
 
       <tbody>
         @for (t of rows(); track t.id) {
-          <tr (click)="select(t.id)" [class.row-current]="t.id === currentId()" [appRevealCurrent]="t.id === currentId()">
-            <td class="col-actions">
-              <a class="btn-action edit" [routerLink]="['/streckenplanung']" [queryParams]="{ trip: t.id }" title="In der Streckenplanung öffnen" [attr.aria-label]="'Tour ' + t.title + ' in der Streckenplanung öffnen'">
-                <i class="bi bi-signpost-split"></i>
-              </a>
-              @if (canEdit()) {
-                <button type="button" class="btn-action delete" (click)="remove(t)" title="Löschen" [attr.aria-label]="'Tour ' + t.title + ' löschen'"><i class="bi bi-trash"></i></button>
-              }
-            </td>
+          <tr [attr.data-row-id]="t.id" [class.row-current]="t.id === currentId()" [appRevealCurrent]="t.id === currentId()">
             <td>
               <a [routerLink]="['/streckenplanung']" [queryParams]="{ trip: t.id }" class="fw-semibold text-decoration-none"><app-highlight [text]="t.title" [query]="shownQuery()" mode="start" /></a>
               <div class="small text-body-secondary">geändert {{ t.updated_at | date: 'dd.MM.yyyy' }}</div>
@@ -114,10 +79,18 @@
                 <span class="text-body-secondary">–</span>
               }
             </td>
+            <td class="col-actions">
+            @if (canEdit()) {
+              <button type="button" class="btn-action delete" (click)="remove(t)" title="Löschen" [attr.aria-label]="'Tour ' + t.title + ' löschen'">
+                <i class="bi bi-trash" aria-hidden="true"></i>
+              </button>
+            }
+
+            </td>
           </tr>
         } @empty {
           <tr>
-            <td colspan="7" class="text-center text-secondary py-5 small">
+            <td colspan="7" class="text-center text-body-secondary py-5">
               @if (!loaded()) {
                 Daten werden geladen …
               } @else if (shownQuery()) {
@@ -130,17 +103,17 @@
         }
       </tbody>
     </table>
-  </div>
+</div>
 
-  <div class="pager">
-    <span>{{ total() }} {{ total() === 1 ? 'Tour' : 'Touren' }}</span>
-    <span class="ms-auto"></span>
-    <button type="button" class="btn btn-sm btn-outline-primary" (click)="go(page() - 1)" [disabled]="page() <= 1 || loading()">
-      <i class="bi bi-chevron-left"></i> Zurück
-    </button>
-    <span>Seite {{ page() }} von {{ lastPage() }}</span>
-    <button type="button" class="btn btn-sm btn-outline-primary" (click)="go(page() + 1)" [disabled]="page() >= lastPage() || loading()">
-      Weiter <i class="bi bi-chevron-right"></i>
-    </button>
-  </div>
+<div class="list-foot">
+  <span>{{ total() }} {{ total() === 1 ? 'Tour' : 'Touren' }}</span>
+  <span class="list-keys">Pfeiltasten wählen, Enter öffnet</span>
+  <span class="ms-auto"></span>
+  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="go(page() - 1)" [disabled]="page() <= 1 || loading()">
+    <i class="bi bi-chevron-left" aria-hidden="true"></i> Zurück
+  </button>
+  <span>Seite {{ page() }} von {{ lastPage() }}</span>
+  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="go(page() + 1)" [disabled]="page() >= lastPage() || loading()">
+    Weiter <i class="bi bi-chevron-right" aria-hidden="true"></i>
+  </button>
 </div>

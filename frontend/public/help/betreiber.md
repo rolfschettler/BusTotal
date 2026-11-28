@@ -8,8 +8,8 @@ Unter **Firmen** sehen Sie alle Firmen mit Adresse, Datenbank, Status und dem Ze
 
 - **Suchen und filtern:** Das Suchfeld durchsucht Name, Adresse und Datenbank, die Treffer sind gelb markiert. Der Filter *Status* zeigt nur aktive oder nur gesperrte Firmen.
 - **Sortieren:** Ein Klick auf eine Spaltenüberschrift sortiert, ein zweiter dreht die Richtung um. „Noch nie“ steht in beiden Richtungen am Ende.
-- **Symbole in der ersten Spalte:**
-  - der **Stift** bearbeitet die Firma,
+- **Bearbeiten:** Ein Klick auf eine Zeile öffnet die Firma.
+- **Symbole rechts in der Zeile:**
   - die **Datenbank mit Pfeil** [aktualisiert die Datenbank](#aktualisieren),
   - die **Person mit Plus** [legt einen Administrator an](#administrator),
   - das **Schloss** sperrt die Firma (das geöffnete Schloss entsperrt sie wieder).

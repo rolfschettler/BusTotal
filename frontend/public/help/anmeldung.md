@@ -10,7 +10,7 @@ Geben Sie auf der Anmeldeseite Ihre E-Mail-Adresse und Ihr Passwort ein.
 - Ein **gesperrter** Benutzer kann sich nicht anmelden. Auch er sieht nur „Die Anmeldedaten sind ungültig.“ Wenden Sie sich an Ihren Administrator.
 - Nach einer erfolgreichen Anmeldung **merkt sich der Browser Ihre E-Mail-Adresse** (nie das Passwort). Beim nächsten Mal ist sie schon eingetragen, und Sie tippen nur noch das Passwort. Gehört der PC mehreren Personen, wählen Sie unter dem E-Mail-Feld **Anderer Benutzer**, dann wird die Adresse vergessen.
 - Sie bleiben angemeldet, auch wenn Sie die Seite neu laden.
-- Zum Abmelden öffnen Sie oben rechts Ihr Benutzermenü und wählen **Abmelden**.
+- Zum Abmelden öffnen Sie unten links Ihr Benutzermenü und wählen **Abmelden**.
 
 Jede Anmeldung, jede Abmeldung und jeder Fehlversuch wird im [Änderungsprotokoll](/hilfe/datenschutz#protokoll) festgehalten.
 
@@ -35,6 +35,6 @@ Jeder Benutzer hat eine Rolle. Sie bestimmt, was er sehen und ändern darf.
 | Einstellungen ansehen | ja | ja | ja | nein |
 | Einstellungen ändern | ja | nein | nein | nein |
 
-Fahrer sehen den Menüpunkt „Einstellungen“ nicht, weil dort Bank- und Steuerdaten der Firma stehen. Name und Farbe der Firma sehen sie trotzdem in der Kopfleiste, das Logo auf der Startseite.
+Fahrer sehen den Menüpunkt „Einstellungen“ nicht, weil dort Bank- und Steuerdaten der Firma stehen. Name und Farbe der Firma sehen sie trotzdem in der Seitenleiste, das Logo auf der Startseite.
 
 Wenn Ihnen ein Menüpunkt fehlt oder eine Schaltfläche nicht erscheint, fehlt dafür in der Regel nur das Recht Ihrer Rolle. Wenden Sie sich an Ihren Administrator.

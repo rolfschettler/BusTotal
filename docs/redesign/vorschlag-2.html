@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gestaltungsvorschlag 2</title>
+<style>
+:root{
+  --brand:#1d4e89; --on:#fff;
+  --ink:color-mix(in srgb,var(--brand) 70%,#000);
+  --wash:color-mix(in srgb,var(--brand) 9%,#fff);
+  --canvas:#f6f7f9; --paper:#fff; --soft:#f0f2f5; --line:#e6e8ec;
+  --text:#14181f; --muted:#667080;
+  --ok:#17663a; --ok-bg:#e4f4ea; --warn:#7a5200; --warn-bg:#fdf0d2;
+}
+@supports (color:oklch(from red l c h)){:root{--ink:oklch(from var(--brand) min(l,.46) c h)}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:15px/1.5 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;color:var(--text);background:var(--canvas);height:100vh;display:grid;grid-template-columns:232px 1fr;overflow:hidden}
+h1,h2,h3,.num{font-family:"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+h1{font-size:28px;font-weight:650;letter-spacing:-.015em;line-height:1.2}
+h2{font-size:16px;font-weight:650}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+/* Seitenleiste */
+nav{display:flex;flex-direction:column;gap:2px;padding:18px 12px;overflow:auto}
+.firm{display:flex;align-items:center;gap:10px;padding:0 10px 18px;font-weight:650}
+.logo{width:30px;height:30px;border-radius:9px;background:var(--brand);color:var(--on);display:grid;place-items:center;font-size:13px}
+.find{display:flex;justify-content:space-between;align-items:center;background:var(--paper);border-radius:10px;padding:8px 12px;color:var(--muted);margin-bottom:16px;box-shadow:0 0 0 1px var(--line)}
+.find small{font-size:12px}
+nav a{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:9px;color:var(--text);text-decoration:none;cursor:pointer}
+nav a:hover{background:#eceef2}
+nav a.on{background:var(--paper);font-weight:650;box-shadow:0 1px 2px rgb(20 24 31/.08)}
+nav a.on svg{color:var(--ink)}
+nav .gap{height:18px}
+svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;color:var(--muted)}
+.me{margin-top:auto;display:flex;gap:10px;align-items:center;padding:8px 10px}
+.me small{display:block;color:var(--muted);line-height:1.3}
+
+/* Arbeitsfläche */
+main{background:var(--paper);margin:10px 10px 10px 0;border-radius:16px;box-shadow:0 1px 3px rgb(20 24 31/.07);overflow:auto;position:relative}
+.view{display:none;min-height:100%}
+.view.on{display:block}
+header{display:flex;align-items:center;gap:16px;padding:28px 40px 20px;flex-wrap:wrap}
+header .sp{flex:1}
+.sub{color:var(--muted);margin-top:2px}
+.btn{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 16px;border-radius:10px;font-weight:600;background:var(--soft)}
+.btn:hover{background:#e6e9ee}
+.btn.main{background:var(--brand);color:var(--on)}
+.btn.main svg,.btn.main:hover{color:var(--on)}
+.btn.main:hover{background:color-mix(in srgb,var(--brand) 88%,#000)}
+.av{width:36px;height:36px;border-radius:50%;background:var(--wash);color:var(--ink);display:grid;place-items:center;font-weight:650;font-size:13px;flex:none}
+
+/* Liste */
+.tools{display:flex;gap:8px;padding:0 40px 14px;align-items:center;flex-wrap:wrap}
+.search{display:flex;align-items:center;gap:10px;background:var(--soft);border-radius:10px;padding:0 14px;height:40px;width:420px}
+.search input{border:0;background:none;outline:0;width:100%}
+.search:focus-within{box-shadow:0 0 0 2px var(--ink);background:var(--paper)}
+.chip{height:34px;padding:0 14px;border-radius:17px;color:var(--muted);font-weight:600}
+.chip.on{background:var(--wash);color:var(--ink)}
+.split{display:grid;grid-template-columns:1fr 360px;align-items:start}
+.rows{padding:0 24px 24px}
+.row{display:grid;grid-template-columns:minmax(260px,2fr) 1.2fr 1.5fr 150px;gap:16px;align-items:center;padding:11px 16px;border-radius:12px;cursor:pointer;text-align:left;width:100%}
+.row+.row{margin-top:2px}
+.row:hover{background:var(--canvas)}
+.row.on{background:var(--wash)}
+.row b{display:block;font-weight:600;line-height:1.3}
+.row small,.row .m{color:var(--muted)}
+.row .who{display:flex;gap:14px;align-items:center}
+.row.on .av{background:var(--paper)}
+.peek{position:sticky;top:0;margin:0 24px 24px 0;background:var(--canvas);border-radius:14px;padding:22px}
+.peek .av{width:52px;height:52px;font-size:17px;margin-bottom:12px}
+.facts{display:grid;gap:10px;margin:18px 0}
+.facts div{display:flex;gap:10px;align-items:center}
+.peek h3{font-size:14px;margin:20px 0 6px}
+.item{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line)}
+.item small{display:block;color:var(--muted)}
+.pill{display:inline-block;font-size:12.5px;font-weight:600;padding:2px 10px;border-radius:20px;background:var(--soft)}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+
+/* Formular */
+.form{padding:0 40px 110px;max-width:1500px}
+.tabs{display:flex;gap:4px;padding:0 40px 8px}
+.block{display:grid;grid-template-columns:280px minmax(0,860px);gap:40px;padding:28px 0;border-top:1px solid var(--line)}
+.block p{color:var(--muted);margin-top:4px;font-size:14px;max-width:32ch}
+.fields{display:grid;grid-template-columns:repeat(12,1fr);gap:16px 14px}
+label{display:block;font-size:13.5px;font-weight:600;margin-bottom:5px}
+.fields input,.fields select{width:100%;height:42px;padding:0 13px;border-radius:10px;border:1px solid #d5d9e0;background:var(--paper)}
+.fields input:focus,.fields select:focus{outline:0;border-color:var(--ink);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 25%,transparent)}
+.s3{grid-column:span 3}.s4{grid-column:span 4}.s6{grid-column:span 6}.s8{grid-column:span 8}.s12{grid-column:span 12}
+.save{position:fixed;left:calc(50% + 116px);bottom:28px;transform:translateX(-50%);display:none;align-items:center;gap:12px;background:var(--text);color:#fff;border-radius:16px;padding:10px 10px 10px 22px;box-shadow:0 12px 32px rgb(20 24 31/.25);white-space:nowrap}
+.save.on{display:flex}
+.save .btn{background:#2c323c;color:#fff}
+.save .btn.main{background:#fff;color:#14181f}
+
+/* Vorgang */
+.hero{margin:0 40px 24px;padding:28px 32px;border-radius:16px;background:var(--wash)}
+.line{display:flex;list-style:none;margin-bottom:26px}
+.line li{flex:1;position:relative;padding-top:30px}
+.line li::before{content:"";position:absolute;top:3px;left:0;width:18px;height:18px;border-radius:50%;background:var(--paper);box-shadow:inset 0 0 0 3px #c3c9d2;z-index:1}
+.line li::after{content:"";position:absolute;top:9px;left:18px;right:0;height:6px;background:#d8dce3}
+.line li:last-child{flex:0 0 150px}.line li:last-child::after{display:none}
+.line li.done::before{background:var(--ink);box-shadow:none}
+.line li.done::after{background:var(--ink)}
+.line li.now::before{box-shadow:inset 0 0 0 5px var(--brand),0 0 0 3px var(--ink)}
+.line b{display:block;font-weight:650}.line small{color:var(--muted)}
+.next{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.next p{flex:1;font-size:17px}
+.cols{display:grid;grid-template-columns:1fr 360px;gap:40px;padding:0 40px 40px}
+.table{width:100%;border-collapse:collapse;margin:8px 0 28px}
+.table th{text-align:left;font-size:13px;color:var(--muted);font-weight:600;padding:8px 10px}
+.table td{padding:13px 10px;border-top:1px solid var(--line);vertical-align:top}
+.table .r{text-align:right}
+.sum{font-size:34px;font-weight:650;letter-spacing:-.02em}
+
+/* Nur im Entwurf: Farbprobe */
+.try{position:fixed;right:22px;bottom:18px;display:flex;gap:8px;align-items:center;background:var(--paper);border-radius:20px;padding:7px 12px;box-shadow:0 4px 16px rgb(20 24 31/.18);font-size:13px;color:var(--muted);z-index:5}
+.try button{width:20px;height:20px;border-radius:50%}
+@media (max-width:1300px){.split,.cols{grid-template-columns:1fr}.peek{display:none}.block{grid-template-columns:1fr;gap:16px}}
+</style>
+</head>
+<body>
+
+<nav aria-label="Hauptmenü">
+  <div class="firm"><span class="logo">BM</span>Busreisen Muster</div>
+  <button class="find">Alles durchsuchen <small>Strg K</small></button>
+  <a data-v="trip"><svg viewBox="0 0 24 24"><path d="M6 19V5m0 0a2 2 0 1 0 0-.1M18 19a2 2 0 1 0 0 .1M6 12h8a4 4 0 0 1 4 4v1"/></svg>Reisen</a>
+  <a><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6"/></svg>Belege</a>
+  <a><svg viewBox="0 0 24 24"><path d="M9 4h6v3H9zM8 5H5v16h14V5h-3M9 14l2 2 4-4"/></svg>Fahrtaufträge</a>
+  <a><svg viewBox="0 0 24 24"><path d="M9 20l-6-3V4l6 3 6-3 6 3v13l-6-3-6 3zM9 7v13M15 4v13"/></svg>Streckenplanung</a>
+  <div class="gap"></div>
+  <a class="on" data-v="list"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.500 20c.6-4 3.2-6 6.500-6s5.900 2 6.500 6M16 5a3.500 3.500 0 0 1 0 6.600M18 14.500c2 .8 3.200 2.600 3.500 5.500"/></svg>Kunden</a>
+  <a><svg viewBox="0 0 24 24"><path d="M5 17V6c0-3 14-3 14 0v11zM5 12h14M8 17v2M16 17v2"/></svg>Fahrzeuge</a>
+  <a><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.500"/><path d="M3.500 10.500 9.500 12M20.500 10.500 14.500 12M12 14.500V21"/></svg>Fahrer</a>
+  <div class="gap"></div>
+  <a><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Einstellungen</a>
+  <div class="me"><span class="av">DI</span><span>Disponent<small>Hilfe mit F1</small></span></div>
+</nav>
+
+<main>
+  <!-- Kundenliste -->
+  <section class="view on" id="list">
+    <header><div><h1>Kunden</h1><div class="sub">195 aktive Kunden</div></div><span class="sp"></span><button class="btn main" data-v="form">+ Neuer Kunde</button></header>
+    <div class="tools">
+      <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input aria-label="Suche" placeholder="Name, Ort, Kundennummer …"></div>
+      <button class="chip on">Alle</button><button class="chip">Schulen</button><button class="chip">Vereine</button><button class="chip">Firmen</button><button class="chip">Privat</button>
+    </div>
+    <div class="split">
+      <div class="rows" id="rows"></div>
+      <aside class="peek" aria-live="polite">
+        <span class="av" id="pAv"></span><h2 id="pName"></h2><div class="sub" id="pType"></div>
+        <div class="facts">
+          <div><svg viewBox="0 0 24 24"><path d="M6 3h4l2 5-2.500 1.500a12 12 0 0 0 5 5L16 12l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 4 5a2 2 0 0 1 2-2z"/></svg><span id="pTel"></span></div>
+          <div><svg viewBox="0 0 24 24"><path d="M3 6h18v12H3zM3 7l9 7 9-7"/></svg><span id="pMail"></span></div>
+        </div>
+        <button class="btn main" data-v="form">Kunde öffnen</button>
+        <h3>Letzte Vorgänge</h3>
+        <div class="item" data-v="trip" style="cursor:pointer"><span>Klassenfahrt Wien<small>12.–14.05.2027</small></span><span class="pill ok">Bestätigt</span></div>
+        <div class="item"><span>Tagesausflug Ulm<small>03.09.2026</small></span><span class="pill warn">Rechnung offen</span></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Kundenformular -->
+  <section class="view" id="form">
+    <header><button class="btn" data-v="list">Zurück</button><span class="av">GP</span><div><h1>Gymnasium Potsdam</h1><div class="sub">Schule, Kundennummer K-00200</div></div><span class="sp"></span><button class="btn">Archivieren</button><button class="btn main">Neue Reise</button></header>
+    <div class="tabs"><button class="chip on">Stammdaten</button><button class="chip">Ansprechpartner 1</button><button class="chip">Adressen 2</button><button class="chip">Reisen und Belege</button></div>
+    <div class="form" id="fields">
+      <div class="block"><div><h2>Kunde</h2><p>So erscheint der Kunde in Listen und auf Belegen.</p></div>
+        <div class="fields">
+          <div class="s4"><label>Art</label><select><option>Schule</option></select></div>
+          <div class="s8"><label>Name der Organisation</label><input value="Gymnasium Potsdam"></div>
+          <div class="s4"><label>Anrede</label><input></div><div class="s4"><label>Vorname</label><input></div><div class="s4"><label>Nachname</label><input></div>
+        </div></div>
+      <div class="block"><div><h2>Rechnungsadresse</h2></div>
+        <div class="fields">
+          <div class="s12"><label>Straße und Hausnummer</label><input value="Mozartstraße 120"></div>
+          <div class="s3"><label>PLZ</label><input value="14469"></div><div class="s6"><label>Ort</label><input value="Potsdam"></div><div class="s3"><label>Land</label><input value="DE"></div>
+        </div></div>
+      <div class="block"><div><h2>Kontakt</h2></div>
+        <div class="fields">
+          <div class="s6"><label>Telefon</label><input value="0331 4734480"></div><div class="s6"><label>Mobil</label><input></div>
+          <div class="s6"><label>E-Mail</label><input value="buero@gymnasium-potsdam.example"></div><div class="s6"><label>Webseite</label><input></div>
+        </div></div>
+    </div>
+    <div class="save" id="save">Nicht gespeichert<button class="btn" id="undo">Verwerfen</button><button class="btn main" id="ok">Speichern</button></div>
+  </section>
+
+  <!-- Reise -->
+  <section class="view" id="trip">
+    <header><button class="btn" data-v="list">Zurück</button><div><h1>Klassenfahrt Wien</h1><div class="sub">Gymnasium Potsdam, 12.–14.05.2027, 48 Personen</div></div><span class="sp"></span><button class="btn">Absagen</button></header>
+    <div class="hero">
+      <ol class="line">
+        <li class="done"><b>Strecken</b><small>3 geplant</small></li>
+        <li class="done"><b>Angebot</b><small>AN-2026-00014</small></li>
+        <li class="done"><b>Auftrag</b><small>AB-2026-00013</small></li>
+        <li class="now"><b>Fahrt</b><small>1 Bus noch ohne Fahrer</small></li>
+        <li><b>Rechnung</b><small>nach der Fahrt</small></li>
+      </ol>
+      <div class="next"><p>Teilen Sie einen Fahrer für <b>Bus 2</b> ein.</p><button class="btn main">Fahrer einteilen</button></div>
+    </div>
+    <div class="cols">
+      <div>
+        <h2>Strecken</h2>
+        <table class="table"><tr><th>Datum</th><th>Strecke</th><th>Fahrzeuge</th><th class="r">Kilometer</th></tr>
+          <tr><td>12.05.</td><td><b>Hinfahrt</b><br>Potsdam – Wien</td><td>2 × Reisebus</td><td class="r">682</td></tr>
+          <tr><td>13.05.</td><td><b>Fahrt vor Ort</b><br>Schönbrunn und Prater</td><td>2 × Reisebus</td><td class="r">48</td></tr>
+          <tr><td>14.05.</td><td><b>Rückfahrt</b><br>Wien – Potsdam</td><td>2 × Reisebus</td><td class="r">682</td></tr></table>
+        <h2>Fahrtaufträge</h2>
+        <table class="table"><tr><th>Bus</th><th>Fahrzeug</th><th>Fahrer</th><th class="r">Stand</th></tr>
+          <tr><td>Bus 1</td><td>AN-AB 185</td><td>Stefan Bauer</td><td class="r"><span class="pill ok">Eingeteilt</span></td></tr>
+          <tr><td>Bus 2</td><td>AN-AC 206</td><td>noch offen</td><td class="r"><span class="pill warn">Offen</span></td></tr></table>
+      </div>
+      <aside class="peek">
+        <div class="sub">Auftragswert brutto</div><div class="sum num">4.816,00 €</div>
+        <h3>Belege</h3>
+        <div class="item"><span>Auftragsbestätigung<small>AB-2026-00013</small></span><span class="pill ok">Festgeschrieben</span></div>
+        <div class="item"><span>Anzahlung 30 %<small>1.444,80 €</small></span><span class="pill warn">Offen</span></div>
+        <div class="item"><span>Angebot<small>AN-2026-00014</small></span><span class="pill ok">Festgeschrieben</span></div>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<div class="try">Firmenfarbe testen
+  <button style="background:#1d4e89" data-c="#1d4e89" aria-label="Blau"></button>
+  <button style="background:#0f7a5a" data-c="#0f7a5a" aria-label="Grün"></button>
+  <button style="background:#b3261e" data-c="#b3261e" aria-label="Rot"></button>
+  <button style="background:#ffd400" data-c="#ffd400" aria-label="Gelb"></button>
+</div>
+
+<script>
+const data=[
+ ['Albert-Schweitzer-Gymnasium','Schule','70190 Stuttgart','kontakt@asg-stuttgart.example','0711 3932028'],
+ ['Albrecht, Sebastian','Privatperson','14467 Potsdam','s.albrecht@mail.example','0331 2297186'],
+ ['Albrecht & Söhne GmbH','Firma','81369 München','info@albrecht-soehne.example','089 5417838'],
+ ['Anne-Frank-Schule','Schule','23552 Lübeck','kontakt@afs-luebeck.example','0451 9925972'],
+ ['Autohaus Brandt','Firma','55116 Mainz','buero@autohaus-brandt.example','06131 6915095'],
+ ['Gymnasium Potsdam','Schule','14469 Potsdam','buero@gymnasium-potsdam.example','0331 4734480'],
+ ['Musikverein Nürnberg 1896','Verein','90402 Nürnberg','vorstand@mv-nuernberg.example','0911 553201'],
+ ['Pestalozzi-Realschule','Schule','40213 Düsseldorf','info@prs-duesseldorf.example','0211 884120'],
+ ['VdK Ortsverband Paderborn','Verein','33098 Paderborn','ov@vdk-paderborn.example','05251 40718']];
+const $=id=>document.getElementById(id);
+const initials=n=>n.split(/[\s,&-]+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+function pick(i){
+  const c=data[i];
+  document.querySelectorAll('.row').forEach((r,k)=>r.classList.toggle('on',k===i));
+  $('pAv').textContent=initials(c[0]); $('pName').textContent=c[0]; $('pType').textContent=c[1]+', '+c[2];
+  $('pTel').textContent=c[4]; $('pMail').textContent=c[3];
+}
+$('rows').innerHTML=data.map(c=>`<button class="row"><span class="who"><span class="av">${initials(c[0])}</span><span><b>${c[0]}</b><small>${c[1]}</small></span></span><span class="m">${c[2]}</span><span class="m">${c[3]}</span><span class="m num">${c[4]}</span></button>`).join('');
+document.querySelectorAll('.row').forEach((r,i)=>r.onclick=()=>pick(i));
+pick(5);
+document.querySelectorAll('[data-v]').forEach(b=>b.addEventListener('click',()=>{
+  const v=b.dataset.v;
+  document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id===v));
+  document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===(v==='trip'?'trip':'list')));
+  document.querySelector('main').scrollTop=0;
+}));
+$('fields').addEventListener('input',()=>$('save').classList.add('on'));
+$('undo').onclick=$('ok').onclick=()=>$('save').classList.remove('on');
+document.querySelectorAll('.try button').forEach(b=>b.onclick=()=>{
+  const c=b.dataset.c, root=document.documentElement.style;
+  root.setProperty('--brand',c); root.setProperty('--on',c==='#ffd400'?'#000':'#fff');
+});
+</script>
+</body>
+</html>

@@ -4,7 +4,7 @@ Dieses Thema beschreibt, was die Software für Auskunft und Löschung personenbe
 
 ## Auskunft: Daten exportieren {#export}
 
-Verlangt ein Kunde Auskunft über seine gespeicherten Daten, öffnen Sie den Kunden und wählen unter **Weitere Aktionen** den Eintrag **Daten exportieren (DSGVO Auskunft)**. Sie erhalten eine Datei mit:
+Verlangt ein Kunde Auskunft über seine gespeicherten Daten, öffnen Sie den Kunden und wählen in der rechten Spalte unter **Datenschutz** die Taste **Daten exportieren (Auskunft)**. Sie erhalten eine Datei mit:
 
 - den Stammdaten des Kunden,
 - allen Ansprechpartnern und Adressen,
@@ -14,7 +14,7 @@ Der Export steht Administrator, Disponent und Buchhaltung zur Verfügung. Jeder 
 
 ## Löschung: Anonymisieren {#anonymisieren}
 
-Verlangt ein Kunde die Löschung, benutzen Sie **Anonymisieren (DSGVO Löschung)** unter **Weitere Aktionen**. Das dürfen **Administrator und Buchhaltung**, und es ist **nicht rückgängig zu machen**. Vor der Ausführung erscheint eine Bestätigung.
+Verlangt ein Kunde die Löschung, benutzen Sie **Anonymisieren (Löschung)** in der rechten Spalte unter **Datenschutz**. Das dürfen **Administrator und Buchhaltung**, und es ist **nicht rückgängig zu machen**. Vor der Ausführung erscheint eine Bestätigung.
 
 Dabei werden entfernt:
 

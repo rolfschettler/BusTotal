@@ -27,7 +27,7 @@ Hier gestalten Sie die Oberfläche in den Farben und mit dem Logo Ihrer Firma. D
 
 ### Markenfarbe {#markenfarbe}
 
-Wählen Sie die Farbe über den Farbwähler oder tragen Sie den Farbcode ein, zum Beispiel `#1d4e89`. Die **Vorschau** zeigt, wie Knöpfe und Links aussehen werden. Die Farbe färbt die Kopfleiste, den aktiven Menüpunkt, Knöpfe und Links.
+Wählen Sie die Farbe über den Farbwähler oder tragen Sie den Farbcode ein, zum Beispiel `#1d4e89`. Die **Vorschau** zeigt, wie Knöpfe und Links aussehen werden. Die Farbe färbt das Firmenzeichen in der Seitenleiste, den aktiven Menüpunkt, Knöpfe und Links.
 
 Die Schrift auf der Markenfarbe wird **automatisch schwarz oder weiß**, je nachdem, was besser lesbar ist. Sie können also auch helle Farben wie Gelb wählen.
 

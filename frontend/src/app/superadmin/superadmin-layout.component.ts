@@ -7,13 +7,11 @@ import { BrandService } from '../core/brand.service';
 import { HelpPanelService } from '../help/help-panel.component';
 import { SuperadminAuthService } from './superadmin-auth.service';
 
-/** Rahmen der Betreiber-Oberfläche: gleicher Aufbau wie die Firmen-Anwendung (Kopfleiste, Seitenleiste, Inhalt). */
+/** Rahmen der Betreiber-Oberfläche: gleicher Aufbau wie die Firmen-Anwendung (Seitenleiste, Arbeitsfläche). */
 @Component({
   selector: 'app-superadmin-layout',
   imports: [RouterOutlet, RouterLink, RouterLinkActive, NgbDropdownModule],
   templateUrl: './superadmin-layout.component.html',
-  // Dieselben Formate wie der Rahmen der Firmen-Anwendung, damit beide gleich aussehen.
-  styleUrl: '../layout/layout.component.scss',
 })
 export class SuperadminLayoutComponent {
   auth = inject(SuperadminAuthService);

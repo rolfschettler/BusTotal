@@ -8,15 +8,15 @@ Die Liste zeigt 20 Kunden pro Seite, sortiert nach Name.
 
 - **Suche:** Das Suchfeld durchsucht Firmenname, Vor- und Nachname, Kundennummer, Debitorennummer, E-Mail, Ort und Postleitzahl. Die Suche startet kurz nach der letzten Eingabe. Groß- und Kleinschreibung sowie Umlaute spielen keine Rolle: „muller“ findet auch „Müller“.
 - **Treffer sind gelb markiert**, direkt in der Liste. Steckt der Treffer in einem Feld, das die Liste nicht zeigt (zum Beispiel die Debitorennummer), erscheint unter dem Namen der Hinweis „Treffer in Debitorennr.“, ebenfalls markiert.
-- **Art:** Der Filter zeigt nur eine Kundenart, zum Beispiel nur Schulen.
+- **Art:** Die Schnellfilter über der Liste zeigen nur eine Kundenart, zum Beispiel nur Schulen.
 - **Archivierte:** Mit diesem Häkchen sehen Sie statt der aktiven die [archivierten](#archivieren) Kunden.
 
 - **Sortieren:** Ein Klick auf eine Spaltenüberschrift sortiert die ganze Liste danach, ein zweiter Klick dreht die Richtung um. Die Sortierung gilt für alle Seiten. Die sortierte Spalte ist farbig hervorgehoben und trägt einen Pfeil. Leere Felder stehen immer am Ende.
-- **Aktionsspalte:** Links in jeder Zeile öffnet der **Stift** den Kunden, das **Archiv-Symbol** [archiviert](#archivieren) ihn nach einer Rückfrage. In der Ansicht „Archivierte“ steht für den Administrator stattdessen ein Pfeil zum **Wiederherstellen**.
-- **Zeile markieren:** Ein Klick auf eine Zeile hebt sie hervor, damit Sie sie beim Blättern im Blick behalten.
+- **Vorschau und Öffnen:** Auf breiten Bildschirmen zeigt ein **Klick** auf eine Zeile rechts die Vorschau mit Kontakt, Anschrift und den neuesten Belegen; **Doppelklick**, **Enter** oder **Kunde öffnen** öffnen den Kunden. Auf schmaleren Bildschirmen öffnet schon der Klick. Mit der Tastatur: Der Cursor steht schon in der Suche, die **Pfeiltasten** wählen eine Zeile. Kommen Sie zurück, ist die Zeile markiert.
+- **Archivieren:** Das **Archiv-Symbol** rechts in der Zeile [archiviert](#archivieren) den Kunden nach einer Rückfrage. In der Ansicht „Archivierte“ steht für den Administrator stattdessen ein Pfeil zum **Wiederherstellen**.
+- **Aktualisieren:** Lädt die Liste neu.
 - **Kopfzeile fest:** Beim Scrollen bleiben Titel, Suchleiste und Spaltenüberschriften sichtbar.
 
-Ein Klick auf den Namen öffnet den Kunden.
 
 ## Kunde anlegen {#kunde-anlegen}
 
@@ -58,7 +58,9 @@ Auf dem Reiter **Stammdaten** pflegen Sie:
 - **Rechnung:** USt-IdNr. (Format `DE123456789`) und das **Zahlungsziel in Tagen**. Lassen Sie das Zahlungsziel leer, gilt der Standard Ihrer Firma aus den [Einstellungen](/hilfe/einstellungen#firmendaten).
 - **Notizen:** interne Hinweise, die nur Ihre Mitarbeiter sehen.
 
-Speichern Sie mit **Speichern**. Änderungen werden im [Änderungsprotokoll](/hilfe/datenschutz#protokoll) mit altem und neuem Wert festgehalten.
+Rechts neben dem Formular stehen die [Nummern](#nummern), eine mögliche [Dublette](#dubletten), **Belege anzeigen** (die Belegliste nur mit diesem Kunden) und der Datenschutz. Oben rechts stehen **Archivieren** und **Neue Reise** (der Kunde ist dann schon gewählt).
+
+Speichern Sie mit **Speichern** oder mit <kbd>Strg</kbd>+<kbd>S</kbd>. **Verwerfen** nimmt Ihre Eingaben zurück. Verlassen Sie die Seite mit ungespeicherten Eingaben, fragt die Software vorher nach. Änderungen werden im [Änderungsprotokoll](/hilfe/datenschutz#protokoll) mit altem und neuem Wert festgehalten.
 
 ## E-Rechnung beim Kunden {#e-rechnung}
 
@@ -93,7 +95,7 @@ Zusätzlich zur Rechnungsadresse können Sie weitere Adressen hinterlegen, vor a
 
 Kunden werden nicht gelöscht, sondern **archiviert**. So bleiben sie für spätere Belege erhalten.
 
-- **Archivieren:** Auf der Kundenseite unter **Weitere Aktionen**. Der Kunde verschwindet aus der Liste.
+- **Archivieren:** Auf der Kundenseite oben rechts oder in der Liste über das Archiv-Symbol. Der Kunde verschwindet aus der Liste.
 - **Archivierte ansehen:** In der Liste das Häkchen **Archivierte** setzen. Archivierte Kunden sind nur lesbar.
 - **Wiederherstellen:** Nur der Administrator kann einen archivierten Kunden wieder aktivieren.
 

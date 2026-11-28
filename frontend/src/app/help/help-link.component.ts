@@ -11,8 +11,8 @@ import { HelpPanelService } from './help-panel.component';
     .help-link {
       display: inline-flex; align-items: center; justify-content: center;
       width: 20px; height: 20px; padding: 0; margin-left: 6px;
-      border: 1px solid var(--brand); border-radius: 50%;
-      background: #fff; color: var(--brand);
+      border: 1px solid var(--brand-ink, var(--brand)); border-radius: 50%;
+      background: #fff; color: var(--brand-ink, var(--brand));
       font-size: 12px; font-weight: 700; line-height: 1; vertical-align: middle; cursor: pointer;
     }
     .help-link:hover, .help-link:focus-visible { background: var(--brand); color: var(--brand-on, #fff); }

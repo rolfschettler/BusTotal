@@ -1,12 +1,17 @@
-<a routerLink="/reisen" class="small text-decoration-none">‹ Alle Reisen</a>
-<h1 class="h3 mb-3">Neue Reise planen</h1>
+<!-- Formular-Muster, siehe docs/ClaudeCodePatterns/EditFormPattern.md. Die Optik kommt aus src/styles/_edit-form.scss. -->
+<div class="form-head">
+  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="back()">
+    <i class="bi bi-chevron-left" aria-hidden="true"></i> Zurück
+  </button>
+  <h1>Neue Reise planen</h1>
+</div>
 
 @if (error(); as e) {
   <div class="alert alert-danger py-2" role="alert">{{ e }}</div>
 }
 
 <form id="journeyForm" class="form-area" (ngSubmit)="save()" novalidate>
-  <div class="row g-3">
+  <div class="row g-2">
 
     <div class="col-12"><div class="section-title">Reise</div></div>
 
@@ -33,16 +38,12 @@
   </div>
 </form>
 
-<!-- Tastenleiste (Muster): links Speichern, Zurück; rechts Abbrechen. Klebt unten. -->
 <div class="form-bar">
   <button type="submit" form="journeyForm" class="btn btn-primary" [disabled]="saving()">
     @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
-    {{ saving() ? 'Legt an …' : 'Anlegen und Hinfahrt planen' }}
+    {{ saving() ? 'Legt an …' : 'Anlegen und Hinfahrt planen' }}<kbd>Strg+S</kbd>
   </button>
   <button type="button" class="btn btn-outline-secondary" [disabled]="saving()" (click)="save(false)">Nur anlegen</button>
-  <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
-  @if (dirty) { <span class="form-bar-hint">Ungespeicherte Eingaben</span> }
-  <div class="form-bar-right">
-    <button type="button" class="btn btn-outline-secondary" [disabled]="!dirty" [attr.title]="dirty ? null : 'Keine Eingaben zum Verwerfen'" (click)="cancel()">Abbrechen</button>
-  </div>
+  <button type="button" class="btn btn-outline-secondary" [disabled]="!dirty" [attr.title]="dirty ? null : 'Keine Eingaben zum Verwerfen'" (click)="cancel()">Verwerfen</button>
+  @if (dirty) { <span class="form-bar-hint ms-auto">Ungespeicherte Eingaben</span> }
 </div>

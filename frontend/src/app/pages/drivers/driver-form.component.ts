@@ -1,11 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormsModule, NgForm, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { EmptyDateDirective } from '../../shared/empty-date.directive';
 import { BackNavigation } from '../../core/back-navigation.service';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { ListMemory } from '../../core/list-memory.service';
+import { useFormPage } from '../../core/form-page';
 import { httpErrorText } from '../../core/http-error';
 import { HelpLinkComponent } from '../../help/help-link.component';
 import { Absence, Driver, DriverInput, DriverOptions, DriverService } from '../../core/driver.service';
@@ -22,9 +24,9 @@ const emptyAbsence = (): Absence => ({ type: 'urlaub', start_date: '', end_date:
  */
 @Component({
   selector: 'app-driver-form',
-  imports: [ReactiveFormsModule, FormsModule, RouterLink, HelpLinkComponent],
+  imports: [ReactiveFormsModule, FormsModule, HelpLinkComponent, EmptyDateDirective],
   templateUrl: './driver-form.component.html',
-  host: { class: 'form-page' },
+  host: { class: 'form-page form-page-record' },
 })
 export class DriverFormComponent implements OnInit {
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -178,6 +180,7 @@ export class DriverFormComponent implements OnInit {
       next: (d) => {
         this.saving.set(false);
         if (!this.id) {
+          this.form.markAsPristine(); // gespeichert: beim Wechsel zum neuen Datensatz nicht nachfragen
           this.router.navigate(['/fahrer', d.id]);
           return;
         }
@@ -195,17 +198,29 @@ export class DriverFormComponent implements OnInit {
     });
   }
 
-  async back() {
-    if (this.form.dirty) {
-      const ok = await this.confirm.ask({
-        title: 'Änderungen verwerfen',
-        message: 'Es gibt ungespeicherte Änderungen. Trotzdem zurück?',
-        confirmLabel: 'Verwerfen',
-        danger: true,
-      });
-      if (!ok) return;
-    }
+  /** „Zurück“ oben. Nach ungespeicherten Änderungen fragt `canLeave`. */
+  back() {
     void this.backNav.back('/fahrer');
+  }
+
+  canLeave = useFormPage({ unsaved: () => this.hasUnsaved(), save: () => this.saveVisible() });
+
+  private hasUnsaved(): boolean {
+    if (this.archived()) return false;
+    const a = this.absenceEdit();
+    return this.form.dirty || (!!a && JSON.stringify(a) !== this.absenceBefore);
+  }
+  /** Stand beim Öffnen der Abwesenheit: Daran ist zu erkennen, ob etwas geändert wurde. */
+  private absenceBefore = '';
+
+  /** Strg+S speichert das Formular des sichtbaren Reiters. */
+  private saveVisible() {
+    if (this.archived() || this.loading()) return;
+    if (this.tab() === 'stamm') {
+      if (!this.saving() && (!this.id || this.form.dirty)) this.save();
+    } else {
+      this.host.nativeElement.querySelector<HTMLFormElement>('#absenceForm')?.requestSubmit();
+    }
   }
 
   /** Eingaben verwerfen, Formular auf den gespeicherten Stand zurücksetzen. */
@@ -226,7 +241,12 @@ export class DriverFormComponent implements OnInit {
       message: 'Der Fahrer verschwindet aus der Liste (zum Beispiel bei Austritt), bleibt aber für vergangene Fahrten und Belege erhalten.',
       confirmLabel: 'Archivieren',
     });
-    if (ok) this.api.archive(this.id).subscribe(() => this.router.navigate(['/fahrer']));
+    if (!ok) return;
+    this.api.archive(this.id).subscribe(() => {
+      this.form.markAsPristine();
+      this.absenceEdit.set(null);
+      this.router.navigate(['/fahrer']);
+    });
   }
 
   /** Trägt „heute ausgelesen“ ein; der Server setzt die nächste Frist (28 Tage). Nur bei gespeichertem Formular, sonst gingen Eingaben verloren. */
@@ -263,13 +283,18 @@ export class DriverFormComponent implements OnInit {
   newAbsence() {
     this.absenceSubmitted.set(false);
     this.fieldErrors.set({});
-    this.absenceEdit.set(emptyAbsence());
+    this.openAbsence(emptyAbsence());
   }
 
   editAbsence(a: Absence) {
     this.absenceSubmitted.set(false);
     this.fieldErrors.set({});
-    this.absenceEdit.set({ ...a });
+    this.openAbsence({ ...a });
+  }
+
+  private openAbsence(a: Absence) {
+    this.absenceBefore = JSON.stringify(a);
+    this.absenceEdit.set(a);
   }
 
   /** Das Ende liegt vor dem Beginn: Hinweis schon vor dem Speichern. */

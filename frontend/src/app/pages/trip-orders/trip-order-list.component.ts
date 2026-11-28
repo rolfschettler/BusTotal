@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { httpErrorText } from '../../core/http-error';
 import { ListMemory } from '../../core/list-memory.service';
 import { PrintPreviewService } from '../../core/print-preview.service';
@@ -10,7 +10,7 @@ import { TRIP_ORDER_STATUS, TripOrder, TripOrderService, statusBadge } from '../
 import { CustomerNameComponent } from '../../shared/customer-name.component';
 import { HighlightComponent } from '../../shared/highlight.component';
 import { RevealCurrentDirective } from '../../shared/reveal-current.directive';
-import { StickyFilterBarDirective } from '../../shared/sticky-filter-bar.directive';
+import { ListSearchDirective, RowNavDirective } from '../../shared/row-nav.directive';
 
 const KEY = 'fahrtauftraege';
 type ListParams = { q: string; status: string; page: number };
@@ -22,12 +22,13 @@ type ListParams = { q: string; status: string; page: number };
  */
 @Component({
   selector: 'app-trip-order-list',
-  imports: [DatePipe, FormsModule, RouterLink, CustomerNameComponent, HighlightComponent, StickyFilterBarDirective, RevealCurrentDirective],
+  imports: [DatePipe, FormsModule, RouterLink, CustomerNameComponent, HighlightComponent, RowNavDirective, ListSearchDirective, RevealCurrentDirective],
   templateUrl: './trip-order-list.component.html',
-  host: { class: 'list-page', style: '--sheet-w: 1150px' },
+  host: { class: 'list-page' },
 })
 export class TripOrderListComponent implements OnInit {
   private api = inject(TripOrderService);
+  private router = inject(Router);
   private memory = inject(ListMemory);
   private route = inject(ActivatedRoute);
   private printPreview = inject(PrintPreviewService);
@@ -67,6 +68,16 @@ export class TripOrderListComponent implements OnInit {
   select(id: string) {
     this.currentId.set(id);
     this.memory.select(KEY, id);
+  }
+
+  open(id: string) {
+    void this.router.navigate(['/fahrtauftraege', id]);
+  }
+
+  /** Enter in der Suche, bevor die Verzögerung abgelaufen ist: sofort suchen. */
+  searchNow() {
+    clearTimeout(this.timer);
+    if (this.q.trim() !== this.shownQuery()) this.reload();
   }
 
   onSearch() {

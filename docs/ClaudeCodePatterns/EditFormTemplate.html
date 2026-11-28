@@ -1,103 +1,110 @@
 <!-- Formular-Muster, siehe docs/ClaudeCodePatterns/EditFormPattern.md. Die Optik kommt aus src/styles/_edit-form.scss.
-     Vorlage: ersetze <Objekt>, Feldnamen und Texte. Komponente braucht host: { class: 'form-page' }. -->
-<a routerLink="/<liste>" class="small text-decoration-none">‹ Alle &lt;Objekte&gt;</a>
-
-<div class="mb-3">
-  <h1 class="h3 mb-0">{{ item() ? item()!.name : 'Neues <Objekt>' }}</h1>
+     Vorlage: ersetze <Objekt>, Feldnamen und Texte.
+     Komponente: host: { class: 'form-page form-page-record' }, canLeave = useFormPage({ unsaved, save }), Route mit unsavedGuard. -->
+<div class="form-head">
+  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="back()">
+    <i class="bi bi-chevron-left" aria-hidden="true"></i> Zurück
+  </button>
+  <h1>{{ item()?.name ?? (id ? '<Objekt>' : 'Neues <Objekt>') }}</h1>
+  @if (archived()) { <span class="flag flag-danger">Archiviert</span> }
+  @if (item()) {
+    <div class="head-actions">
+      @if (!archived()) {
+        <button type="button" class="btn btn-outline-secondary" (click)="archive()"><i class="bi bi-archive me-1" aria-hidden="true"></i>Archivieren</button>
+      } @else if (isAdmin()) {
+        <button type="button" class="btn btn-outline-secondary" (click)="restore()"><i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>Wiederherstellen</button>
+      }
+    </div>
+  }
 </div>
 
 @if (loading()) {
   <div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary"></div></div>
 } @else {
 
-  <!-- Meldung ganz oben (Erfolg und Fehler) -->
+<div class="form-cols">
+<div>
   @if (message(); as m) {
-    <div class="alert py-2 small" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
+    <div class="alert py-2" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
   }
 
-  <!-- Formularfläche: grau, darin weiße Bootstrap-Felder. Die Tasten stehen NICHT im Formular, sondern in .form-bar (unten). -->
+  <!-- Die Tasten stehen NICHT im Formular, sondern in .form-bar -->
   <form id="mainForm" class="form-area" [formGroup]="form" (ngSubmit)="save()" novalidate>
-    <div class="row g-3">
-
-      <div class="col-12"><div class="section-title">Abschnitt</div></div>
-
-      <!-- Textfeld, Pflicht, mit Fehlermeldung (Label OBEN, kein placeholder) -->
-      <div class="col-12 col-lg-6">
-        <label class="form-label" for="name">Name <span class="text-danger">*</span></label>
-        <input class="form-control" id="name" formControlName="name" [class.is-invalid]="invalid('name')" />
-        <div class="invalid-feedback">{{ fieldErrors()['name'] || 'Bitte einen Namen angeben.' }}</div>
+    <div class="form-columns">
+      <div class="form-col">
+        <section class="form-section">
+          <h2 class="section-title">Abschnitt</h2>
+          <div class="row g-2">
+            <div class="col-12 col-lg-6">
+              <label class="form-label" for="name">Name <span class="text-danger">*</span></label>
+              <input class="form-control" id="name" formControlName="name" [class.is-invalid]="invalid('name')" />
+              <div class="invalid-feedback">{{ fieldErrors()['name'] || 'Bitte einen Namen angeben.' }}</div>
+            </div>
+            <div class="col-12 col-lg-6">
+              <label class="form-label" for="kind">Art</label>
+              <select class="form-select" id="kind" formControlName="kind">
+                @for (k of kinds(); track k.value) { <option [value]="k.value">{{ k.label }}</option> }
+              </select>
+            </div>
+            <div class="col-12 col-lg-3">
+              <label class="form-label" for="zip">PLZ</label>
+              <input class="form-control" id="zip" formControlName="zip" />
+            </div>
+            <div class="col-12 col-lg-6">
+              <label class="form-label" for="city">Ort</label>
+              <input class="form-control" id="city" formControlName="city" />
+            </div>
+            <div class="col-12 col-lg-3">
+              <label class="form-label" for="country">Land</label>
+              <input class="form-control" id="country" formControlName="country" maxlength="2" />
+              <div class="form-text">2 Buchstaben, z. B. DE</div>
+            </div>
+          </div>
+        </section>
       </div>
 
-      <!-- Auswahl -->
-      <div class="col-12 col-lg-6">
-        <label class="form-label" for="kind">Art</label>
-        <select class="form-select" id="kind" formControlName="kind">
-          @for (k of kinds(); track k.value) { <option [value]="k.value">{{ k.label }}</option> }
-        </select>
-      </div>
-
-      <!-- Zahl mit Hinweis -->
-      <div class="col-12 col-lg-6">
-        <label class="form-label" for="days">Frist in Tagen</label>
-        <input type="number" min="0" class="form-control" id="days" formControlName="days" />
-        <div class="form-text">Leer = Standard.</div>
-      </div>
-
-      <!-- Unterschiedlich lange Felder: Breite über das Bootstrap-Raster, Zeile = 12 Spalten (3 + 6 + 3) -->
-      <div class="col-12 col-lg-3">
-        <label class="form-label" for="zip">PLZ</label>
-        <input class="form-control" id="zip" formControlName="zip" />
-      </div>
-      <div class="col-12 col-lg-6">
-        <label class="form-label" for="city">Ort</label>
-        <input class="form-control" id="city" formControlName="city" />
-      </div>
-      <div class="col-12 col-lg-3">
-        <label class="form-label" for="country">Land</label>
-        <input class="form-control" id="country" formControlName="country" maxlength="2" />
-      </div>
-
-      <!-- Kontrollkästchen (bündig zur Feldunterkante) -->
-      <div class="col-12 col-lg-6 d-flex align-items-end">
-        <div class="form-check mb-2">
-          <input id="active" class="form-check-input" type="checkbox" formControlName="active" />
-          <label class="form-check-label" for="active">Aktiv</label>
-        </div>
-      </div>
-
-      <div class="col-12"><div class="section-title">Notizen (intern)</div></div>
-
-      <!-- Mehrzeilig: ganze Breite -->
-      <div class="col-12">
-        <label class="form-label" for="notes">Notizen</label>
-        <textarea class="form-control" id="notes" rows="4" formControlName="notes"></textarea>
+      <div class="form-col">
+        <section class="form-section">
+          <h2 class="section-title">Weiteres</h2>
+          <div class="row g-2">
+            <div class="col-12">
+              <div class="form-check">
+                <input id="active" class="form-check-input" type="checkbox" formControlName="active" />
+                <label class="form-check-label" for="active">Aktiv</label>
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="notes">Notizen (intern)</label>
+              <textarea class="form-control" id="notes" rows="4" formControlName="notes"></textarea>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   </form>
 
-  <!-- Seltene Zusatzbereiche (z. B. DSGVO) stehen unter dem Formular, abgesetzt durch eine Linie -->
-
-  <!-- Tastenleiste, immer gleich: links Speichern, Zurück; rechts seltene Aktion, Abbrechen. Klebt unten. -->
-  <div class="form-bar">
-    @if (!archived()) {
+  @if (!archived()) {
+    <!-- Speicherleiste: nur sichtbar, wenn es etwas zu speichern gibt -->
+    <div class="form-bar" [class.d-none]="id && !form.dirty">
       <button type="submit" form="mainForm" class="btn btn-primary" [disabled]="saving()">
         @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
-        {{ saving() ? 'Speichert …' : id ? 'Speichern' : '<Objekt> anlegen' }}
+        {{ saving() ? 'Speichert …' : id ? 'Speichern' : '<Objekt> anlegen' }}<kbd>Strg+S</kbd>
       </button>
-    }
-    <!-- back(): this.backNav.back('/liste') (core/back-navigation.service.ts), nie fest zur Liste -->
-    <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
-    @if (form.dirty && !archived()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
-    <div class="form-bar-right">
-      @if (id && !archived()) {
-        <button type="button" class="btn btn-outline-secondary" (click)="archive()"><i class="bi bi-archive me-1"></i>Archivieren</button>
-      }
-      @if (archived() && isAdmin()) {
-        <button type="button" class="btn btn-outline-secondary" (click)="restore()"><i class="bi bi-arrow-counterclockwise me-1"></i>Wiederherstellen</button>
-      }
-      @if (!archived()) {
-        <button type="button" class="btn btn-outline-secondary" [disabled]="!form.dirty" [attr.title]="form.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancel()">Abbrechen</button>
-      }
+      <button type="button" class="btn btn-outline-secondary" [disabled]="!form.dirty" [attr.title]="form.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancel()">Verwerfen</button>
+      @if (form.dirty) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
     </div>
-  </div>
+  }
+</div>
+
+<aside class="form-side">
+  @if (item(); as i) {
+    <div class="side-panel">
+      <h2>Nummern</h2>
+      <dl><dt><Objekt></dt><dd>{{ i.number }}</dd></dl>
+    </div>
+  } @else {
+    <div class="side-panel text-body-secondary">Mit * markierte Felder sind Pflicht.</div>
+  }
+</aside>
+</div>
 }

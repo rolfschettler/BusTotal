@@ -1,17 +1,25 @@
 <!-- Formular-Muster, siehe docs/ClaudeCodePatterns/EditFormPattern.md. Die Optik kommt aus src/styles/_edit-form.scss. -->
-<a routerLink="/kunden" class="small text-decoration-none">‹ Alle Kunden</a>
-
-<div class="mb-3">
+<div class="form-head">
+  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="back()">
+    <i class="bi bi-chevron-left" aria-hidden="true"></i> Zurück
+  </button>
+  <h1>{{ customer()?.display_name ?? (id ? 'Kunde' : 'Neuer Kunde') }}</h1>
+  @if (archived()) { <span class="flag flag-danger">Archiviert</span> }
+  @if (customer()?.is_demo) {
+    <span class="flag" title="Erfundener Datensatz für Schulung, Messe oder Tests. Entfernen: php artisan bustotal:demo-daten --entfernen">Demo</span>
+  }
   @if (customer(); as c) {
-    <h1 class="h3 mb-1">{{ c.display_name }}</h1>
-    <p class="mb-0 small text-body-secondary">
-      Kundennr. <code>{{ c.customer_number }}</code> · Debitorennr. <code>{{ c.debitor_number }}</code>
-      <app-help-link topic="kunden" anchor="nummern" label="Kunden- und Debitorennummer" />
-      @if (archived()) { <span class="badge text-bg-danger ms-2">Archiviert</span> }
-      @if (c.is_demo) { <span class="badge text-bg-info ms-2" title="Erfundener Datensatz für Schulung, Messe oder Tests. Entfernen: php artisan bustotal:demo-daten --entfernen">Demo</span> }
-    </p>
-  } @else {
-    <h1 class="h3 mb-0">Neuer Kunde</h1>
+    <p class="form-meta">{{ typeLabel(c.type) }}, Kundennummer {{ c.customer_number }}</p>
+    <div class="head-actions">
+      @if (!archived()) {
+        <button type="button" class="btn btn-outline-secondary" (click)="archive()"><i class="bi bi-archive me-1" aria-hidden="true"></i>Archivieren</button>
+        @if (canPlan()) {
+          <a class="btn btn-primary" routerLink="/reisen/neu" [queryParams]="{ kunde: c.id }"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Neue Reise</a>
+        }
+      } @else if (isAdmin()) {
+        <button type="button" class="btn btn-outline-secondary" (click)="restore()"><i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>Wiederherstellen</button>
+      }
+    </div>
   }
 </div>
 
@@ -20,39 +28,30 @@
 } @else {
 
 @if (id) {
-  <ul class="nav nav-tabs mb-3" role="tablist">
-    <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'stamm'" (click)="show('stamm')">Stammdaten</button></li>
-    <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'kontakte'" (click)="show('kontakte')">Ansprechpartner ({{ customer()?.contacts?.length ?? 0 }})</button></li>
-    <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'adressen'" (click)="show('adressen')">Adressen ({{ customer()?.addresses?.length ?? 0 }})</button></li>
-  </ul>
+  <div class="app-tabs" role="tablist">
+    <button type="button" class="app-tab" role="tab" [class.active]="tab() === 'stamm'" [attr.aria-selected]="tab() === 'stamm'" (click)="show('stamm')">Stammdaten</button>
+    <button type="button" class="app-tab" role="tab" [class.active]="tab() === 'kontakte'" [attr.aria-selected]="tab() === 'kontakte'" (click)="show('kontakte')">Ansprechpartner ({{ customer()?.contacts?.length ?? 0 }})</button>
+    <button type="button" class="app-tab" role="tab" [class.active]="tab() === 'adressen'" [attr.aria-selected]="tab() === 'adressen'" (click)="show('adressen')">Adressen ({{ customer()?.addresses?.length ?? 0 }})</button>
+  </div>
 }
 
+<div class="form-cols">
+<div>
+
 @if (message(); as m) {
-  <div class="alert py-2 small" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
+  <div class="alert py-2" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
 }
 
 @switch (tab()) {
   @case ('stamm') {
-    @if (duplicates().length) {
-      <div class="alert alert-warning" role="alert">
-        <strong>Mögliche Dublette:</strong> <app-help-link topic="kunden" anchor="dubletten" label="Mögliche Dubletten" />
-        <ul class="mb-0 mt-1">
-          @for (d of duplicates(); track d.customer.id) {
-            <li>
-              <a [routerLink]="['/kunden', d.customer.id]" target="_blank" class="alert-link">{{ d.customer.display_name }}</a>
-              ({{ d.customer.customer_number }}, {{ d.customer.postal_code }} {{ d.customer.city }}) – {{ d.reason }}
-            </li>
-          }
-        </ul>
-      </div>
-    }
-
     <form id="stammForm" class="form-area" [formGroup]="form" (ngSubmit)="save()" novalidate>
-      <div class="row g-3">
+      <div class="form-columns">
+      <div class="form-col">
+      <section class="form-section">
+        <h2 class="section-title">Kunde</h2>
+        <div class="row g-2">
 
-        <div class="col-12"><div class="section-title">Kunde</div></div>
-
-        <div class="col-12 col-lg-6">
+        <div class="col-12 col-lg-4">
           <label class="form-label" for="type">Art</label>
           <select class="form-select" id="type" formControlName="type">
             @for (t of types(); track t.value) {
@@ -60,7 +59,7 @@
             }
           </select>
         </div>
-        <div class="col-12 col-lg-6">
+        <div class="col-12 col-lg-8">
           <label class="form-label" for="company_name">{{ isOrganisation() ? 'Firmen- / Organisationsname' : 'Firmenname (optional)' }}@if (isOrganisation()) { <span class="text-danger"> *</span> }</label>
           <input class="form-control" id="company_name" formControlName="company_name" [class.is-invalid]="invalid('company_name')" />
           <div class="invalid-feedback">Bitte einen Namen angeben.</div>
@@ -80,27 +79,11 @@
           <div class="invalid-feedback">Bitte einen Nachnamen angeben.</div>
         </div>
 
-        <div class="col-12"><div class="section-title">Kontakt</div></div>
-
-        <div class="col-12 col-lg-6">
-          <label class="form-label" for="email">E-Mail</label>
-          <input type="email" class="form-control" id="email" formControlName="email" [class.is-invalid]="invalid('email')" />
-          <div class="invalid-feedback">{{ fieldErrors()['email'] || 'Ungültige E-Mail-Adresse.' }}</div>
         </div>
-        <div class="col-12 col-lg-6">
-          <label class="form-label" for="website">Webseite</label>
-          <input class="form-control" id="website" formControlName="website" />
-        </div>
-        <div class="col-12 col-lg-6">
-          <label class="form-label" for="phone">Telefon</label>
-          <input class="form-control" id="phone" formControlName="phone" />
-        </div>
-        <div class="col-12 col-lg-6">
-          <label class="form-label" for="mobile">Mobil</label>
-          <input class="form-control" id="mobile" formControlName="mobile" />
-        </div>
-
-        <div class="col-12"><div class="section-title">Rechnungsadresse</div></div>
+      </section>
+      <section class="form-section">
+        <h2 class="section-title">Rechnungsadresse</h2>
+        <div class="row g-2">
 
         <div class="col-12">
           <label class="form-label" for="street">Straße, Nr.</label>
@@ -121,7 +104,37 @@
           <div class="form-text">2 Buchstaben, z. B. DE</div>
         </div>
 
-        <div class="col-12"><div class="section-title">Rechnung</div></div>
+        </div>
+      </section>
+      </div>
+      <div class="form-col">
+      <section class="form-section">
+        <h2 class="section-title">Kontakt</h2>
+        <div class="row g-2">
+
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="phone">Telefon</label>
+          <input class="form-control" id="phone" formControlName="phone" />
+        </div>
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="mobile">Mobil</label>
+          <input class="form-control" id="mobile" formControlName="mobile" />
+        </div>
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="email">E-Mail</label>
+          <input type="email" class="form-control" id="email" formControlName="email" [class.is-invalid]="invalid('email')" />
+          <div class="invalid-feedback">{{ fieldErrors()['email'] || 'Ungültige E-Mail-Adresse.' }}</div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <label class="form-label" for="website">Webseite</label>
+          <input class="form-control" id="website" formControlName="website" />
+        </div>
+
+        </div>
+      </section>
+      <section class="form-section">
+        <h2 class="section-title">Rechnung</h2>
+        <div class="row g-2">
 
         <div class="col-12 col-lg-6">
           <label class="form-label" for="vat_id">USt-IdNr.</label>
@@ -140,98 +153,85 @@
           <div class="invalid-feedback">{{ fieldErrors()['buyer_reference'] || 'Ungültige Zeichen.' }}</div>
           <div class="form-text">Pflicht bei öffentlichen Auftraggebern, z. B. 04011000-1234512345-06.</div>
         </div>
-        <div class="col-12 col-lg-6 d-flex align-items-end">
-          <div class="form-check mb-2">
+        <div class="col-12 col-lg-6 d-flex align-items-center gap-2">
+          <div class="form-check mb-0">
             <input class="form-check-input" type="checkbox" id="einvoice" formControlName="einvoice" />
             <label class="form-check-label" for="einvoice">E-Rechnung statt PDF</label>
-            <app-help-link topic="kunden" anchor="e-rechnung" label="E-Rechnung beim Kunden" />
           </div>
+          <app-help-link topic="kunden" anchor="e-rechnung" label="E-Rechnung beim Kunden" />
         </div>
 
-        <div class="col-12"><div class="section-title">Notizen (intern)</div></div>
+        </div>
+      </section>
+      <section class="form-section">
+        <h2 class="section-title">Notizen (intern)</h2>
+        <div class="row g-2">
 
         <div class="col-12">
-          <label class="form-label" for="notes">Notizen</label>
-          <textarea class="form-control" id="notes" rows="4" formControlName="notes"></textarea>
+          <textarea class="form-control" id="notes" rows="4" formControlName="notes" aria-label="Notizen (intern)"></textarea>
         </div>
+        </div>
+      </section>
+      </div>
       </div>
     </form>
 
-    @if (id && customer()) {
-      <section class="mt-4 pt-3 border-top">
-        <h2 class="h6">Datenschutz <app-help-link topic="datenschutz" anchor="anonymisieren" label="Auskunft und Löschung (DSGVO)" /></h2>
-        <div class="d-flex flex-wrap gap-2">
-          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="export()">Daten exportieren (DSGVO Auskunft)</button>
-          @if (canAnonymize()) { <button type="button" class="btn btn-outline-danger btn-sm" (click)="anonymize()">Anonymisieren (DSGVO Löschung)</button> }
-        </div>
-      </section>
-    }
-
-    <!-- Tastenleiste (Muster): links Speichern, Zurück; rechts seltene Aktion, Abbrechen. Klebt unten. -->
-    <div class="form-bar">
-      @if (!archived()) {
+    @if (!archived()) {
+      <div class="form-bar" [class.d-none]="id && !form.dirty">
         <button type="submit" form="stammForm" class="btn btn-primary" [disabled]="saving()">
           @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
-          {{ saving() ? 'Speichert …' : id ? 'Speichern' : 'Kunde anlegen' }}
+          {{ saving() ? 'Speichert …' : id ? 'Speichern' : 'Kunde anlegen' }}<kbd>Strg+S</kbd>
         </button>
-      }
-      <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
-      @if (form.dirty && !archived()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
-      <div class="form-bar-right">
-        @if (id && customer() && !archived()) {
-          <button type="button" class="btn btn-outline-secondary" (click)="archive()"><i class="bi bi-archive me-1"></i>Archivieren</button>
-        }
-        @if (archived() && isAdmin()) {
-          <button type="button" class="btn btn-outline-secondary" (click)="restore()"><i class="bi bi-arrow-counterclockwise me-1"></i>Wiederherstellen</button>
-        }
-        @if (!archived()) {
-          <button type="button" class="btn btn-outline-secondary" [disabled]="!form.dirty" [attr.title]="form.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancel()">Abbrechen</button>
-        }
+        <button type="button" class="btn btn-outline-secondary" [disabled]="!form.dirty" [attr.title]="form.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancel()">Verwerfen</button>
+        @if (form.dirty) { <span class="form-bar-hint ms-auto">Ungespeicherte Änderungen</span> }
       </div>
-    </div>
+    }
   }
 
   @case ('kontakte') {
     @if (!contactEdit()) {
-      @if (!archived()) { <button class="btn btn-primary mb-3" (click)="newContact()">Ansprechpartner hinzufügen</button> }
-      <div class="card">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light"><tr><th>Name</th><th>Position</th><th>E-Mail</th><th>Telefon</th><th></th></tr></thead>
-          <tbody>
-            @for (c of customer()?.contacts; track c.id) {
-              <tr>
-                <td>@if (c.is_primary) { <span title="Hauptansprechpartner" class="text-warning">★ </span> }{{ c.salutation }} {{ c.first_name }} {{ c.last_name }}</td>
-                <td>{{ c.position }}</td>
-                <td>{{ c.email }}</td>
-                <td>{{ c.phone || c.mobile }}</td>
-                <td class="text-end text-nowrap">
-                  @if (!archived()) {
-                    <button class="btn btn-sm btn-outline-secondary me-1" (click)="editContact(c)">Bearbeiten</button>
-                    <button class="btn btn-sm btn-outline-danger" (click)="deleteContact(c)">Löschen</button>
-                  }
-                </td>
-              </tr>
-            } @empty {
-              <tr><td colspan="5" class="text-center text-body-secondary py-4">Noch keine Ansprechpartner.</td></tr>
-            }
-          </tbody>
-        </table>
+      <div class="form-area pt-3">
+        @if (!archived()) { <button type="button" class="btn btn-primary mb-3" (click)="newContact()"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Ansprechpartner hinzufügen</button> }
+        <div class="table-responsive">
+          <table class="data-table" style="min-width: 640px">
+            <colgroup><col style="width: 28%"><col style="width: 18%"><col><col style="width: 140px"><col style="width: 84px"></colgroup>
+            <thead><tr><th>Name</th><th>Position</th><th>E-Mail</th><th>Telefon</th><th><span class="visually-hidden">Aktionen</span></th></tr></thead>
+            <tbody>
+              @for (c of customer()?.contacts; track c.id) {
+                <tr>
+                  <td>@if (c.is_primary) { <i class="bi bi-star-fill me-1" title="Hauptansprechpartner" aria-label="Hauptansprechpartner"></i> }{{ c.salutation }} {{ c.first_name }} {{ c.last_name }}</td>
+                  <td>{{ c.position }}</td>
+                  <td>{{ c.email }}</td>
+                  <td>{{ c.phone || c.mobile }}</td>
+                  <td class="col-actions">
+                    @if (!archived()) {
+                      <button type="button" class="btn-action" (click)="editContact(c)" title="Bearbeiten" [attr.aria-label]="c.last_name + ' bearbeiten'"><i class="bi bi-pencil" aria-hidden="true"></i></button>
+                      <button type="button" class="btn-action" (click)="deleteContact(c)" title="Löschen" [attr.aria-label]="c.last_name + ' löschen'"><i class="bi bi-trash" aria-hidden="true"></i></button>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="5" class="text-center text-body-secondary py-4">Noch keine Ansprechpartner.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
     } @else {
       @if (contactEdit(); as c) {
         <form id="contactForm" class="form-area" #cf="ngForm" (ngSubmit)="saveContact(cf)" novalidate [class.was-validated]="contactSubmitted()">
-          <div class="row g-3">
-            <div class="col-12"><div class="section-title">{{ c.id ? 'Ansprechpartner bearbeiten' : 'Neuer Ansprechpartner' }}</div></div>
+          <div class="row g-2">
+            <div class="col-12"><h2 class="section-title">{{ c.id ? 'Ansprechpartner bearbeiten' : 'Neuer Ansprechpartner' }}</h2></div>
 
-            <div class="col-12 col-lg-6">
+            <div class="col-12 col-lg-4">
               <label class="form-label" for="c_sal">Anrede</label>
               <input class="form-control" id="c_sal" name="sal" [(ngModel)]="c.salutation" />
             </div>
-            <div class="col-12 col-lg-6">
+            <div class="col-12 col-lg-4">
               <label class="form-label" for="c_fn">Vorname</label>
               <input class="form-control" id="c_fn" name="fn" [(ngModel)]="c.first_name" />
             </div>
-            <div class="col-12 col-lg-6">
+            <div class="col-12 col-lg-4">
               <label class="form-label" for="c_ln">Nachname <span class="text-danger">*</span></label>
               <input class="form-control" id="c_ln" name="ln" required [(ngModel)]="c.last_name" [class.is-invalid]="!!fieldErrors()['last_name']" />
               <div class="invalid-feedback">{{ fieldErrors()['last_name'] || 'Bitte einen Nachnamen angeben.' }}</div>
@@ -253,8 +253,8 @@
               <label class="form-label" for="c_mo">Mobil</label>
               <input class="form-control" id="c_mo" name="mo" [(ngModel)]="c.mobile" />
             </div>
-            <div class="col-12 col-lg-6 d-flex align-items-end">
-              <div class="form-check mb-2">
+            <div class="col-12">
+              <div class="form-check mb-0">
                 <input id="primary" class="form-check-input" name="pri" type="checkbox" [(ngModel)]="c.is_primary" />
                 <label class="form-check-label" for="primary">Hauptansprechpartner</label>
               </div>
@@ -263,10 +263,8 @@
         </form>
 
         <div class="form-bar">
-          <button type="submit" form="contactForm" class="btn btn-primary">Speichern</button>
-          <div class="form-bar-right">
-            <button type="button" class="btn btn-outline-secondary" (click)="contactEdit.set(null)">Abbrechen</button>
-          </div>
+          <button type="submit" form="contactForm" class="btn btn-primary">Speichern<kbd>Strg+S</kbd></button>
+          <button type="button" class="btn btn-outline-secondary" (click)="contactEdit.set(null)">Abbrechen</button>
         </div>
       }
     }
@@ -274,34 +272,37 @@
 
   @case ('adressen') {
     @if (!addressEdit()) {
-      @if (!archived()) { <button class="btn btn-primary mb-3" (click)="newAddress()">Adresse hinzufügen</button> }
-      <div class="card">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light"><tr><th>Art</th><th>Bezeichnung</th><th>Adresse</th><th></th></tr></thead>
-          <tbody>
-            @for (a of customer()?.addresses; track a.id) {
-              <tr>
-                <td>{{ a.type }}</td>
-                <td>{{ a.label }}</td>
-                <td>{{ a.street }}, {{ a.postal_code }} {{ a.city }}</td>
-                <td class="text-end text-nowrap">
-                  @if (!archived()) {
-                    <button class="btn btn-sm btn-outline-secondary me-1" (click)="editAddress(a)">Bearbeiten</button>
-                    <button class="btn btn-sm btn-outline-danger" (click)="deleteAddress(a)">Löschen</button>
-                  }
-                </td>
-              </tr>
-            } @empty {
-              <tr><td colspan="4" class="text-center text-body-secondary py-4">Noch keine zusätzlichen Adressen (z. B. Abholpunkte).</td></tr>
-            }
-          </tbody>
-        </table>
+      <div class="form-area pt-3">
+        @if (!archived()) { <button type="button" class="btn btn-primary mb-3" (click)="newAddress()"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Adresse hinzufügen</button> }
+        <div class="table-responsive">
+          <table class="data-table" style="min-width: 560px">
+            <colgroup><col style="width: 120px"><col style="width: 24%"><col><col style="width: 84px"></colgroup>
+            <thead><tr><th>Art</th><th>Bezeichnung</th><th>Adresse</th><th><span class="visually-hidden">Aktionen</span></th></tr></thead>
+            <tbody>
+              @for (a of customer()?.addresses; track a.id) {
+                <tr>
+                  <td>{{ a.type | titlecase }}</td>
+                  <td>{{ a.label }}</td>
+                  <td>{{ a.street }}, {{ a.postal_code }} {{ a.city }}</td>
+                  <td class="col-actions">
+                    @if (!archived()) {
+                      <button type="button" class="btn-action" (click)="editAddress(a)" title="Bearbeiten" [attr.aria-label]="a.street + ' bearbeiten'"><i class="bi bi-pencil" aria-hidden="true"></i></button>
+                      <button type="button" class="btn-action" (click)="deleteAddress(a)" title="Löschen" [attr.aria-label]="a.street + ' löschen'"><i class="bi bi-trash" aria-hidden="true"></i></button>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="4" class="text-center text-body-secondary py-4">Noch keine zusätzlichen Adressen (z. B. Abholpunkte).</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
     } @else {
       @if (addressEdit(); as a) {
         <form id="addressForm" class="form-area" #af="ngForm" (ngSubmit)="saveAddress(af)" novalidate [class.was-validated]="addressSubmitted()">
-          <div class="row g-3">
-            <div class="col-12"><div class="section-title">{{ a.id ? 'Adresse bearbeiten' : 'Neue Adresse' }}</div></div>
+          <div class="row g-2">
+            <div class="col-12"><h2 class="section-title">{{ a.id ? 'Adresse bearbeiten' : 'Neue Adresse' }}</h2></div>
 
             <div class="col-12 col-lg-6">
               <label class="form-label" for="a_t">Art</label>
@@ -340,14 +341,61 @@
         </form>
 
         <div class="form-bar">
-          <button type="submit" form="addressForm" class="btn btn-primary">Speichern</button>
-          <div class="form-bar-right">
-            <button type="button" class="btn btn-outline-secondary" (click)="addressEdit.set(null)">Abbrechen</button>
-          </div>
+          <button type="submit" form="addressForm" class="btn btn-primary">Speichern<kbd>Strg+S</kbd></button>
+          <button type="button" class="btn btn-outline-secondary" (click)="addressEdit.set(null)">Abbrechen</button>
         </div>
       }
     }
   }
 }
+</div>
+
+<!-- Feste Spalte: Hinweise, Nummern, seltene Aktionen -->
+<aside class="form-side">
+  @if (tab() === 'stamm' && duplicates().length) {
+    <div class="side-panel side-panel-warning" role="alert">
+      <h2>Mögliche Dublette <app-help-link topic="kunden" anchor="dubletten" label="Mögliche Dubletten" /></h2>
+      <ul>
+        @for (d of duplicates(); track d.customer.id) {
+          <li>
+            <a [routerLink]="['/kunden', d.customer.id]" target="_blank">{{ d.customer.display_name }}</a>
+            ({{ d.customer.customer_number }}, {{ d.customer.postal_code }} {{ d.customer.city }}): {{ d.reason }}
+          </li>
+        }
+      </ul>
+    </div>
+  }
+
+  @if (customer(); as c) {
+    <div class="side-panel">
+      <h2>Nummern <app-help-link topic="kunden" anchor="nummern" label="Kunden- und Debitorennummer" /></h2>
+      <dl>
+        <dt>Kunde</dt><dd>{{ c.customer_number }}</dd>
+        <dt>Debitor</dt><dd>{{ c.debitor_number }}</dd>
+      </dl>
+    </div>
+
+    <div class="side-panel">
+      <div class="side-stack">
+        <a class="btn btn-outline-secondary" routerLink="/belege" [queryParams]="{ kunde: c.id }">
+          <i class="bi bi-file-earmark-text me-1" aria-hidden="true"></i>Belege anzeigen
+        </a>
+      </div>
+    </div>
+
+    <div class="side-panel">
+      <h2>Datenschutz <app-help-link topic="datenschutz" anchor="anonymisieren" label="Auskunft und Löschung (DSGVO)" /></h2>
+      <div class="side-stack">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="export()">Daten exportieren (Auskunft)</button>
+        @if (canAnonymize()) { <button type="button" class="btn btn-sm btn-outline-danger" (click)="anonymize()">Anonymisieren (Löschung)</button> }
+      </div>
+    </div>
+  } @else if (!duplicates().length) {
+    <div class="side-panel text-body-secondary">
+      Mit * markierte Felder sind Pflicht. Kunden- und Debitorennummer entstehen beim Anlegen. Gibt es den Kunden vielleicht schon, steht der Hinweis hier.
+    </div>
+  }
+</aside>
+</div>
 
 }

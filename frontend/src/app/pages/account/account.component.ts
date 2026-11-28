@@ -3,7 +3,7 @@ import { Component, ElementRef, computed, inject, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
-import { ConfirmService } from '../../core/confirm.service';
+import { useFormPage } from '../../core/form-page';
 import { httpErrorText } from '../../core/http-error';
 import { roleLabel } from '../../core/roles';
 import { HelpLinkComponent } from '../../help/help-link.component';
@@ -22,7 +22,6 @@ const sameAsPassword = (c: AbstractControl): ValidationErrors | null =>
 export class AccountComponent {
   private auth = inject(AuthService);
   private router = inject(Router);
-  private confirm = inject(ConfirmService);
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   user = this.auth.user;
@@ -54,17 +53,14 @@ export class AccountComponent {
     return this.formSubmitted() && (this.form.hasError('mismatch') || this.form.controls.password_confirmation.invalid);
   }
 
-  /** Tastenleiste "Zurück": zur Startseite, bei ungespeicherten Eingaben erst nachfragen. */
-  async back() {
-    if (this.form.dirty) {
-      const ok = await this.confirm.ask({
-        title: 'Eingaben verwerfen',
-        message: 'Das Passwort wurde noch nicht geändert. Trotzdem zurück zur Startseite?',
-        confirmLabel: 'Verwerfen',
-        danger: true,
-      });
-      if (!ok) return;
-    }
+  /** Strg+S ändert das Passwort; beim Verlassen mit Eingaben wird nachgefragt. */
+  canLeave = useFormPage({
+    unsaved: () => this.form.dirty,
+    save: () => this.submit(),
+  });
+
+  /** „Zurück“ oben: zur Startseite. */
+  back() {
     this.router.navigate(['/']);
   }
 

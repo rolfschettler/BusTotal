@@ -24,8 +24,9 @@ Wählen Sie **Neuer Beleg**, dann die Belegart und den Kunden. Die Belegarten:
 
 Die Belegart lässt sich nach dem Anlegen nicht mehr ändern. Jeder Beleg besteht aus Kopfdaten, Positionen und Texten:
 
-- **Positionen:** Bezeichnung, Menge, Einheit, Einzelpreis (netto) und Steuersatz. Die Summen darunter sind eine Vorschau, maßgeblich ist die Berechnung beim Speichern. Die Steuer wird je Steuersatz aus der Nettosumme gerechnet.
-- **Fahrtart und Steuersatz:** Wählen Sie je Position die **Fahrtart**, dann stellt sich der Steuersatz passend ein. Mehr unter [Fahrtart und Steuersatz](#fahrtart).
+- **Positionen:** Eine Zeile je Position mit Bezeichnung, Menge, Einheit, Einzelpreis (netto), Steuersatz und Netto. Der **Pfeil links** klappt die Details auf: Beschreibung, Fahrtart und Steuerhinweis. Zugeklappt steht ihr Inhalt klein unter der Bezeichnung. Die **Summen** stehen rechts neben dem Beleg; sie sind eine Vorschau, maßgeblich ist die Berechnung beim Speichern. Die Steuer wird je Steuersatz aus der Nettosumme gerechnet.
+- **Tasten:** Sobald Sie etwas ändern, erscheint unten die Leiste mit **Speichern** (oder <kbd>Strg</kbd>+<kbd>S</kbd>) und **Verwerfen**. **Drucken**, **Festschreiben** und die Folgebelege stehen oben rechts; die gefüllte Taste zeigt, was jetzt dran ist. **Entwurf löschen**, **Stornieren** und die E-Rechnung stehen in der rechten Spalte.
+- **Fahrtart und Steuersatz:** Wählen Sie je Position (Details aufklappen) die **Fahrtart**, dann stellt sich der Steuersatz passend ein. Mehr unter [Fahrtart und Steuersatz](#fahrtart).
 - **Steuersatz:** Zur Auswahl stehen die Sätze aus den Einstellungen. Bei 0 % verlangt eine Rechnung einen Grund im **Steuerhinweis**, zum Beispiel „steuerfrei“ oder „Ausland“.
 - **Leistung von / bis:** Das Fahrtdatum. Bei Rechnungen ist **Leistung von** Pflicht, bei Anzahlungsrechnungen nicht.
 - **Belegdatum:** Bleibt es leer, gilt der Tag des Festschreibens.
@@ -64,10 +65,10 @@ Ein festgeschriebener Beleg lässt sich nicht mehr ändern oder löschen, weder 
 
 ## Reise {#reise}
 
-Eine **Reise** fasst Kunde, Strecken und alle Belege einer Fahrt zusammen. Sie legen sie unter **Reisen › Neue Reise planen** an (Name und Kunde) und planen dort **Strecke für Strecke**, siehe [Mehrere Strecken](#mehrere-strecken). Das Angebot erstellen Sie danach auf der Reise. Eine Reise entsteht auch von selbst, wenn Sie in der Streckenplanung die Taste **Angebot erstellen** nehmen. Im Beleg steht oben die **Reise-Leiste**:
+Eine **Reise** fasst Kunde, Strecken und alle Belege einer Fahrt zusammen. Sie legen sie unter **Reisen › Neue Reise planen** an (Name und Kunde) und planen dort **Strecke für Strecke**, siehe [Mehrere Strecken](#mehrere-strecken). Das Angebot erstellen Sie danach auf der Reise. Eine Reise entsteht auch von selbst, wenn Sie in der Streckenplanung die Taste **Angebot erstellen** nehmen. Im Beleg steht oben der **Linienplan** der Reise (Strecken, Angebot, Auftrag, Fahrt, Rechnung):
 
-- Sie zeigt alle Belege der Reise in der Reihenfolge ihrer Anlage: Angebot, Auftragsbestätigung, Anzahlung, Rechnung. Der aktuelle Beleg ist hervorgehoben, ein stornierter durchgestrichen. Ein Klick öffnet den Beleg. **Reise öffnen: Strecken ändern** führt zur Reise.
-- Darunter steht der **nächste Schritt**: bei einem Entwurf „Kunden wählen, Positionen prüfen und den Beleg festschreiben“, bei einem festgeschriebenen Beleg zum Beispiel „Auftragsbestätigung erstellen“ (Tasten unten im Formular).
+- Darunter stehen alle Belege der Reise in der Reihenfolge ihrer Anlage: Angebot, Auftragsbestätigung, Anzahlung, Rechnung. Der aktuelle Beleg ist hervorgehoben, ein stornierter durchgestrichen. Ein Klick öffnet den Beleg. Ein Klick auf den **Namen der Reise** führt zur Reise, dort ändern Sie die Strecken. Haben Sie ungespeicherte Eingaben, fragt die Software vorher nach.
+- Darunter steht der **nächste Schritt**: bei einem Entwurf „Kunden wählen, Positionen prüfen und den Beleg festschreiben“, bei einem festgeschriebenen Beleg zum Beispiel „Auftragsbestätigung erstellen“ (Tasten oben rechts).
 - Wählen Sie im ersten Beleg den **Kunden** oder ändern das Fahrtdatum, gilt das auch für die Reise. Folgebelege und der Storno bleiben in derselben Reise.
 - Ist die **Auftragsbestätigung** festgeschrieben, zeigt die Leiste die **Fahrtaufträge** der Reise (zu disponieren, disponiert, ausgegeben) mit einem Link dorthin. Weicht die Zahl der Busse in der Auftragsbestätigung von den Fahrtaufträgen ab, steht „Fahrtaufträge prüfen“. Mehr unter [Der Fahrtauftrag](/hilfe/fahrten#fahrtauftrag).
 
@@ -75,19 +76,19 @@ Belege, die Sie von Hand anlegen („Neuer Beleg“), haben keine Reise und kein
 
 ## Die Liste der Reisen {#reisen}
 
-Unter **Fahrten und Abrechnung › Reisen** sehen Sie alle [Reisen](#reise) auf einen Blick. Mit **Neue Reise planen** (Administrator und Disponent) legen Sie eine an: Name und, wenn Sie ihn schon kennen, der Kunde.
+Unter **Reisen** sehen Sie alle [Reisen](#reise) auf einen Blick. Mit **Neue Reise planen** (Administrator und Disponent) legen Sie eine an: Name und, wenn Sie ihn schon kennen, der Kunde.
 
 - **Ansichten:** Die Tasten **Laufende** (Vorgabe), **Abgeschlossen**, **Abgesagt** und **Alle** bestimmen, welche Reisen Sie sehen. **Abgeschlossen** ist eine Reise von selbst, wenn ihr Reisedatum vorbei ist, eine Rechnung der Reise festgeschrieben ist und keine ihrer Rechnungen mehr offen ist (kein Entwurf, vollständig bezahlt). Anzahlungen zählen dabei nicht. Eine Reise ohne Reisedatum bleibt unter „Laufende“. **Zurzeit** entsteht aus einer Reise noch keine Schlussrechnung (sie folgt mit der Rechnung aus Fahrtaufträgen), deshalb bleiben auch durchgeführte Reisen vorerst unter „Laufende“. Findet die Suche Reisen außerhalb der gewählten Ansicht, steht das über der Liste, mit **Alle anzeigen**.
 - **Die Liste** zeigt je Reise den Namen mit Zahl der Strecken und Belege, den Kunden, den Zeitraum, den **Stand** und den **Betrag brutto**. Die neueste Reise steht oben. Die Suche trifft den Namen der Reise und den Kunden am Wortanfang („Wien“, „Sonnenschein“, „Mustermann,Max“).
 - **Stand und Betrag** sind aus den Belegen abgeleitet und nirgends gespeichert: Es zählt der weitestgehende gültige Beleg (Rechnung vor Auftragsbestätigung vor Angebot, Stornierte zählen nicht). Anzahlungen bestimmen den Stand nicht. Ein Klick auf den Stand öffnet diesen Beleg.
-- **Die Reise öffnen** (Auge-Symbol oder Name) ist der Ort, an dem Sie planen: Name und Kunde ändern, **Strecken** hinzufügen, ändern und entfernen, das **Angebot** erstellen und aktualisieren. Dazu stehen dort alle **Belege** mit Betrag und Stand und oben der **nächste Schritt**. Bei Strecken in einem festgeschriebenen Beleg zeigt die Tabelle den dort festgehaltenen Stand („Stand aus …“).
-- **Umbenennen:** Mit dem **Stift** neben dem Namen auf der Reise geben Sie ihr einen eigenen Namen, zum Beispiel „Klassenfahrt Realschule Mai“ (Enter oder **Speichern**, Esc oder **Abbrechen**). Der Name gilt sofort in der Liste, in der Suche und in der Reise-Leiste im Beleg. Er steht **nicht** auf Belegen und PDFs, deshalb ändert ein neuer Name keinen festgeschriebenen Beleg. Umbenennen dürfen Administrator, Disponent und Buchhaltung.
+- **Die Reise öffnen** (Klick auf die Zeile) ist der Ort, an dem Sie planen: Name und Kunde ändern, **Strecken** hinzufügen, ändern und entfernen, das **Angebot** erstellen und aktualisieren. Dazu stehen dort alle **Belege** mit Betrag und Stand und oben der **nächste Schritt**. Bei Strecken in einem festgeschriebenen Beleg zeigt die Tabelle den dort festgehaltenen Stand („Stand aus …“).
+- **Umbenennen:** Mit dem **Stift** neben dem Namen auf der Reise geben Sie ihr einen eigenen Namen, zum Beispiel „Klassenfahrt Realschule Mai“ (Enter oder **Speichern**, Esc oder **Abbrechen**). Der Name gilt sofort in der Liste, in der Suche und im Linienplan oben im Beleg. Er steht **nicht** auf Belegen und PDFs, deshalb ändert ein neuer Name keinen festgeschriebenen Beleg. Umbenennen dürfen Administrator, Disponent und Buchhaltung.
 - **Kunde:** Auf der Reise wählen Sie den Kunden wie im Beleg (Suchfeld, Trefferliste, **Ändern**). Das Angebot übernimmt ihn beim Erstellen; ein schon bestehender Entwurf behält seinen Kunden.
 - Die Buchhaltung sieht Reisen und kann sie umbenennen, aber nicht planen. Die Touren stehen im [Tour-Archiv](/hilfe/strecken#tour-archiv-liste).
 
 ## Reise absagen {#reise-absagen}
 
-Findet eine Reise nicht statt, öffnen Sie sie und klicken unten auf **Reise absagen** (Administrator und Disponent). Ein Fenster zeigt vorher, was geschieht:
+Findet eine Reise nicht statt, öffnen Sie sie und klicken in der rechten Spalte auf **Reise absagen** (Administrator und Disponent). Ein Fenster zeigt vorher, was geschieht:
 
 - Alle **Fahrtaufträge**, die noch nicht erledigt sind, werden mit abgesagt, auch schon ausgegebene. **Informieren Sie die Fahrer und Fremdunternehmer selbst**, die Software verschickt nichts. Das Fahrer-PDF trägt den Hinweis „ABGESAGT“.
 - Ist schon **Geld eingegangen** (Anzahlung oder Rechnung), stehen die Beträge im Fenster. Sie werden nicht automatisch zurückgezahlt oder verrechnet: Eine Rückzahlung buchen Sie bei den [Zahlungen](#zahlungen) des Belegs. Eine Stornogebühr stellen Sie über **Neuer Beleg** als Rechnung.
@@ -169,7 +170,7 @@ Ein Beleg lässt sich nur einmal stornieren. Entwürfe werden nicht storniert, s
 
 ## PDF {#pdf}
 
-Mit **Drucken** (in der Tastenleiste des Belegs und als Druckersymbol in der Liste) wird der Beleg gedruckt, ohne dass ein neuer Tab aufgeht. Was Sie sehen, hängt vom Gerät ab:
+Mit **Drucken** (oben rechts im Beleg und als Druckersymbol in der Liste) wird der Beleg gedruckt, ohne dass ein neuer Tab aufgeht. Was Sie sehen, hängt vom Gerät ab:
 
 - **Am PC (mit Maus):** Es erscheint kurz der Hinweis „Druck wird vorbereitet …“, dann öffnet sich gleich die **Druckvorschau Ihres Browsers** mit allen Seiten des Belegs. Von dort drucken Sie oder speichern als PDF. Eine eigene Vorschau in {{app}} erscheint nur, wenn der Aufbau nicht gelingt: Dann sehen Sie eine Meldung und können das PDF über **Herunterladen** speichern.
 - **Auf Tablets und Handys (Android, iPad):** Die **Druckvorschau öffnet direkt in {{app}}** und zeigt alle Seiten des Belegs. Mit **Drucken** darin öffnet sich der Druckdialog des Geräts (auf Android der Druckdienst, auf dem iPad AirPrint). **Herunterladen** speichert das PDF als Datei, **Schließen** (oder die Esc-Taste) beendet die Vorschau. Gedruckt wird ein Bild der Seiten; wer das PDF selbst braucht (zum Beispiel für eine E-Mail), nutzt „Herunterladen“.
@@ -189,7 +190,7 @@ Mit **Drucken** (in der Tastenleiste des Belegs und als Druckersymbol in der Lis
 
 ## Zahlungen {#zahlungen}
 
-Zu jeder **festgeschriebenen Rechnung** und **Anzahlungsrechnung** gehört der Zahlstand. Im Beleg steht dafür unter dem Formular der Abschnitt **Zahlungen**; in der Liste zeigt die Spalte **Stand** unter „Festgeschrieben“, ob der Beleg bezahlt, teilweise bezahlt, offen oder überfällig ist.
+Zu jeder **festgeschriebenen Rechnung** und **Anzahlungsrechnung** gehört der Zahlstand. Im festgeschriebenen Beleg steht dafür oben der Abschnitt **Zahlungen**; in der Liste zeigt die Spalte **Stand** unter „Festgeschrieben“, ob der Beleg bezahlt, teilweise bezahlt, offen oder überfällig ist.
 
 - **Zahlung erfassen:** **Zahlung erfassen**, dann Datum, Betrag, Zahlungsart und Verwendungszweck eintragen. Der Betrag ist mit dem offenen Betrag vorbelegt. Mehr als der offene Betrag lässt sich nicht buchen, ein Datum in der Zukunft auch nicht. Ist der Beleg vollständig bezahlt, steht er auf **Bezahlt**.
 - **Teilzahlungen** sind möglich: Der Beleg steht dann auf **Teilweise bezahlt**, der Rest bleibt offen.
@@ -205,7 +206,7 @@ Zu jeder **festgeschriebenen Rechnung** und **Anzahlungsrechnung** gehört der Z
 
 Für Kunden mit dem Kennzeichen **E-Rechnung statt PDF** ([Kunde](/hilfe/kunden#e-rechnung)) entsteht beim **Festschreiben** einer Rechnung, Anzahlungsrechnung oder Stornorechnung zusätzlich die **XRechnung**: eine XML-Datei nach der europäischen Norm EN 16931 (Format XRechnung 3.0).
 
-- **Download:** In der festgeschriebenen Rechnung steht in der Tastenleiste **E-Rechnung (XML)**. Neben dem Status zeigt die Marke **E-Rechnung**, dass es eine Datei gibt. Sie schicken die XML selbst an den Kunden (E-Mail oder Rechnungsportal). Das PDF bleibt daneben als Archiv-PDF und Ansicht bestehen.
+- **Download:** In der festgeschriebenen Rechnung steht in der rechten Spalte **E-Rechnung (XML)**. Neben dem Status zeigt die Marke **E-Rechnung**, dass es eine Datei gibt. Sie schicken die XML selbst an den Kunden (E-Mail oder Rechnungsportal). Das PDF bleibt daneben als Archiv-PDF und Ansicht bestehen.
 - **Einmal erzeugt, nie geändert:** Die XML wird beim Festschreiben erzeugt, mit einer Prüfsumme abgelegt und nie neu erzeugt. Spätere Änderungen an Kunde oder Firmendaten ändern sie nicht. Stimmt die Prüfsumme nicht mehr, meldet das Programm es, statt still eine neue zu erzeugen.
 - **Prüfung vor dem Festschreiben:** Fehlt etwas, das die XRechnung verlangt, wird **nicht festgeschrieben** und keine Nummer verbraucht. Die Meldung nennt jede fehlende Angabe, zum Beispiel „Beim Kunden fehlt die E-Mail-Adresse oder eine Leitweg-ID“ oder „In den Firmendaten fehlt die IBAN“. Tragen Sie sie nach und schreiben Sie erneut fest.
 - **Ältere Rechnungen:** Klicken Sie bei einer festgeschriebenen Rechnung ohne XML auf **E-Rechnung (XML)**, entsteht sie jetzt einmal aus den Daten, die beim Festschreiben gespeichert wurden. Eine Leitweg-ID, die erst später beim Kunden eingetragen wurde, wird dafür übernommen.

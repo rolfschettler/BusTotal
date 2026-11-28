@@ -1,93 +1,54 @@
 <!-- Tabellen-Muster, siehe docs/ClaudeCodePatterns/TableViewPattern.md. Die Optik kommt aus src/styles/_list-page.scss. -->
+<div class="list-head">
+  <h1 class="list-title">{{ archived ? 'Archivierte Fahrer' : 'Fahrer' }}</h1>
+  @if (loaded()) { <span class="list-count">{{ total() }}</span> }
 
-<!-- ── Seitenkopf ──────────────────────────────────────────────────── -->
-<div class="page-header">
-  <div class="row g-2 align-items-center">
-    <div class="col-auto">
-      <div class="d-flex align-items-center gap-2">
-        <h5 class="page-title mb-0">{{ archived ? 'Archivierte Fahrer' : 'Fahrer' }}</h5>
-        @if (loaded()) {
-          <span class="badge rounded-pill record-count d-none d-sm-inline-flex">{{ total() }} {{ total() === 1 ? 'Fahrer' : 'Fahrer' }}</span>
-        }
-      </div>
-    </div>
-    <div class="col-12 col-sm-auto ms-sm-auto">
-      <div class="row row-cols-1 row-cols-sm-auto g-1 justify-content-end align-items-center header-ctrl">
-        <div class="col">
-          <button type="button" class="btn btn-sm btn-header w-100" (click)="refresh()" [disabled]="loading()">
-            <i class="bi bi-arrow-clockwise"></i><span class="ms-1">Aktualisieren</span>
-          </button>
-        </div>
-        <div class="col">
-          <a routerLink="/fahrer/neu" class="btn btn-sm btn-header-new w-100">
-            <i class="bi bi-plus-lg"></i><span class="ms-1">Neuer Fahrer</span>
-          </a>
-        </div>
-      </div>
-    </div>
+  <input type="search" class="form-control list-search" [class.filter-active]="q.trim() !== ''" autocomplete="off"
+         appListSearch [nav]="nav" [pending]="q.trim() !== shownQuery() || loading()" (searchNow)="searchNow()"
+         placeholder="Suche: Name, Personalnr., Ort, E-Mail …" aria-label="Suche" [(ngModel)]="q" (ngModelChange)="onSearch()" />
+  <select class="form-select" [class.filter-active]="employment !== ''" aria-label="Beschäftigung" [(ngModel)]="employment" (ngModelChange)="filterChanged()">
+    <option value="">Alle Beschäftigungen</option>
+    @for (t of employmentTypes(); track t.value) { <option [value]="t.value">{{ t.label }}</option> }
+  </select>
+  <select class="form-select" [class.filter-active]="deadline !== ''" aria-label="Fristen" [(ngModel)]="deadline" (ngModelChange)="filterChanged()">
+    <option value="">Alle Fristen</option>
+    <option value="overdue">Abgelaufen</option>
+    <option value="soon">Abgelaufen oder bald fällig</option>
+  </select>
+  <div class="form-check mb-0">
+    <input id="archived" class="form-check-input" type="checkbox" [(ngModel)]="archived" (ngModelChange)="filterChanged()" />
+    <label class="form-check-label" for="archived">Archivierte</label>
+  </div>
+
+  <div class="list-actions">
+    <button type="button" class="btn btn-outline-secondary" (click)="refresh()" [disabled]="loading()" title="Liste neu laden">
+      <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Aktualisieren
+    </button>
+    <a routerLink="/fahrer/neu" class="btn btn-primary"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Neuer Fahrer</a>
   </div>
 </div>
 
-<!-- ── Inhalt: der EINE Scroll-Container ───────────────────────────── -->
-<div class="page-content">
-
-  <div class="filter-bar" appStickyFilterBar>
-    <div class="row g-2 align-items-center">
-      <div class="col-12 col-sm-6 col-lg-4">
-        <input type="search" class="form-control form-control-sm" [class.filter-active]="q.trim() !== ''"
-               placeholder="Suche: Name, Personalnr., Ort, E-Mail …" aria-label="Suche"
-               [(ngModel)]="q" (ngModelChange)="onSearch()" />
-      </div>
-      <div class="col-6 col-sm-auto">
-        <select class="form-select form-select-sm" [class.filter-active]="employment !== ''" aria-label="Beschäftigung"
-                [(ngModel)]="employment" (ngModelChange)="filterChanged()">
-          <option value="">Alle Beschäftigungen</option>
-          @for (t of employmentTypes(); track t.value) {
-            <option [value]="t.value">{{ t.label }}</option>
-          }
-        </select>
-      </div>
-      <div class="col-6 col-sm-auto">
-        <select class="form-select form-select-sm" [class.filter-active]="deadline !== ''" aria-label="Fristen"
-                [(ngModel)]="deadline" (ngModelChange)="filterChanged()">
-          <option value="">Alle Fristen</option>
-          <option value="overdue">Abgelaufen</option>
-          <option value="soon">Abgelaufen oder bald fällig</option>
-        </select>
-      </div>
-      <div class="col-6 col-sm-auto">
-        <div class="form-check mb-0">
-          <input id="archived" class="form-check-input" type="checkbox" [(ngModel)]="archived" (ngModelChange)="filterChanged()" />
-          <label class="form-check-label small" for="archived">Archivierte</label>
-        </div>
-      </div>
-    </div>
-  </div>
-
+<div class="list-body" [class.dimmed]="loading()" appRowNav #nav="appRowNav" (rowSelect)="select($event)" (rowOpen)="open($event)">
   @if (message(); as m) {
-    <div class="alert alert-success py-2 mb-3" role="status">{{ m }}</div>
+    <div class="alert alert-success py-2" role="status">{{ m }}</div>
   }
   @if (error()) {
-    <div class="alert alert-danger py-2 mb-3" role="alert">{{ error() }}</div>
+    <div class="alert alert-danger py-2" role="alert">{{ error() }}</div>
   }
 
-  <!-- KEIN overflow-Wrapper um die Tabelle (klebender Tabellenkopf), siehe Muster. -->
-  <div class="card table-card rounded-3" [class.dimmed]="loading()">
-    <table class="table table-hover table-sm align-middle data-table mb-0">
+  <table class="data-table" style="min-width: 1000px">
+    <colgroup>
+      <col style="width: 100px">
+      <col style="width: 22%">
+      <col style="width: 14%">
+      <col>
+      <col style="width: 120px">
+      <col style="width: 28%">
+      <col style="width: 56px">
+    </colgroup>
 
-      <colgroup>
-        <col style="width:76px">   <!-- Aktionen -->
-        <col style="width:100px">  <!-- Personalnr. -->
-        <col style="width:230px">  <!-- Name -->
-        <col style="width:150px">  <!-- Beschäftigung -->
-        <col style="width:150px">  <!-- Ort -->
-        <col style="width:120px">  <!-- Heute -->
-        <col style="width:248px">  <!-- Nächste Frist -->
-      </colgroup>
-
-      <thead>
+    <thead>
         <tr>
-          <th class="col-actions"><span class="visually-hidden">Aktionen</span></th>
           <th class="sortable" [class.sort-active]="sortCol() === 'number'" [attr.aria-sort]="ariaSort('number')" tabindex="0"
               (click)="sort('number')" (keydown.enter)="sort('number')">Nr. <i class="bi {{ sortIcon('number') }}"></i></th>
           <th class="sortable" [class.sort-active]="sortCol() === 'name'" [attr.aria-sort]="ariaSort('name')" tabindex="0"
@@ -99,32 +60,24 @@
           <th>Heute</th>
           <th class="sortable" [class.sort-active]="sortCol() === 'deadline'" [attr.aria-sort]="ariaSort('deadline')" tabindex="0"
               (click)="sort('deadline')" (keydown.enter)="sort('deadline')">Nächste Frist <i class="bi {{ sortIcon('deadline') }}"></i></th>
+          <th><span class="visually-hidden">Aktionen</span></th>
         </tr>
       </thead>
 
       <tbody>
         @for (d of rows(); track d.id) {
-          <tr (click)="select(d.id)" [class.row-current]="d.id === currentId()" [appRevealCurrent]="d.id === currentId()">
-            <td class="col-actions">
-              <a class="btn-action edit" [routerLink]="['/fahrer', d.id]" title="Öffnen und bearbeiten" [attr.aria-label]="d.display_name + ' öffnen'">
-                <i class="bi bi-pencil"></i>
-              </a>
-              @if (!archived) {
-                <button type="button" class="btn-action delete" (click)="archive(d)" title="Archivieren" [attr.aria-label]="d.display_name + ' archivieren'">
-                  <i class="bi bi-archive"></i>
-                </button>
-              } @else if (auth.user()?.role === 'admin') {
-                <button type="button" class="btn-action restore" (click)="restore(d)" title="Wiederherstellen" [attr.aria-label]="d.display_name + ' wiederherstellen'">
-                  <i class="bi bi-arrow-counterclockwise"></i>
-                </button>
-              }
-            </td>
+          <tr [attr.data-row-id]="d.id" [class.row-current]="d.id === currentId()" [appRevealCurrent]="d.id === currentId()">
             <td><code><app-highlight [text]="d.personnel_number" [query]="shownQuery()" /></code></td>
             <td>
-              <a [routerLink]="['/fahrer', d.id]" class="fw-semibold"><app-highlight [text]="d.last_name" [query]="shownQuery()" />,{{ ' ' }}<app-highlight [text]="d.first_name" [query]="shownQuery()" /></a>
-              @for (h of hiddenHits(d); track h.label) {
-                <div class="small text-body-secondary">Treffer in {{ h.label }}: <app-highlight [text]="h.value" [query]="shownQuery()" /></div>
-              }
+              <div class="who">
+                <app-avatar [name]="d.first_name + ' ' + d.last_name" />
+                <div>
+                  <a [routerLink]="['/fahrer', d.id]" class="fw-semibold"><app-highlight [text]="d.last_name" [query]="shownQuery()" />,{{ ' ' }}<app-highlight [text]="d.first_name" [query]="shownQuery()" /></a>
+                  @for (h of hiddenHits(d); track h.label) {
+                    <div class="small text-body-secondary">Treffer in {{ h.label }}: <app-highlight [text]="h.value" [query]="shownQuery()" /></div>
+                  }
+                </div>
+              </div>
             </td>
             <td>{{ employmentLabel(d.employment_type) }}</td>
             <td><app-highlight [text]="d.city" [query]="shownQuery()" /></td>
@@ -144,27 +97,39 @@
                 <span class="dim">–</span>
               }
             </td>
+            <td class="col-actions">
+            @if (!archived) {
+              <button type="button" class="btn-action delete" (click)="archive(d)" title="Archivieren" [attr.aria-label]="d.display_name + ' archivieren'">
+                <i class="bi bi-archive" aria-hidden="true"></i>
+              </button>
+            } @else if (archived && auth.user()?.role === 'admin') {
+              <button type="button" class="btn-action" (click)="restore(d)" title="Wiederherstellen" [attr.aria-label]="d.display_name + ' wiederherstellen'">
+                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+              </button>
+            }
+
+            </td>
           </tr>
         } @empty {
           <tr>
-            <td colspan="7" class="text-center text-secondary py-5 small">
+            <td colspan="7" class="text-center text-body-secondary py-5">
               {{ loaded() ? 'Keine Fahrer gefunden.' : 'Daten werden geladen …' }}
             </td>
           </tr>
         }
       </tbody>
     </table>
-  </div>
+</div>
 
-  <div class="pager">
-    <span>{{ total() }} Fahrer</span>
-    <span class="ms-auto"></span>
-    <button type="button" class="btn btn-sm btn-outline-primary" (click)="go(page() - 1)" [disabled]="page() <= 1 || loading()">
-      <i class="bi bi-chevron-left"></i> Zurück
-    </button>
-    <span>Seite {{ page() }} von {{ lastPage() }}</span>
-    <button type="button" class="btn btn-sm btn-outline-primary" (click)="go(page() + 1)" [disabled]="page() >= lastPage() || loading()">
-      Weiter <i class="bi bi-chevron-right"></i>
-    </button>
-  </div>
+<div class="list-foot">
+  <span>{{ total() }} Fahrer</span>
+  <span class="list-keys">Pfeiltasten wählen, Enter öffnet</span>
+  <span class="ms-auto"></span>
+  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="go(page() - 1)" [disabled]="page() <= 1 || loading()">
+    <i class="bi bi-chevron-left" aria-hidden="true"></i> Zurück
+  </button>
+  <span>Seite {{ page() }} von {{ lastPage() }}</span>
+  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="go(page() + 1)" [disabled]="page() >= lastPage() || loading()">
+    Weiter <i class="bi bi-chevron-right" aria-hidden="true"></i>
+  </button>
 </div>

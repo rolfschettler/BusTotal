@@ -2,11 +2,13 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { EmptyDateDirective } from '../../shared/empty-date.directive';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { BackNavigation } from '../../core/back-navigation.service';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { DriverChoice, DriverService } from '../../core/driver.service';
+import { useFormPage } from '../../core/form-page';
 import { httpErrorText } from '../../core/http-error';
 import { ListMemory } from '../../core/list-memory.service';
 import { PrintPreviewService } from '../../core/print-preview.service';
@@ -29,9 +31,9 @@ const KEY = 'fahrtauftraege';
  */
 @Component({
   selector: 'app-trip-order-form',
-  imports: [ReactiveFormsModule, RouterLink, HelpLinkComponent, TripOrderStepsComponent],
+  imports: [ReactiveFormsModule, RouterLink, HelpLinkComponent, TripOrderStepsComponent, EmptyDateDirective],
   templateUrl: './trip-order-form.component.html',
-  host: { class: 'form-page' },
+  host: { class: 'form-page form-page-record' },
 })
 export class TripOrderFormComponent implements OnInit {
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -287,17 +289,26 @@ export class TripOrderFormComponent implements OnInit {
     });
   }
 
-  async back() {
-    if (this.form.dirty) {
-      const ok = await this.confirm.ask({
-        title: 'Änderungen verwerfen',
-        message: 'Es gibt ungespeicherte Änderungen. Trotzdem zurück?',
-        confirmLabel: 'Verwerfen',
-        danger: true,
-      });
-      if (!ok) return;
-    }
+  /** „Zurück“ oben. Nach ungespeicherten Änderungen fragt `canLeave`. */
+  back() {
     void this.backNav.back('/fahrtauftraege');
+  }
+
+  canLeave = useFormPage({
+    unsaved: () => !this.readOnly() && this.form.dirty,
+    save: () => {
+      if (!this.readOnly() && !this.saving() && !this.loading() && this.form.dirty) this.save();
+    },
+  });
+
+  /** Was jetzt dran ist: Diese Taste der Leiste ist gefüllt. */
+  nextAction(): 'save' | 'issue' | 'print' | null {
+    const o = this.order();
+    if (!o || o.cancelled_at) return null;
+    if (this.form.dirty && !this.readOnly()) return 'save';
+    if (o.status === 'ausgegeben') return 'print';
+    if (o.status === 'disponiert' && this.canEdit()) return 'issue';
+    return this.readOnly() ? null : 'save';
   }
 
   /** Eingaben verwerfen, Formular auf den gespeicherten Stand zurücksetzen. */

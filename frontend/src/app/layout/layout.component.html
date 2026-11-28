@@ -1,82 +1,64 @@
-<header class="topbar">
-  <a routerLink="/" class="brand">
-    <span>{{ brand.name() }}</span>
-  </a>
+<!-- Rahmen: Seitenleiste links (nach dem Arbeitsablauf), daneben die Arbeitsfläche. Start erreicht man über den Firmennamen. -->
+<div class="app-shell">
+  <aside class="app-side">
+    <a routerLink="/" class="app-brand" title="Start" [attr.aria-label]="brand.name() + ', zur Startseite'">
+      <span class="app-logo" aria-hidden="true">{{ kuerzel(brand.name()) }}</span><span class="app-label">{{ brand.name() }}</span>
+    </a>
 
-  <button type="button" class="btn btn-sm help-btn ms-auto" (click)="helpPanel.toggle()"
-          aria-label="Hilfe zu dieser Seite (F1)" title="Hilfe zu dieser Seite (F1)">?</button>
-
-  <div ngbDropdown placement="bottom-end">
-    @if (auth.user(); as u) {
-      <button type="button" class="btn btn-sm user-btn" ngbDropdownToggle id="userMenu">
-        {{ u.name }} <span class="role">· {{ rolle(u.role) }}</span>
+    @if (!forced() && isStaff()) {
+      <button type="button" class="app-find" (click)="search.open()" title="Kunden, Reisen, Belege und Fahrtaufträge durchsuchen (Strg+K)">
+        <i class="bi bi-search" aria-hidden="true"></i><span class="app-label">Alles durchsuchen</span><small>Strg K</small>
       </button>
-      <div ngbDropdownMenu aria-labelledby="userMenu">
-        <div class="dropdown-item-text small text-body-secondary">{{ u.email }}</div>
-        <div class="dropdown-divider"></div>
-        <a ngbDropdownItem routerLink="/konto">Passwort ändern</a>
-        <button ngbDropdownItem type="button" (click)="auth.logout()">Abmelden</button>
-      </div>
-    }
-  </div>
-</header>
 
-<div class="body">
-  @if (!forced()) {
-    <aside class="sidebar">
-      <!--
-        Aufbau nach dem Arbeitsablauf: Fahrten und Abrechnung (Tour planen → Angebot → Rechnung), dann Stammdaten, dann Verwaltung.
-        Gruppenüberschriften sind klein, grau und durch eine Linie abgesetzt, Einträge tragen ein Symbol und sind eingerückt.
-        Gruppen ohne Einträge für die Rolle erscheinen nicht.
-      -->
-      <nav class="nav flex-column" aria-label="Hauptmenü">
-        <a class="nav-link top" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-          <i class="bi bi-house" aria-hidden="true"></i>Start
-        </a>
-
-        @if (isStaff()) {
-          <div class="group">Fahrten und Abrechnung</div>
+      <nav aria-label="Hauptmenü">
+        <div class="app-menu">
+          <a class="app-link" routerLink="/reisen" routerLinkActive="active" title="Reisen"><i class="bi bi-suitcase2" aria-hidden="true"></i><span class="app-label">Reisen</span></a>
+          <a class="app-link" routerLink="/belege" routerLinkActive="active" title="Belege"><i class="bi bi-file-earmark-text" aria-hidden="true"></i><span class="app-label">Belege</span></a>
+          <a class="app-link" routerLink="/fahrtauftraege" routerLinkActive="active" title="Fahrtaufträge"><i class="bi bi-clipboard-check" aria-hidden="true"></i><span class="app-label">Fahrtaufträge</span></a>
           @if (canPlan()) {
-            <a class="nav-link" routerLink="/streckenplanung" routerLinkActive="active">
-              <i class="bi bi-signpost-split" aria-hidden="true"></i>Streckenplanung
-            </a>
+            <a class="app-link" routerLink="/streckenplanung" routerLinkActive="active" title="Streckenplanung"><i class="bi bi-signpost-split" aria-hidden="true"></i><span class="app-label">Streckenplanung</span></a>
           }
-          <a class="nav-link" routerLink="/tour-archiv" routerLinkActive="active">
-            <i class="bi bi-folder2-open" aria-hidden="true"></i>Tour-Archiv
-          </a>
-          <a class="nav-link" routerLink="/reisen" routerLinkActive="active">
-            <i class="bi bi-suitcase2" aria-hidden="true"></i>Reisen
-          </a>
-          <a class="nav-link" routerLink="/belege" routerLinkActive="active">
-            <i class="bi bi-file-earmark-text" aria-hidden="true"></i>Belege
-          </a>
-          <a class="nav-link" routerLink="/fahrtauftraege" routerLinkActive="active">
-            <i class="bi bi-clipboard-check" aria-hidden="true"></i>Fahrtaufträge
-          </a>
-
-          <div class="group">Stammdaten</div>
-          <a class="nav-link" routerLink="/kunden" routerLinkActive="active"><i class="bi bi-people" aria-hidden="true"></i>Kunden</a>
-          <a class="nav-link" routerLink="/fahrzeuge" routerLinkActive="active"><i class="bi bi-bus-front" aria-hidden="true"></i>Fahrzeuge</a>
+          <a class="app-link" routerLink="/tour-archiv" routerLinkActive="active" title="Tour-Archiv"><i class="bi bi-folder2-open" aria-hidden="true"></i><span class="app-label">Tour-Archiv</span></a>
+        </div>
+        <div class="app-menu">
+          <a class="app-link" routerLink="/kunden" routerLinkActive="active" title="Kunden"><i class="bi bi-people" aria-hidden="true"></i><span class="app-label">Kunden</span></a>
+          <a class="app-link" routerLink="/fahrzeuge" routerLinkActive="active" title="Fahrzeuge"><i class="bi bi-bus-front" aria-hidden="true"></i><span class="app-label">Fahrzeuge</span></a>
           @if (canPlan()) {
-            <a class="nav-link" routerLink="/fahrer" routerLinkActive="active"><i class="bi bi-person-vcard" aria-hidden="true"></i>Fahrer</a>
+            <a class="app-link" routerLink="/fahrer" routerLinkActive="active" title="Fahrer"><i class="bi bi-person-vcard" aria-hidden="true"></i><span class="app-label">Fahrer</span></a>
           }
-
-          <div class="group">Verwaltung</div>
+        </div>
+        <div class="app-menu">
           @if (isAdmin()) {
-            <a class="nav-link" routerLink="/benutzer" routerLinkActive="active"><i class="bi bi-person-gear" aria-hidden="true"></i>Benutzer</a>
+            <a class="app-link" routerLink="/benutzer" routerLinkActive="active" title="Benutzer"><i class="bi bi-person-gear" aria-hidden="true"></i><span class="app-label">Benutzer</span></a>
           }
-          <a class="nav-link" routerLink="/einstellungen" routerLinkActive="active"><i class="bi bi-gear" aria-hidden="true"></i>Einstellungen</a>
-        }
-
-        <a class="nav-link top help-link" routerLink="/hilfe" routerLinkActive="active">
-          <i class="bi bi-question-circle" aria-hidden="true"></i>Hilfe
-        </a>
+          <a class="app-link" routerLink="/einstellungen" routerLinkActive="active" title="Einstellungen"><i class="bi bi-gear" aria-hidden="true"></i><span class="app-label">Einstellungen</span></a>
+        </div>
       </nav>
-    </aside>
-  }
+    }
 
-  <main class="scroll" [class.full]="fullPage()">
-    <div class="content" [class.full]="fullPage()">
+    <div class="app-user">
+      <button type="button" class="app-link" (click)="helpPanel.toggle()" title="Hilfe zu dieser Seite (F1)">
+        <i class="bi bi-question-circle" aria-hidden="true"></i><span class="app-label">Hilfe (F1)</span>
+      </button>
+      @if (auth.user(); as u) {
+        <div ngbDropdown placement="top-start" container="body">
+          <button type="button" class="app-link" ngbDropdownToggle id="userMenu">
+            <app-avatar [name]="u.name" /><span class="app-label">{{ u.name }}<small>{{ rolle(u.role) }}</small></span>
+          </button>
+          <div ngbDropdownMenu aria-labelledby="userMenu">
+            <div class="dropdown-item-text small text-body-secondary">{{ u.email }}</div>
+            <div class="dropdown-divider"></div>
+            @if (!forced()) { <a ngbDropdownItem routerLink="/hilfe"><i class="bi bi-book me-2" aria-hidden="true"></i>Handbuch</a> }
+            <a ngbDropdownItem routerLink="/konto"><i class="bi bi-key me-2" aria-hidden="true"></i>Passwort ändern</a>
+            <button ngbDropdownItem type="button" (click)="auth.logout()"><i class="bi bi-box-arrow-right me-2" aria-hidden="true"></i>Abmelden</button>
+          </div>
+        </div>
+      }
+    </div>
+  </aside>
+
+  <main class="app-main" [class.full]="fullPage()">
+    <div class="app-content" [class.full]="fullPage()">
       <router-outlet />
     </div>
   </main>

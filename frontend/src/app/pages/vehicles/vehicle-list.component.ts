@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { httpErrorText } from '../../core/http-error';
@@ -9,7 +9,7 @@ import { Option, Vehicle, VehicleService } from '../../core/vehicle.service';
 import { deadlineText, germanDate } from '../../shared/deadline';
 import { hasHit } from '../../shared/highlight';
 import { HighlightComponent } from '../../shared/highlight.component';
-import { StickyFilterBarDirective } from '../../shared/sticky-filter-bar.directive';
+import { ListSearchDirective, RowNavDirective } from '../../shared/row-nav.directive';
 import { RevealCurrentDirective } from '../../shared/reveal-current.directive';
 import { ListMemory } from '../../core/list-memory.service';
 
@@ -22,12 +22,13 @@ type ListParams = { q: string; type: string; deadline: string; archived: boolean
  */
 @Component({
   selector: 'app-vehicle-list',
-  imports: [FormsModule, RouterLink, HighlightComponent, StickyFilterBarDirective, RevealCurrentDirective],
+  imports: [FormsModule, RouterLink, HighlightComponent, RowNavDirective, ListSearchDirective, RevealCurrentDirective],
   templateUrl: './vehicle-list.component.html',
-  host: { class: 'list-page', style: '--sheet-w: 1004px' },
+  host: { class: 'list-page' },
 })
 export class VehicleListComponent implements OnInit {
   private api = inject(VehicleService);
+  private router = inject(Router);
   private confirm = inject(ConfirmService);
   private memory = inject(ListMemory);
   auth = inject(AuthService);
@@ -81,6 +82,16 @@ export class VehicleListComponent implements OnInit {
   select(id: string) {
     this.currentId.set(id);
     this.memory.select(KEY, id);
+  }
+
+  open(id: string) {
+    void this.router.navigate(['/fahrzeuge', id]);
+  }
+
+  /** Enter in der Suche, bevor die Verzögerung abgelaufen ist: sofort suchen. */
+  searchNow() {
+    clearTimeout(this.timer);
+    if (this.q.trim() !== this.shownQuery()) this.filterChanged();
   }
 
   onSearch() {

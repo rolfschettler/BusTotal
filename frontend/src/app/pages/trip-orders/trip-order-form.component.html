@@ -1,22 +1,35 @@
-<!-- Formular-Muster, siehe docs/ClaudeCodePatterns/EditFormPattern.md (Drittelraster). Die Optik kommt aus src/styles/_edit-form.scss. -->
-<a routerLink="/fahrtauftraege" class="small text-decoration-none">‹ Alle Fahrtaufträge</a>
-
-<div class="mb-3">
+<!-- Formular-Muster, siehe docs/ClaudeCodePatterns/EditFormPattern.md. Die Optik kommt aus src/styles/_edit-form.scss. -->
+<div class="form-head">
+  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="back()">
+    <i class="bi bi-chevron-left" aria-hidden="true"></i> Zurück
+  </button>
+  <h1>{{ order() ? 'Fahrtauftrag ' + (order()!.number ?? '(noch nicht ausgegeben)') : 'Fahrtauftrag' }}</h1>
   @if (order(); as o) {
-    <h1 class="h3 mb-1">
-      Fahrtauftrag @if (o.number) { <code>{{ o.number }}</code> } @else { <span class="text-body-secondary">(noch nicht ausgegeben)</span> }
-    </h1>
-    <p class="mb-0 small text-body-secondary">
-      <span class="badge" [class]="badge(o)">{{ o.status_label }}</span>
-      {{ o.title }} · {{ o.vehicle_type_label ?? 'Fahrzeug' }}, Bus {{ o.bus_no }}
-      @if (o.customer; as c) { · {{ c.display_name }} }
-      @if (o.journey_id) { · <a [routerLink]="['/reisen', o.journey_id]">zur Reise</a> }
-      @if (o.document_id) { · <a [routerLink]="['/belege', o.document_id]">Auftragsbestätigung{{ o.document_number ? ' ' + o.document_number : '' }}</a> }
-      @if (!canEdit()) { <span class="badge text-bg-secondary ms-2">Nur Ansicht</span> }
-      <app-help-link topic="fahrten" anchor="fahrtauftrag" label="Fahrtauftrag" />
-    </p>
-  } @else {
-    <h1 class="h3 mb-0">Fahrtauftrag</h1>
+    <span class="badge" [class]="badge(o)">{{ o.status_label }}</span>
+    @if (!canEdit()) { <span class="flag">Nur Ansicht</span> }
+    <app-help-link topic="fahrten" anchor="fahrtauftrag" label="Fahrtauftrag" />
+    <p class="form-meta">{{ o.title }}, {{ o.vehicle_type_label ?? 'Fahrzeug' }}, Bus {{ o.bus_no }}</p>
+  }
+  <!-- Genau eine gefüllte Taste: der nächste Schritt (ausgeben, dann drucken). Gespeichert wird in der Leiste unten. -->
+  @if (order(); as o) {
+    <div class="head-actions">
+      @if (canEdit() && o.status === 'ausgegeben' && !o.cancelled_at) {
+        <button type="button" class="btn btn-outline-secondary" [disabled]="form.dirty" [attr.title]="form.dirty ? 'Bitte zuerst speichern' : null" (click)="revoke()">
+          <i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>Ausgabe zurücknehmen …
+        </button>
+      }
+      <button type="button" class="btn" [class.btn-primary]="nextAction() === 'print'" [class.btn-outline-secondary]="nextAction() !== 'print'" (click)="print()" title="Fahrer-Fassung ohne Preise, mit Erfassungsblatt">
+        <i class="bi bi-printer me-1" aria-hidden="true"></i>Drucken
+      </button>
+      @if (canEdit() && !issued() && !o.cancelled_at) {
+        <button type="button" class="btn" [class.btn-primary]="nextAction() === 'issue'" [class.btn-outline-secondary]="nextAction() !== 'issue'"
+                [disabled]="issuing() || o.status !== 'disponiert' || form.dirty"
+                [attr.title]="o.status !== 'disponiert' ? 'Zuerst Fahrzeug und Fahrer zuweisen (oder einen Fremdunternehmer eintragen).' : form.dirty ? 'Bitte zuerst speichern' : 'Vergibt die Nummer'"
+                (click)="issue()">
+          <i class="bi bi-check2-circle me-1" aria-hidden="true"></i>An Fahrer ausgeben …
+        </button>
+      }
+    </div>
   }
 </div>
 
@@ -26,19 +39,21 @@
 
   @if (order(); as o) { <app-trip-order-steps [order]="o" /> }
 
+<div class="form-cols">
+<div>
   @if (message(); as m) {
-    <div class="alert py-2 small" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
+    <div class="alert py-2" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
   }
 
   @if (order()?.cancelled_at) {
-    <div class="alert alert-danger py-2 small" role="status">
+    <div class="alert alert-danger py-2" role="status">
       <strong>Abgesagt:</strong> Die Reise ist abgesagt, diese Fahrt findet nicht statt. Der Fahrtauftrag lässt sich nicht ändern.
       @if (order()?.journey_id; as journeyId) { <a [routerLink]="['/reisen', journeyId]">Zur Reise</a> }
     </div>
   }
 
   @if (order()?.warnings?.length) {
-    <div class="alert alert-warning py-2 small" role="status">
+    <div class="alert alert-warning py-2" role="status">
       <strong>Bitte prüfen</strong> (das sind Hinweise, Sie können trotzdem so einteilen):
       <ul class="mb-0 mt-1">
         @for (w of order()!.warnings; track $index) { <li>{{ w.text }}</li> }
@@ -47,10 +62,11 @@
   }
 
   <form id="tripOrderForm" class="form-area" [formGroup]="form" (ngSubmit)="save()" novalidate>
-    <div class="row g-3">
-
-      <div class="col-12"><div class="section-title">Fahrzeug</div></div>
-
+      <div class="form-columns">
+      <div class="form-col">
+        <section class="form-section">
+          <h2 class="section-title">Fahrzeug</h2>
+          <div class="row g-2">
       <div class="col-12 col-lg-4">
         <label class="form-label" for="vehicle_id">Eigenes Fahrzeug</label>
         <select class="form-select" id="vehicle_id" formControlName="vehicle_id" [class.is-invalid]="invalid('vehicle_id')">
@@ -101,9 +117,11 @@
         <div class="invalid-feedback">{{ fieldErrors()['driver2_id'] }}</div>
         <div class="form-text">bei Langstrecken</div>
       </div>
-
-      <div class="col-12"><div class="section-title">Termin</div></div>
-
+          </div>
+        </section>
+        <section class="form-section">
+          <h2 class="section-title">Termin</h2>
+          <div class="row g-2">
       <div class="col-12 col-lg-4">
         <label class="form-label" for="date_from">Beginn</label>
         <input type="date" class="form-control" id="date_from" formControlName="date_from" [class.is-invalid]="invalid('date_from')" />
@@ -132,9 +150,13 @@
         <div class="invalid-feedback">{{ fieldErrors()['passengers'] }}</div>
         <div class="form-text">z. B. 20 oder ca. 20 Pers.</div>
       </div>
-
-      <div class="col-12"><div class="section-title">Zu- und Ausstiege</div></div>
-
+          </div>
+        </section>
+      </div>
+      <div class="form-col">
+        <section class="form-section">
+          <h2 class="section-title">Zu- und Ausstiege</h2>
+          <div class="row g-2">
       <div class="col-12">
         <div class="form-text mb-2">Weitere Orte, an denen unterwegs Gäste zu- oder aussteigen (zum Beispiel bei der Rückreise). Sie gelten nur für diesen Fahrtauftrag und sind von der Streckenplanung unabhängig.</div>
         <div formArrayName="boardings">
@@ -176,9 +198,11 @@
           <button type="button" class="btn btn-outline-secondary btn-sm" (click)="addBoarding()"><i class="bi bi-plus-lg me-1"></i>Zu- oder Ausstieg hinzufügen</button>
         }
       </div>
-
-      <div class="col-12"><div class="section-title">Hinweise</div></div>
-
+          </div>
+        </section>
+        <section class="form-section">
+          <h2 class="section-title">Hinweise</h2>
+          <div class="row g-2">
       <div class="col-12">
         <label class="form-label" for="driver_note">Für den Fahrer</label>
         <textarea class="form-control" id="driver_note" rows="3" formControlName="driver_note"></textarea>
@@ -189,55 +213,53 @@
         <textarea class="form-control" id="notes" rows="3" formControlName="notes"></textarea>
         <div class="form-text">Steht nicht auf dem Fahrer-PDF.</div>
       </div>
-
+          </div>
+        </section>
+      </div>
+      </div>
       @if (issued() && !readOnly()) {
-        <div class="col-12"><div class="section-title">Änderung nach dem Ausgeben</div></div>
-        <div class="col-12">
-          <label class="form-label" for="reason">Begründung</label>
-          <input class="form-control" id="reason" formControlName="reason" maxlength="255" [class.is-invalid]="invalid('reason')" />
-          <div class="invalid-feedback">{{ fieldErrors()['reason'] || 'Bitte eine Begründung angeben.' }}</div>
-          <div class="form-text">Nötig, wenn Fahrzeug, Fahrer oder Termine geändert werden. Sie steht im Änderungsprotokoll.</div>
-        </div>
+        <section class="form-section">
+          <h2 class="section-title">Änderung nach dem Ausgeben</h2>
+          <div class="row g-2">
+            <div class="col-12">
+              <label class="form-label" for="reason">Begründung</label>
+              <input class="form-control" id="reason" formControlName="reason" maxlength="255" [class.is-invalid]="invalid('reason')" />
+              <div class="invalid-feedback">{{ fieldErrors()['reason'] || 'Bitte eine Begründung angeben.' }}</div>
+              <div class="form-text">Nötig, wenn Fahrzeug, Fahrer oder Termine geändert werden. Sie steht im Änderungsprotokoll.</div>
+            </div>
+          </div>
+        </section>
       }
-
-    </div>
   </form>
 
-  <div class="form-bar">
-    @if (!readOnly()) {
+  @if (!readOnly()) {
+    <div class="form-bar" [class.d-none]="!form.dirty">
       <button type="submit" form="tripOrderForm" class="btn btn-primary" [disabled]="saving()">
         @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
-        {{ saving() ? 'Speichert …' : 'Speichern' }}
+        {{ saving() ? 'Speichert …' : 'Speichern' }}<kbd>Strg+S</kbd>
       </button>
-    }
-    <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
-    @if (form.dirty && !readOnly()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
-    <div class="form-bar-right">
-      @if (order(); as o) {
-        @if (canEdit() && !issued() && !o.cancelled_at) {
-          <button type="button" class="btn btn-outline-secondary" [disabled]="issuing() || o.status !== 'disponiert' || form.dirty"
-                  [attr.title]="o.status !== 'disponiert' ? 'Zuerst Fahrzeug und Fahrer zuweisen (oder einen Fremdunternehmer eintragen).' : form.dirty ? 'Bitte zuerst speichern' : 'Vergibt die Nummer'"
-                  (click)="issue()">
-            <i class="bi bi-check2-circle me-1"></i>An Fahrer ausgeben …
-          </button>
-        }
-        @if (canEdit() && o.status === 'ausgegeben' && !o.cancelled_at) {
-          <button type="button" class="btn btn-outline-secondary" [disabled]="form.dirty" [attr.title]="form.dirty ? 'Bitte zuerst speichern' : null" (click)="revoke()">
-            <i class="bi bi-arrow-counterclockwise me-1"></i>Ausgabe zurücknehmen …
-          </button>
-        }
+      <button type="button" class="btn btn-outline-secondary" (click)="cancel()">Verwerfen</button>
+      <span class="form-bar-hint">Ungespeicherte Änderungen</span>
+    </div>
+  }
+</div>
+
+<aside class="form-side">
+  @if (order(); as o) {
+    <div class="side-panel">
+      <h2>Gehört zu</h2>
+      <div class="side-stack">
+        @if (o.customer; as c) { <a [routerLink]="['/kunden', c.id]">{{ c.display_name }}</a> }
+        @if (o.journey_id) { <a class="btn btn-outline-secondary" [routerLink]="['/reisen', o.journey_id]"><i class="bi bi-suitcase2 me-1" aria-hidden="true"></i>Reise öffnen</a> }
+        @if (o.document_id) { <a class="btn btn-outline-secondary" [routerLink]="['/belege', o.document_id]"><i class="bi bi-file-earmark-text me-1" aria-hidden="true"></i>Auftragsbestätigung{{ o.document_number ? ' ' + o.document_number : '' }}</a> }
         @if (!o.cancelled_at && o.status !== 'entwurf') {
           <a class="btn btn-outline-secondary" [routerLink]="['/fahrtauftraege', o.id, 'rueckerfassung']" title="Das Erfassungsblatt des Fahrers eintragen">
-            <i class="bi bi-clipboard-check me-1"></i>Rückerfassung
+            <i class="bi bi-clipboard-check me-1" aria-hidden="true"></i>Rückerfassung
           </a>
         }
-        <button type="button" class="btn btn-outline-secondary" (click)="print()" title="Fahrer-Fassung ohne Preise, mit Erfassungsblatt">
-          <i class="bi bi-printer me-1"></i>Drucken
-        </button>
-      }
-      @if (!readOnly()) {
-        <button type="button" class="btn btn-outline-secondary" [disabled]="!form.dirty" [attr.title]="form.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancel()">Abbrechen</button>
-      }
+      </div>
     </div>
-  </div>
+  }
+</aside>
+</div>
 }

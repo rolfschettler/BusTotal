@@ -1,19 +1,21 @@
-<h1 class="h3 mb-3">Einstellungen</h1>
+<div class="form-page">
+  <div class="form-head"><h1>Einstellungen</h1></div>
+</div>
 
 @if (!canEdit()) {
   <div class="alert alert-secondary py-2">Nur Administratoren können Einstellungen ändern.</div>
 }
 
-<ul class="nav nav-tabs mb-3" role="tablist">
-  <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'firma'" (click)="show('firma')">Firmendaten</button></li>
-  <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'steuern'" (click)="show('steuern')">Steuersätze</button></li>
-  <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'nummern'" (click)="show('nummern')">Nummernkreise</button></li>
-  <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'preise'" (click)="show('preise')">Preise</button></li>
-  <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'betriebshoefe'" (click)="show('betriebshoefe')">Betriebshöfe</button></li>
+<div class="app-tabs" role="tablist">
+  <button type="button" class="app-tab" role="tab" [class.active]="tab() === 'firma'" [attr.aria-selected]="tab() === 'firma'" (click)="show('firma')">Firmendaten</button>
+  <button type="button" class="app-tab" role="tab" [class.active]="tab() === 'steuern'" [attr.aria-selected]="tab() === 'steuern'" (click)="show('steuern')">Steuersätze</button>
+  <button type="button" class="app-tab" role="tab" [class.active]="tab() === 'nummern'" [attr.aria-selected]="tab() === 'nummern'" (click)="show('nummern')">Nummernkreise</button>
+  <button type="button" class="app-tab" role="tab" [class.active]="tab() === 'preise'" [attr.aria-selected]="tab() === 'preise'" (click)="show('preise')">Preise</button>
+  <button type="button" class="app-tab" role="tab" [class.active]="tab() === 'betriebshoefe'" [attr.aria-selected]="tab() === 'betriebshoefe'" (click)="show('betriebshoefe')">Betriebshöfe</button>
   @if (canEdit()) {
-    <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'dienste'" (click)="show('dienste')">Dienste</button></li>
+    <button type="button" class="app-tab" role="tab" [class.active]="tab() === 'dienste'" [attr.aria-selected]="tab() === 'dienste'" (click)="show('dienste')">Dienste</button>
   }
-</ul>
+</div>
 
 @if (message(); as m) {
   <div class="alert py-2" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
@@ -22,12 +24,13 @@
 @switch (tab()) {
   @case ('firma') {
     <!-- Formular-Muster (docs/ClaudeCodePatterns/EditFormPattern.md): .form-page begrenzt die Breite und hält die Tastenleiste -->
-    <div class="form-page">
+    <div class="form-page form-page-record">
       <form id="companyForm" class="form-area" [formGroup]="company" (ngSubmit)="saveCompany()" novalidate>
-        <div class="row g-3">
-
-          <div class="col-12"><div class="section-title">Firma</div></div>
-
+      <div class="form-columns">
+      <div class="form-col">
+        <section class="form-section">
+          <h2 class="section-title">Firma</h2>
+          <div class="row g-2">
           <div class="col-12 col-lg-6">
             <label class="form-label" for="s_name">Firmenname <span class="text-danger">*</span></label>
             <input class="form-control" id="s_name" formControlName="name" [class.is-invalid]="invalid('name')" />
@@ -47,9 +50,11 @@
             <input class="form-control" id="s_hr" formControlName="commercial_register" />
             <div class="form-text">z. B. HRB 12345, Amtsgericht …</div>
           </div>
-
-          <div class="col-12"><div class="section-title">Adresse und Kontakt</div></div>
-
+          </div>
+        </section>
+        <section class="form-section">
+          <h2 class="section-title">Adresse und Kontakt</h2>
+          <div class="row g-2">
           <div class="col-12">
             <label class="form-label" for="s_street">Straße, Nr.</label>
             <input class="form-control" id="s_street" formControlName="street" />
@@ -92,9 +97,11 @@
             <label class="form-label" for="s_web">Webseite</label>
             <input class="form-control" id="s_web" formControlName="website" />
           </div>
-
-          <div class="col-12"><div class="section-title">Steuer</div></div>
-
+          </div>
+        </section>
+        <section class="form-section">
+          <h2 class="section-title">Steuer</h2>
+          <div class="row g-2">
           <div class="col-12 col-lg-6">
             <label class="form-label" for="s_tax">Steuernummer</label>
             <input class="form-control" id="s_tax" formControlName="tax_number" />
@@ -105,9 +112,13 @@
             <div class="invalid-feedback">{{ fieldErrors()['vat_id'] || 'Format: z. B. DE123456789' }}</div>
             <div class="form-text">z. B. DE123456789</div>
           </div>
-
-          <div class="col-12"><div class="section-title">Bank <app-help-link topic="einstellungen" anchor="iban" label="IBAN und BIC" /></div></div>
-
+          </div>
+        </section>
+      </div>
+      <div class="form-col">
+        <section class="form-section">
+          <h2 class="section-title">Bank <app-help-link topic="einstellungen" anchor="iban" label="IBAN und BIC" /></h2>
+          <div class="row g-2">
           <div class="col-12 col-lg-6">
             <label class="form-label" for="s_bank">Bank</label>
             <input class="form-control" id="s_bank" formControlName="bank_name" />
@@ -127,9 +138,11 @@
             <input type="number" min="0" class="form-control" id="s_days" formControlName="payment_term_days" [class.is-invalid]="invalid('payment_term_days')" />
             <div class="invalid-feedback">Bitte eine Zahl ab 0 angeben.</div>
           </div>
-
-          <div class="col-12"><div class="section-title">Briefkopf und Fußzeile auf Belegen</div></div>
-
+          </div>
+        </section>
+        <section class="form-section">
+          <h2 class="section-title">Briefkopf und Fußzeile auf Belegen</h2>
+          <div class="row g-2">
           <div class="col-12">
             <label class="form-label" for="s_head">Zusatz im Briefkopf</label>
             <textarea rows="2" class="form-control" id="s_head" formControlName="letterhead_note"></textarea>
@@ -138,9 +151,11 @@
             <label class="form-label" for="s_foot">Fußzeile</label>
             <textarea rows="3" class="form-control" id="s_foot" formControlName="footer_text"></textarea>
           </div>
-
-          <div class="col-12"><div class="section-title">Erscheinungsbild <app-help-link topic="einstellungen" anchor="erscheinungsbild" label="Erscheinungsbild" /></div></div>
-
+          </div>
+        </section>
+        <section class="form-section">
+          <h2 class="section-title">Erscheinungsbild <app-help-link topic="einstellungen" anchor="erscheinungsbild" label="Erscheinungsbild" /></h2>
+          <div class="row g-2">
           <div class="col-12 col-lg-6">
             <div class="d-flex align-items-center mb-1">
               <label class="form-label mb-0" for="brandHex">Markenfarbe</label>
@@ -193,22 +208,22 @@
             @if (fieldErrors()['logo']) { <div class="text-danger small mt-1">{{ fieldErrors()['logo'] }}</div> }
             <div class="form-text">PNG, JPG oder WebP, höchstens 1 MB. Erscheint auf der Startseite und beim Login.</div>
           </div>
-        </div>
+          </div>
+        </section>
+      </div>
+      </div>
       </form>
-
-      <!-- Tastenleiste (Muster): links Speichern, Zurück; rechts Abbrechen. Klebt unten. -->
-      <div class="form-bar">
+      <div class="form-bar" [class.d-none]="!canEdit() || !company.dirty">
         @if (canEdit()) {
           <button type="submit" form="companyForm" class="btn btn-primary" [disabled]="saving()">
             @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
-            {{ saving() ? 'Speichert …' : 'Speichern' }}
+            {{ saving() ? 'Speichert …' : 'Speichern' }}<kbd>Strg+S</kbd>
           </button>
         }
-        <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
         @if (company.dirty && canEdit()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
         @if (canEdit()) {
           <div class="form-bar-right">
-            <button type="button" class="btn btn-outline-secondary" [disabled]="!company.dirty" [attr.title]="company.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancel()">Abbrechen</button>
+            <button type="button" class="btn btn-outline-secondary" [disabled]="!company.dirty" [attr.title]="company.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancel()">Verwerfen</button>
           </div>
         }
       </div>
@@ -372,16 +387,13 @@
           }
         </div>
       </form>
-
-      <!-- Tastenleiste (Muster): links Speichern, Zurück; rechts seltene Aktionen, Abbrechen. Klebt unten. -->
-      <div class="form-bar">
+      <div class="form-bar form-bar-static" [class.d-none]="!canEdit()">
         @if (canEdit()) {
           <button type="submit" form="servicesForm" class="btn btn-primary" [disabled]="serviceBusy() || serviceKey.trim() === ''">
             @if (serviceBusy()) { <span class="spinner-border spinner-border-sm me-2"></span> }
-            {{ serviceBusy() ? 'Bitte warten …' : 'Speichern' }}
+            {{ serviceBusy() ? 'Bitte warten …' : 'Speichern' }}<kbd>Strg+S</kbd>
           </button>
         }
-        <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
         @if (serviceKey.trim() !== '' && canEdit()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
         @if (canEdit()) {
           <div class="form-bar-right">
@@ -390,7 +402,7 @@
             @if (routing()?.source === 'own') {
               <button type="button" class="btn btn-outline-secondary" [disabled]="serviceBusy()" (click)="removeServiceKey()">Eigenen Schlüssel entfernen</button>
             }
-            <button type="button" class="btn btn-outline-secondary" [disabled]="serviceKey.trim() === ''" [attr.title]="serviceKey.trim() !== '' ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancelService()">Abbrechen</button>
+            <button type="button" class="btn btn-outline-secondary" [disabled]="serviceKey.trim() === ''" [attr.title]="serviceKey.trim() !== '' ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancelService()">Verwerfen</button>
           </div>
         }
       </div>
@@ -520,18 +532,17 @@
         </div>
       </form>
 
-      <div class="form-bar">
+      <div class="form-bar" [class.d-none]="!canEdit() || !pricing.dirty">
         @if (canEdit()) {
           <button type="submit" form="pricingForm" class="btn btn-primary" [disabled]="saving()">
             @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
-            {{ saving() ? 'Speichert …' : 'Speichern' }}
+            {{ saving() ? 'Speichert …' : 'Speichern' }}<kbd>Strg+S</kbd>
           </button>
         }
-        <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
         @if (pricing.dirty && canEdit()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
         @if (canEdit()) {
           <div class="form-bar-right">
-            <button type="button" class="btn btn-outline-secondary" [disabled]="!pricing.dirty" [attr.title]="pricing.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancelPricing()">Abbrechen</button>
+            <button type="button" class="btn btn-outline-secondary" [disabled]="!pricing.dirty" [attr.title]="pricing.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancelPricing()">Verwerfen</button>
           </div>
         }
       </div>

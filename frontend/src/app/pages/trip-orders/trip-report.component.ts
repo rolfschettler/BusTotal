@@ -3,9 +3,11 @@ import { DatePipe } from '@angular/common';
 import { Component, ElementRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { EmptyDateDirective } from '../../shared/empty-date.directive';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { BackNavigation } from '../../core/back-navigation.service';
 import { ConfirmService } from '../../core/confirm.service';
+import { useFormPage } from '../../core/form-page';
 import { httpErrorText } from '../../core/http-error';
 import { ReportBorder, ReportCost, ReportExtra, ReportInput, ReportTime, TripReportData, TripReportService } from '../../core/trip-report.service';
 import { statusBadge } from '../../core/trip-order.service';
@@ -20,9 +22,9 @@ import { completeSummary, drivenKm, kmBetween } from './trip-report';
  */
 @Component({
   selector: 'app-trip-report',
-  imports: [DatePipe, ReactiveFormsModule, RouterLink, HelpLinkComponent, TripOrderStepsComponent],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink, HelpLinkComponent, TripOrderStepsComponent, EmptyDateDirective],
   templateUrl: './trip-report.component.html',
-  host: { class: 'form-page' },
+  host: { class: 'form-page form-page-record' },
 })
 export class TripReportComponent implements OnInit {
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -221,15 +223,17 @@ export class TripReportComponent implements OnInit {
     }
   }
 
-  async back() {
-    if (this.form.dirty) {
-      const ok = await this.confirm.ask({
-        title: 'Änderungen verwerfen', message: 'Es gibt ungespeicherte Änderungen. Trotzdem zurück?', confirmLabel: 'Verwerfen', danger: true,
-      });
-      if (!ok) return;
-    }
+  /** „Zurück“ oben. Nach ungespeicherten Änderungen fragt `canLeave`. */
+  back() {
     void this.backNav.back(`/fahrtauftraege/${this.id}`);
   }
+
+  canLeave = useFormPage({
+    unsaved: () => !!this.data() && !this.readOnly() && this.form.dirty,
+    save: () => {
+      if (this.data() && this.form.dirty) this.save(); // save() prüft selbst, ob gesperrt ist oder schon gespeichert wird
+    },
+  });
 
   cancel() {
     const d = this.data();

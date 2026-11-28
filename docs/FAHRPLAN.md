@@ -253,6 +253,25 @@ Quellen: Mittwald-Antworten (Ticket #6077836) und [Mittwald-Entwicklerdoku: PHP-
 - Belastbare Aussagen erst nach dem **Lasttest** (Testprogramm mStudio, Schritt 9).
 - [ ] **Offene Fragen an den Auftraggeber:** erwartete Firmenzahl im ersten Jahr, Betrieb durch uns (SaaS) oder durch die Firmen, Bedeutung der physischen Datentrennung.
 
+## Redesign „Linienplan“ (Branch redesign, seit 2026-11-28)
+
+- [x] Prototyp (Menü oben, Kundenliste, Kundenformular), im Browser geprüft und freigegeben.
+- [x] Globale Styles, Muster-Dokumente und CLAUDE.md umgestellt; ausgelegt für große PC-Bildschirme (1920 × 1080), Mobil erst mit dem Fahrerportal.
+- [x] Alle Listen sowie die Formulare Kunde, Fahrzeug, Fahrer, neue Reise, Reise, Fahrtauftrag, Rückerfassung, Einstellungen, Konto und die Betreiber-Seiten. Build und Tests grün.
+- [x] Browser-Prüfung als Disponent (2026-11-28).
+- [ ] Browser-Prüfung Benutzerliste (Administrator) und Betreiber-Seiten.
+- [ ] Streckenplanung (einzeln).
+- [x] Belegformular mit Zahlungen (2026-11-28): Positionen als Tabelle mit aufklappbaren Details, Summen rechts, Zahlungen oben, Linienplan. Im Browser noch nicht geprüft.
+
+## Redesign, zweiter Entwurf (2026-11-28)
+
+- [x] Der erste Stand wirkte wie eine alte Desktop-Anwendung; neuer Entwurf `docs/redesign/vorschlag-2.html` freigegeben.
+- [x] Seitenleiste, neue Grundgestaltung (Segoe UI Variable, Barlow entfernt), Listen, Formulare mit Speicherleiste und Aktionen oben,
+  Kundenvorschau, „Alles durchsuchen“ (Strg+K). Build und Tests grün.
+- [x] Browser-Prüfung als Disponent (2026-11-28); Benutzerliste und Betreiber-Seiten offen.
+- [ ] Positionen im Beleg bei 1366 px: Einheit und Steuersatz sind abgeschnitten.
+- [ ] Streckenplanung (einzeln).
+
 ## Nächster konkreter Schritt
 **Erledigt (2026-11-17):**
 - Phase 1.1: Lokale Umgebung, Git-Repo, Laravel (`/backend`, MySQL `bustotal_central`), Angular (`/frontend`).

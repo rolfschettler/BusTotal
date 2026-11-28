@@ -11,7 +11,7 @@ Die Liste zeigt 20 Fahrzeuge pro Seite, sortiert nach Fuhrparknummer.
 - **Fristen:** Der Filter zeigt Fahrzeuge mit **abgelaufenen** oder **bald fälligen** [Fristen](#fristen).
 - **Archivierte:** Mit diesem Häkchen sehen Sie statt der aktiven die [archivierten](#archivieren) Fahrzeuge.
 - **Sortieren:** Ein Klick auf eine Spaltenüberschrift sortiert die ganze Liste, ein zweiter Klick dreht die Richtung um. Bei „Nächste Frist“ stehen die dringendsten Fahrzeuge oben, Fahrzeuge ohne Frist am Ende.
-- **Aktionsspalte:** Der **Stift** öffnet das Fahrzeug (die Buchhaltung sieht ein Auge: nur ansehen), das **Archiv-Symbol** [archiviert](#archivieren) es nach einer Rückfrage.
+- **Öffnen und archivieren:** Ein Klick auf eine Zeile öffnet das Fahrzeug (die Buchhaltung kann nur ansehen). Das **Archiv-Symbol** rechts [archiviert](#archivieren) es nach einer Rückfrage. Siehe auch [Listen bedienen](/hilfe/start#bedienung).
 
 ## Fahrzeug anlegen {#fahrzeug-anlegen}
 
@@ -63,7 +63,7 @@ Auf der [Startseite](/hilfe/start#startseite) zeigt die Kachel „Fällige Frist
 Der Massenspeicher der Fahrzeugeinheit des digitalen Fahrtenschreibers muss nach den Sozialvorschriften **spätestens alle 90 Tage** ausgelesen werden, die Daten sind im Betrieb ein Jahr aufzubewahren. Die Software **liest den Fahrtenschreiber nicht aus**, sie erinnert nur:
 
 - Tragen Sie im Feld **Auslesen bis** ein, bis wann spätestens ausgelesen sein muss.
-- Mit **Einheit ausgelesen** (Tastenleiste, rechts) tragen Sie **heute** als Tag des Auslesens ein. Die nächste Frist liegt dann 90 Tage später. Die Taste ist erst nach dem Speichern aktiv, damit keine Eingaben verloren gehen.
+- Mit **Einheit ausgelesen** (oben rechts) tragen Sie **heute** als Tag des Auslesens ein. Die nächste Frist liegt dann 90 Tage später. Die Taste ist erst nach dem Speichern aktiv, damit keine Eingaben verloren gehen.
 - Die Frist erscheint auf der Startseite, sobald nur noch **14 Tage** bleiben.
 
 > Welche Fahrzeuge einen Fahrtenschreiber brauchen und wie lange Daten aufzubewahren sind, klären Sie mit Ihrem Verband oder der Gewerbeaufsicht.

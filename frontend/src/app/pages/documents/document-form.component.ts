@@ -3,20 +3,24 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { EmptyDateDirective } from '../../shared/empty-date.directive';
 import { BackNavigation } from '../../core/back-navigation.service';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { ListMemory } from '../../core/list-memory.service';
 import { CustomerService } from '../../core/customer.service';
 import { BusDocument, DocumentInput, DocumentService, DocumentTypeInfo, DocumentTypeValue, TripKindValue } from '../../core/document.service';
+import { useFormPage } from '../../core/form-page';
 import { fieldErrors, httpErrorText } from '../../core/http-error';
 import { PricingService, PricingSettings } from '../../core/pricing.service';
 import { SettingsService, TaxRate } from '../../core/settings.service';
 import { PrintPreviewService } from '../../core/print-preview.service';
 import { CustomerNameComponent } from '../../shared/customer-name.component';
 import { HelpLinkComponent } from '../../help/help-link.component';
+import { RouteLineComponent } from '../../shared/route-line.component';
 import { formatDuration, formatKm } from '../route-planning/route-planning-view';
 import { CalcLine, formatAmount, formatCents, summarize } from './document-calc';
+import { documentLine } from './document-line';
 import { DocumentPaymentsComponent } from './document-payments.component';
 
 interface PickedCustomer {
@@ -39,9 +43,9 @@ interface PickedCustomer {
  */
 @Component({
   selector: 'app-document-form',
-  imports: [DatePipe, ReactiveFormsModule, RouterLink, CustomerNameComponent, HelpLinkComponent, DocumentPaymentsComponent],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink, CustomerNameComponent, HelpLinkComponent, DocumentPaymentsComponent, RouteLineComponent, EmptyDateDirective],
   templateUrl: './document-form.component.html',
-  host: { class: 'form-page' },
+  host: { class: 'form-page form-page-record' },
 })
 export class DocumentFormComponent implements OnInit {
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -153,10 +157,51 @@ export class DocumentFormComponent implements OnInit {
     if (d.status === 'entwurf') return 'Kunden wählen, Positionen prüfen und den Beleg festschreiben.';
     // Was es aus diesem Beleg schon gibt (Auftragsbestätigung), ist kein nächster Schritt mehr
     const next = (this.typeInfo()?.convertible_to ?? []).filter((t) => !d.existing_followups?.[t]);
-    if (this.advance()) return null; // dafür steht ein eigener Satz mit Verweis in der Leiste
-    if (d.type === 'auftragsbestaetigung' && next.includes('anzahlung')) return 'Wenn Sie eine Anzahlung verlangen möchten: „Anzahlungsrechnung erstellen“ (Taste unten). Das ist freiwillig.';
-    return next.length ? `${next.map((t) => this.typeLabel(t)).join(' oder ')} erstellen (Tasten unten).` : null;
+    if (this.advance()) return null; // dafür steht ein eigener Satz mit Verweis im Linienplan
+    if (d.type === 'auftragsbestaetigung' && next.includes('anzahlung')) return 'Wenn Sie eine Anzahlung verlangen möchten: „Anzahlungsrechnung erstellen“ (Taste oben rechts). Das ist freiwillig.';
+    return next.length ? `${next.map((t) => this.typeLabel(t)).join(' oder ')} erstellen (Tasten oben rechts).` : null;
   });
+  /** Die Haltestellen der Reise für den Linienplan. */
+  line = computed(() => {
+    const d = this.doc();
+    return d?.journey ? documentLine(d.journey, d.id, d.payment) : [];
+  });
+
+  /**
+   * Was jetzt dran ist: Diese Taste ist gefüllt (Formular-Muster). Entwurf: speichern, solange etwas offen ist, sonst
+   * festschreiben. Festgeschrieben: aus dem Angebot die Auftragsbestätigung machen; bei offenen Rechnungen die Zahlung (steht
+   * im Abschnitt „Zahlungen“); sonst drucken.
+   */
+  nextAction(): 'save' | 'finalize' | 'followup' | 'pay' | 'print' {
+    if (!this.readonly()) {
+      return this.id && !this.form.dirty && this.canFinalize() && !this.blockedByCancellation() ? 'finalize' : 'save';
+    }
+    const d = this.doc();
+    if (d?.type === 'angebot' && !this.cancelled() && this.followUpTypes().some((t) => !d.existing_followups?.[t])) return 'followup';
+    if (this.canFinalize() && (d?.payment?.state === 'offen' || d?.payment?.state === 'teilweise')) return 'pay';
+    return 'print';
+  }
+
+  // ---------- Details einer Position (aufklappbar) ----------
+
+  private openLines = new WeakMap<FormGroup, boolean>();
+
+  /** Offen, wenn von Hand geöffnet. Fehlt bei 0 % auf einer Rechnung der Pflicht-Hinweis, ist die Zeile von selbst offen. */
+  detailsOpen(g: FormGroup): boolean {
+    return this.openLines.get(g) ?? (!this.readonly() && this.isInvoiceType() && this.isZeroRate(g) && !g.getRawValue()['tax_note']);
+  }
+
+  toggleDetails(g: FormGroup) {
+    this.openLines.set(g, !this.detailsOpen(g));
+  }
+
+  /** Was in den zugeklappten Details steht, in einer Zeile: Beschreibung, Fahrtart, Steuerhinweis. */
+  lineSummary(g: FormGroup): string {
+    const v = g.getRawValue();
+    const kind = this.tripKinds().find((k) => k.value === v['trip_kind'])?.label;
+    return [String(v['description'] ?? '').replace(/\s+/g, ' ').trim(), kind, v['tax_note']].filter(Boolean).join(' · ');
+  }
+
   isInvoiceType = computed(() => !!this.types().find((t) => t.value === this.typeValue())?.invoice);
   typeValue = signal<DocumentTypeValue>('angebot');
 
@@ -466,6 +511,7 @@ export class DocumentFormComponent implements OnInit {
       next: (d) => {
         this.saving.set(false);
         if (!this.id) {
+          this.form.markAsPristine(); // gespeichert: beim Wechsel zum neuen Beleg nicht nachfragen
           this.router.navigate(['/belege', d.id]);
           return;
         }
@@ -481,17 +527,27 @@ export class DocumentFormComponent implements OnInit {
     });
   }
 
-  async back() {
-    if (this.form.dirty) {
-      const ok = await this.confirm.ask({
-        title: 'Änderungen verwerfen',
-        message: 'Es gibt ungespeicherte Änderungen. Trotzdem zurück?',
-        confirmLabel: 'Verwerfen',
-        danger: true,
-      });
-      if (!ok) return;
-    }
+  /** „Zurück“ oben. Nach ungespeicherten Änderungen fragt `canLeave`. */
+  back() {
     void this.backNav.back('/belege');
+  }
+
+  /** Strg+S, Warnung beim Neuladen und Rückfrage beim Verlassen (Formular-Muster). */
+  canLeave = useFormPage({
+    unsaved: () => !this.readonly() && this.form.dirty,
+    save: () => {
+      if (!this.readonly() && !this.loading() && !this.saving() && !this.working() && (!this.id || this.form.dirty)) this.save();
+    },
+  });
+
+  /**
+   * Verweis auf einen anderen Beleg. Die Seite bleibt dabei dieselbe Komponente, die Rückfrage der Route greift also nicht:
+   * Deshalb hier fragen. Mit Strg oder mittlerer Taste öffnet der Browser den Verweis wie gewohnt.
+   */
+  async openDocument(id: string, event: MouseEvent) {
+    if (event.ctrlKey || event.metaKey || event.shiftKey) return;
+    event.preventDefault();
+    if (id !== this.id && (await this.canLeave())) void this.router.navigate(['/belege', id]);
   }
 
   /** Eingaben verwerfen, Formular auf den gespeicherten Stand zurücksetzen. */
@@ -554,6 +610,7 @@ export class DocumentFormComponent implements OnInit {
       this.api.remove(id).subscribe({
         next: () => {
           this.memory.forget('belege', id);
+          this.form.markAsPristine();
           this.router.navigate(['/belege']);
         },
         error: (e) => this.fail(e, 'Löschen fehlgeschlagen.'),
@@ -673,7 +730,7 @@ export class DocumentFormComponent implements OnInit {
     else this.notify(false, list[0] ?? (err.status === 422 ? (first ?? fallback) : httpErrorText(err, fallback)));
   }
 
-  /** Meldung ganz oben zeigen UND dorthin scrollen (die Tastenleiste sitzt weit unten). */
+  /** Meldung ganz oben zeigen UND dorthin scrollen (die Speicherleiste sitzt weit unten). */
   private notify(ok: boolean, text: string, list?: string[]) {
     this.message.set({ ok, text, list });
     this.host.nativeElement.scrollIntoView({ block: 'start', behavior: 'smooth' });

@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { httpErrorText } from '../../core/http-error';
@@ -9,8 +9,9 @@ import { Driver, DriverService } from '../../core/driver.service';
 import { Option } from '../../core/vehicle.service';
 import { deadlineText, germanDate } from '../../shared/deadline';
 import { hasHit } from '../../shared/highlight';
+import { AvatarComponent } from '../../shared/avatar.component';
 import { HighlightComponent } from '../../shared/highlight.component';
-import { StickyFilterBarDirective } from '../../shared/sticky-filter-bar.directive';
+import { ListSearchDirective, RowNavDirective } from '../../shared/row-nav.directive';
 import { RevealCurrentDirective } from '../../shared/reveal-current.directive';
 import { ListMemory } from '../../core/list-memory.service';
 
@@ -23,12 +24,13 @@ type ListParams = { q: string; employment: string; deadline: string; archived: b
  */
 @Component({
   selector: 'app-driver-list',
-  imports: [FormsModule, RouterLink, HighlightComponent, StickyFilterBarDirective, RevealCurrentDirective],
+  imports: [FormsModule, RouterLink, HighlightComponent, RowNavDirective, ListSearchDirective, RevealCurrentDirective, AvatarComponent],
   templateUrl: './driver-list.component.html',
-  host: { class: 'list-page', style: '--sheet-w: 1074px' },
+  host: { class: 'list-page' },
 })
 export class DriverListComponent implements OnInit {
   private api = inject(DriverService);
+  private router = inject(Router);
   private confirm = inject(ConfirmService);
   private memory = inject(ListMemory);
   auth = inject(AuthService);
@@ -77,6 +79,16 @@ export class DriverListComponent implements OnInit {
   select(id: string) {
     this.currentId.set(id);
     this.memory.select(KEY, id);
+  }
+
+  open(id: string) {
+    void this.router.navigate(['/fahrer', id]);
+  }
+
+  /** Enter in der Suche, bevor die Verzögerung abgelaufen ist: sofort suchen. */
+  searchNow() {
+    clearTimeout(this.timer);
+    if (this.q.trim() !== this.shownQuery()) this.filterChanged();
   }
 
   onSearch() {

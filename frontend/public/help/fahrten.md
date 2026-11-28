@@ -48,9 +48,9 @@ Die Touren „München – Wien“ und „Wien – München“ liegen im Archiv 
 |---|---|---|
 | **Tour** | Vorlage: ein geplanter Weg mit Halten, Kilometern, Zeitplan und Karte. | Streckenplanung, **Tour-Archiv** |
 | **Strecke** | Eine Tour **in einer Reise**, als Hinfahrt, Fahrt vor Ort oder Rückfahrt, mit Fahrzeugen und Preis. | Gruppen im Beleg, Detailseite der Reise |
-| **Reise** | Der Vorgang für einen Kunden mit allen Strecken und Belegen. Sie legen sie mit **Neue Reise planen** an (Name, Kunde) und **planen dort Strecke für Strecke**. Sie entsteht auch von selbst mit „Angebot erstellen“ in der Streckenplanung. | Seitenleiste **Reisen**, Reise-Leiste oben im Beleg |
+| **Reise** | Der Vorgang für einen Kunden mit allen Strecken und Belegen. Sie legen sie mit **Neue Reise planen** an (Name, Kunde) und **planen dort Strecke für Strecke**. Sie entsteht auch von selbst mit „Angebot erstellen“ in der Streckenplanung. | Menü **Reisen**, Linienplan oben im Beleg |
 | **Fahrzeuge** | Was auf einer Strecke fährt: **Typ und Anzahl**. Das konkrete Fahrzeug und die Fahrer wählt später der Disponent. | Streckenplanung, Beleg |
-| **Beleg** | Angebot, Auftragsbestätigung, Anzahlungsrechnung, Rechnung (und Storno). Jeder Beleg hängt an der Reise; ein festgeschriebener ist **unveränderlich** und trägt die **Fahrtbeschreibung**, wie sie beim Festschreiben galt. | **Belege**, Reise-Leiste |
+| **Beleg** | Angebot, Auftragsbestätigung, Anzahlungsrechnung, Rechnung (und Storno). Jeder Beleg hängt an der Reise; ein festgeschriebener ist **unveränderlich** und trägt die **Fahrtbeschreibung**, wie sie beim Festschreiben galt. | **Belege**, Linienplan oben im Beleg |
 
 **Der rote Faden:** Sie legen eine **Reise** an und fügen ihr Strecke für Strecke hinzu: Hinfahrt, Fahrten vor Ort, Rückfahrt. Jede Strecke bearbeiten Sie in der Streckenplanung: berechnen, aus einer Vorlage übernehmen oder ohne Route eintragen. Aus den Strecken erstellen Sie das **Angebot**; ändern Sie später eine Strecke, gleicht **Angebot aktualisieren** ihre Positionen ab. Das Angebot wird zur Auftragsbestätigung und zur Rechnung, alles bleibt in **einer** Reise. Für eine **einzelne Fahrt** gibt es den **Kurzweg**: Tour berechnen, **Angebot erstellen**, dabei entsteht die Reise mit ihrer ersten Strecke. Die Seite **Reisen** zeigt zu jedem Zeitpunkt, wo die Reise steht und was als Nächstes zu tun ist.
 
@@ -84,7 +84,7 @@ Bevor Sie das erste Angebot schreiben, richtet der **Administrator** diese Dinge
 | Schritt | Was | Wo | Stand |
 |---|---|---|---|
 | 0 | Einmal einrichten | **Einstellungen**, Fuhrpark, Fahrer, Kunden | Verfügbar |
-| 1 | Tour planen und im Tour-Archiv speichern | Seitenleiste **Fahrten und Abrechnung › Streckenplanung** (Archiv: **Tour-Archiv**, Überblick: **Reisen**) | Verfügbar |
+| 1 | Tour planen und im Tour-Archiv speichern | Menü **Streckenplanung** (Archiv: **Tour-Archiv**, Überblick: **Reisen**) | Verfügbar |
 | 2 | Angebot erstellen, **zwei Wege** | **A:** Streckenplanung › **Angebot erstellen**. **B:** Belege › **Neuer Beleg** (ohne Strecke) | Verfügbar |
 | 3 | Auftrag bestätigen | Im festgeschriebenen Angebot: **Auftragsbestätigung erstellen** | Verfügbar |
 | 4 | Anzahlung verlangen (optional) | **Anzahlungsrechnung erstellen** | Verfügbar |
@@ -96,12 +96,12 @@ Bevor Sie das erste Angebot schreiben, richtet der **Administrator** diese Dinge
 
 ## Schritt 1: Tour planen {#tour-planen}
 
-**Wo:** Seitenleiste, Gruppe **Fahrten und Abrechnung**, Eintrag **Streckenplanung** (Administrator und Disponent).
+**Wo:** Menü **Streckenplanung** (Administrator und Disponent).
 
 1. Tragen Sie **Von** und **Nach** ein, bei Bedarf **Über**-Orte. Wählen Sie **Fahrzeugtyp** und **Anzahl** der Busse und die **Abfahrt**.
 2. Klicken Sie **Strecke berechnen**.
 3. Sie sehen Strecke, Leerfahrt, Lenkzeit, Gesamtdauer, Fahrtage und den Zeitplan mit Pausen und Ruhezeiten. Warnungen weisen auf Probleme hin.
-4. **Als Vorlage speichern** (freiwillig): Die Taste unten rechts legt die Tour im Tour-Archiv ab. Der Name ist mit „Von – Nach“ vorgeschlagen. Eine Tour, die Sie schon einmal geplant haben, laden Sie oben rechts mit **Vorlage laden**, ohne neu zu berechnen, oder öffnen sie in der Seitenleiste unter **Tour-Archiv**. Alle Reisen mit Stand und Betrag stehen unter **Reisen**.
+4. **Als Vorlage speichern** (freiwillig): Die Taste unten rechts legt die Tour im Tour-Archiv ab. Der Name ist mit „Von – Nach“ vorgeschlagen. Eine Tour, die Sie schon einmal geplant haben, laden Sie oben rechts mit **Vorlage laden**, ohne neu zu berechnen, oder öffnen sie im Menü unter **Tour-Archiv**. Alle Reisen mit Stand und Betrag stehen unter **Reisen**.
 5. **Nächster Schritt:** **Angebot erstellen** (siehe Schritt 2).
 
 **Tipp:** Orte suchen Sie wie in OpenStreetMap („Ulm Hbf“, nicht „Ulm Hauptbahnhof“). Mehr unter [Streckenplanung](/hilfe/strecken).
@@ -113,7 +113,7 @@ Ein Angebot entsteht auf **drei Wegen**. Alle führen in dasselbe Beleg-Formular
 | | **Weg A: mit Strecke** | **Weg B: ohne Strecke** |
 |---|---|---|
 | **Wann** | Fahrt mit bekannter Strecke, Sie wollen einen Preisvorschlag | Pauschalpreis, Zusatzleistung oder eine Fahrt, die Sie nicht berechnen müssen |
-| **Wo** | **Fahrten und Abrechnung › Streckenplanung**, dann **Angebot erstellen** | **Fahrten und Abrechnung › Belege**, dann **Neuer Beleg** |
+| **Wo** | **Streckenplanung**, dann **Angebot erstellen** | **Belege**, dann **Neuer Beleg** |
 | **Wer** | Administrator und Disponent | Administrator, Disponent und Buchhaltung |
 | **Positionen** | automatisch aus Ihren Preisen (Fahrstrecke, Tagespauschale, Übernachtung, Zuschläge, Mindestpreis) | leer, Sie tragen sie selbst ein |
 | **Fahrtart und Steuersatz** | einmal gewählt, gilt für alle Positionen | je Position wählen |
@@ -122,20 +122,20 @@ Ein Angebot entsteht auf **drei Wegen**. Alle führen in dasselbe Beleg-Formular
 
 ### Weg A: mit Strecke {#angebot-strecke}
 
-**Wo:** Seitenleiste **Fahrten und Abrechnung › Streckenplanung**, nach der Berechnung, dann im Beleg.
+**Wo:** Menü **Streckenplanung**, nach der Berechnung, dann im Beleg.
 
 1. Wählen Sie bei der Strecke die **Fahrtart**. **Gelegenheitsverkehr** (Charter, Ausflug, Gruppenfahrt) ist vorbelegt, das ist der Normalfall. **Linienverkehr** und **Schülerfahrt** gelten nur für genehmigte Linien und Schulträger.
 2. Wählen Sie bei Bedarf im Bereich **Angebot** einen **Zuschlag** und das Bundesland der **Feiertage**.
-3. Klicken Sie in der Tastenleiste **Angebot erstellen**. {{app}} legt das Angebot als **Entwurf** an und öffnet es. Dabei entsteht automatisch eine **Reise** mit dieser Strecke (im Tour-Archiv wird dabei nichts gespeichert, das tun Sie mit **Als Vorlage speichern**). Oben im Beleg zeigt die Reise-Leiste die Belege der Reise und den nächsten Schritt, siehe [Reise](/hilfe/belege#reise).
+3. Klicken Sie in der Tastenleiste **Angebot erstellen**. {{app}} legt das Angebot als **Entwurf** an und öffnet es. Dabei entsteht automatisch eine **Reise** mit dieser Strecke (im Tour-Archiv wird dabei nichts gespeichert, das tun Sie mit **Als Vorlage speichern**). Oben im Beleg zeigt der Linienplan die Belege der Reise und den nächsten Schritt, siehe [Reise](/hilfe/belege#reise).
 4. Wählen Sie im Beleg den **Kunden** (Suchfeld: Name, Nummer oder Ort).
 5. Prüfen Sie die **Positionen**: Preis, Menge, **Fahrtart** und **Steuersatz** lassen sich je Position ändern. Steht oben **„Bitte prüfen“**, passt ein Satz nicht zur Fahrtart. Das ist ein Hinweis und sperrt nichts.
-6. **Mehrere Strecken oder Busse?** Öffnen Sie die Reise (Link „Reise öffnen: Strecken ändern“ in der Reise-Leiste) und fügen dort Hinfahrt, Fahrt vor Ort und Rückfahrt hinzu, je Strecke mit einem oder mehreren Fahrzeugtypen. Danach **Angebot aktualisieren**. Siehe [Mehrere Strecken und Fahrzeugtypen](/hilfe/belege#mehrere-strecken).
+6. **Mehrere Strecken oder Busse?** Öffnen Sie die Reise (Klick auf den Namen der Reise oben im Beleg) und fügen dort Hinfahrt, Fahrt vor Ort und Rückfahrt hinzu, je Strecke mit einem oder mehreren Fahrzeugtypen. Danach **Angebot aktualisieren**. Siehe [Mehrere Strecken und Fahrzeugtypen](/hilfe/belege#mehrere-strecken).
 7. **Speichern**, dann **Festschreiben** (nur Administrator und Buchhaltung). Das Angebot bekommt seine Nummer und ist gesperrt. Dabei hält {{app}} die **Fahrtbeschreibung** der Strecken (Halte, Kilometer, Zeiten, Fahrzeuge) unveränderlich im Beleg fest, siehe [Fahrtbeschreibung](/hilfe/belege#fahrtbeschreibung).
 8. **Drucken** öffnet die Druckvorschau. Von dort drucken Sie oder speichern als PDF.
 
 ### Weg R: aus der Reise {#angebot-reise}
 
-**Wo:** Seitenleiste **Fahrten und Abrechnung › Reisen › Neue Reise planen** (Administrator und Disponent). Der Weg für Reisen mit mehreren Strecken, Sie planen sie **Schritt für Schritt**:
+**Wo:** Menü **Reisen**, oben rechts **Neue Reise planen** (Administrator und Disponent). Der Weg für Reisen mit mehreren Strecken, Sie planen sie **Schritt für Schritt**:
 
 1. **Reise anlegen:** Name („Klassenfahrt Realschule Mai“) und, wenn bekannt, der Kunde. Die Reise öffnet sich.
 2. **Strecke hinzufügen:** Die Streckenplanung öffnet sich. Art wählen (Hinfahrt, Fahrt vor Ort, Rückfahrt), dann Strecke berechnen, eine **Vorlage laden** oder ohne Route die Werte eintragen (typisch für die Fahrt vor Ort). Fahrzeugtyp und Anzahl wählen Sie je Strecke. **Speichern** führt zurück zur Reise.
@@ -147,7 +147,7 @@ Mehr dazu: [Mehrere Strecken und Fahrzeugtypen](/hilfe/belege#mehrere-strecken).
 
 ### Weg B: ohne Strecke {#angebot-hand}
 
-**Wo:** Seitenleiste **Fahrten und Abrechnung › Belege**, oben rechts **Neuer Beleg**.
+**Wo:** Menü **Belege**, oben rechts **Neuer Beleg**.
 
 1. Lassen Sie die **Belegart** auf *Angebot*. Wählen Sie den **Kunden** (Suchfeld: Name, Nummer oder Ort, mindestens zwei Zeichen).
 2. Tragen Sie **Betreff** und **Leistung von (bis)** ein, das Fahrtdatum.
@@ -159,11 +159,11 @@ Das neue Angebot weist oben darauf hin, dass Sie es von Hand anlegen, und verlin
 
 ### Nach beiden Wegen {#angebot-danach}
 
-**Was Sie danach sehen:** In der Belegliste steht das Angebot mit Nummer und dem Stand „Festgeschrieben“. Bei Weg A und Weg R steht es außerdem unter **Fahrten und Abrechnung › Reisen**: Dort sehen Sie die Reise mit ihren Strecken, allen Belegen, dem Stand und dem **nächsten Schritt**, siehe [Die Liste der Reisen](/hilfe/belege#reisen). Die gespeicherte Tour finden Sie unter **Tour-Archiv**. Mehr unter [Belege](/hilfe/belege) und [Fahrtart und Steuersatz](/hilfe/belege#fahrtart).
+**Was Sie danach sehen:** In der Belegliste steht das Angebot mit Nummer und dem Stand „Festgeschrieben“. Bei Weg A und Weg R steht es außerdem unter **Reisen**: Dort sehen Sie die Reise mit ihren Strecken, allen Belegen, dem Stand und dem **nächsten Schritt**, siehe [Die Liste der Reisen](/hilfe/belege#reisen). Die gespeicherte Tour finden Sie unter **Tour-Archiv**. Mehr unter [Belege](/hilfe/belege) und [Fahrtart und Steuersatz](/hilfe/belege#fahrtart).
 
 ## Schritt 3: Auftrag bestätigen {#auftrag}
 
-**Wo:** im **festgeschriebenen** Angebot, rechts unten in der Tastenleiste.
+**Wo:** im **festgeschriebenen** Angebot, oben rechts.
 
 1. Klicken Sie **Auftragsbestätigung erstellen**. Es entsteht ein **Entwurf** mit denselben Positionen, Kunde und Fahrtdatum werden übernommen. Der Beleg bleibt in derselben **Reise** und übernimmt die Strecken samt Fahrtbeschreibung des Angebots.
 2. Prüfen Sie ihn, **speichern** und **festschreiben** Sie ihn.
@@ -182,7 +182,7 @@ Auf der Seite der Reise führt beim **Nächsten Schritt** der Link **Fordern Sie
 
 ## Schritt 5: Fahrt durchführen {#fahrt}
 
-**Wo:** Seitenleiste **Fahrten und Abrechnung › Fahrtaufträge**. Administrator und Disponent teilen ein, die Buchhaltung darf lesen und drucken.
+**Wo:** Menü **Fahrtaufträge**. Administrator und Disponent teilen ein, die Buchhaltung darf lesen und drucken.
 
 Sobald Sie eine **Auftragsbestätigung festschreiben**, legt {{app}} für jede Strecke und **jeden Bus** einen **Fahrtauftrag** an. Ein Doppeldecker und zwei Kleinbusse auf der Hinfahrt ergeben also drei Fahrtaufträge. Sie müssen nichts anlegen. Alle Fahrtaufträge einer Reise erreichen Sie über **Fahrtaufträge öffnen** in der Reise.
 
@@ -192,7 +192,7 @@ Ein neuer Fahrtauftrag hat den Stand **Zu disponieren**: Der Fahrzeugtyp steht f
 
 **Ausgeben ist nicht Festschreiben:** [Festschreiben](/hilfe/belege#entwurf-und-festschreiben) macht einen Beleg gesetzlich endgültig. **Ausgeben** ist die Übergabe an den Fahrer und lässt sich korrigieren.
 
-1. **Öffnen:** In der Liste auf den Namen oder den Stift klicken. Suchen können Sie nach Strecke, Nummer, Kunde oder Fremdunternehmer, filtern nach dem Stand.
+1. **Öffnen:** In der Liste auf die Zeile klicken. Suchen können Sie nach Strecke, Nummer, Kunde oder Fremdunternehmer, filtern nach dem Stand.
 2. **Fahrzeug:** Wählen Sie ein **eigenes Fahrzeug** aus Ihrem Fuhrpark **oder** tragen Sie einen **Fremdunternehmer** mit Kennzeichen ein, wenn ein anderes Unternehmen den Bus stellt. Beides zugleich geht nicht.
 3. **Fahrer:** **Fahrer 1**, bei Langstrecken zusätzlich **Fahrer 2**.
 4. **Termin und Hinweise:** Beginn, Ende, **Abfahrt** (Datum und Uhrzeit), **Bereitstellung** (ab dieser Uhrzeit haben die Gäste Zugang zum Bus, in der Regel zwischen Abfahrt am Betriebshof und Abfahrt am ersten Halt) und die **Personenzahl**. Die Personenzahl ist ein freier Text: „20“ oder „ca. 20 Pers.“ gehen beide. Unter „Für den Fahrer“ stehen Treffpunkt und Besonderheiten, sie kommen ins Fahrer-PDF. Die interne Notiz steht **nicht** im PDF.
@@ -247,7 +247,7 @@ Die **Rechnung** aus diesen Angaben, die Quittung bei Barzahlung und der Ausland
 2. **Leistung von (bis)** ist Pflicht: das Fahrtdatum.
 3. **Festschreiben:** Die Software prüft die Pflichtangaben und nennt, was fehlt. Danach bekommt die Rechnung ihre Nummer. Fehlt etwas, wird keine Nummer verbraucht.
 4. **Drucken** oder als PDF an den Kunden.
-5. **Hat der Kunde E-Rechnung statt PDF**, steht nach dem Festschreiben in der Tastenleiste **E-Rechnung (XML)**: Das ist die Datei, die Sie dem Kunden schicken (E-Mail oder Rechnungsportal). Was dafür beim Kunden und in den Firmendaten stehen muss, steht unter [E-Rechnung](/hilfe/belege#e-rechnung). Fehlt etwas, wird nicht festgeschrieben und die Meldung nennt es.
+5. **Hat der Kunde E-Rechnung statt PDF**, steht nach dem Festschreiben in der rechten Spalte **E-Rechnung (XML)**: Das ist die Datei, die Sie dem Kunden schicken (E-Mail oder Rechnungsportal). Was dafür beim Kunden und in den Firmendaten stehen muss, steht unter [E-Rechnung](/hilfe/belege#e-rechnung). Fehlt etwas, wird nicht festgeschrieben und die Meldung nennt es.
 
 **Bald:** Die Rechnung entsteht dann aus den zurückerfassten Fahrtaufträgen, als **Gesamtrechnung je Reise** oder als **Sammelrechnung** über mehrere Fahrten (zum Beispiel Werksverkehr am Monatsende).
 

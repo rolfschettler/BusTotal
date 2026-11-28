@@ -7,18 +7,21 @@ import { AuthService } from '../core/auth.service';
 import { BrandService } from '../core/brand.service';
 import { roleLabel } from '../core/roles';
 import { HelpPanelService } from '../help/help-panel.component';
+import { AvatarComponent, initials } from '../shared/avatar.component';
+import { GlobalSearchService } from './global-search.component';
 
-/** Rahmen für alle angemeldeten Seiten: feste Kopfleiste, Seitenleiste links, scrollender Inhalt. */
+/** Rahmen für alle angemeldeten Seiten: Seitenleiste links, daneben die scrollende Arbeitsfläche (styles/_app-shell.scss). */
 @Component({
   selector: 'app-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgbDropdownModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgbDropdownModule, AvatarComponent],
   templateUrl: './layout.component.html',
-  styleUrl: './layout.component.scss',
 })
 export class LayoutComponent {
   auth = inject(AuthService);
   brand = inject(BrandService);
   helpPanel = inject(HelpPanelService);
+  search = inject(GlobalSearchService);
+  kuerzel = initials;
 
   private router = inject(Router);
 
@@ -62,4 +65,12 @@ export class LayoutComponent {
   }
 
   rolle = roleLabel;
+
+  /** Strg+K öffnet „Alles durchsuchen“. */
+  @HostListener('document:keydown', ['$event'])
+  onSearchKey(event: KeyboardEvent) {
+    if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k' || !this.isStaff() || this.forced()) return;
+    event.preventDefault();
+    this.search.open();
+  }
 }

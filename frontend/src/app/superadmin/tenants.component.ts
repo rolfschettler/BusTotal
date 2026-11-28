@@ -6,7 +6,7 @@ import { ConfirmService } from '../core/confirm.service';
 import { httpErrorText } from '../core/http-error';
 import { HelpLinkComponent } from '../help/help-link.component';
 import { HighlightComponent } from '../shared/highlight.component';
-import { StickyFilterBarDirective } from '../shared/sticky-filter-bar.directive';
+import { ListSearchDirective, RowNavDirective } from '../shared/row-nav.directive';
 import { ManagedTenant, TenantAdminService, TenantAdminUser } from './tenant-admin.service';
 import { TenantSortCol, TenantStatusFilter, filterTenants, sortTenants } from './tenants-view';
 
@@ -38,9 +38,9 @@ interface AdminDraft {
  */
 @Component({
   selector: 'app-tenants',
-  imports: [FormsModule, DatePipe, HelpLinkComponent, HighlightComponent, StickyFilterBarDirective],
+  imports: [FormsModule, DatePipe, HelpLinkComponent, HighlightComponent, RowNavDirective, ListSearchDirective],
   templateUrl: './tenants.component.html',
-  host: { class: 'list-page', style: '--sheet-w: 1060px' },
+  host: { class: 'list-page' },
 })
 export class TenantsComponent implements OnInit {
   private api = inject(TenantAdminService);
@@ -127,6 +127,12 @@ export class TenantsComponent implements OnInit {
       db_password: '', admin_name: '', admin_email: '', is_active: true,
     });
     this.scrollToTop();
+  }
+
+  /** Klick oder Enter auf eine Zeile. Ein offenes Formular wird nicht ungefragt ersetzt. */
+  editById(id: string) {
+    const tenant = this.tenants().find((t) => t.id === id);
+    if (tenant && !this.busy() && !this.draft()) this.edit(tenant);
   }
 
   edit(t: ManagedTenant) {

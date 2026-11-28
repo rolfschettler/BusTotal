@@ -1,74 +1,39 @@
 <!-- Tabellen-Muster (clientseitige Variante), siehe docs/ClaudeCodePatterns/TableViewPattern.md -->
+<div class="list-head">
+  <h1 class="list-title">Benutzer</h1>
+  <app-help-link topic="benutzer" anchor="benutzerliste" label="Benutzerverwaltung" />
+  @if (!loading()) { <span class="list-count">{{ filtered() ? displayRows().length + ' von ' + users().length : users().length }}</span> }
 
-<!-- ── Seitenkopf ──────────────────────────────────────────────────── -->
-<div class="page-header">
-  <div class="row g-2 align-items-center">
-    <div class="col-auto">
-      <div class="d-flex align-items-center gap-2">
-        <h5 class="page-title mb-0">Benutzer</h5>
-        <app-help-link topic="benutzer" anchor="benutzerliste" label="Benutzerverwaltung" />
-        @if (!loading()) {
-          <span class="badge rounded-pill record-count d-none d-sm-inline-flex">
-            {{ filtered() ? displayRows().length + ' von ' + users().length : users().length }} Benutzer
-          </span>
-        }
-      </div>
-    </div>
-    <div class="col-12 col-sm-auto ms-sm-auto">
-      <div class="row row-cols-1 row-cols-sm-auto g-1 justify-content-end align-items-center header-ctrl">
-        <div class="col">
-          <button type="button" class="btn btn-sm btn-header w-100" (click)="refresh()" [disabled]="loading()">
-            <i class="bi bi-arrow-clockwise"></i><span class="ms-1">Aktualisieren</span>
-          </button>
-        </div>
-        <div class="col">
-          <button type="button" class="btn btn-sm btn-header-new w-100" (click)="newUser()" [disabled]="draft() !== null">
-            <i class="bi bi-plus-lg"></i><span class="ms-1">Neuer Benutzer</span>
-          </button>
-        </div>
-      </div>
-    </div>
+  <input type="search" class="form-control list-search" [class.filter-active]="q().trim() !== ''" autocomplete="off"
+         appListSearch [nav]="nav" placeholder="Suche: Name, E-Mail, Rolle …" aria-label="Suche" [ngModel]="q()" (ngModelChange)="q.set($event)" />
+  <select class="form-select" [class.filter-active]="roleFilter() !== ''" aria-label="Rolle" [ngModel]="roleFilter()" (ngModelChange)="roleFilter.set($event)">
+    <option value="">Alle Rollen</option>
+    @for (r of roles; track r.value) { <option [value]="r.value">{{ r.label }}</option> }
+  </select>
+  <select class="form-select" [class.filter-active]="statusFilter() !== ''" aria-label="Status" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
+    <option value="">Alle Status</option>
+    <option value="active">Aktiv</option>
+    <option value="locked">Gesperrt</option>
+  </select>
+
+  <div class="list-actions">
+    <button type="button" class="btn btn-outline-secondary" (click)="refresh()" [disabled]="loading()" title="Liste neu laden">
+      <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Aktualisieren
+    </button>
+    <button type="button" class="btn" [class.btn-primary]="draft() === null" [class.btn-outline-secondary]="draft() !== null" (click)="newUser()" [disabled]="draft() !== null">
+      <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Neuer Benutzer
+    </button>
   </div>
 </div>
 
-<!-- ── Inhalt: der EINE Scroll-Container ───────────────────────────── -->
-<div class="page-content" #content>
-
-  <!-- Filterleiste (klebt oben) -->
-  <div class="filter-bar" appStickyFilterBar>
-    <div class="row g-2 align-items-center">
-      <div class="col-12 col-sm-6 col-lg-4">
-        <input type="search" class="form-control form-control-sm" [class.filter-active]="q().trim() !== ''"
-               placeholder="Suche: Name, E-Mail, Rolle …" aria-label="Suche"
-               [ngModel]="q()" (ngModelChange)="q.set($event)" />
-      </div>
-      <div class="col-6 col-sm-auto">
-        <select class="form-select form-select-sm" [class.filter-active]="roleFilter() !== ''" aria-label="Rolle"
-                [ngModel]="roleFilter()" (ngModelChange)="roleFilter.set($event)">
-          <option value="">Alle Rollen</option>
-          @for (r of roles; track r.value) {
-            <option [value]="r.value">{{ r.label }}</option>
-          }
-        </select>
-      </div>
-      <div class="col-6 col-sm-auto">
-        <select class="form-select form-select-sm" [class.filter-active]="statusFilter() !== ''" aria-label="Status"
-                [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
-          <option value="">Alle Status</option>
-          <option value="active">Aktiv</option>
-          <option value="locked">Gesperrt</option>
-        </select>
-      </div>
-    </div>
-  </div>
-
+<div class="list-body" #content appRowNav #nav="appRowNav" (rowSelect)="currentId.set($event)" (rowOpen)="editById($event)">
   @if (message(); as m) {
-    <div class="alert py-2 mb-3" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
+    <div class="alert py-2" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
   }
 
   <!-- Vorläufiges Passwort: wird nur einmal angezeigt -->
   @if (secret(); as s) {
-    <div class="alert alert-warning mb-3" role="alert">
+    <div class="alert alert-warning" role="alert">
       <div class="fw-semibold mb-1">
         Vorläufiges Passwort für {{ s.name }}
         <app-help-link topic="benutzer" anchor="vorlaeufiges-passwort" label="Vorläufiges Passwort" />
@@ -88,9 +53,9 @@
   <!-- Formular: Anlegen und Bearbeiten. Kurzes Inline-Formular nach dem Formular-Muster
        (docs/ClaudeCodePatterns/EditFormPattern.md): .form-area, Labels oben, Tastenleiste ohne sticky (.form-bar-static). -->
   @if (draft(); as d) {
-    <div class="form-page mb-3">
+    <div class="list-box form-page">
       <form id="userForm" class="form-area" #uf="ngForm" (ngSubmit)="save(uf)" novalidate [class.was-validated]="draftSubmitted()">
-        <div class="row g-3">
+        <div class="row g-2">
           <div class="col-12"><div class="section-title">{{ d.id === null ? 'Neuer Benutzer' : 'Benutzer bearbeiten' }}</div></div>
           @if (d.id === null) {
             <div class="col-12 small text-body-secondary">Das System erzeugt ein vorläufiges Passwort, das Sie nach dem Speichern einmalig sehen.</div>
@@ -121,30 +86,24 @@
       </form>
 
       <div class="form-bar form-bar-static">
-        <button type="submit" form="userForm" class="btn btn-primary">{{ d.id === null ? 'Anlegen' : 'Speichern' }}</button>
-        <div class="form-bar-right">
-          <button type="button" class="btn btn-outline-secondary" (click)="cancel()">Abbrechen</button>
-        </div>
+        <button type="submit" form="userForm" class="btn btn-primary">{{ d.id === null ? 'Anlegen' : 'Speichern' }}<kbd>Strg+S</kbd></button>
+        <button type="button" class="btn btn-outline-secondary" (click)="cancel()">Abbrechen</button>
       </div>
     </div>
   }
 
-  <!-- KEIN overflow-Wrapper um die Tabelle! .page-content scrollt schon beide Achsen. -->
-  <div class="card table-card rounded-3">
-    <table class="table table-hover table-sm align-middle data-table mb-0">
+  <table class="data-table" style="min-width: 1000px">
+    <colgroup>
+      <col style="width: 22%">
+      <col>
+      <col style="width: 170px">
+      <col style="width: 240px">
+      <col style="width: 170px">
+      <col style="width: 90px">
+    </colgroup>
 
-      <colgroup>
-        <col style="width:116px">  <!-- Aktionen: drei Symbole à 28 px + Abstand -->
-        <col style="width:200px">  <!-- Name -->
-        <col style="width:250px">  <!-- E-Mail -->
-        <col style="width:130px">  <!-- Rolle -->
-        <col style="width:200px">  <!-- Status -->
-        <col style="width:144px">  <!-- Letzte Anmeldung -->
-      </colgroup>
-
-      <thead>
+    <thead>
         <tr>
-          <th class="col-actions"><span class="visually-hidden">Aktionen</span></th>
           <th class="sortable" [class.sort-active]="sortCol() === 'name'" [attr.aria-sort]="ariaSort('name')" tabindex="0"
               (click)="sort('name')" (keydown.enter)="sort('name')">Name <i class="bi {{ sortIcon('name') }}"></i></th>
           <th class="sortable" [class.sort-active]="sortCol() === 'email'" [attr.aria-sort]="ariaSort('email')" tabindex="0"
@@ -155,36 +114,21 @@
               (click)="sort('status')" (keydown.enter)="sort('status')">Status <i class="bi {{ sortIcon('status') }}"></i></th>
           <th class="sortable" [class.sort-active]="sortCol() === 'lastLogin'" [attr.aria-sort]="ariaSort('lastLogin')" tabindex="0"
               (click)="sort('lastLogin')" (keydown.enter)="sort('lastLogin')">Letzte Anmeldung <i class="bi {{ sortIcon('lastLogin') }}"></i></th>
+          <th><span class="visually-hidden">Aktionen</span></th>
         </tr>
       </thead>
 
       <tbody>
         @for (u of displayRows(); track u.id) {
-          <tr (click)="currentId.set(u.id)" [class.row-current]="u.id === currentId()" [class.text-body-secondary]="!u.active">
-            <!-- Aktionen: stopPropagation, damit der Zeilenklick nicht mitfeuert -->
-            <td class="col-actions" (click)="$event.stopPropagation()">
-              <button type="button" class="btn-action edit" (click)="edit(u)" title="Bearbeiten" [attr.aria-label]="u.name + ' bearbeiten'">
-                <i class="bi bi-pencil"></i>
-              </button>
-              <button type="button" class="btn-action key" (click)="resetPassword(u)" [disabled]="isMe(u)"
-                      [title]="isMe(u) ? 'Ihr eigenes Passwort ändern Sie im Benutzermenü' : 'Passwort zurücksetzen'"
-                      [attr.aria-label]="u.name + ' Passwort zurücksetzen'">
-                <i class="bi bi-key"></i>
-              </button>
-              @if (u.active) {
-                <button type="button" class="btn-action delete" (click)="toggleActive(u)" [disabled]="isMe(u)"
-                        [title]="isMe(u) ? 'Sie können sich nicht selbst sperren' : 'Sperren'" [attr.aria-label]="u.name + ' sperren'">
-                  <i class="bi bi-lock"></i>
-                </button>
-              } @else {
-                <button type="button" class="btn-action restore" (click)="toggleActive(u)" title="Entsperren" [attr.aria-label]="u.name + ' entsperren'">
-                  <i class="bi bi-unlock"></i>
-                </button>
-              }
-            </td>
+          <tr [attr.data-row-id]="u.id" [class.row-current]="u.id === currentId()" [class.text-body-secondary]="!u.active">
             <td [title]="u.name">
-              <span class="fw-semibold"><app-highlight [text]="u.name" [query]="q()" /></span>
-              @if (isMe(u)) { <span class="badge text-bg-secondary ms-1">Sie</span> }
+              <div class="who">
+                <app-avatar [name]="u.name" />
+                <div>
+                  <span class="fw-semibold"><app-highlight [text]="u.name" [query]="q()" /></span>
+                  @if (isMe(u)) { <span class="badge text-bg-secondary ms-1">Sie</span> }
+                </div>
+              </div>
             </td>
             <td [title]="u.email"><app-highlight [text]="u.email" [query]="q()" /></td>
             <td><app-highlight [text]="roleLabel(u.role)" [query]="q()" /></td>
@@ -195,15 +139,36 @@
               }
             </td>
             <td class="dim">{{ u.last_login_at ? (u.last_login_at | date: 'dd.MM.y, HH:mm') : 'noch nie' }}</td>
+            <td class="col-actions">
+              <button type="button" class="btn-action" (click)="resetPassword(u)" [disabled]="isMe(u)"
+                      [title]="isMe(u) ? 'Ihr eigenes Passwort ändern Sie im Benutzermenü' : 'Passwort zurücksetzen'"
+                      [attr.aria-label]="u.name + ' Passwort zurücksetzen'">
+                <i class="bi bi-key" aria-hidden="true"></i>
+              </button>
+              @if (u.active) {
+                <button type="button" class="btn-action delete" (click)="toggleActive(u)" [disabled]="isMe(u)"
+                        [title]="isMe(u) ? 'Sie können sich nicht selbst sperren' : 'Sperren'" [attr.aria-label]="u.name + ' sperren'">
+                  <i class="bi bi-lock" aria-hidden="true"></i>
+                </button>
+              } @else {
+                <button type="button" class="btn-action" (click)="toggleActive(u)" title="Entsperren" [attr.aria-label]="u.name + ' entsperren'">
+                  <i class="bi bi-unlock" aria-hidden="true"></i>
+                </button>
+              }
+            </td>
           </tr>
         } @empty {
           <tr>
-            <td colspan="6" class="text-center text-secondary py-5 small">
+            <td colspan="6" class="text-center text-body-secondary py-5">
               {{ loading() ? 'Daten werden geladen …' : filtered() ? 'Keine Benutzer zu diesem Filter.' : 'Keine Benutzer.' }}
             </td>
           </tr>
         }
       </tbody>
     </table>
-  </div>
+</div>
+
+<div class="list-foot">
+  <span>{{ displayRows().length }} Benutzer</span>
+  <span class="list-keys">Pfeiltasten wählen, Enter bearbeitet</span>
 </div>

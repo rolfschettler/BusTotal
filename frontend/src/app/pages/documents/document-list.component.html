@@ -1,113 +1,77 @@
 <!-- Tabellen-Muster, siehe docs/ClaudeCodePatterns/TableViewPattern.md. Die Optik kommt aus src/styles/_list-page.scss. -->
+<div class="list-head">
+  <h1 class="list-title">Belege</h1>
+  @if (loaded()) { <span class="list-count">{{ total() }}</span> }
 
-<div class="page-header">
-  <div class="row g-2 align-items-center">
-    <div class="col-auto">
-      <div class="d-flex align-items-center gap-2">
-        <h5 class="page-title mb-0">Belege</h5>
-        @if (loaded()) {
-          <span class="badge rounded-pill record-count d-none d-sm-inline-flex">{{ total() }} {{ total() === 1 ? 'Beleg' : 'Belege' }}</span>
-        }
+  <div class="list-pick">
+    @if (customer(); as c) {
+      <div class="input-group">
+        <input class="form-control filter-active" [value]="c.display_name + ' (' + c.customer_number + ')'" readonly aria-label="Gewählter Kunde" />
+        <button type="button" class="btn btn-outline-secondary" (click)="clearCustomer()" title="Auswahl aufheben, alle Kunden zeigen">
+          <i class="bi bi-x-lg" aria-hidden="true"></i><span class="ms-1">Ändern</span>
+        </button>
       </div>
-    </div>
-    <div class="col-12 col-sm-auto ms-sm-auto">
-      <div class="row row-cols-1 row-cols-sm-auto g-1 justify-content-end align-items-center header-ctrl">
-        <div class="col">
-          <button type="button" class="btn btn-sm btn-header w-100" (click)="refresh()" [disabled]="loading()">
-            <i class="bi bi-arrow-clockwise"></i><span class="ms-1">Aktualisieren</span>
-          </button>
+    } @else {
+      <input type="search" class="form-control" autocomplete="off"
+             placeholder="Kunde suchen: Nachname, Kundennr., Ort …" title="Mit Komma nach Nachname und Vorname: Mustermann,Max" aria-label="Kunde suchen"
+             [value]="customerQuery()" (input)="onCustomerSearch($any($event.target).value)" />
+      @if (customerHits().length) {
+        <div class="list-group position-absolute shadow" style="z-index: 20; left: 0; right: 0">
+          @for (h of customerHits(); track h.id) {
+            <button type="button" class="list-group-item list-group-item-action" (click)="pickCustomer(h)">
+              <app-customer-name [customer]="h" [query]="customerQuery()" [showNumber]="true" />
+              @if (h.archived) { <span class="badge text-bg-secondary">archiviert</span> }
+            </button>
+          }
         </div>
-        <div class="col">
-          <a routerLink="/belege/neu" class="btn btn-sm btn-header-new w-100">
-            <i class="bi bi-plus-lg"></i><span class="ms-1">Neuer Beleg</span>
-          </a>
-        </div>
-      </div>
-    </div>
+      }
+    }
+  </div>
+
+  <input type="search" class="form-control list-search" [class.filter-active]="q.trim() !== ''" autocomplete="off"
+         appListSearch [nav]="nav" [pending]="q.trim() !== shownQuery() || loading()" (searchNow)="searchNow()"
+         placeholder="Belegnr. oder Betreff" aria-label="Suche" [(ngModel)]="q" (ngModelChange)="onSearch()" />
+  <select class="form-select" [class.filter-active]="type !== ''" aria-label="Belegart" [(ngModel)]="type" (ngModelChange)="filterChanged()">
+    <option value="">Alle Belegarten</option>
+    @for (t of types(); track t.value) { <option [value]="t.value">{{ t.label }}</option> }
+  </select>
+  <select class="form-select" [class.filter-active]="status !== ''" aria-label="Status" [(ngModel)]="status" (ngModelChange)="filterChanged()">
+    <option value="">Alle Stände</option>
+    <option value="entwurf">Entwürfe</option>
+    <option value="festgeschrieben">Festgeschrieben</option>
+  </select>
+  <select class="form-select" [class.filter-active]="order !== 'column'" aria-label="Anordnung" [(ngModel)]="order" (ngModelChange)="filterChanged()">
+    <option value="column">Nach Spalte sortiert</option>
+    <option value="chain">Je Kunde mit Entstehungskette</option>
+  </select>
+
+  <div class="list-actions">
+    <button type="button" class="btn btn-outline-secondary" (click)="refresh()" [disabled]="loading()" title="Liste neu laden">
+      <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Aktualisieren
+    </button>
+    <a routerLink="/belege/neu" class="btn btn-primary"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Neuer Beleg</a>
   </div>
 </div>
 
-<div class="page-content">
-
-  <div class="filter-bar" appStickyFilterBar>
-    <div class="row g-2 align-items-center">
-      <div class="col-12 col-sm-6 col-lg-4 position-relative">
-        @if (customer(); as c) {
-          <div class="input-group input-group-sm">
-            <input class="form-control filter-active" [value]="c.display_name + ' (' + c.customer_number + ')'" readonly aria-label="Gewählter Kunde" />
-            <button type="button" class="btn btn-outline-secondary" (click)="clearCustomer()" title="Auswahl aufheben, alle Kunden zeigen">
-              <i class="bi bi-x-lg"></i><span class="ms-1">Ändern</span>
-            </button>
-          </div>
-        } @else {
-          <input type="search" class="form-control form-control-sm" autocomplete="off"
-                 placeholder="Kunde suchen: Nachname, Kundennr., Ort …" title="Mit Komma nach Nachname und Vorname: Mustermann,Max" aria-label="Kunde suchen"
-                 [value]="customerQuery()" (input)="onCustomerSearch($any($event.target).value)" />
-          @if (customerHits().length) {
-            <div class="list-group position-absolute shadow" style="z-index: 20; left: 0; right: 0">
-              @for (h of customerHits(); track h.id) {
-                <button type="button" class="list-group-item list-group-item-action" (click)="pickCustomer(h)">
-                  <app-customer-name [customer]="h" [query]="customerQuery()" [showNumber]="true" />
-                  @if (h.archived) { <span class="badge text-bg-secondary">archiviert</span> }
-                </button>
-              }
-            </div>
-          }
-        }
-      </div>
-      <div class="col-12 col-sm-6 col-lg-3">
-        <input type="search" class="form-control form-control-sm" [class.filter-active]="q.trim() !== ''"
-               placeholder="Belegnr. oder Betreff" aria-label="Belegnummer oder Betreff"
-               [(ngModel)]="q" (ngModelChange)="onSearch()" />
-      </div>
-      <div class="col-6 col-sm-auto">
-        <select class="form-select form-select-sm" [class.filter-active]="type !== ''" aria-label="Belegart"
-                [(ngModel)]="type" (ngModelChange)="filterChanged()">
-          <option value="">Alle Belegarten</option>
-          @for (t of types(); track t.value) {
-            <option [value]="t.value">{{ t.label }}</option>
-          }
-        </select>
-      </div>
-      <div class="col-6 col-sm-auto">
-        <select class="form-select form-select-sm" [class.filter-active]="order !== 'column'" aria-label="Anordnung"
-                [(ngModel)]="order" (ngModelChange)="filterChanged()">
-          <option value="column">Nach Spalte sortiert</option>
-          <option value="chain">Je Kunde mit Entstehungskette</option>
-        </select>
-      </div>
-      <div class="col-6 col-sm-auto">
-        <select class="form-select form-select-sm" [class.filter-active]="status !== ''" aria-label="Status"
-                [(ngModel)]="status" (ngModelChange)="filterChanged()">
-          <option value="">Alle Stände</option>
-          <option value="entwurf">Entwürfe</option>
-          <option value="festgeschrieben">Festgeschrieben</option>
-        </select>
-      </div>
-    </div>
-  </div>
-
+<div class="list-body" [class.dimmed]="loading()" appRowNav #nav="appRowNav" (rowSelect)="select($event)" (rowOpen)="open($event)">
   @if (error()) {
-    <div class="alert alert-danger py-2 mb-3" role="alert">{{ error() }}</div>
+    <div class="alert alert-danger py-2" role="alert">{{ error() }}</div>
   }
 
-  <div class="card table-card rounded-3" [class.dimmed]="loading()">
-    <table class="table table-hover table-sm align-middle data-table mb-0">
+  <table class="data-table" style="min-width: 1120px">
+    <colgroup>
+      <col style="width: 150px">
+      <col style="width: 15%">
+      <col style="width: 25%">
+      <col>
+      <col style="width: 110px">
+      <col style="width: 120px">
+      <col style="width: 170px">
+      <col style="width: 56px">
+    </colgroup>
 
-      <colgroup>
-        <col style="width:76px">   <!-- Aktionen -->
-        <col style="width:130px">  <!-- Nr. -->
-        <col style="width:170px">  <!-- Art -->
-        <col style="width:228px">  <!-- Kunde -->
-        <col style="width:220px">  <!-- Betreff -->
-        <col style="width:100px">  <!-- Datum -->
-        <col style="width:110px">  <!-- Brutto -->
-        <col style="width:150px">  <!-- Status und Zahlstand -->
-      </colgroup>
-
-      <thead>
+    <thead>
         <tr>
-          <th class="col-actions"><span class="visually-hidden">Aktionen</span></th>
           <th class="sortable" [class.sort-active]="isSorted('number')" [attr.aria-sort]="ariaSort('number')" tabindex="0"
               (click)="sort('number')" (keydown.enter)="sort('number')">Nr. <i class="bi {{ sortIcon('number') }}"></i></th>
           <th class="sortable" [class.sort-active]="isSorted('type')" [attr.aria-sort]="ariaSort('type')" tabindex="0"
@@ -121,20 +85,13 @@
               (click)="sort('gross')" (keydown.enter)="sort('gross')">Brutto <i class="bi {{ sortIcon('gross') }}"></i></th>
           <th class="sortable" [class.sort-active]="isSorted('status')" [attr.aria-sort]="ariaSort('status')" tabindex="0"
               (click)="sort('status')" (keydown.enter)="sort('status')">Stand <i class="bi {{ sortIcon('status') }}"></i></th>
+          <th><span class="visually-hidden">Aktionen</span></th>
         </tr>
       </thead>
 
       <tbody [class.by-chain]="order === 'chain'">
         @for (d of rows(); track d.id; let i = $index) {
-          <tr (click)="select(d.id)" [class.group-start]="groupStart(i)" [class.chain-alt]="order === 'chain' && chainAlt()[i]" [class.row-current]="d.id === currentId()" [appRevealCurrent]="d.id === currentId()">
-            <td class="col-actions">
-              <a class="btn-action edit" [routerLink]="['/belege', d.id]" title="Öffnen" [attr.aria-label]="typeLabel(d.type) + ' öffnen'">
-                <i class="bi bi-pencil"></i>
-              </a>
-              <button type="button" class="btn-action edit" (click)="openPdf(d)" title="Drucken" [attr.aria-label]="typeLabel(d.type) + ' drucken'">
-                <i class="bi bi-printer"></i>
-              </button>
-            </td>
+          <tr [attr.data-row-id]="d.id" [class.group-start]="groupStart(i)" [class.chain-alt]="order === 'chain' && chainAlt()[i]" [class.row-current]="d.id === currentId()" [appRevealCurrent]="d.id === currentId()">
             <td>
               @if (d.number) {
                 <a [routerLink]="['/belege', d.id]"><code><app-highlight [text]="d.number" [query]="shownQuery()" mode="words" /></code></a>
@@ -180,27 +137,33 @@
                 </div>
               }
             </td>
+            <td class="col-actions">
+            <button type="button" class="btn-action" (click)="openPdf(d)" title="Drucken" [attr.aria-label]="typeLabel(d.type) + ' drucken'">
+              <i class="bi bi-printer" aria-hidden="true"></i>
+            </button>
+
+            </td>
           </tr>
         } @empty {
           <tr>
-            <td colspan="8" class="text-center text-secondary py-5 small">
+            <td colspan="8" class="text-center text-body-secondary py-5">
               {{ loaded() ? 'Keine Belege gefunden.' : 'Daten werden geladen …' }}
             </td>
           </tr>
         }
       </tbody>
     </table>
-  </div>
+</div>
 
-  <div class="pager">
-    <span>{{ total() }} {{ total() === 1 ? 'Beleg' : 'Belege' }}</span>
-    <span class="ms-auto"></span>
-    <button type="button" class="btn btn-sm btn-outline-primary" (click)="go(page() - 1)" [disabled]="page() <= 1 || loading()">
-      <i class="bi bi-chevron-left"></i> Zurück
-    </button>
-    <span>Seite {{ page() }} von {{ lastPage() }}</span>
-    <button type="button" class="btn btn-sm btn-outline-primary" (click)="go(page() + 1)" [disabled]="page() >= lastPage() || loading()">
-      Weiter <i class="bi bi-chevron-right"></i>
-    </button>
-  </div>
+<div class="list-foot">
+  <span>{{ total() }} {{ total() === 1 ? 'Beleg' : 'Belege' }}</span>
+  <span class="list-keys">Pfeiltasten wählen, Enter öffnet</span>
+  <span class="ms-auto"></span>
+  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="go(page() - 1)" [disabled]="page() <= 1 || loading()">
+    <i class="bi bi-chevron-left" aria-hidden="true"></i> Zurück
+  </button>
+  <span>Seite {{ page() }} von {{ lastPage() }}</span>
+  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="go(page() + 1)" [disabled]="page() >= lastPage() || loading()">
+    Weiter <i class="bi bi-chevron-right" aria-hidden="true"></i>
+  </button>
 </div>

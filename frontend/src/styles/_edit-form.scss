@@ -1,155 +1,265 @@
-// Formular-Muster (Bearbeiten/Anlegen), siehe docs/ClaudeCodePatterns/EditFormPattern.md
-// Herkunft: DATACUR26 EditFormTemplate.scss. Einmal global, jede Formularseite nutzt nur die Klassen.
-// Kein eigenes CSS pro Seite. Klassen: .form-page, .form-area, .section-title, .form-bar.
+// ════════════════════════════════════════════════════════════════════
+//  Formularseiten – GLOBAL, kein eigenes CSS pro Seite.
+//  Muster: docs/ClaudeCodePatterns/EditFormPattern.md, lebende Referenz: customer-form.component.html
+//  Klassen: .form-page · .form-head / .head-actions · .form-cols / .form-side / .side-panel · .form-area ·
+//  .form-section / .section-title · .form-bar · .route-panel · .line-table / .sum-table
+// ════════════════════════════════════════════════════════════════════
 
-.form-page {
-  display: block;
-  max-width: 960px;
+// Schmales Formular (wenige Felder). Datensätze mit vielen Feldern: zusätzlich .form-page-record (große Bildschirme).
+.form-page { display: block; max-width: 62rem; }
+.form-page.form-page-record { max-width: 108rem; }
+.form-page.form-page-wide { max-width: none; } // Planung mit Karte
 
-  --field-border: #adb5bd;
-  --btn-border: #6c757d;
+// ── Kopf: Zurück, Titel, Zustände; rechts die Aktionen ───────────────
+.form-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.875rem;
+  margin-bottom: 1.25rem;
+  h1 { margin: 0; font-size: 1.75rem; line-height: 1.2; letter-spacing: -0.015em; }
+  .head-actions { order: 4; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-left: auto; }
+  .head-actions:empty { display: none; }
+  .form-meta { order: 5; flex-basis: 100%; margin: 0; color: var(--ui-muted); }
+}
+.flag {
+  display: inline-block;
+  padding: 0.1rem 0.7rem;
+  border-radius: 2rem;
+  background: var(--ui-soft);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  &.flag-danger { background: var(--ui-danger-ground); color: var(--ui-danger); }
+  &.flag-ok { background: var(--ui-ok-ground); color: var(--ui-ok); }
+  &.flag-warn { background: var(--ui-warn-ground); color: var(--ui-warn); }
 }
 
-// ---- Formularfläche: dezent grau (gerade erkennbar dunkler als die Seite), darin helle Bootstrap-Felder ----
-// Drei Stufen: Seite nahezu weiß (#fbfcfd), Formular dezent grau, Felder weiß. Felder, Labels und Checkboxen bleiben Bootstrap;
-// Feldfarbe und -rand kommen aus $input-bg und $input-border-color (styles.scss).
-.form-area {
-  background: #f1f3f5;
-  border: 1px solid #dee2e6;
-  border-radius: var(--bs-border-radius);
-  padding: 1.25rem;
+// ── Inhalt links, feste Spalte rechts ────────────────────────────────
+.form-cols { display: grid; grid-template-columns: minmax(0, 1fr) 21rem; gap: 2.5rem; align-items: start; }
+@media (max-width: 1599.98px) {
+  .form-cols { grid-template-columns: minmax(0, 1fr) 17rem; gap: 1.5rem; }
 }
+.form-side { position: sticky; top: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+@media (max-width: 1299.98px) {
+  .form-cols { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+  // Schmales Fenster: Die Spalte steht unter dem Inhalt, nur mit einem Warnhinweis darüber.
+  .form-side { position: static; }
+  .form-side:has(.side-panel-warning) { order: -1; }
+}
+
+.side-panel {
+  padding: 1.125rem 1.25rem;
+  background: var(--ui-ground);
+  border-radius: 14px;
+  h2 { margin: 0 0 0.5rem; font-size: 1rem; }
+  dl { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 1rem; margin: 0; }
+  dt { font-weight: 400; color: var(--ui-muted); }
+  dd { margin: 0; font-weight: 600; text-align: right; }
+  ul { margin: 0; padding-left: 1.1rem; }
+  .side-stack { display: flex; flex-direction: column; align-items: stretch; gap: 0.5rem; }
+  &.side-panel-warning { background: var(--ui-warn-ground); }
+}
+
+// ── Abschnitte: Überschrift links, Felder rechts ─────────────────────
+.form-columns, .form-col { display: contents; }
+
+.form-section { padding: 1.5rem 0; border-top: 1px solid var(--ui-line); }
+@media (min-width: 1600px) {
+  .form-section:not(.form-section-wide) {
+    display: grid;
+    grid-template-columns: 13rem minmax(0, 54rem);
+    gap: 0 2.5rem;
+    align-items: start;
+  }
+}
+
+.section-title { margin: 0 0 0.75rem; font: 650 1rem var(--ui-font-display); }
+// Formulare, deren Abschnitte als Zeile im Raster stehen
+.row > * > .section-title { margin: 0.75rem 0 0; padding-top: 1.25rem; border-top: 1px solid var(--ui-line); }
+.row > *:first-child > .section-title { margin-top: 0; padding-top: 0; border-top: 0; }
 
 // Labels brechen NIE um, sonst rutschen Felder derselben Zeile auseinander. Labels kurz halten, Hinweise gehören in .form-text.
-.form-area .form-label {
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-// Abschnittstrenner statt Karten-Rahmen oder <hr>, in der Firmenfarbe.
-.section-title {
-  color: var(--brand, var(--bs-primary));
-  font-weight: 600;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  margin-top: 0.5rem;
-  padding-bottom: 0.3rem;
-}
+.form-area .form-label { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 // Nach dem Speichern-Versuch markieren wir nur FEHLER. Das grüne "gültig" lenkt bei langen Formularen ab.
 .was-validated {
   .form-control:valid,
-  .form-select:valid {
-    border-color: var(--field-border);
-    background-image: none;
-    padding-right: 0.75rem;
-  }
+  .form-select:valid { border-color: var(--ui-field-line); background-image: none; padding-right: 0.75rem; }
   .form-check-input:valid {
-    border-color: var(--field-border);
-    ~ .form-check-label {
-      color: inherit;
-    }
+    border-color: var(--ui-field-line);
+    ~ .form-check-label { color: inherit; }
   }
 }
 
-// ---- Tastenleiste: klebt unten im Sichtbereich, in Formularbreite ----
-// Reihenfolge überall gleich: links Speichern, Zurück; rechts (.form-bar-right) seltene Aktion, Abbrechen.
+// ---- Speicherleiste: dunkle Leiste unten in der Mitte, nur solange es etwas zu speichern gibt ----
 .form-bar {
   position: sticky;
-  bottom: 0;
+  bottom: 0.25rem;
   z-index: 10;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 1rem;
-  padding: 0.65rem 1rem;
-  background: #fff;
-  border: 1px solid var(--field-border);
-  border-radius: var(--bs-border-radius);
-  box-shadow: 0 -4px 10px rgb(0 0 0 / 8%);
+  width: max-content;
+  max-width: 100%;
+  margin: 1.25rem auto 0;
+  padding: 0.625rem;
+  border-radius: 1rem;
+  background: var(--ui-text);
+  color: #fff;
+  box-shadow: 0 12px 32px rgb(20 24 31 / 25%);
 
-  .btn {
-    min-width: 6.5rem;
-    font-weight: 500;
-    white-space: nowrap; // Tasten brechen nie um und werden nie gestaucht; reicht der Platz nicht, bricht die Leiste um.
+  .btn-outline-secondary, .btn-outline-primary {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: #2c323c;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #3a424f;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #3a424f;
+    --bs-btn-disabled-color: #8d96a3;
+    --bs-btn-disabled-bg: #222831;
+    --bs-btn-border-color: transparent;
+    --bs-btn-hover-border-color: transparent;
+    --bs-btn-active-border-color: transparent;
+    --bs-btn-disabled-border-color: transparent;
   }
-
-  // Schmale Bildschirme: alle Tasten untereinander in voller Breite, nie halb umgebrochen.
-  @media (max-width: 575.98px) {
-    flex-direction: column;
-    align-items: stretch;
-
-    .form-bar-right {
-      flex-direction: column;
-      margin-left: 0;
-    }
-
-    .btn-group > .btn:first-child {
-      flex: 1 1 auto;
-    }
-  }
-}
-
-// Seiten mit zwei Spalten (Streckenplanung): volle Breite, sonst wie .form-page.
-.form-page.form-page-wide {
-  max-width: none;
-}
-
-// ---- Sekundäre Tasten: überall in einer Formularseite, nicht nur in der Tastenleiste ----
-// Weiß mit dunklem Rand, auch ohne Farbe als Taste erkennbar. Ohne diese Regel sähe eine Taste im Formular selbst
-// („Position hinzufügen“, „Zahlung erfassen“, „Stornieren“) in der blassen Bootstrap-Optik aus wie eine deaktivierte.
-.form-page {
-  .btn-outline-secondary {
-    --bs-btn-color: #212529;
+  .btn-primary {
+    --bs-btn-color: var(--ui-text);
     --bs-btn-bg: #fff;
-    --bs-btn-border-color: var(--btn-border);
-    --bs-btn-hover-color: #212529;
-    --bs-btn-hover-bg: #e9ecef;
-    --bs-btn-hover-border-color: #495057;
-    --bs-btn-active-color: #212529;
-    --bs-btn-active-bg: #dee2e6;
-    --bs-btn-active-border-color: #495057;
+    --bs-btn-hover-color: var(--ui-text);
+    --bs-btn-hover-bg: #e3e6eb;
+    --bs-btn-active-color: var(--ui-text);
+    --bs-btn-active-bg: #e3e6eb;
+    --bs-btn-disabled-color: var(--ui-text);
+    --bs-btn-disabled-bg: #c9ced6;
+    --bs-btn-border-color: transparent;
+    --bs-btn-hover-border-color: transparent;
+    --bs-btn-active-border-color: transparent;
+    --bs-btn-disabled-border-color: transparent;
   }
-
-  // Deaktiviert: graue Fläche, gestrichelter Rand, Mauszeiger "verboten". Der Grund steht im title-Attribut.
-  .btn-outline-secondary:disabled {
-    background: #e9ecef;
-    color: #868e96;
-    border: 1px dashed #adb5bd;
-    opacity: 1;
-    cursor: not-allowed;
-    pointer-events: auto;
-  }
+  .form-bar-hint { order: -1; padding: 0 0.75rem; }
 }
-
-// Meldungen oben in der Leiste: eigene Zeile; lange Meldungen scrollen, sie schieben die Tasten nie aus dem Sichtbereich.
-.form-bar-messages {
-  width: 100%;
-  max-height: 40vh;
-  overflow-y: auto;
-
-  &:empty {
-    display: none;
-  }
-}
-
-.form-bar-right {
-  display: flex;
-  gap: 0.5rem;
-  margin-left: auto;
-}
-
-.form-bar-hint {
-  font-size: 0.85rem;
-  color: #8a5a00;
-}
-
-// Kurzes Inline-Formular auf einer Listenseite: Leiste im Fluss statt klebend (die Liste scrollt selbst).
-.form-bar-static {
+.form-bar-messages { width: 100%; max-height: 40vh; overflow-y: auto; color: var(--ui-text); &:empty { display: none; } }
+.form-bar-right { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-left: auto; }
+.form-bar-hint { font-size: 0.875rem; font-weight: 600; }
+// Kurzes Inline-Formular (auf einer Listenseite, Zahlung erfassen): schlichte Tasten im Fluss
+.form-bar.form-bar-static {
   position: static;
+  width: auto;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  background: transparent;
   box-shadow: none;
+  color: inherit;
+  .btn-outline-secondary {
+    --bs-btn-color: var(--brand-ink);
+    --bs-btn-bg: var(--ui-paper);
+    --bs-btn-border-color: var(--brand-line);
+    --bs-btn-hover-color: var(--brand-ink);
+    --bs-btn-hover-bg: var(--brand-wash);
+    --bs-btn-hover-border-color: var(--brand-ink);
+    --bs-btn-disabled-color: #8a929e;
+    --bs-btn-disabled-bg: var(--ui-soft);
+  }
+  .btn-primary { --bs-btn-color: var(--brand-on); --bs-btn-bg: var(--brand); --bs-btn-hover-color: var(--brand-on); --bs-btn-hover-bg: var(--brand-dark); }
+}
+.list-box .form-area { padding: 1.25rem; border-radius: 14px; background: var(--ui-ground); }
+// Planung mit Karte: Eingaben als ruhige Flächen
+.form-page-wide .form-area { padding: 1.25rem; border-radius: 14px; background: var(--ui-ground); }
+
+// ── Linienplan eines Vorgangs (app-route-line) ───────────────────────
+.route-panel {
+  display: block;
+  margin-bottom: 1.5rem;
+  padding: 1.5rem 1.75rem;
+  border-radius: var(--bs-border-radius-lg);
+  background: var(--brand-wash);
+}
+.route-line {
+  display: flex;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  list-style: none;
+
+  li {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 18rem;
+    color: var(--ui-muted);
+    font-weight: 600;
+  }
+  li:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 18px;
+    right: 0;
+    height: 6px;
+    background: #d3d8e0;
+  }
+  li.done:not(:last-child)::after { background: var(--brand-ink); }
+  .route-stop { width: 18px; height: 18px; border-radius: 50%; background: var(--ui-paper); box-shadow: inset 0 0 0 3px #c3c9d2; }
+  li.done { color: var(--ui-text); .route-stop { background: var(--brand-ink); box-shadow: none; } }
+  li.current {
+    color: var(--ui-text);
+    font-weight: 700;
+    .route-stop { box-shadow: inset 0 0 0 5px var(--brand), 0 0 0 3px var(--brand-ink); }
+  }
+}
+
+// ── Positionen eines Belegs: eine Zeile je Position, Details klappen auf ─
+.line-table {
+  width: 100%;
+  min-width: 41rem;
+  table-layout: fixed;
+
+  col.c-toggle, col.c-remove { width: 2.5rem; }
+  col.c-quantity { width: 6.5rem; }
+  col.c-unit { width: 6.5rem; }
+  col.c-price { width: 9rem; }
+  col.c-tax { width: 15rem; }
+  col.c-net { width: 8rem; }
+  @media (max-width: 1599.98px) {
+    col.c-toggle, col.c-remove { width: 2.25rem; }
+    col.c-quantity { width: 4.5rem; }
+    col.c-unit { width: 5rem; }
+    col.c-price { width: 6.5rem; }
+    col.c-tax { width: 7.5rem; }
+    col.c-net { width: 6.5rem; }
+    th { white-space: normal; }
+  }
+
+  th, td { padding: 0.25rem; vertical-align: top; }
+  thead th { color: var(--ui-muted); font-size: 0.8125rem; font-weight: 600; white-space: nowrap; border-bottom: 1px solid var(--ui-line); }
+  tbody tr:last-child > * { border-bottom: 1px solid var(--ui-line); padding-bottom: 0.5rem; }
+  tbody tr:first-child > * { padding-top: 0.5rem; }
+  .line-group th { font-weight: 650; background: var(--ui-ground); }
+  .line-net { padding-top: 0.75rem; text-align: right; white-space: nowrap; font-weight: 600; }
+  .line-summary { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ui-muted); font-size: 0.8125rem; }
+  .line-details > td { padding-bottom: 0.75rem; }
+}
+
+// ── Summen in der Infospalte ─────────────────────────────────────────
+.sum-table {
+  width: 100%;
+  td { padding: 0.2rem 0; vertical-align: top; }
+  td:last-child { padding-left: 0.75rem; text-align: right; white-space: nowrap; }
+  .sum-note { display: block; color: var(--ui-muted); font-size: 0.8125rem; }
+  .sum-total td { padding-top: 0.5rem; border-top: 1px solid #d3d8e0; font: 650 1.25rem var(--ui-font-display); }
+}
+
+// ── Belegkette im Linienplan ─────────────────────────────────────────
+.doc-chain {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+
+  a { display: block; padding: 0.2rem 0.8rem; border-radius: 2rem; background: var(--ui-paper); color: var(--ui-text); text-decoration: none; }
+  a.active { box-shadow: 0 0 0 2px var(--brand-ink); font-weight: 650; }
 }

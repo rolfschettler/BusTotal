@@ -11,6 +11,7 @@ Die Liste zeigt 20 Fahrer pro Seite, sortiert nach Nachname.
 - **Fristen:** Der Filter zeigt Fahrer mit **abgelaufenen** oder **bald fälligen** [Fristen](#fristen).
 - **Archivierte:** Mit diesem Häkchen sehen Sie statt der aktiven die [archivierten](#archivieren) Fahrer.
 - **Heute:** „Abwesend“ steht bei Fahrern, die heute Urlaub haben, krank oder in Schulung sind (siehe [Abwesenheiten](#abwesenheiten)).
+- **Öffnen und archivieren:** Ein Klick auf eine Zeile öffnet den Fahrer, das **Archiv-Symbol** rechts archiviert ihn nach einer Rückfrage. Siehe auch [Listen bedienen](/hilfe/start#bedienung).
 - **Sortieren:** Ein Klick auf eine Spaltenüberschrift sortiert die ganze Liste, ein zweiter Klick dreht die Richtung um. Bei „Nächste Frist“ stehen die dringendsten Fahrer oben, Fahrer ohne Frist am Ende.
 
 ## Fahrer anlegen {#fahrer-anlegen}
@@ -55,7 +56,7 @@ Auf der [Startseite](/hilfe/start#startseite) zeigt die Kachel „Fällige Frist
 Die Fahrerkarte muss nach den Sozialvorschriften **spätestens alle 28 Tage** ausgelesen werden, sonst können ältere Daten überschrieben werden. Die Software **liest die Karte nicht aus**, sie erinnert nur:
 
 - Tragen Sie im Feld **Auslesen bis** ein, bis wann spätestens ausgelesen sein muss.
-- Mit **Karte ausgelesen** (Tastenleiste, rechts) tragen Sie **heute** als Tag des Auslesens ein. Die nächste Frist liegt dann 28 Tage später. Die Taste ist erst nach dem Speichern aktiv.
+- Mit **Karte ausgelesen** (oben rechts) tragen Sie **heute** als Tag des Auslesens ein. Die nächste Frist liegt dann 28 Tage später. Die Taste ist erst nach dem Speichern aktiv.
 - Die Frist erscheint auf der Startseite, sobald nur noch **7 Tage** bleiben.
 
 > Ob die Pflicht für Ihre Fahrer und Einsatzarten gilt und wie lange die Daten aufzubewahren sind, klären Sie mit Ihrem Verband oder der Gewerbeaufsicht.

@@ -1,4 +1,6 @@
-<h1 class="h3 mb-3">Mein Konto</h1>
+<div class="form-page">
+<div class="form-head"><h1>Mein Konto</h1></div>
+</div>
 
 <!-- Formular-Muster (docs/ClaudeCodePatterns/EditFormPattern.md) -->
 <div class="form-page">
@@ -14,17 +16,17 @@
   }
 
   @if (done() && !forced()) {
-    <div class="alert alert-success py-2 small" role="status">Passwort geändert. Auf allen anderen Geräten wurden Sie abgemeldet.</div>
+    <div class="alert alert-success py-2" role="status">Passwort geändert. Auf allen anderen Geräten wurden Sie abgemeldet.</div>
   }
   @if (error()) {
-    <div class="alert alert-danger py-2 small" role="alert">{{ error() }}</div>
+    <div class="alert alert-danger py-2" role="alert">{{ error() }}</div>
   }
 
   <form id="passwordForm" class="form-area" [formGroup]="form" (ngSubmit)="submit()" novalidate>
     <input type="text" name="username" class="visually-hidden" autocomplete="username" tabindex="-1" aria-hidden="true"
            readonly [value]="user()?.email ?? ''" />
 
-    <div class="row g-3">
+    <div class="row g-2">
       <div class="col-12">
         <div class="section-title">Passwort ändern <app-help-link topic="betreiber" anchor="passwort" label="Passwort ändern" /></div>
       </div>
@@ -53,16 +55,11 @@
     </div>
   </form>
 
-  <div class="form-bar">
+  <div class="form-bar" [class.d-none]="!form.dirty">
     <button type="submit" form="passwordForm" class="btn btn-primary" [disabled]="busy()">
       @if (busy()) { <span class="spinner-border spinner-border-sm me-2"></span> }
       {{ busy() ? 'Speichert …' : 'Passwort ändern' }}
     </button>
-    @if (!forced()) {
-      <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
-    }
-    <div class="form-bar-right">
-      <button type="button" class="btn btn-outline-secondary" [disabled]="!form.dirty" [attr.title]="form.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancel()">Abbrechen</button>
-    </div>
+    <button type="button" class="btn btn-outline-secondary" [disabled]="!form.dirty" [attr.title]="form.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancel()">Verwerfen</button>
   </div>
 </div>

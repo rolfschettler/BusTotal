@@ -1,83 +1,51 @@
 <!-- Tabellen-Muster, siehe docs/ClaudeCodePatterns/TableViewPattern.md. Die Optik kommt aus src/styles/_list-page.scss. -->
+<div class="list-head">
+  <h1 class="list-title">Reisen</h1>
+  @if (loaded()) { <span class="list-count">{{ total() }}</span> }
 
-<div class="page-header">
-  <div class="row g-2 align-items-center">
-    <div class="col-auto">
-      <div class="d-flex align-items-center gap-2">
-        <h5 class="page-title mb-0">Reisen</h5>
-        @if (loaded()) {
-          <span class="badge rounded-pill record-count d-none d-sm-inline-flex">{{ total() }} {{ total() === 1 ? 'Reise' : 'Reisen' }}</span>
-        }
-      </div>
-    </div>
-    <div class="col-12 col-sm-auto ms-sm-auto">
-      <div class="row row-cols-1 row-cols-sm-auto g-1 justify-content-end align-items-center header-ctrl">
-        <div class="col">
-          <button type="button" class="btn btn-sm btn-header w-100" (click)="refresh()" [disabled]="loading()">
-            <i class="bi bi-arrow-clockwise"></i><span class="ms-1">Aktualisieren</span>
-          </button>
-        </div>
-        @if (canPlan()) {
-          <div class="col">
-            <a routerLink="/reisen/neu" class="btn btn-sm btn-header-new w-100">
-              <i class="bi bi-signpost-split"></i><span class="ms-1">Neue Reise planen</span>
-            </a>
-          </div>
-        }
-      </div>
-    </div>
+  <input type="search" class="form-control list-search" [class.filter-active]="q.trim() !== ''" autocomplete="off"
+         appListSearch [nav]="nav" [pending]="q.trim() !== shownQuery() || loading()" (searchNow)="searchNow()"
+         placeholder="Suche: Reise, Nachname, Ort …" title="Mit Komma nach Nachname und Vorname: Mustermann,Max" aria-label="Suche" [(ngModel)]="q" (ngModelChange)="onSearch()" />
+  <div class="btn-group" role="group" aria-label="Ansicht">
+    @for (v of views; track v.value) {
+      <button type="button" class="btn btn-outline-secondary" [class.active]="view() === v.value"
+              [attr.aria-pressed]="view() === v.value" (click)="showView(v.value)">{{ v.label }}</button>
+    }
+  </div>
+
+  <div class="list-actions">
+    <button type="button" class="btn btn-outline-secondary" (click)="refresh()" [disabled]="loading()" title="Liste neu laden">
+      <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Aktualisieren
+    </button>
+    @if (canPlan()) {
+      <a routerLink="/reisen/neu" class="btn btn-primary"><i class="bi bi-signpost-split me-1" aria-hidden="true"></i>Neue Reise planen</a>
+    }
   </div>
 </div>
 
-<div class="page-content">
-
-  <div class="filter-bar" appStickyFilterBar>
-    <div class="row g-2 align-items-center">
-      <div class="col-12 col-sm-6 col-lg-4">
-        <input type="search" class="form-control form-control-sm" [class.filter-active]="q.trim() !== ''"
-               placeholder="Suche: Reise, Nachname, Ort …" title="Mit Komma nach Nachname und Vorname: Mustermann,Max" aria-label="Suche"
-               [(ngModel)]="q" (ngModelChange)="onSearch()" />
-      </div>
-      <div class="col-12 col-sm-auto small text-body-secondary">
-        Eine Reise planen Sie Schritt für Schritt: Strecken hinzufügen, danach das Angebot erstellen.
-      </div>
-      <div class="col-12">
-        <div class="btn-group btn-group-sm" role="group" aria-label="Ansicht">
-          @for (v of views; track v.value) {
-            <button type="button" class="btn" [class.btn-primary]="view() === v.value" [class.btn-outline-primary]="view() !== v.value"
-                    [attr.aria-pressed]="view() === v.value" (click)="showView(v.value)">{{ v.label }}</button>
-          }
-        </div>
-      </div>
-    </div>
-  </div>
-
+<div class="list-body" [class.dimmed]="loading()" appRowNav #nav="appRowNav" (rowSelect)="select($event)" (rowOpen)="open($event)">
   @if (error()) {
-    <div class="alert alert-danger py-2 mb-3" role="alert">{{ error() }}</div>
+    <div class="alert alert-danger py-2" role="alert">{{ error() }}</div>
   }
 
   @if (otherMatches() > 0) {
-    <div class="alert alert-info py-2 small mb-3" role="status">
+    <div class="alert alert-info py-2" role="status">
       {{ otherMatches() }} {{ otherMatches() === 1 ? 'weiterer Treffer' : 'weitere Treffer' }} in anderen Ansichten.
       <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline" (click)="showView('alle')">Alle anzeigen</button>
     </div>
   }
 
-  <div class="card table-card rounded-3" [class.dimmed]="loading()">
-    <table class="table table-hover table-sm align-middle data-table mb-0">
+  <table class="data-table" style="min-width: 960px">
+    <colgroup>
+      <col>
+      <col style="width: 26%">
+      <col style="width: 200px">
+      <col style="width: 200px">
+      <col style="width: 140px">
+    </colgroup>
 
-      <colgroup>
-        <col style="width:76px">   <!-- Aktionen -->
-        <col style="width:260px">  <!-- Reise -->
-        <col style="width:230px">  <!-- Kunde -->
-        <col style="width:150px">  <!-- Zeitraum -->
-        <col style="width:160px">  <!-- Stand -->
-        <col style="width:110px">  <!-- Betrag -->
-      </colgroup>
-
-      <thead>
+    <thead>
         <tr>
-          <th class="col-actions"><span class="visually-hidden">Aktionen</span></th>
           <th>Reise</th>
           <th>Kunde</th>
           <th>Zeitraum</th>
@@ -88,12 +56,7 @@
 
       <tbody>
         @for (j of rows(); track j.id) {
-          <tr (click)="select(j.id)" [class.row-current]="j.id === currentId()" [appRevealCurrent]="j.id === currentId()">
-            <td class="col-actions">
-              <a class="btn-action edit" [routerLink]="['/reisen', j.id]" title="Öffnen" [attr.aria-label]="'Reise ' + j.title + ' öffnen'">
-                <i class="bi bi-eye"></i>
-              </a>
-            </td>
+          <tr [attr.data-row-id]="j.id" [class.row-current]="j.id === currentId()" [appRevealCurrent]="j.id === currentId()">
             <td>
               <a [routerLink]="['/reisen', j.id]" class="fw-semibold text-decoration-none"><app-highlight [text]="j.title" [query]="shownQuery()" mode="start" /></a>
               <div class="small text-body-secondary">
@@ -130,7 +93,7 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="6" class="text-center text-secondary py-5 small">
+            <td colspan="5" class="text-center text-body-secondary py-5">
               @if (!loaded()) {
                 Daten werden geladen …
               } @else if (shownQuery()) {
@@ -144,17 +107,17 @@
         }
       </tbody>
     </table>
-  </div>
+</div>
 
-  <div class="pager">
-    <span>{{ total() }} {{ total() === 1 ? 'Reise' : 'Reisen' }}</span>
-    <span class="ms-auto"></span>
-    <button type="button" class="btn btn-sm btn-outline-primary" (click)="go(page() - 1)" [disabled]="page() <= 1 || loading()">
-      <i class="bi bi-chevron-left"></i> Zurück
-    </button>
-    <span>Seite {{ page() }} von {{ lastPage() }}</span>
-    <button type="button" class="btn btn-sm btn-outline-primary" (click)="go(page() + 1)" [disabled]="page() >= lastPage() || loading()">
-      Weiter <i class="bi bi-chevron-right"></i>
-    </button>
-  </div>
+<div class="list-foot">
+  <span>{{ total() }} {{ total() === 1 ? 'Reise' : 'Reisen' }}</span>
+  <span class="list-keys">Pfeiltasten wählen, Enter öffnet</span>
+  <span class="ms-auto"></span>
+  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="go(page() - 1)" [disabled]="page() <= 1 || loading()">
+    <i class="bi bi-chevron-left" aria-hidden="true"></i> Zurück
+  </button>
+  <span>Seite {{ page() }} von {{ lastPage() }}</span>
+  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="go(page() + 1)" [disabled]="page() >= lastPage() || loading()">
+    Weiter <i class="bi bi-chevron-right" aria-hidden="true"></i>
+  </button>
 </div>

@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { httpErrorText } from '../../core/http-error';
 import { JOURNEY_VIEWS, JourneyRow, JourneyService, JourneyView } from '../../core/journey.service';
@@ -10,7 +10,7 @@ import { ListMemory } from '../../core/list-memory.service';
 import { CustomerNameComponent } from '../../shared/customer-name.component';
 import { HighlightComponent } from '../../shared/highlight.component';
 import { RevealCurrentDirective } from '../../shared/reveal-current.directive';
-import { StickyFilterBarDirective } from '../../shared/sticky-filter-bar.directive';
+import { ListSearchDirective, RowNavDirective } from '../../shared/row-nav.directive';
 import { formatAmount } from '../documents/document-calc';
 
 const KEY = 'reisen';
@@ -38,12 +38,13 @@ export const STAGE_LABELS: Record<string, string> = {
  */
 @Component({
   selector: 'app-journey-list',
-  imports: [DatePipe, FormsModule, RouterLink, CustomerNameComponent, HighlightComponent, StickyFilterBarDirective, RevealCurrentDirective],
+  imports: [DatePipe, FormsModule, RouterLink, CustomerNameComponent, HighlightComponent, RowNavDirective, ListSearchDirective, RevealCurrentDirective],
   templateUrl: './journey-list.component.html',
-  host: { class: 'list-page', style: '--sheet-w: 986px' },
+  host: { class: 'list-page' },
 })
 export class JourneyListComponent implements OnInit {
   private api = inject(JourneyService);
+  private router = inject(Router);
   private memory = inject(ListMemory);
   private auth = inject(AuthService);
 
@@ -92,12 +93,24 @@ export class JourneyListComponent implements OnInit {
     this.memory.select(KEY, id);
   }
 
+  open(id: string) {
+    void this.router.navigate(['/reisen', id]);
+  }
+
+  /** Enter in der Suche, bevor die Verzögerung abgelaufen ist: sofort suchen. */
+  searchNow() {
+    clearTimeout(this.timer);
+    if (this.q.trim() !== this.shownQuery()) this.filterChanged();
+  }
+
   onSearch() {
     clearTimeout(this.timer);
-    this.timer = setTimeout(() => {
-      this.page.set(1);
-      this.load();
-    }, 300);
+    this.timer = setTimeout(() => this.filterChanged(), 300);
+  }
+
+  filterChanged() {
+    this.page.set(1);
+    this.load();
   }
 
   refresh() {

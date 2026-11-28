@@ -1,18 +1,25 @@
 <!-- Formular-Muster, siehe docs/ClaudeCodePatterns/EditFormPattern.md. Die Optik kommt aus src/styles/_edit-form.scss. -->
-<a routerLink="/fahrer" class="small text-decoration-none">‹ Alle Fahrer</a>
-
-<div class="mb-3">
-  @if (driver(); as d) {
-    <h1 class="h3 mb-1">{{ d.first_name }} {{ d.last_name }}</h1>
-    <p class="mb-0 small text-body-secondary">
-      Personalnr. <code>{{ d.personnel_number }}</code>
-      @if (archived()) { <span class="badge text-bg-danger ms-2">Archiviert</span> }
-      @if (d.is_demo) { <span class="badge text-bg-info ms-2" title="Erfundener Datensatz für Schulung, Messe oder Tests. Entfernen: php artisan bustotal:demo-daten --art=fuhrpark --entfernen">Demo</span> }
-      @if (d.absent_today) { <span class="badge text-bg-secondary ms-2" title="Hat heute Urlaub, ist krank oder in Schulung">Heute abwesend</span> }
-    </p>
-  } @else {
-    <h1 class="h3 mb-0">Neuer Fahrer</h1>
-  }
+<div class="form-head">
+  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="back()">
+    <i class="bi bi-chevron-left" aria-hidden="true"></i> Zurück
+  </button>
+  <h1>{{ driver() ? driver()!.first_name + ' ' + driver()!.last_name : (id ? 'Fahrer' : 'Neuer Fahrer') }}</h1>
+  @if (archived()) { <span class="flag flag-danger">Archiviert</span> }
+  @if (driver()?.absent_today) { <span class="flag flag-warn" title="Hat heute Urlaub, ist krank oder in Schulung">Heute abwesend</span> }
+  @if (driver()?.is_demo) { <span class="flag" title="Erfundener Datensatz für Schulung, Messe oder Tests. Entfernen: php artisan bustotal:demo-daten --art=fuhrpark --entfernen">Demo</span> }
+  @if (driver(); as d) { <p class="form-meta">Personalnr. {{ d.personnel_number }}</p> }
+  <div class="head-actions">
+    @if (driver() && id && !archived()) {
+      <button type="button" class="btn btn-outline-secondary" (click)="archive()"><i class="bi bi-archive me-1" aria-hidden="true"></i>Archivieren</button>
+      <button type="button" class="btn btn-outline-primary" [disabled]="form.dirty || readingBusy()"
+              [attr.title]="form.dirty ? 'Bitte zuerst speichern' : 'Trägt heute als Tag des Auslesens ein. Die nächste Frist liegt 28 Tage später.'" (click)="markRead()">
+        <i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Karte ausgelesen
+      </button>
+    }
+    @if (archived() && isAdmin()) {
+      <button type="button" class="btn btn-outline-secondary" (click)="restore()"><i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>Wiederherstellen</button>
+    }
+  </div>
 </div>
 
 @if (loading()) {
@@ -20,23 +27,24 @@
 } @else {
 
 @if (id) {
-  <ul class="nav nav-tabs mb-3" role="tablist">
-    <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'stamm'" (click)="show('stamm')">Stammdaten</button></li>
-    <li class="nav-item"><button class="nav-link" role="tab" [class.active]="tab() === 'abwesenheiten'" (click)="show('abwesenheiten')">Abwesenheiten ({{ driver()?.absences?.length ?? 0 }})</button></li>
-  </ul>
+  <div class="app-tabs" role="tablist">
+    <button type="button" class="app-tab" role="tab" [class.active]="tab() === 'stamm'" [attr.aria-selected]="tab() === 'stamm'" (click)="show('stamm')">Stammdaten</button>
+    <button type="button" class="app-tab" role="tab" [class.active]="tab() === 'abwesenheiten'" [attr.aria-selected]="tab() === 'abwesenheiten'" (click)="show('abwesenheiten')">Abwesenheiten ({{ driver()?.absences?.length ?? 0 }})</button>
+  </div>
 }
 
 @if (message(); as m) {
-  <div class="alert py-2 small" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
+  <div class="alert py-2" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">{{ m.text }}</div>
 }
 
 @switch (tab()) {
   @case ('stamm') {
     <form id="driverForm" class="form-area" [formGroup]="form" (ngSubmit)="save()" novalidate>
-      <div class="row g-3">
-
-        <div class="col-12"><div class="section-title">Person</div></div>
-
+      <div class="form-columns">
+      <div class="form-col">
+        <section class="form-section">
+          <h2 class="section-title">Person</h2>
+          <div class="row g-2">
         <div class="col-12 col-lg-4">
           <label class="form-label" for="personnel_number">Personalnr. <span class="text-danger">*</span></label>
           <input class="form-control" id="personnel_number" formControlName="personnel_number" [class.is-invalid]="invalid('personnel_number')" />
@@ -59,9 +67,11 @@
           <input type="date" class="form-control" id="birth_date" formControlName="birth_date" [class.is-invalid]="!!fieldErrors()['birth_date']" />
           <div class="invalid-feedback">{{ fieldErrors()['birth_date'] }}</div>
         </div>
-
-        <div class="col-12"><div class="section-title">Kontakt</div></div>
-
+          </div>
+        </section>
+        <section class="form-section">
+          <h2 class="section-title">Kontakt</h2>
+          <div class="row g-2">
         <div class="col-12 col-lg-6">
           <label class="form-label" for="email">E-Mail</label>
           <input type="email" class="form-control" id="email" formControlName="email" [class.is-invalid]="invalid('email')" />
@@ -88,9 +98,11 @@
           <label class="form-label" for="city">Ort</label>
           <input class="form-control" id="city" formControlName="city" />
         </div>
-
-        <div class="col-12"><div class="section-title">Beschäftigung</div></div>
-
+          </div>
+        </section>
+        <section class="form-section">
+          <h2 class="section-title">Beschäftigung</h2>
+          <div class="row g-2">
         <div class="col-12 col-lg-4">
           <label class="form-label" for="employment_type">Beschäftigung</label>
           <select class="form-select" id="employment_type" formControlName="employment_type">
@@ -110,9 +122,13 @@
           <div class="invalid-feedback">{{ fieldErrors()['hourly_rate'] || 'Bitte einen Betrag von 0 bis 999 angeben.' }}</div>
           <div class="form-text">in Euro, für die Kalkulation</div>
         </div>
-
-        <div class="col-12"><div class="section-title">Führerschein</div></div>
-
+          </div>
+        </section>
+      </div>
+      <div class="form-col">
+        <section class="form-section">
+          <h2 class="section-title">Führerschein</h2>
+          <div class="row g-2">
         @for (c of options()?.license_classes ?? []; track c.value) {
           <div class="col-6 col-lg-3">
             <div class="form-check">
@@ -131,9 +147,11 @@
           <label class="form-label" for="driver_card_number">Fahrerkartennr.</label>
           <input class="form-control" id="driver_card_number" formControlName="driver_card_number" />
         </div>
-
-        <div class="col-12"><div class="section-title">Fristen <app-help-link topic="fahrer" anchor="fristen" label="Fristen und ihre Quellen" /></div></div>
-
+          </div>
+        </section>
+        <section class="form-section">
+          <h2 class="section-title">Fristen <app-help-link topic="fahrer" anchor="fristen" label="Fristen und ihre Quellen" /></h2>
+          <div class="row g-2">
         @for (d of deadlineFields; track d.field) {
           <div class="col-12 col-lg-4">
             <label class="form-label" [for]="d.field">{{ d.label }}<app-help-link topic="fahrer" [anchor]="d.help" [label]="d.hint + ' und Quellen'" /></label>
@@ -146,50 +164,40 @@
             }
           </div>
         }
-
-        <div class="col-12"><div class="section-title">Notizen (intern)</div></div>
-
+          </div>
+        </section>
+        <section class="form-section">
+          <h2 class="section-title">Notizen (intern)</h2>
+          <div class="row g-2">
         <div class="col-12">
           <label class="form-label" for="notes">Notizen</label>
           <textarea class="form-control" id="notes" rows="4" formControlName="notes"></textarea>
         </div>
+          </div>
+        </section>
+      </div>
       </div>
     </form>
 
-    <!-- Tastenleiste (Muster): links Speichern, Zurück; rechts seltene Aktion, Abbrechen. Klebt unten. -->
-    <div class="form-bar">
-      @if (!archived()) {
+    @if (!archived()) {
+      <div class="form-bar" [class.d-none]="id && !form.dirty">
         <button type="submit" form="driverForm" class="btn btn-primary" [disabled]="saving()">
           @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
-          {{ saving() ? 'Speichert …' : id ? 'Speichern' : 'Fahrer anlegen' }}
+          {{ saving() ? 'Speichert …' : id ? 'Speichern' : 'Fahrer anlegen' }}<kbd>Strg+S</kbd>
         </button>
-      }
-      <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
-      @if (form.dirty && !archived()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
-      <div class="form-bar-right">
-        @if (id && driver() && !archived()) {
-          <button type="button" class="btn btn-outline-secondary" [disabled]="form.dirty || readingBusy()"
-                  [attr.title]="form.dirty ? 'Bitte zuerst speichern' : 'Trägt heute als Tag des Auslesens ein. Die nächste Frist liegt 28 Tage später.'" (click)="markRead()">
-            <i class="bi bi-check2-circle me-1"></i>Karte ausgelesen
-          </button>
-          <button type="button" class="btn btn-outline-secondary" (click)="archive()"><i class="bi bi-archive me-1"></i>Archivieren</button>
-        }
-        @if (archived() && isAdmin()) {
-          <button type="button" class="btn btn-outline-secondary" (click)="restore()"><i class="bi bi-arrow-counterclockwise me-1"></i>Wiederherstellen</button>
-        }
-        @if (!archived()) {
-          <button type="button" class="btn btn-outline-secondary" [disabled]="!form.dirty" [attr.title]="form.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancel()">Abbrechen</button>
-        }
+        <button type="button" class="btn btn-outline-secondary" [disabled]="!form.dirty" [attr.title]="form.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancel()">Verwerfen</button>
+        @if (form.dirty) { <span class="form-bar-hint ms-auto">Ungespeicherte Änderungen</span> }
       </div>
-    </div>
+    }
   }
 
   @case ('abwesenheiten') {
     @if (!absenceEdit()) {
-      @if (!archived()) { <button class="btn btn-primary mb-3" (click)="newAbsence()">Abwesenheit hinzufügen</button> }
-      <div class="card">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light"><tr><th>Art</th><th>Von</th><th>Bis</th><th>Tage</th><th>Notiz</th><th></th></tr></thead>
+      <div class="form-area pt-3">
+      @if (!archived()) { <button type="button" class="btn btn-primary mb-3" (click)="newAbsence()"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Abwesenheit hinzufügen</button> }
+      <div class="table-responsive">
+        <table class="data-table" style="min-width: 640px">
+          <thead><tr><th>Art</th><th>Von</th><th>Bis</th><th>Tage</th><th>Notiz</th><th style="width: 90px"><span class="visually-hidden">Aktionen</span></th></tr></thead>
           <tbody>
             @for (a of driver()?.absences; track a.id) {
               <tr>
@@ -198,10 +206,10 @@
                 <td>{{ date(a.end_date) }}</td>
                 <td>{{ days(a) }}</td>
                 <td>{{ a.notes }}</td>
-                <td class="text-end text-nowrap">
+                <td class="col-actions">
                   @if (!archived()) {
-                    <button class="btn btn-sm btn-outline-secondary me-1" (click)="editAbsence(a)">Bearbeiten</button>
-                    <button class="btn btn-sm btn-outline-danger" (click)="deleteAbsence(a)">Löschen</button>
+                    <button type="button" class="btn-action" (click)="editAbsence(a)" title="Bearbeiten" aria-label="Abwesenheit bearbeiten"><i class="bi bi-pencil" aria-hidden="true"></i></button>
+                    <button type="button" class="btn-action delete" (click)="deleteAbsence(a)" title="Löschen" aria-label="Abwesenheit löschen"><i class="bi bi-trash" aria-hidden="true"></i></button>
                   }
                 </td>
               </tr>
@@ -211,10 +219,11 @@
           </tbody>
         </table>
       </div>
+      </div>
     } @else {
       @if (absenceEdit(); as a) {
         <form id="absenceForm" class="form-area" #af="ngForm" (ngSubmit)="saveAbsence(af)" novalidate [class.was-validated]="absenceSubmitted()">
-          <div class="row g-3">
+          <div class="row g-2">
             <div class="col-12"><div class="section-title">{{ a.id ? 'Abwesenheit bearbeiten' : 'Neue Abwesenheit' }}</div></div>
 
             <div class="col-12 col-lg-4">
@@ -245,10 +254,8 @@
         </form>
 
         <div class="form-bar">
-          <button type="submit" form="absenceForm" class="btn btn-primary">Speichern</button>
-          <div class="form-bar-right">
-            <button type="button" class="btn btn-outline-secondary" (click)="absenceEdit.set(null)">Abbrechen</button>
-          </div>
+          <button type="submit" form="absenceForm" class="btn btn-primary">Speichern<kbd>Strg+S</kbd></button>
+          <button type="button" class="btn btn-outline-secondary" (click)="absenceEdit.set(null)">Abbrechen</button>
         </div>
       }
     }

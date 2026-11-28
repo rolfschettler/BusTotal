@@ -1,83 +1,109 @@
 <!-- Formular-Muster, siehe docs/ClaudeCodePatterns/EditFormPattern.md. Die Optik kommt aus src/styles/_edit-form.scss. -->
-<a routerLink="/belege" class="small text-decoration-none">‹ Alle Belege</a>
-
-<div class="mb-3">
+<div class="form-head">
+  <button type="button" class="btn btn-sm btn-outline-secondary" (click)="back()">
+    <i class="bi bi-chevron-left" aria-hidden="true"></i> Zurück
+  </button>
   @if (doc(); as d) {
-    <h1 class="h3 mb-1">
-      {{ typeLabel(d.type) }} @if (d.number) { <code>{{ d.number }}</code> } @else { <span class="text-body-secondary">(Entwurf)</span> }
-    </h1>
-    <p class="mb-0 small text-body-secondary">
-      @if (d.status === 'entwurf') {
-        <span class="badge text-bg-warning">Entwurf</span>
-        <app-help-link topic="belege" anchor="entwurf-und-festschreiben" label="Entwurf und Festschreiben" />
-      } @else if (cancelled()) {
-        <span class="badge text-bg-secondary">Storniert</span>
-        @if (d.cancelled_by; as c) { durch <a [routerLink]="['/belege', c.id]">{{ c.number }}</a> }
-      } @else {
-        <span class="badge text-bg-success">Festgeschrieben</span>
-        @if (d.einvoice_format) { <span class="badge text-bg-info">E-Rechnung</span> }
-        <app-help-link topic="belege" anchor="entwurf-und-festschreiben" label="Entwurf und Festschreiben" />
-      }
-      @if (d.source; as s) {
-        @if (d.cancels_id) { · Storno zu } @else { · aus }
-        <a [routerLink]="['/belege', s.id]">{{ typeLabel(s.type) }} {{ s.number }}</a>
-      }
-    </p>
-  } @else if (id) {
-    <h1 class="h3 mb-0">Beleg</h1>
+    <h1>{{ typeLabel(d.type) }} {{ d.number ?? '(Entwurf)' }}</h1>
+    @if (d.status === 'entwurf') {
+      <span class="flag flag-warn">Entwurf</span>
+    } @else if (cancelled()) {
+      <span class="flag">Storniert</span>
+    } @else {
+      <span class="flag flag-ok">Festgeschrieben</span>
+      @if (d.einvoice_format) { <span class="flag">E-Rechnung</span> }
+    }
+    <app-help-link topic="belege" anchor="entwurf-und-festschreiben" label="Entwurf und Festschreiben" />
+    @if (d.source || d.cancelled_by) {
+      <p class="form-meta">
+        @if (cancelled() && d.cancelled_by; as c) { Storniert durch <a [href]="'/belege/' + c.id" (click)="openDocument(c.id, $event)">{{ c.number }}</a>. }
+        @if (d.source; as s) {
+          {{ d.cancels_id ? 'Storno zu' : 'Entstanden aus' }} <a [href]="'/belege/' + s.id" (click)="openDocument(s.id, $event)">{{ typeLabel(s.type) }} {{ s.number }}</a>
+        }
+      </p>
+    }
   } @else {
-    <h1 class="h3 mb-0">Neuer Beleg</h1>
+    <h1>{{ id ? 'Beleg' : 'Neuer Beleg' }}</h1>
+  }
+  <!-- Genau eine gefüllte Taste: der nächste Schritt. Gespeichert wird in der Leiste unten. -->
+  @if (id && doc()) {
+    <div class="head-actions">
+      @if (readonly()) {
+    @for (t of followUpTypes(); track t) {
+      @if (doc()?.existing_followups?.[t]; as ex) {
+        <!-- Diese Art gibt es aus diesem Beleg nur einmal: statt der Taste ein Verweis auf den vorhandenen Beleg -->
+        <span class="small text-body-secondary">
+          {{ typeLabel(t) }} vorhanden:
+          <a [href]="'/belege/' + ex.id" (click)="openDocument(ex.id, $event)">{{ ex.number ?? 'Entwurf' }}</a>
+        </span>
+      } @else {
+        <button type="button" class="btn" [class.btn-primary]="nextAction() === 'followup'" [class.btn-outline-secondary]="nextAction() !== 'followup'"
+                [disabled]="working()" (click)="convertTo(t)">
+          <i class="bi bi-arrow-right-circle me-1" aria-hidden="true"></i>{{ typeLabel(t) }} erstellen
+        </button>
+      }
+    }
+    @if (doc()?.type === 'angebot' || doc()?.type === 'auftragsbestaetigung') {
+      <!-- Warum hier nur bestimmte Folgebelege angeboten werden -->
+      <app-help-link topic="belege" anchor="rechnung-nach-ab" label="Folgebelege: Warum keine Rechnung?" />
+    }
+      }
+      <button type="button" class="btn" [class.btn-primary]="nextAction() === 'print'" [class.btn-outline-secondary]="nextAction() !== 'print'"
+              [attr.title]="form.dirty ? 'Zeigt den gespeicherten Stand. Ungespeicherte Änderungen bitte zuerst speichern.' : 'Druckvorschau öffnen'" (click)="openPdf()">
+        <i class="bi bi-printer me-1" aria-hidden="true"></i>Drucken
+      </button>
+      @if (!readonly() && canFinalize() && !blockedByCancellation()) {
+        <button type="button" class="btn" [class.btn-primary]="nextAction() === 'finalize'" [class.btn-outline-secondary]="nextAction() !== 'finalize'"
+                [disabled]="saving() || working()" (click)="finalize()">
+          <i class="bi bi-lock me-1" aria-hidden="true"></i>Festschreiben
+        </button>
+      }
+    </div>
   }
 </div>
 
 @if (doc()?.journey; as j) {
-  <!-- Reise: Der Beleg gehört zu einer Reise. Die Leiste zeigt die Kette der Belege und den nächsten Schritt. -->
-  <nav class="bg-white border rounded px-3 py-2 mb-3" aria-label="Reise">
+  <!-- Reise: Wo steht der Vorgang, welche Belege gehören dazu, was kommt als Nächstes -->
+  <app-route-line [steps]="line()">
     <div class="d-flex flex-wrap align-items-baseline gap-2">
-      <span class="small text-body-secondary">Reise</span>
-      <span class="fw-semibold">{{ j.title }}</span>
-      @if (journeyCancelled()) { <span class="badge text-bg-danger">Abgesagt</span> }
-      <a class="small ms-auto" [routerLink]="['/reisen', j.id]">{{ journeyCancelled() ? 'Reise öffnen' : 'Reise öffnen: Strecken ändern' }}</a>
+      <span class="text-body-secondary">Reise</span>
+      <a class="fw-semibold" [routerLink]="['/reisen', j.id]" [title]="journeyCancelled() ? 'Reise öffnen' : 'Reise öffnen und Strecken ändern'">{{ j.title }}</a>
+      @if (journeyCancelled()) { <span class="flag flag-danger">Abgesagt</span> }
       @if (j.date_from) {
-        <span class="small text-body-secondary">
-          · {{ j.date_from | date: 'dd.MM.yyyy' }}@if (j.date_to && j.date_to !== j.date_from) { – {{ j.date_to | date: 'dd.MM.yyyy' }} }
-        </span>
+        <span class="text-body-secondary">{{ j.date_from | date: 'dd.MM.yyyy' }}@if (j.date_to && j.date_to !== j.date_from) { – {{ j.date_to | date: 'dd.MM.yyyy' }} }</span>
       }
     </div>
-    <ol class="list-unstyled d-flex flex-wrap align-items-center gap-2 mb-0 mt-2">
-      @for (x of j.documents; track x.id; let last = $last) {
-        <li class="d-flex align-items-center gap-2">
-          <a [routerLink]="['/belege', x.id]" class="badge text-decoration-none"
-             [class.text-bg-primary]="x.id === doc()!.id" [class.text-bg-light]="x.id !== doc()!.id" [class.border]="x.id !== doc()!.id"
-             [class.text-decoration-line-through]="x.cancelled" [attr.aria-current]="x.id === doc()!.id ? 'step' : null">
+    <ol class="doc-chain" aria-label="Belege der Reise">
+      @for (x of j.documents; track x.id) {
+        <li>
+          <a [href]="'/belege/' + x.id" (click)="openDocument(x.id, $event)" [class.active]="x.id === doc()!.id"
+             [class.text-decoration-line-through]="x.cancelled" [attr.aria-current]="x.id === doc()!.id ? 'page' : null">
             {{ typeLabel(x.type) }} {{ x.number ?? '(Entwurf)' }}
           </a>
-          @if (!last) { <i class="bi bi-chevron-right text-body-secondary" aria-hidden="true"></i> }
         </li>
       }
     </ol>
     @if (journeyCancelled()) {
-      <div class="small text-danger mt-2">
+      <div class="text-danger">
         <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Die Reise ist seit {{ j.cancelled_on | date: 'dd.MM.yyyy' }} abgesagt. Angebot, Auftragsbestätigung und Anzahlung lassen sich nicht mehr erstellen oder festschreiben.
       </div>
     }
     @if (advance(); as a) {
-      <div class="small text-body-secondary mt-2">
-        <i class="bi bi-arrow-right-circle me-1" aria-hidden="true"></i>Nächster Schritt:
+      <div><strong>Nächster Schritt:</strong>
         @if (a.number) {
-          Anzahlung <a [routerLink]="['/belege', a.id]">{{ a.number }}</a> ist erstellt.
+          Anzahlung <a [href]="'/belege/' + a.id" (click)="openDocument(a.id, $event)">{{ a.number }}</a> ist erstellt.
         } @else {
-          Die Anzahlung ist als <a [routerLink]="['/belege', a.id]">Entwurf</a> angelegt. Bitte prüfen und festschreiben.
+          Die Anzahlung ist als <a [href]="'/belege/' + a.id" (click)="openDocument(a.id, $event)">Entwurf</a> angelegt. Bitte prüfen und festschreiben.
         }
       </div>
     }
     @if (nextStep(); as ns) {
-      <div class="small text-body-secondary mt-2"><i class="bi bi-arrow-right-circle me-1" aria-hidden="true"></i>Nächster Schritt: {{ ns }}</div>
+      <div><strong>Nächster Schritt:</strong> {{ ns }}</div>
     }
     @if (j.trip_orders; as o) {
       @if (o.count > 0) {
         <div class="small text-body-secondary mt-1">
-          <i class="bi bi-clipboard-check me-1" aria-hidden="true"></i>{{ o.count }} {{ o.count === 1 ? 'Fahrtauftrag' : 'Fahrtaufträge' }}
+          {{ o.count }} {{ o.count === 1 ? 'Fahrtauftrag' : 'Fahrtaufträge' }}
           ({{ o.to_plan }} zu disponieren, {{ o.planned }} disponiert, {{ o.issued }} ausgegeben@if (o.done) {, {{ o.done }} erledigt}@if (o.cancelled) {, {{ o.cancelled }} abgesagt}):
           <a routerLink="/fahrtauftraege" [queryParams]="{ journey_id: j.id }">Fahrtaufträge öffnen</a>
         </div>
@@ -86,15 +112,18 @@
         <div class="small text-warning-emphasis mt-1"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>Fahrtaufträge prüfen: Die Auftragsbestätigung nennt {{ o.expected }} {{ o.expected === 1 ? 'Bus' : 'Busse' }}, es gibt {{ o.count }}.</div>
       }
     }
-  </nav>
+  </app-route-line>
 }
 
 @if (loading()) {
   <div class="d-flex justify-content-center py-5"><div class="spinner-border text-primary"></div></div>
 } @else {
 
+<div class="form-cols">
+<div>
+
 @if (message(); as m) {
-  <div class="alert py-2 small" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">
+  <div class="alert py-2" [class.alert-success]="m.ok" [class.alert-danger]="!m.ok" role="status">
     {{ m.text }}
     @if (m.list?.length) {
       <ul class="mb-0 mt-1">
@@ -105,7 +134,7 @@
 }
 
 @if (!id && typeValue() === 'angebot' && canPlan()) {
-  <div class="alert alert-info py-2 small" role="note">
+  <div class="alert alert-info py-2" role="note">
     Sie legen dieses Angebot <strong>von Hand</strong> an. Für eine Fahrt mit Strecken und Preisvorschlag planen Sie eine
     <a routerLink="/reisen/neu">neue Reise</a> (Strecke für Strecke) oder berechnen eine einzelne Tour in der <a routerLink="/streckenplanung">Streckenplanung</a>.
     <app-help-link topic="fahrten" anchor="angebot" label="Zwei Wege zum Angebot" />
@@ -113,7 +142,7 @@
 }
 
 @if (doc()?.warnings?.length) {
-  <div class="alert alert-warning py-2 small" role="status">
+  <div class="alert alert-warning py-2" role="status">
     <strong>Bitte prüfen:</strong>
     <app-help-link topic="belege" anchor="fahrtart" label="Fahrtart und Steuersatz" />
     <ul class="mb-0 mt-1">
@@ -122,364 +151,378 @@
   </div>
 }
 
-<form id="belegForm" class="form-area" [formGroup]="form" (ngSubmit)="save()" novalidate>
-  <div class="row g-3">
-
-    <div class="col-12"><div class="section-title">Beleg</div></div>
-
-    <div class="col-12 col-lg-4">
-      <label class="form-label" for="type">Belegart</label>
-      <select class="form-select" id="type" formControlName="type">
-        @if (id) {
-          @for (t of types(); track t.value) { <option [value]="t.value">{{ t.label }}</option> }
-        } @else {
-          @for (t of creatable(); track t.value) { <option [value]="t.value">{{ t.label }}</option> }
-        }
-      </select>
-    </div>
-
-    <div class="col-12 col-lg-8">
-      <label class="form-label" for="customerSearch">Kunde <span class="text-danger">*</span></label>
-      @if (customer(); as c) {
-        <div class="input-group">
-          <input class="form-control" id="customerSearch" [value]="c.display_name + ' (' + c.customer_number + ')'" readonly [disabled]="readonly()" />
-          @if (!readonly()) {
-            <button type="button" class="btn btn-outline-secondary" (click)="clearCustomer()">Ändern</button>
-          }
-        </div>
-      } @else {
-        <input class="form-control" id="customerSearch" autocomplete="off" [class.is-invalid]="invalid('customer_id')"
-               [value]="customerQuery()" (input)="onCustomerSearch($any($event.target).value)" />
-        <div class="invalid-feedback">Bitte einen Kunden auswählen.</div>
-        <div class="form-text">Nachname, Kundennummer oder Ort eingeben, mindestens zwei Zeichen. Mit Komma nach Nachname und Vorname: Mustermann,Max</div>
-        @if (customerHits().length) {
-          <div class="list-group mt-1">
-            @for (h of customerHits(); track h.id) {
-              <button type="button" class="list-group-item list-group-item-action" (click)="pickCustomer(h)">
-                <app-customer-name [customer]="h" [query]="customerQuery()" [showNumber]="true" />
-              </button>
-            }
-          </div>
-        }
-      }
-    </div>
-
-    <div class="col-12">
-      <label class="form-label" for="subject">Betreff</label>
-      <input class="form-control" id="subject" formControlName="subject" />
-    </div>
-
-    <div class="col-12"><div class="section-title">Termine</div></div>
-
-    <div class="col-12 col-lg-4">
-      <label class="form-label" for="document_date">Belegdatum</label>
-      <input type="date" class="form-control" id="document_date" formControlName="document_date" />
-      <div class="form-text">Leer: Tag des Festschreibens.</div>
-    </div>
-    <div class="col-12 col-lg-4">
-      <label class="form-label" for="service_date_from">Leistung von</label>
-      <input type="date" class="form-control" id="service_date_from" formControlName="service_date_from" />
-      <div class="form-text">Fahrtdatum, bei Rechnungen Pflicht.</div>
-    </div>
-    <div class="col-12 col-lg-4">
-      <label class="form-label" for="service_date_to">Leistung bis</label>
-      <input type="date" class="form-control" id="service_date_to" formControlName="service_date_to" />
-      <div class="form-text">Nur bei mehrtägigen Fahrten.</div>
-    </div>
-    <div class="col-12 col-lg-4">
-      <label class="form-label" for="payment_term_days">Zahlungsziel (Tage)</label>
-      <input type="number" min="0" max="365" class="form-control" id="payment_term_days" formControlName="payment_term_days" />
-      <div class="form-text">Leer: Standard des Kunden bzw. der Firma.</div>
-    </div>
-
-    <div class="col-12"><div class="section-title">Positionen</div></div>
-
-    @for (g of lines.controls; track g; let i = $index) {
-      @if (groupHeader(i); as gh) {
-        <!-- Überschrift der Strecke (und des Fahrzeugtyps), zu der die folgenden Positionen gehören -->
-        <div class="col-12 d-flex flex-wrap align-items-center gap-2 mt-2">
-          <h3 class="h6 mb-0"><i class="bi bi-signpost-split me-1" aria-hidden="true"></i>{{ gh.text }}</h3>
-        </div>
-      }
-      <div class="col-12" [formGroup]="g">
-        <div class="border rounded-2 p-3 bg-body">
-          <div class="row g-3">
-            <div class="col-12 d-flex align-items-center">
-              <strong>Position {{ i + 1 }}</strong>
-              @if (!readonly()) {
-                <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" (click)="removeLine(i)" [attr.aria-label]="'Position ' + (i + 1) + ' entfernen'">
-                  <i class="bi bi-x-lg me-1"></i>Entfernen
-                </button>
-              }
-            </div>
-
-            <!-- Drittelraster (Regel „Ein Formular, ein Raster“, EditFormPattern.md): Felder sind ein Drittel (4) oder die ganze Breite (12). -->
-            <div class="col-12">
-              <label class="form-label" [for]="'title' + i">Bezeichnung <span class="text-danger">*</span></label>
-              <input class="form-control" [id]="'title' + i" formControlName="title" [class.is-invalid]="lineInvalid(i, 'title')" />
-              <div class="invalid-feedback">Bitte bezeichnen.</div>
-            </div>
-            <div class="col-12 col-lg-4">
-              <label class="form-label" [for]="'quantity' + i">Menge</label>
-              <input type="number" step="any" class="form-control" [id]="'quantity' + i" formControlName="quantity" [class.is-invalid]="lineInvalid(i, 'quantity')" />
-              <div class="invalid-feedback">Nicht 0.</div>
-            </div>
-            <div class="col-12 col-lg-4">
-              <label class="form-label" [for]="'unit' + i">Einheit</label>
-              <input class="form-control" [id]="'unit' + i" formControlName="unit" />
-            </div>
-            <div class="col-12 col-lg-4">
-              <label class="form-label" [for]="'price' + i">Einzelpreis (netto)</label>
-              <input type="number" step="0.01" class="form-control" [id]="'price' + i" formControlName="unit_price" [class.is-invalid]="lineInvalid(i, 'unit_price')" />
-              <div class="invalid-feedback">Pflicht.</div>
-            </div>
-
-            <div class="col-12">
-              <label class="form-label" [for]="'desc' + i">Beschreibung</label>
-              <textarea class="form-control" rows="2" [id]="'desc' + i" formControlName="description"></textarea>
-            </div>
-
-            <div class="col-12 col-lg-4">
-              <label class="form-label" [for]="'kind' + i">Fahrtart</label>
-              <select class="form-select" [id]="'kind' + i" formControlName="trip_kind" (change)="onKindChange(g)">
-                <option [ngValue]="null">Keine Angabe</option>
-                @for (k of tripKinds(); track k.value) { <option [ngValue]="k.value">{{ k.label }}</option> }
-              </select>
-              <div class="form-text">Charter, Ausflug, Gruppe = Gelegenheitsverkehr.</div>
-            </div>
-            <div class="col-12 col-lg-4">
-              <label class="form-label" [for]="'tax' + i">Steuersatz</label>
-              <select class="form-select" [id]="'tax' + i" formControlName="tax_rate">
-                @for (o of taxOptions(g.value.tax_rate); track o.rate) { <option [ngValue]="o.rate">{{ o.label }}</option> }
-              </select>
-            </div>
-            <div class="col-12 col-lg-4">
-              <label class="form-label" [for]="'net' + i">Netto</label>
-              <input class="form-control text-end" [id]="'net' + i" [value]="formatCents(lineNet(i))" readonly tabindex="-1" />
-            </div>
-            <div class="col-12">
-              <label class="form-label" [for]="'note' + i">Steuerhinweis</label>
-              <input class="form-control" [id]="'note' + i" formControlName="tax_note" />
-              @if (isZeroRate(g) && isInvoiceType()) {
-                <div class="form-text text-danger">Bei 0 % Steuer ist ein Grund Pflicht, z. B. steuerfrei oder Ausland.</div>
-              }
-            </div>
-          </div>
-        </div>
-      </div>
-    }
-
-    @if (!readonly()) {
-      <div class="col-12">
-        <button type="button" class="btn btn-outline-secondary" (click)="addLine()"><i class="bi bi-plus-lg me-1"></i>Position hinzufügen</button>
-      </div>
-    }
-
-    @if (canEditSections() && doc()?.journey; as jr) {
-      <div class="col-12">
-        <div class="form-text mt-0">
-          <i class="bi bi-signpost-split me-1" aria-hidden="true"></i>
-          Strecken hinzufügen, ändern oder entfernen Sie auf der <a [routerLink]="['/reisen', jr.id]">Reise</a>. Danach gleicht dort <strong>Angebot aktualisieren</strong> die Positionen der geänderten Strecke in diesem Entwurf ab.
-          <app-help-link topic="belege" anchor="mehrere-strecken" label="Strecken der Reise" />
-        </div>
-      </div>
-    }
-
-    @if (doc()?.tour_snapshot; as snap) {
-      <!-- Fahrtbeschreibung: Stand beim Festschreiben, unveränderlich im Beleg -->
-      <div class="col-12">
-        <div class="section-title">Fahrtbeschreibung</div>
-        <div class="form-text mb-2">
-          Festgehalten beim Festschreiben am {{ snap.created_at | date: 'dd.MM.yyyy' }}. Spätere Änderungen an den Touren im Archiv ändern diesen Beleg nicht.
-          <app-help-link topic="belege" anchor="fahrtbeschreibung" label="Fahrtbeschreibung" />
-        </div>
-        @for (sec of snap.sections; track sec.section_id) {
-          <div class="border rounded-2 p-3 bg-body mb-2">
-            <div class="fw-semibold">
-              {{ sec.kind_label }}: {{ sec.title }}
-              @if (sec.vehicles.length) {
-                <span class="fw-normal text-body-secondary">
-                  ·
-                  @for (v of sec.vehicles; track $index; let last = $last) {{{ v.count > 1 ? v.count + ' × ' : '' }}{{ v.label }}{{ last ? '' : ', ' }}}
-                </span>
-              }
-            </div>
-            @if (sec.trip; as t) {
-              <div class="small mt-1">
-                <span class="text-body-secondary">Halte:{{ ' ' }}</span>
-                @for (st of t.stops; track $index; let last = $last) {{{ st.label }}@if (st.dwell_minutes > 0) { ({{ st.dwell_minutes }} Min.) }@if (!last) { → }}
-                @if (t.round_trip) { → zurück zum Start }
-              </div>
-              <div class="small text-body-secondary">
-                {{ km(t.loaded_km) }} mit Fahrgästen@if (t.empty_km > 0) {, {{ km(t.empty_km) }} Leerfahrt} · Lenkzeit {{ formatDuration(t.drive_s) }} · {{ t.days }} {{ t.days === 1 ? 'Tag' : 'Tage' }}
-              </div>
-              @for (l of t.legs; track $index) {
-                <div class="small text-body-secondary">{{ l.from }} → {{ l.to }}: {{ km(l.distance_m / 1000) }}, {{ formatDuration(l.duration_s) }}@if (l.empty) { (Leerfahrt)}</div>
-              }
-            } @else if (sec.own) {
-              <div class="small text-body-secondary mt-1">{{ km(sec.own.loaded_km) }} · Fahrzeit {{ formatDuration(sec.own.drive_s) }} · {{ sec.own.days }} {{ sec.own.days === 1 ? 'Tag' : 'Tage' }}</div>
-            }
-          </div>
-        }
-      </div>
-    } @else if (canEditSections() && !readonly()) {
-      <div class="col-12">
-        <div class="form-text">
-          <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
-          Beim Festschreiben wird die Fahrtbeschreibung der Strecken (Halte, Kilometer, Zeiten, Fahrzeuge) unveränderlich im Beleg festgehalten und im PDF abgedruckt.
-          <app-help-link topic="belege" anchor="fahrtbeschreibung" label="Fahrtbeschreibung" />
-        </div>
-      </div>
-    }
-
-    <div class="col-12"><div class="section-title">Summen</div></div>
-
-    <div class="col-12 col-lg-6 ms-lg-auto">
-      <table class="table table-sm mb-0 bg-white">
-        <tbody>
-          <tr><td>Netto</td><td class="text-end">{{ formatCents(totals().net) }}</td></tr>
-          @for (gr of totals().groups; track gr.rate) {
-            <tr><td>Steuer {{ gr.rate }} % <span class="text-body-secondary small">auf {{ formatCents(gr.net) }}</span></td><td class="text-end">{{ formatCents(gr.tax) }}</td></tr>
-          }
-          <tr class="fw-semibold"><td>{{ deductions().length ? 'Gesamtbetrag brutto' : 'Brutto' }}</td><td class="text-end">{{ formatCents(totals().gross) }}</td></tr>
-          @if (deductions().length) {
-            <!-- Schlussrechnung: Anzahlungen getrennt ausgewiesen, mit Steuer (§ 14 Abs. 5 UStG) -->
-            @for (d of deductions(); track d.document_id) {
-              <tr>
-                <td>abzüglich Anzahlung <a [routerLink]="['/belege', d.document_id]">{{ d.number }}</a>@if (d.document_date) { vom {{ d.document_date | date: 'dd.MM.yyyy' }} }
-                  <span class="text-body-secondary small">(netto {{ amount(d.net) }}, Steuer {{ amount(d.tax) }})</span></td>
-                <td class="text-end">{{ minus(d.gross) }}</td>
-              </tr>
-            }
-            <tr class="fw-semibold"><td>Zu zahlen</td><td class="text-end">{{ formatCents(payable()) }}</td></tr>
-          }
-        </tbody>
-      </table>
-      @if (deductions().length && !readonly()) {
-        <div class="form-text">Die Anzahlungen werden beim Festschreiben noch einmal geprüft.</div>
-      }
-      <div class="form-text">Vorschau. Maßgeblich ist die Berechnung des Servers beim Speichern.</div>
-    </div>
-
-    <div class="col-12"><div class="section-title">Texte</div></div>
-
-    <div class="col-12">
-      <label class="form-label" for="intro_text">Einleitung</label>
-      <textarea class="form-control" rows="3" id="intro_text" formControlName="intro_text"></textarea>
-    </div>
-    <div class="col-12">
-      <label class="form-label" for="footer_text">Schlusstext</label>
-      <textarea class="form-control" rows="3" id="footer_text" formControlName="footer_text"></textarea>
-    </div>
-    <div class="col-12">
-      <label class="form-label" for="notes">Interne Notiz</label>
-      <textarea class="form-control" rows="2" id="notes" formControlName="notes"></textarea>
-      <div class="form-text">Erscheint nicht auf dem Beleg.</div>
-    </div>
-
-    @if (readonly() && doc(); as d) {
-      <div class="col-12"><div class="section-title">Festgeschrieben</div></div>
-      <div class="col-12 col-lg-6">
-        <div class="form-label">Absender</div>
-        @if (d.seller; as s) {
-          <div>{{ s.name }}</div>
-          <div class="small text-body-secondary">{{ s.street }}, {{ s.postal_code }} {{ s.city }}</div>
-          <div class="small text-body-secondary">@if (s.tax_number) { Steuernr. {{ s.tax_number }} } @if (s.vat_id) { USt-IdNr. {{ s.vat_id }} }</div>
-        }
-      </div>
-      <div class="col-12 col-lg-6">
-        <div class="form-label">Empfänger</div>
-        @if (d.recipient; as r) {
-          <div>{{ r.name }}</div>
-          <div class="small text-body-secondary">{{ r.street }}, {{ r.postal_code }} {{ r.city }}</div>
-          <div class="small text-body-secondary">Kundennr. {{ r.customer_number }}</div>
-        }
-      </div>
-      <div class="col-12">
-        <div class="form-text">
-          So wurden Absender und Empfänger beim Festschreiben am {{ d.finalized_at | date: 'dd.MM.yyyy' }} gespeichert. Spätere Änderungen an den Stammdaten berühren den Beleg nicht.
-          @if (d.due_date) { Fällig am {{ d.due_date | date: 'dd.MM.yyyy' }}. }
-        </div>
-      </div>
-    }
-
-  </div>
-</form>
-
 @if (doc(); as d) {
   @if (d.payment && readonly()) {
-    <!-- Zahlungen: nur bei festgeschriebenen Rechnungen und Anzahlungsrechnungen (der Server liefert dann den Zahlstand). -->
-    <div class="mt-4" id="zahlungen">
+    <!-- Zahlungen: nur bei festgeschriebenen Rechnungen und Anzahlungsrechnungen. Sie stehen oben: Das ist dann zu tun. -->
+    <div id="zahlungen">
       <app-document-payments [documentId]="d.id" [canBook]="canFinalize()" (changed)="refreshPayment()" />
     </div>
   }
 }
 
-<!-- Tastenleiste (Muster): links Speichern, Zurück; rechts seltene Aktionen, Abbrechen. Klebt unten. -->
-<div class="form-bar">
-  @if (!readonly()) {
+<form id="belegForm" class="form-area" [formGroup]="form" (ngSubmit)="save()" novalidate>
+  <div class="form-columns">
+    <div class="form-col">
+      <section class="form-section">
+        <h2 class="section-title">Beleg</h2>
+        <div class="row g-2">
+          <div class="col-12 col-lg-4">
+            <label class="form-label" for="type">Belegart</label>
+            <select class="form-select" id="type" formControlName="type">
+              @if (id) {
+                @for (t of types(); track t.value) { <option [value]="t.value">{{ t.label }}</option> }
+              } @else {
+                @for (t of creatable(); track t.value) { <option [value]="t.value">{{ t.label }}</option> }
+              }
+            </select>
+          </div>
+
+          <div class="col-12 col-lg-8">
+            <label class="form-label" for="customerSearch">Kunde <span class="text-danger">*</span></label>
+            @if (customer(); as c) {
+              <div class="input-group">
+                <input class="form-control" id="customerSearch" [value]="c.display_name + ' (' + c.customer_number + ')'" readonly [disabled]="readonly()" />
+                @if (!readonly()) {
+                  <button type="button" class="btn btn-outline-secondary" (click)="clearCustomer()">Ändern</button>
+                }
+              </div>
+            } @else {
+              <input class="form-control" id="customerSearch" autocomplete="off" [class.is-invalid]="invalid('customer_id')"
+                     [value]="customerQuery()" (input)="onCustomerSearch($any($event.target).value)" />
+              <div class="invalid-feedback">Bitte einen Kunden auswählen.</div>
+              <div class="form-text">Nachname, Kundennummer oder Ort eingeben, mindestens zwei Zeichen. Mit Komma nach Nachname und Vorname: Mustermann,Max</div>
+              @if (customerHits().length) {
+                <div class="list-group mt-1">
+                  @for (h of customerHits(); track h.id) {
+                    <button type="button" class="list-group-item list-group-item-action" (click)="pickCustomer(h)">
+                      <app-customer-name [customer]="h" [query]="customerQuery()" [showNumber]="true" />
+                    </button>
+                  }
+                </div>
+              }
+            }
+          </div>
+
+          <div class="col-12">
+            <label class="form-label" for="subject">Betreff</label>
+            <input class="form-control" id="subject" formControlName="subject" />
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="form-col">
+      <section class="form-section">
+        <h2 class="section-title">Termine</h2>
+        <div class="row g-2">
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="document_date">Belegdatum</label>
+            <input type="date" class="form-control" id="document_date" formControlName="document_date" />
+            <div class="form-text">Leer: Tag des Festschreibens.</div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="payment_term_days">Zahlungsziel (Tage)</label>
+            <input type="number" min="0" max="365" class="form-control" id="payment_term_days" formControlName="payment_term_days" />
+            <div class="form-text">Leer: Standard des Kunden bzw. der Firma.</div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="service_date_from">Leistung von</label>
+            <input type="date" class="form-control" id="service_date_from" formControlName="service_date_from" />
+            <div class="form-text">Fahrtdatum, bei Rechnungen Pflicht.</div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <label class="form-label" for="service_date_to">Leistung bis</label>
+            <input type="date" class="form-control" id="service_date_to" formControlName="service_date_to" />
+            <div class="form-text">Nur bei mehrtägigen Fahrten.</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <section class="form-section form-section-wide">
+    <h2 class="section-title">Positionen</h2>
+
+    <div class="table-responsive">
+      <table class="line-table">
+        <colgroup>
+          <col class="c-toggle">
+          <col>
+          <col class="c-quantity">
+          <col class="c-unit">
+          <col class="c-price">
+          <col class="c-tax">
+          <col class="c-net">
+          <col class="c-remove">
+        </colgroup>
+        <thead>
+          <tr>
+            <th scope="col"><span class="visually-hidden">Details</span></th>
+            <th scope="col">Bezeichnung <span class="text-danger">*</span></th>
+            <th scope="col">Menge</th>
+            <th scope="col">Einheit</th>
+            <th scope="col">Preis netto</th>
+            <th scope="col">Steuersatz</th>
+            <th scope="col" class="text-end">Netto</th>
+            <th scope="col"><span class="visually-hidden">Entfernen</span></th>
+          </tr>
+        </thead>
+
+        @for (g of lines.controls; track g; let i = $index) {
+          <tbody [formGroup]="g">
+            @if (groupHeader(i); as gh) {
+              <!-- Überschrift der Strecke (und des Fahrzeugtyps), zu der die folgenden Positionen gehören -->
+              <tr class="line-group"><th colspan="8" scope="colgroup"><i class="bi bi-signpost-split me-1" aria-hidden="true"></i>{{ gh.text }}</th></tr>
+            }
+            <tr>
+              <td>
+                <button type="button" class="btn-action" (click)="toggleDetails(g)" [attr.aria-expanded]="detailsOpen(g)"
+                        [title]="detailsOpen(g) ? 'Details schließen' : 'Beschreibung, Fahrtart, Steuerhinweis'"
+                        [attr.aria-label]="'Details zu Position ' + (i + 1)">
+                  <i class="bi" [class.bi-chevron-down]="detailsOpen(g)" [class.bi-chevron-right]="!detailsOpen(g)" aria-hidden="true"></i>
+                </button>
+              </td>
+              <td>
+                <input class="form-control" [id]="'title' + i" formControlName="title" [attr.aria-label]="'Bezeichnung, Position ' + (i + 1)" [class.is-invalid]="lineInvalid(i, 'title')" />
+                <div class="invalid-feedback">Bitte bezeichnen.</div>
+                @if (!detailsOpen(g) && lineSummary(g); as summary) { <div class="line-summary" [title]="summary">{{ summary }}</div> }
+              </td>
+              <td>
+                <input type="number" step="any" class="form-control text-end" [id]="'quantity' + i" formControlName="quantity" [attr.aria-label]="'Menge, Position ' + (i + 1)" [class.is-invalid]="lineInvalid(i, 'quantity')" />
+                <div class="invalid-feedback">Nicht 0.</div>
+              </td>
+              <td><input class="form-control" [id]="'unit' + i" formControlName="unit" [attr.aria-label]="'Einheit, Position ' + (i + 1)" /></td>
+              <td>
+                <input type="number" step="0.01" class="form-control text-end" [id]="'price' + i" formControlName="unit_price" [attr.aria-label]="'Einzelpreis netto, Position ' + (i + 1)" [class.is-invalid]="lineInvalid(i, 'unit_price')" />
+                <div class="invalid-feedback">Pflicht.</div>
+              </td>
+              <td>
+                <select class="form-select" [id]="'tax' + i" formControlName="tax_rate" [attr.aria-label]="'Steuersatz, Position ' + (i + 1)">
+                  @for (o of taxOptions(g.value.tax_rate); track o.rate) { <option [ngValue]="o.rate">{{ o.label }}</option> }
+                </select>
+              </td>
+              <td class="line-net">{{ formatCents(lineNet(i)) }}</td>
+              <td>
+                @if (!readonly()) {
+                  <button type="button" class="btn-action delete" (click)="removeLine(i)" title="Position entfernen" [attr.aria-label]="'Position ' + (i + 1) + ' entfernen'">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                  </button>
+                }
+              </td>
+            </tr>
+            @if (detailsOpen(g)) {
+              <tr class="line-details">
+                <td></td>
+                <td colspan="6">
+                  <div class="row g-2">
+                    <div class="col-12">
+                      <label class="form-label" [for]="'desc' + i">Beschreibung</label>
+                      <textarea class="form-control" rows="2" [id]="'desc' + i" formControlName="description"></textarea>
+                    </div>
+                    <div class="col-12 col-lg-4">
+                      <label class="form-label" [for]="'kind' + i">Fahrtart</label>
+                      <select class="form-select" [id]="'kind' + i" formControlName="trip_kind" (change)="onKindChange(g)">
+                        <option [ngValue]="null">Keine Angabe</option>
+                        @for (k of tripKinds(); track k.value) { <option [ngValue]="k.value">{{ k.label }}</option> }
+                      </select>
+                      <div class="form-text">Charter, Ausflug, Gruppe = Gelegenheitsverkehr.</div>
+                    </div>
+                    <div class="col-12 col-lg-8">
+                      <label class="form-label" [for]="'note' + i">Steuerhinweis</label>
+                      <input class="form-control" [id]="'note' + i" formControlName="tax_note" />
+                      @if (isZeroRate(g) && isInvoiceType()) {
+                        <div class="form-text text-danger">Bei 0 % Steuer ist ein Grund Pflicht, z. B. steuerfrei oder Ausland.</div>
+                      }
+                    </div>
+                  </div>
+                </td>
+                <td></td>
+              </tr>
+            }
+          </tbody>
+        }
+      </table>
+    </div>
+
+    @if (!readonly()) {
+      <button type="button" class="btn btn-outline-secondary mt-2" (click)="addLine()"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Position hinzufügen</button>
+    }
+
+    @if (canEditSections() && doc()?.journey; as jr) {
+      <div class="form-text mt-2">
+        <i class="bi bi-signpost-split me-1" aria-hidden="true"></i>
+        Strecken hinzufügen, ändern oder entfernen Sie auf der <a [routerLink]="['/reisen', jr.id]">Reise</a>. Danach gleicht dort <strong>Angebot aktualisieren</strong> die Positionen der geänderten Strecke in diesem Entwurf ab.
+        <app-help-link topic="belege" anchor="mehrere-strecken" label="Strecken der Reise" />
+      </div>
+    }
+  </section>
+
+  @if (doc()?.tour_snapshot; as snap) {
+    <!-- Fahrtbeschreibung: Stand beim Festschreiben, unveränderlich im Beleg -->
+    <section class="form-section form-section-wide">
+      <h2 class="section-title">Fahrtbeschreibung</h2>
+      <div class="form-text mb-2">
+        Festgehalten beim Festschreiben am {{ snap.created_at | date: 'dd.MM.yyyy' }}. Spätere Änderungen an den Touren im Archiv ändern diesen Beleg nicht.
+        <app-help-link topic="belege" anchor="fahrtbeschreibung" label="Fahrtbeschreibung" />
+      </div>
+      @for (sec of snap.sections; track sec.section_id) {
+        <div class="border rounded p-2 mb-2">
+          <div class="fw-semibold">
+            {{ sec.kind_label }}: {{ sec.title }}
+            @if (sec.vehicles.length) {
+              <span class="fw-normal text-body-secondary">
+                ·
+                @for (v of sec.vehicles; track $index; let last = $last) {{{ v.count > 1 ? v.count + ' × ' : '' }}{{ v.label }}{{ last ? '' : ', ' }}}
+              </span>
+            }
+          </div>
+          @if (sec.trip; as t) {
+            <div class="small mt-1">
+              <span class="text-body-secondary">Halte:{{ ' ' }}</span>
+              @for (st of t.stops; track $index; let last = $last) {{{ st.label }}@if (st.dwell_minutes > 0) { ({{ st.dwell_minutes }} Min.) }@if (!last) { → }}
+              @if (t.round_trip) { → zurück zum Start }
+            </div>
+            <div class="small text-body-secondary">
+              {{ km(t.loaded_km) }} mit Fahrgästen@if (t.empty_km > 0) {, {{ km(t.empty_km) }} Leerfahrt} · Lenkzeit {{ formatDuration(t.drive_s) }} · {{ t.days }} {{ t.days === 1 ? 'Tag' : 'Tage' }}
+            </div>
+            @for (l of t.legs; track $index) {
+              <div class="small text-body-secondary">{{ l.from }} → {{ l.to }}: {{ km(l.distance_m / 1000) }}, {{ formatDuration(l.duration_s) }}@if (l.empty) { (Leerfahrt)}</div>
+            }
+          } @else if (sec.own) {
+            <div class="small text-body-secondary mt-1">{{ km(sec.own.loaded_km) }} · Fahrzeit {{ formatDuration(sec.own.drive_s) }} · {{ sec.own.days }} {{ sec.own.days === 1 ? 'Tag' : 'Tage' }}</div>
+          }
+        </div>
+      }
+    </section>
+  } @else if (canEditSections() && !readonly()) {
+    <div class="form-text">
+      <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+      Beim Festschreiben wird die Fahrtbeschreibung der Strecken (Halte, Kilometer, Zeiten, Fahrzeuge) unveränderlich im Beleg festgehalten und im PDF abgedruckt.
+      <app-help-link topic="belege" anchor="fahrtbeschreibung" label="Fahrtbeschreibung" />
+    </div>
+  }
+
+  <section class="form-section">
+    <h2 class="section-title">Texte</h2>
+    <div class="row g-2">
+      <div class="col-12 col-xl-6">
+        <label class="form-label" for="intro_text">Einleitung</label>
+        <textarea class="form-control" rows="4" id="intro_text" formControlName="intro_text"></textarea>
+      </div>
+      <div class="col-12 col-xl-6">
+        <label class="form-label" for="footer_text">Schlusstext</label>
+        <textarea class="form-control" rows="4" id="footer_text" formControlName="footer_text"></textarea>
+      </div>
+      <div class="col-12">
+        <label class="form-label" for="notes">Interne Notiz</label>
+        <textarea class="form-control" rows="2" id="notes" formControlName="notes"></textarea>
+        <div class="form-text">Erscheint nicht auf dem Beleg.</div>
+      </div>
+    </div>
+  </section>
+
+  @if (readonly() && doc(); as d) {
+    <section class="form-section">
+      <h2 class="section-title">Festgeschrieben</h2>
+      <div class="row g-2">
+        <div class="col-12 col-lg-6">
+          <div class="form-label">Absender</div>
+          @if (d.seller; as s) {
+            <div>{{ s.name }}</div>
+            <div class="small text-body-secondary">{{ s.street }}, {{ s.postal_code }} {{ s.city }}</div>
+            <div class="small text-body-secondary">@if (s.tax_number) { Steuernr. {{ s.tax_number }} } @if (s.vat_id) { USt-IdNr. {{ s.vat_id }} }</div>
+          }
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="form-label">Empfänger</div>
+          @if (d.recipient; as r) {
+            <div>{{ r.name }}</div>
+            <div class="small text-body-secondary">{{ r.street }}, {{ r.postal_code }} {{ r.city }}</div>
+            <div class="small text-body-secondary">Kundennr. {{ r.customer_number }}</div>
+          }
+        </div>
+        <div class="col-12">
+          <div class="form-text">
+            So wurden Absender und Empfänger beim Festschreiben am {{ d.finalized_at | date: 'dd.MM.yyyy' }} gespeichert. Spätere Änderungen an den Stammdaten berühren den Beleg nicht.
+            @if (d.due_date) { Fällig am {{ d.due_date | date: 'dd.MM.yyyy' }}. }
+          </div>
+        </div>
+      </div>
+    </section>
+  }
+</form>
+
+<!-- Speicherleiste: nur solange es etwas zu speichern gibt. Die Aktionen am Beleg stehen oben rechts. -->
+@if (!readonly()) {
+  <div class="form-bar" [class.d-none]="id && !form.dirty">
     <button type="submit" form="belegForm" class="btn btn-primary" [disabled]="saving() || working()">
       @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
-      {{ saving() ? 'Speichert …' : id ? 'Speichern' : 'Beleg anlegen' }}
+      {{ saving() ? 'Speichert …' : id ? 'Speichern' : 'Beleg anlegen' }}<kbd>Strg+S</kbd>
     </button>
-  }
-  <button type="button" class="btn btn-outline-secondary" (click)="back()">Zurück</button>
-  @if (form.dirty && !readonly()) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
-
-  <div class="form-bar-right">
-    @if (id) {
-      <button type="button" class="btn btn-outline-secondary"
-              [attr.title]="form.dirty ? 'Zeigt den gespeicherten Stand. Ungespeicherte Änderungen bitte zuerst speichern.' : 'Druckvorschau öffnen'" (click)="openPdf()">
-        <i class="bi bi-printer me-1"></i>Drucken
-      </button>
-    }
-    @if (readonly() && typeInfo()?.invoice) {
-      <button type="button" class="btn btn-outline-secondary" [disabled]="working()" (click)="downloadEInvoice()"
-              title="XRechnung (XML) herunterladen. Gibt es noch keine, entsteht sie jetzt einmal.">
-        <i class="bi bi-file-earmark-code me-1"></i>E-Rechnung (XML)
-      </button>
-      <button type="button" class="btn btn-outline-secondary" [disabled]="working()" (click)="downloadZugferd()"
-              title="ZUGFeRD: das archivierte PDF mit eingebetteter XRechnung. Für Empfänger, die ein lesbares PDF und die Daten in einer Datei möchten.">
-        <i class="bi bi-file-earmark-pdf me-1"></i>ZUGFeRD (PDF)
-      </button>
-    }
-    @if (readonly()) {
-      @if (doc()?.type === 'angebot' || doc()?.type === 'auftragsbestaetigung') {
-        <!-- Warum hier nur bestimmte Folgebelege angeboten werden -->
-        <span class="align-self-center"><app-help-link topic="belege" anchor="rechnung-nach-ab" label="Folgebelege: Warum keine Rechnung?" /></span>
-      }
-      @for (t of followUpTypes(); track t) {
-        @if (doc()?.existing_followups?.[t]; as ex) {
-          <!-- Diese Art gibt es aus diesem Beleg nur einmal: statt der Taste ein Verweis auf den vorhandenen Beleg -->
-          <span class="align-self-center small text-body-secondary">
-            {{ typeLabel(t) }} vorhanden:
-            <a [routerLink]="['/belege', ex.id]">{{ ex.number ?? 'Entwurf' }}</a>
-          </span>
-        } @else {
-          <button type="button" class="btn btn-outline-secondary" [disabled]="working()" (click)="convertTo(t)">
-            <i class="bi bi-arrow-right-circle me-1"></i>{{ typeLabel(t) }} erstellen
-          </button>
-        }
-      }
-      @if (canCancel()) {
-        <button type="button" class="btn btn-outline-secondary" [disabled]="working()" (click)="cancelDocument()">
-          <i class="bi bi-x-octagon me-1"></i>Stornieren
-        </button>
-      }
-    } @else {
-      @if (id && canFinalize() && !blockedByCancellation()) {
-        <button type="button" class="btn btn-outline-secondary" [disabled]="saving() || working()" (click)="finalize()">
-          <i class="bi bi-lock me-1"></i>Festschreiben
-        </button>
-      }
-      @if (id) {
-        <button type="button" class="btn btn-outline-secondary" [disabled]="saving() || working()" (click)="deleteDraft()">
-          <i class="bi bi-trash me-1"></i>Entwurf löschen
-        </button>
-      }
-      <button type="button" class="btn btn-outline-secondary" [disabled]="!form.dirty" [attr.title]="form.dirty ? null : 'Keine Änderungen zum Verwerfen'" (click)="cancelEdit()">Abbrechen</button>
-    }
+    <button type="button" class="btn btn-outline-secondary" [disabled]="!form.dirty" (click)="cancelEdit()">Verwerfen</button>
+    @if (form.dirty) { <span class="form-bar-hint">Ungespeicherte Änderungen</span> }
   </div>
+}
 </div>
 
+<!-- Feste Spalte: Summen immer im Blick, darunter seltene Aktionen -->
+<aside class="form-side">
+  <div class="side-panel">
+    <h2>Summen</h2>
+    <table class="sum-table">
+      <tbody>
+        <tr><td>Netto</td><td>{{ formatCents(totals().net) }}</td></tr>
+        @for (gr of totals().groups; track gr.rate) {
+          <tr><td>Steuer {{ gr.rate }} % <span class="sum-note">auf {{ formatCents(gr.net) }}</span></td><td>{{ formatCents(gr.tax) }}</td></tr>
+        }
+        <tr class="sum-total"><td>{{ deductions().length ? 'Gesamtbetrag brutto' : 'Brutto' }}</td><td>{{ formatCents(totals().gross) }}</td></tr>
+        @if (deductions().length) {
+          <!-- Schlussrechnung: Anzahlungen getrennt ausgewiesen, mit Steuer (§ 14 Abs. 5 UStG) -->
+          @for (d of deductions(); track d.document_id) {
+            <tr>
+              <td>abzüglich Anzahlung <a [href]="'/belege/' + d.document_id" (click)="openDocument(d.document_id, $event)">{{ d.number }}</a>@if (d.document_date) { vom {{ d.document_date | date: 'dd.MM.yyyy' }} }
+                <span class="sum-note">netto {{ amount(d.net) }}, Steuer {{ amount(d.tax) }}</span></td>
+              <td>{{ minus(d.gross) }}</td>
+            </tr>
+          }
+          <tr class="sum-total"><td>Zu zahlen</td><td>{{ formatCents(payable()) }}</td></tr>
+        }
+      </tbody>
+    </table>
+    @if (!readonly()) {
+      <div class="form-text">
+        Vorschau. Maßgeblich ist die Berechnung des Servers beim Speichern.
+        @if (deductions().length) { Die Anzahlungen werden beim Festschreiben noch einmal geprüft. }
+      </div>
+    }
+  </div>
+
+  @if ((readonly() && (typeInfo()?.invoice || canCancel())) || (!readonly() && id)) {
+    <div class="side-panel">
+      <div class="side-stack">
+        @if (readonly() && typeInfo()?.invoice) {
+          <button type="button" class="btn btn-outline-secondary" [disabled]="working()" (click)="downloadEInvoice()"
+                  title="XRechnung (XML) herunterladen. Gibt es noch keine, entsteht sie jetzt einmal.">
+            <i class="bi bi-file-earmark-code me-1" aria-hidden="true"></i>E-Rechnung (XML)
+          </button>
+          <button type="button" class="btn btn-outline-secondary" [disabled]="working()" (click)="downloadZugferd()"
+                  title="ZUGFeRD: das archivierte PDF mit eingebetteter XRechnung. Für Empfänger, die ein lesbares PDF und die Daten in einer Datei möchten.">
+            <i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>ZUGFeRD (PDF)
+          </button>
+        }
+        @if (readonly() && canCancel()) {
+          <button type="button" class="btn btn-outline-danger" [disabled]="working()" (click)="cancelDocument()">
+            <i class="bi bi-x-octagon me-1" aria-hidden="true"></i>Stornieren
+          </button>
+        }
+        @if (!readonly() && id) {
+          <button type="button" class="btn btn-outline-danger" [disabled]="saving() || working()" (click)="deleteDraft()">
+            <i class="bi bi-trash me-1" aria-hidden="true"></i>Entwurf löschen
+          </button>
+        }
+      </div>
+    </div>
+  }
+</aside>
+</div>
 }
